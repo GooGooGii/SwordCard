@@ -4,6 +4,7 @@ extends Resource
 @export var id: String = ""
 @export var display_name: String = ""
 @export var max_hp: int = 60
+@export var portrait_path: String = ""
 @export var actions: Array[Dictionary] = []
 
 func clone() -> EnemyData:
@@ -11,5 +12,6 @@ func clone() -> EnemyData:
 	copy.id = id
 	copy.display_name = display_name
 	copy.max_hp = max_hp
+	copy.portrait_path = portrait_path
 	copy.actions = actions.duplicate(true)
 	return copy

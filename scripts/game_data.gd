@@ -11,6 +11,7 @@ static func make_card(id: String, display_name: String, owner: String, cost: int
 	card.description = description
 	card.effects = effects
 	card.rarity = rarity
+	card.art_path = "res://assets/art/cards/%s.png" % id
 	return card
 
 static func characters() -> Array[CharacterData]:
@@ -77,6 +78,7 @@ static func _character(id: String, display_name: String, max_hp: int, style: Str
 	character.display_name = display_name
 	character.max_hp = max_hp
 	character.battle_style = style
+	character.portrait_path = "res://assets/art/portraits/%s.png" % id
 	character.starting_deck = [cards[0], cards[0], cards[1], cards[2], cards[3], cards[4], cards[7], cards[7]]
 	character.reward_pool = cards.slice(5)
 	return character
@@ -86,6 +88,7 @@ static func _bandit() -> EnemyData:
 	enemy.id = "bandit"
 	enemy.display_name = "山賊頭目"
 	enemy.max_hp = 56
+	enemy.portrait_path = "res://assets/art/enemies/bandit.png"
 	enemy.actions = [
 		{"intent": "劈砍 10", "effects": [{"kind": "damage", "amount": 10}]},
 		{"intent": "防守 8", "effects": [{"kind": "block", "amount": 8}]},
@@ -98,6 +101,7 @@ static func _beast() -> EnemyData:
 	enemy.id = "beast"
 	enemy.display_name = "山林妖獸"
 	enemy.max_hp = 64
+	enemy.portrait_path = "res://assets/art/enemies/beast.png"
 	enemy.actions = [
 		{"intent": "撕咬 12", "effects": [{"kind": "damage", "amount": 12}]},
 		{"intent": "怒吼 8", "effects": [{"kind": "damage", "amount": 8}]},
@@ -110,6 +114,7 @@ static func _gu_cultist() -> EnemyData:
 	enemy.id = "gu_cultist"
 	enemy.display_name = "蠱毒妖人"
 	enemy.max_hp = 58
+	enemy.portrait_path = "res://assets/art/enemies/gu_cultist.png"
 	enemy.actions = [
 		{"intent": "毒霧 3", "effects": [{"kind": "poison", "amount": 3}]},
 		{"intent": "邪術 9", "effects": [{"kind": "damage", "amount": 9}, {"kind": "weak", "amount": 1}]},
@@ -122,6 +127,7 @@ static func _moon_worshipper() -> EnemyData:
 	enemy.id = "moon_worshipper"
 	enemy.display_name = "拜月教徒"
 	enemy.max_hp = 86
+	enemy.portrait_path = "res://assets/art/enemies/moon_worshipper.png"
 	enemy.actions = [
 		{"intent": "拜月咒 13", "effects": [{"kind": "damage", "amount": 13}]},
 		{"intent": "妖術：蠱毒 4", "effects": [{"kind": "poison", "amount": 4}]},

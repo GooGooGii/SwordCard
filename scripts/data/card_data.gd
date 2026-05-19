@@ -9,6 +9,8 @@ extends Resource
 @export_multiline var description: String = ""
 @export var rarity: String = "basic"
 @export var effects: Array[Dictionary] = []
+@export var upgraded: bool = false
+@export var art_path: String = ""
 
 func clone() -> CardData:
 	var copy: CardData = CardData.new()
@@ -20,4 +22,54 @@ func clone() -> CardData:
 	copy.description = description
 	copy.rarity = rarity
 	copy.effects = effects.duplicate(true)
+	copy.upgraded = upgraded
+	copy.art_path = art_path
 	return copy
+
+func display_title() -> String:
+	if upgraded:
+		return "%s+" % display_name
+	return display_name
+
+func display_description() -> String:
+	if upgraded:
+		return "%s\n已升級：數值效果強化。" % description
+	return description
+
+func upgraded_copy() -> CardData:
+	var copy: CardData = clone()
+	copy.upgraded = true
+	copy.effects.clear()
+	for effect: Dictionary in effects:
+		var upgraded_effect: Dictionary = effect.duplicate(true)
+		var kind: String = String(upgraded_effect.get("kind", ""))
+		if upgraded_effect.has("amount") and _should_upgrade_amount(kind):
+			upgraded_effect["amount"] = _upgraded_amount(kind, int(upgraded_effect["amount"]))
+		copy.effects.append(upgraded_effect)
+	return copy
+
+func _should_upgrade_amount(kind: String) -> bool:
+	return kind in [
+		"damage",
+		"block",
+		"heal",
+		"poison",
+		"weak",
+		"vulnerable",
+		"draw",
+		"energy",
+		"power",
+		"consume_energy_damage",
+		"poison_burst"
+	]
+
+func _upgraded_amount(kind: String, amount: int) -> int:
+	match kind:
+		"draw", "energy", "vulnerable":
+			return amount + 1
+		"weak", "poison", "power":
+			return amount + 1
+		"consume_energy_damage", "poison_burst":
+			return amount + 2
+		_:
+			return amount + max(1, int(ceil(amount * 0.25)))
