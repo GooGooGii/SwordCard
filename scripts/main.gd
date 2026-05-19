@@ -6,7 +6,9 @@ var selected_character: CharacterData
 var selected_enemy: EnemyData
 var run_deck: Array[CardData] = []
 var run_hp: int = 0
+var run_gold: int = 0
 var run_power_bonus: int = 0
+var current_shop_cards: Array[CardData] = []
 var encounter_index: int = 0
 var encounter_choices: Array[Array] = []
 var deck: DeckManager
@@ -126,7 +128,9 @@ func start_run(character: CharacterData) -> void:
 	for card: CardData in selected_character.starting_deck:
 		run_deck.append(card.clone())
 	run_hp = selected_character.max_hp
+	run_gold = 0
 	run_power_bonus = 0
+	current_shop_cards.clear()
 	encounter_index = 0
 	encounter_choices = _make_encounter_choices()
 	show_progress_screen()
@@ -143,6 +147,7 @@ func _make_encounter_choices() -> Array[Array]:
 		row.append({"type": "battle", "enemy": normal_enemies[0].clone()})
 		if i == 1:
 			row.append({"type": "rest"})
+			row.append({"type": "shop"})
 		elif i == 2:
 			row.append({"type": "event"})
 		else:
@@ -167,7 +172,7 @@ func show_progress_screen() -> void:
 	panel.add_child(box)
 	var choices: Array = encounter_choices[encounter_index]
 	box.add_child(_title("第 %d / %d 層" % [encounter_index + 1, encounter_choices.size()], 34))
-	box.add_child(_paragraph("%s  HP %d/%d  牌組 %d 張  本輪增傷 +%d" % [selected_character.display_name, run_hp, selected_character.max_hp, run_deck.size(), run_power_bonus]))
+	box.add_child(_paragraph("%s  HP %d/%d  金幣 %d  牌組 %d 張  增傷 +%d" % [selected_character.display_name, run_hp, selected_character.max_hp, run_gold, run_deck.size(), run_power_bonus]))
 	if choices.size() > 1:
 		box.add_child(_paragraph("選擇下一條路線"))
 	else:
@@ -343,6 +348,7 @@ func _check_battle_end() -> bool:
 
 func _complete_battle_victory() -> void:
 	run_hp = int(state["player_hp"])
+	run_gold += 20 + randi() % 11
 	encounter_index = encounter_index + 1
 	if encounter_index >= encounter_choices.size():
 		show_result(true)
@@ -360,7 +366,7 @@ func show_card_reward() -> void:
 	panel.add_child(box)
 	box.add_child(_title("戰鬥勝利", 34))
 	box.add_child(_paragraph("%s 擊敗了 %s。選擇 1 張卡加入牌組。" % [selected_character.display_name, selected_enemy.display_name]))
-	box.add_child(_paragraph("目前 HP %d/%d，牌組 %d 張。" % [run_hp, selected_character.max_hp, run_deck.size()]))
+	box.add_child(_paragraph("目前 HP %d/%d，金幣 %d，牌組 %d 張。" % [run_hp, selected_character.max_hp, run_gold, run_deck.size()]))
 	var rewards: Array[CardData] = _make_reward_choices()
 	var reward_row: HBoxContainer = HBoxContainer.new()
 	reward_row.add_theme_constant_override("separation", 12)
@@ -399,6 +405,8 @@ func _route_node_button(node_data: Dictionary) -> Button:
 		return _route_rest_button()
 	if node_type == "event":
 		return _route_event_button()
+	if node_type == "shop":
+		return _route_shop_button()
 	var enemy: EnemyData = node_data["enemy"] as EnemyData
 	return _route_enemy_button(enemy, node_type == "boss")
 
@@ -455,6 +463,127 @@ func _enemy_route_summary(enemy: EnemyData) -> String:
 			if not badges.has(part):
 				badges.append(part)
 	return " ".join(badges)
+
+func _route_shop_button() -> Button:
+	var button: Button = Button.new()
+	button.custom_minimum_size = Vector2(260, 160)
+	button.text = "商店\n江湖商人\n購買卡牌與道具"
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	button.add_theme_font_size_override("font_size", 18)
+	button.add_theme_stylebox_override("normal", _style_box(Color("5c4a20"), Color("d4a844"), 2, 8))
+	button.add_theme_stylebox_override("hover", _style_box(Color("7a6228"), Color("f5c84a"), 3, 8))
+	button.add_theme_stylebox_override("pressed", _style_box(Color("3f3318"), Color("c49830"), 2, 8))
+	button.add_theme_color_override("font_color", Color("fff8dc"))
+	button.add_theme_color_override("font_hover_color", Color("ffffff"))
+	button.pressed.connect(func():
+		current_shop_cards = _generate_shop_cards()
+		show_shop_node()
+	)
+	return button
+
+func _generate_shop_cards() -> Array[CardData]:
+	var pool: Array[CardData] = []
+	for card: CardData in selected_character.reward_pool:
+		pool.append(card.clone())
+	pool.shuffle()
+	var result: Array[CardData] = []
+	for i: int in range(min(3, pool.size())):
+		result.append(pool[i])
+	return result
+
+func _card_shop_price(card: CardData) -> int:
+	match card.rarity:
+		"uncommon": return 75
+		"rare": return 100
+	return 50
+
+func show_shop_node() -> void:
+	_set_background("res://assets/art/event_bg.png")
+	_clear_root()
+	var panel: PanelContainer = _make_panel()
+	root.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 14)
+	panel.add_child(box)
+	box.add_child(_title("江湖商人", 34))
+	box.add_child(_paragraph("一位行商在路邊擺開攤子，兜售各式奇術秘法。"))
+	box.add_child(_paragraph("%s  HP %d/%d  金幣 %d  牌組 %d 張" % [selected_character.display_name, run_hp, selected_character.max_hp, run_gold, run_deck.size()]))
+	box.add_child(_title("卡牌", 22))
+	var card_row: HBoxContainer = HBoxContainer.new()
+	card_row.add_theme_constant_override("separation", 12)
+	box.add_child(card_row)
+	if current_shop_cards.is_empty():
+		card_row.add_child(_paragraph("（已售罄）"))
+	else:
+		for card: CardData in current_shop_cards:
+			var price: int = _card_shop_price(card)
+			card_row.add_child(_shop_card_button(card, price))
+	box.add_child(_title("道具", 22))
+	var heal_price: int = 40
+	var heal_button: Button = _button("調息：回復 20 HP（%d 金）" % heal_price)
+	heal_button.disabled = run_gold < heal_price or run_hp >= selected_character.max_hp
+	heal_button.pressed.connect(func(): buy_heal_from_shop(20, heal_price))
+	box.add_child(heal_button)
+	var remove_price: int = 90
+	var remove_button: Button = _button("洗髓：移除 1 張牌（%d 金）" % remove_price)
+	remove_button.disabled = run_gold < remove_price or run_deck.size() <= 5
+	remove_button.pressed.connect(_open_shop_remove_view)
+	box.add_child(remove_button)
+	var deck_button: Button = _button("查看牌組")
+	deck_button.pressed.connect(show_deck_view)
+	box.add_child(deck_button)
+	var leave_button: Button = _button("離開商店")
+	leave_button.pressed.connect(advance_non_battle_node)
+	box.add_child(leave_button)
+
+func _shop_card_button(card: CardData, price: int) -> Button:
+	var button: Button = Button.new()
+	button.custom_minimum_size = Vector2(210, 210)
+	var affordable: bool = run_gold >= price
+	button.text = "%s\n%s  費用 %d\n售價 %d 金\n\n%s" % [card.display_title(), _card_type_name(card.card_type), card.cost, price, card.display_description()]
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	button.disabled = not affordable
+	_style_card_button(button, card, affordable)
+	if affordable:
+		button.pressed.connect(func(): buy_card_from_shop(card, price))
+	return button
+
+func buy_card_from_shop(card: CardData, price: int) -> void:
+	if run_gold < price:
+		return
+	run_gold -= price
+	run_deck.append(card.clone())
+	for i: int in range(current_shop_cards.size()):
+		if current_shop_cards[i] == card:
+			current_shop_cards.remove_at(i)
+			break
+	show_shop_node()
+
+func buy_heal_from_shop(amount: int, price: int) -> void:
+	if run_gold < price:
+		return
+	run_gold -= price
+	run_hp = min(selected_character.max_hp, run_hp + amount)
+	show_shop_node()
+
+func _open_shop_remove_view() -> void:
+	if run_deck.size() <= 5:
+		return
+	show_deck_view("shop_remove")
+
+func remove_card_from_shop_deck(card: CardData) -> void:
+	var price: int = 90
+	if run_gold < price or run_deck.size() <= 5:
+		close_deck_view()
+		return
+	run_gold -= price
+	for i: int in range(run_deck.size()):
+		if run_deck[i] == card:
+			run_deck.remove_at(i)
+			break
+	close_deck_view()
+	show_shop_node()
 
 func resolve_rest_node() -> void:
 	pending_rest_heal = max(1, int(ceil(selected_character.max_hp * 0.25)))
@@ -603,6 +732,8 @@ func show_deck_view(mode: String = "view") -> void:
 		title_text = "選擇要移除的牌"
 	elif deck_view_mode == "upgrade":
 		title_text = "選擇要升級的牌"
+	elif deck_view_mode == "shop_remove":
+		title_text = "洗髓：選擇要移除的牌（90 金）"
 	box.add_child(_title(title_text, 32))
 	box.add_child(_paragraph("%s  HP %d/%d  共 %d 張牌" % [selected_character.display_name, run_hp, selected_character.max_hp, run_deck.size()]))
 	var summary: Label = _paragraph(_deck_summary_text())
@@ -611,6 +742,8 @@ func show_deck_view(mode: String = "view") -> void:
 		box.add_child(_paragraph("至少保留 5 張牌。點選一張牌後會移除並完成事件。"))
 	elif deck_view_mode == "upgrade":
 		box.add_child(_paragraph("點選一張未升級的牌，升級後會完成此節點。"))
+	elif deck_view_mode == "shop_remove":
+		box.add_child(_paragraph("花費 90 金移除 1 張牌。至少保留 5 張。移除後返回商店。"))
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(scroll)
@@ -666,13 +799,15 @@ func _deck_view_card(card: CardData, mode: String = "view") -> Button:
 	button.custom_minimum_size = Vector2(170, 170)
 	button.text = "%s\n%s    費用 %d\n\n%s" % [card.display_title(), _card_type_name(card.card_type), card.cost, card.display_description()]
 	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var selectable: bool = mode == "remove" or (mode == "upgrade" and not card.upgraded)
+	var selectable: bool = mode == "remove" or (mode == "upgrade" and not card.upgraded) or mode == "shop_remove"
 	button.disabled = not selectable
 	_style_card_button(button, card, true)
 	if mode == "remove":
 		button.pressed.connect(func(): remove_card_from_run_deck(card))
 	elif mode == "upgrade" and not card.upgraded:
 		button.pressed.connect(func(): upgrade_card_in_run_deck(card))
+	elif mode == "shop_remove":
+		button.pressed.connect(func(): remove_card_from_shop_deck(card))
 	else:
 		button.add_theme_stylebox_override("disabled", _style_box(_card_color(card.card_type, true), Color("e7d38a"), 2, 8))
 		button.add_theme_color_override("font_disabled_color", Color("fff8dc"))
@@ -689,7 +824,7 @@ func show_result(victory: bool) -> void:
 	panel.add_child(box)
 	if victory:
 		box.add_child(_title("小型冒險完成", 34))
-		box.add_child(_paragraph("%s 完成了 %d 層路線，最終 HP %d/%d。" % [selected_character.display_name, encounter_choices.size(), run_hp, selected_character.max_hp]))
+		box.add_child(_paragraph("%s 完成了 %d 層路線，最終 HP %d/%d，剩餘金幣 %d。" % [selected_character.display_name, encounter_choices.size(), run_hp, selected_character.max_hp, run_gold]))
 	else:
 		box.add_child(_title("戰鬥失敗", 34))
 		box.add_child(_paragraph("%s 敗於 %s。調整出牌節奏再試一次。" % [selected_character.display_name, selected_enemy.display_name]))
