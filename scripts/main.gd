@@ -75,6 +75,10 @@ func show_main_menu() -> void:
 	panel.add_child(box)
 	box.add_child(_title("SwordCard 仙劍1 同人卡牌原型", 34))
 	box.add_child(_paragraph("私人同人原型：使用原作角色名與招式名，僅供本機學習展示。"))
+	if _has_save():
+		var continue_button: Button = _button("繼續遊戲")
+		continue_button.pressed.connect(_continue_run)
+		box.add_child(continue_button)
 	var start_button: Button = _button("開始遊戲")
 	start_button.pressed.connect(show_character_select)
 	box.add_child(start_button)
@@ -162,6 +166,7 @@ func _make_encounter_choices() -> Array[Array]:
 	return choices
 
 func show_progress_screen() -> void:
+	_save_run()
 	_set_background("res://assets/art/event_bg.png")
 	_clear_root()
 	var panel: PanelContainer = _make_panel()
@@ -814,6 +819,7 @@ func _deck_view_card(card: CardData, mode: String = "view") -> Button:
 	return button
 
 func show_result(victory: bool) -> void:
+	_clear_save()
 	_set_background("res://assets/art/event_bg.png")
 	_clear_root()
 	var panel: PanelContainer = _make_panel()
@@ -1014,6 +1020,127 @@ func _passive_text() -> String:
 		"anu":
 			return "被動：敵人每場戰鬥開場受到 3 層蠱毒。"
 	return ""
+
+func _has_save() -> bool:
+	return FileAccess.file_exists("user://savegame.json")
+
+func _clear_save() -> void:
+	if _has_save():
+		var dir: DirAccess = DirAccess.open("user://")
+		if dir != null:
+			dir.remove("savegame.json")
+
+func _save_run() -> void:
+	if selected_character == null:
+		return
+	var data: Dictionary = {
+		"version": 1,
+		"character_id": selected_character.id,
+		"run_hp": run_hp,
+		"run_gold": run_gold,
+		"run_power_bonus": run_power_bonus,
+		"encounter_index": encounter_index,
+		"run_deck": _serialize_deck(),
+		"encounter_choices": _serialize_encounter_choices()
+	}
+	var file: FileAccess = FileAccess.open("user://savegame.json", FileAccess.WRITE)
+	if file == null:
+		return
+	file.store_string(JSON.stringify(data, "\t"))
+	file.close()
+
+func _serialize_deck() -> Array:
+	var result: Array = []
+	for card: CardData in run_deck:
+		result.append({"id": card.id, "upgraded": card.upgraded})
+	return result
+
+func _serialize_encounter_choices() -> Array:
+	var result: Array = []
+	for row: Array in encounter_choices:
+		var serialized_row: Array = []
+		for node_variant: Variant in row:
+			var node_data: Dictionary = node_variant as Dictionary
+			var entry: Dictionary = {"type": String(node_data.get("type", "battle"))}
+			if node_data.has("enemy"):
+				var enemy: EnemyData = node_data["enemy"] as EnemyData
+				entry["enemy_id"] = enemy.id
+			serialized_row.append(entry)
+		result.append(serialized_row)
+	return result
+
+func _load_run() -> bool:
+	if not _has_save():
+		return false
+	var file: FileAccess = FileAccess.open("user://savegame.json", FileAccess.READ)
+	if file == null:
+		return false
+	var text: String = file.get_as_text()
+	file.close()
+	var json: JSON = JSON.new()
+	if json.parse(text) != OK:
+		return false
+	var data: Dictionary = json.get_data() as Dictionary
+	if not data.has("version") or not data.has("character_id"):
+		return false
+	var char_id: String = String(data["character_id"])
+	selected_character = null
+	for character: CharacterData in characters:
+		if character.id == char_id:
+			selected_character = character.clone()
+			break
+	if selected_character == null:
+		return false
+	run_hp = int(data["run_hp"])
+	run_gold = int(data.get("run_gold", 0))
+	run_power_bonus = int(data.get("run_power_bonus", 0))
+	encounter_index = int(data["encounter_index"])
+	run_deck.clear()
+	for card_entry: Variant in data["run_deck"]:
+		var card_dict: Dictionary = card_entry as Dictionary
+		var found: CardData = _find_card_by_id(String(card_dict["id"]))
+		if found == null:
+			continue
+		if bool(card_dict["upgraded"]):
+			run_deck.append(found.upgraded_copy())
+		else:
+			run_deck.append(found.clone())
+	encounter_choices.clear()
+	for row_data: Variant in data["encounter_choices"]:
+		var row: Array = []
+		for node_entry: Variant in row_data:
+			var node_dict: Dictionary = node_entry as Dictionary
+			var entry: Dictionary = {"type": String(node_dict.get("type", "battle"))}
+			if node_dict.has("enemy_id"):
+				var found_enemy: EnemyData = _find_enemy_by_id(String(node_dict["enemy_id"]))
+				if found_enemy != null:
+					entry["enemy"] = found_enemy.clone()
+			row.append(entry)
+		encounter_choices.append(row)
+	current_shop_cards.clear()
+	return true
+
+func _find_card_by_id(id: String) -> CardData:
+	for card: CardData in selected_character.starting_deck:
+		if card.id == id:
+			return card
+	for card: CardData in selected_character.reward_pool:
+		if card.id == id:
+			return card
+	return null
+
+func _find_enemy_by_id(id: String) -> EnemyData:
+	for enemy: EnemyData in enemies:
+		if enemy.id == id:
+			return enemy
+	return null
+
+func _continue_run() -> void:
+	if _load_run():
+		show_progress_screen()
+	else:
+		_clear_save()
+		show_main_menu()
 
 func _card_type_name(card_type: String) -> String:
 	match card_type:
