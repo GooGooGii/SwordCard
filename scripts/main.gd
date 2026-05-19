@@ -300,7 +300,7 @@ func _start_player_turn() -> void:
 func play_card(card: CardData) -> void:
 	var cost: int = _effective_card_cost(card)
 	if int(state["energy"]) < cost:
-	_add_log("靈力不足，無法施放 %s。" % card.display_title())
+		_add_log("靈力不足，無法施放 %s。" % card.display_title())
 		_refresh_battle()
 		return
 	state["energy"] = int(state["energy"]) - cost
