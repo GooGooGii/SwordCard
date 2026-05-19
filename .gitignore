@@ -1,0 +1,21 @@
+# Godot local/editor cache
+.godot/
+
+# Godot export output
+export/
+exports/
+build/
+builds/
+*.pck
+*.zip
+*.exe
+*.apk
+*.aab
+*.ipa
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
