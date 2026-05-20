@@ -51,8 +51,9 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				state["enemy_block"] = int(state["enemy_block"]) + amount
 				log_lines.append("%s 獲得 %d 點護體。" % [state["enemy_name"], amount])
 			else:
-				state["player_block"] = int(state["player_block"]) + amount
-				log_lines.append("獲得 %d 點護體。" % amount)
+				var bonus: int = int(state.get("player_block_bonus", 0))
+				state["player_block"] = int(state["player_block"]) + amount + bonus
+				log_lines.append("獲得 %d 點護體。" % (amount + bonus))
 		"heal":
 			state["player_hp"] = min(int(state["player_max_hp"]), int(state["player_hp"]) + amount)
 			log_lines.append("回復 %d 點生命。" % amount)

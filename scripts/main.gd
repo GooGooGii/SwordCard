@@ -30,9 +30,24 @@ var pending_rest_heal: int = 0
 var card_buttons: Array[Button] = []
 var battle_log: Array[String] = []
 
+# ── Equipment state ──────────────────────────
+var all_equipment: Array[EquipmentData] = []
+var all_char_weapons: Array[EquipmentData] = []
+var all_artifacts: Array[EquipmentData] = []
+# 4 slots: weapon / armor / accessory_1 / accessory_2
+var run_equipped: Dictionary = {"weapon": null, "armor": null, "accessory_1": null, "accessory_2": null}
+var run_bag: Array[EquipmentData] = []
+var unlocked_artifact_ids: Array[String] = []
+var current_shop_equipment: Array[EquipmentData] = []
+var fighting_artifact_boss: bool = false
+
 func _ready() -> void:
 	randomize()
 	characters = GameData.characters()
+	all_equipment = GameData.all_equipment()
+	all_char_weapons = GameData.character_weapons()
+	all_artifacts = GameData.artifacts()
+	_load_unlocks()
 	enemies = GameData.enemies()
 	_build_root()
 	show_main_menu()
@@ -131,13 +146,23 @@ func start_run(character: CharacterData) -> void:
 	run_deck.clear()
 	for card: CardData in selected_character.starting_deck:
 		run_deck.append(card.clone())
-	run_hp = selected_character.max_hp
 	run_gold = 0
 	run_power_bonus = 0
 	current_shop_cards.clear()
+	current_shop_equipment.clear()
+	run_bag.clear()
+	fighting_artifact_boss = false
+	# Reset slots — keep weapon only if player pre-selected an artifact before starting
+	run_equipped = {"weapon": run_equipped.get("weapon"), "armor": null, "accessory_1": null, "accessory_2": null}
+	# Apply passive max_hp from pre-equipped artifact (if any)
+	_apply_passive_max_hp()
+	run_hp = selected_character.max_hp
 	encounter_index = 0
 	encounter_choices = _make_encounter_choices()
-	show_progress_screen()
+	if unlocked_artifact_ids.is_empty():
+		show_progress_screen()
+	else:
+		show_artifact_selection_screen()
 
 func _make_encounter_choices() -> Array[Array]:
 	var choices: Array[Array] = []
@@ -192,6 +217,9 @@ func show_progress_screen() -> void:
 	var deck_button: Button = _button("查看牌組")
 	deck_button.pressed.connect(show_deck_view)
 	box.add_child(deck_button)
+	var equip_button: Button = _button("裝備管理（%s）" % _equipped_summary())
+	equip_button.pressed.connect(show_equipment_overlay)
+	box.add_child(equip_button)
 	var menu: Button = _button("放棄並返回主選單")
 	menu.pressed.connect(show_main_menu)
 	box.add_child(menu)
@@ -211,6 +239,9 @@ func start_next_battle(enemy: EnemyData) -> void:
 		"player_poison": 0,
 		"player_weak": 0,
 		"player_power": run_power_bonus,
+		"player_block_bonus": 0,
+		"global_cost_reduction": 0,
+		"skill_cost_reduction": 0,
 		"enemy_name": selected_enemy.display_name,
 		"enemy_max_hp": selected_enemy.max_hp,
 		"enemy_hp": selected_enemy.max_hp,
@@ -225,6 +256,7 @@ func start_next_battle(enemy: EnemyData) -> void:
 		"lin_block_used": false
 	}
 	_apply_battle_start_passive()
+	_apply_equipment_battle_start()
 	_build_battle_scene()
 	_start_player_turn()
 
@@ -298,6 +330,7 @@ func _start_player_turn() -> void:
 		state["enemy_vulnerable"] = int(state["enemy_vulnerable"]) - 1
 	if int(state["enemy_weak"]) > 0:
 		state["enemy_weak"] = int(state["enemy_weak"]) - 1
+	_apply_equipment_turn_start()
 	var before_tick: Dictionary = _snapshot_state()
 	_add_logs(resolver.tick_statuses(state))
 	_show_state_feedback(before_tick)
@@ -354,7 +387,15 @@ func _check_battle_end() -> bool:
 func _complete_battle_victory() -> void:
 	run_hp = int(state["player_hp"])
 	run_gold += 20 + randi() % 11
+	_apply_equipment_victory()
+	if fighting_artifact_boss:
+		fighting_artifact_boss = false
+		show_artifact_unlock_screen()
+		return
 	encounter_index = encounter_index + 1
+	if selected_enemy.id == "moon_worshipper":
+		show_artifact_boss_prompt()
+		return
 	if encounter_index >= encounter_choices.size():
 		show_result(true)
 	else:
@@ -383,6 +424,12 @@ func show_card_reward() -> void:
 	var skip: Button = _button("跳過獎勵")
 	skip.pressed.connect(show_progress_screen)
 	box.add_child(skip)
+	# Equipment alternative reward (33% chance, skip if no pool available)
+	var equip_pool: Array[EquipmentData] = _random_equipment_pool(1)
+	if not equip_pool.is_empty():
+		var equip_alt_button: Button = _button("改為獲得裝備：%s（%s）" % [equip_pool[0].display_name, equip_pool[0].rarity_display()])
+		equip_alt_button.pressed.connect(func(): _gain_equipment_and_advance(equip_pool[0]))
+		box.add_child(equip_alt_button)
 	var deck_button: Button = _button("查看目前牌組")
 	deck_button.pressed.connect(show_deck_view)
 	box.add_child(deck_button)
@@ -482,6 +529,7 @@ func _route_shop_button() -> Button:
 	button.add_theme_color_override("font_hover_color", Color("ffffff"))
 	button.pressed.connect(func():
 		current_shop_cards = _generate_shop_cards()
+		current_shop_equipment = _generate_shop_equipment()
 		show_shop_node()
 	)
 	return button
@@ -495,6 +543,30 @@ func _generate_shop_cards() -> Array[CardData]:
 	for i: int in range(min(3, pool.size())):
 		result.append(pool[i])
 	return result
+
+func _generate_shop_equipment() -> Array[EquipmentData]:
+	var pool: Array[EquipmentData] = []
+	for equip: EquipmentData in all_equipment:
+		if not _is_equipment_owned(equip.id):
+			pool.append(equip.clone())
+	for equip: EquipmentData in all_char_weapons:
+		if equip.owner == selected_character.id and not _is_equipment_owned(equip.id):
+			pool.append(equip.clone())
+	pool.shuffle()
+	var result: Array[EquipmentData] = []
+	for i: int in range(min(3, pool.size())):
+		result.append(pool[i])
+	return result
+
+func _is_equipment_owned(id: String) -> bool:
+	for slot: String in ["weapon", "armor", "accessory_1", "accessory_2"]:
+		var e: EquipmentData = run_equipped[slot] as EquipmentData
+		if e != null and e.id == id:
+			return true
+	for e: EquipmentData in run_bag:
+		if e.id == id:
+			return true
+	return false
 
 func _card_shop_price(card: CardData) -> int:
 	match card.rarity:
@@ -524,6 +596,15 @@ func show_shop_node() -> void:
 		for card: CardData in current_shop_cards:
 			var price: int = _card_shop_price(card)
 			card_row.add_child(_shop_card_button(card, price))
+	box.add_child(_title("裝備", 22))
+	var equip_row: HBoxContainer = HBoxContainer.new()
+	equip_row.add_theme_constant_override("separation", 12)
+	box.add_child(equip_row)
+	if current_shop_equipment.is_empty():
+		equip_row.add_child(_paragraph("（已售罄）"))
+	else:
+		for equip: EquipmentData in current_shop_equipment:
+			equip_row.add_child(_shop_equip_button(equip))
 	box.add_child(_title("道具", 22))
 	var heal_price: int = 40
 	var heal_button: Button = _button("調息：回復 20 HP（%d 金）" % heal_price)
@@ -538,6 +619,9 @@ func show_shop_node() -> void:
 	var deck_button: Button = _button("查看牌組")
 	deck_button.pressed.connect(show_deck_view)
 	box.add_child(deck_button)
+	var equip_manage_button: Button = _button("裝備管理（%s）" % _equipped_summary())
+	equip_manage_button.pressed.connect(show_equipment_overlay)
+	box.add_child(equip_manage_button)
 	var leave_button: Button = _button("離開商店")
 	leave_button.pressed.connect(advance_non_battle_node)
 	box.add_child(leave_button)
@@ -618,7 +702,8 @@ func show_rest_node() -> void:
 	box.add_child(deck_button)
 
 func resolve_rest_heal() -> void:
-	run_hp = min(selected_character.max_hp, run_hp + pending_rest_heal)
+	var bonus: int = _equipment_rest_heal_bonus()
+	run_hp = min(selected_character.max_hp, run_hp + pending_rest_heal + bonus)
 	pending_rest_heal = 0
 	advance_non_battle_node()
 
@@ -651,6 +736,9 @@ func show_event_node() -> void:
 	remove_button.disabled = run_deck.size() <= 5
 	remove_button.pressed.connect(show_remove_card_view)
 	box.add_child(remove_button)
+	var equip_button: Button = _button("探洞：獲得 1 件裝備")
+	equip_button.pressed.connect(resolve_event_gain_equipment)
+	box.add_child(equip_button)
 	var deck_button: Button = _button("查看牌組")
 	deck_button.pressed.connect(show_deck_view)
 	box.add_child(deck_button)
@@ -983,9 +1071,13 @@ func _intent_badge(action: Dictionary) -> String:
 	return " ".join(badges)
 
 func _effective_card_cost(card: CardData) -> int:
+	var cost: int = card.cost
 	if selected_character.id == "li_xiaoyao" and card.card_type == "attack" and not bool(state.get("li_discount_used", false)):
-		return max(0, card.cost - 1)
-	return card.cost
+		cost = max(0, cost - 1)
+	cost = max(0, cost - int(state.get("global_cost_reduction", 0)))
+	if card.card_type == "skill":
+		cost = max(0, cost - int(state.get("skill_cost_reduction", 0)))
+	return cost
 
 func _apply_battle_start_passive() -> void:
 	match selected_character.id:
@@ -1008,6 +1100,423 @@ func _apply_card_play_passive(card: CardData) -> void:
 			state["enemy_hp"] = max(0, int(state["enemy_hp"]) - 3)
 			_add_log("林月如被動：回身反擊造成 3 點傷害。")
 			return
+
+# ══════════════════════════════════════════════════
+#  EQUIPMENT SYSTEM
+# ══════════════════════════════════════════════════
+
+func _get_all_equipped() -> Array[EquipmentData]:
+	var result: Array[EquipmentData] = []
+	for slot: String in ["weapon", "armor", "accessory_1", "accessory_2"]:
+		var e: Variant = run_equipped.get(slot)
+		if e != null:
+			result.append(e as EquipmentData)
+	return result
+
+func _apply_passive_max_hp() -> void:
+	for equip: EquipmentData in _get_all_equipped():
+		for eff: Dictionary in equip.effects:
+			if String(eff.get("trigger","")) == "passive" and String(eff.get("kind","")) == "max_hp":
+				selected_character.max_hp += int(eff["amount"])
+
+func _apply_equipment_battle_start() -> void:
+	for equip: EquipmentData in _get_all_equipped():
+		for eff: Dictionary in equip.effects:
+			var trigger: String = String(eff.get("trigger",""))
+			var kind: String   = String(eff.get("kind",""))
+			var amount: int    = int(eff.get("amount", 0))
+			if trigger == "passive":
+				match kind:
+					"attack":       state["player_power"]        = int(state["player_power"]) + amount
+					"block_bonus":  state["player_block_bonus"]  = int(state.get("player_block_bonus",0)) + amount
+					"cost_all":     state["global_cost_reduction"]= int(state.get("global_cost_reduction",0)) + amount
+					"skill_cost":   state["skill_cost_reduction"] = int(state.get("skill_cost_reduction",0)) + amount
+			elif trigger == "battle_start":
+				match kind:
+					"block":        state["player_block"] = int(state["player_block"]) + amount
+					"heal":         state["player_hp"]    = min(int(state["player_max_hp"]), int(state["player_hp"]) + amount)
+					"energy":       state["energy"]       = int(state["energy"]) + amount
+					"draw":         state["pending_draw"] = int(state.get("pending_draw",0)) + amount
+					"poison_enemy": state["enemy_poison"] = int(state["enemy_poison"]) + amount
+
+func _apply_equipment_turn_start() -> void:
+	for equip: EquipmentData in _get_all_equipped():
+		for eff: Dictionary in equip.effects:
+			if String(eff.get("trigger","")) != "turn_start":
+				continue
+			var kind: String  = String(eff.get("kind",""))
+			var amount: int   = int(eff.get("amount", 0))
+			match kind:
+				"block":   state["player_block"] = int(state["player_block"]) + amount
+				"heal":    state["player_hp"]    = min(int(state["player_max_hp"]), int(state["player_hp"]) + amount)
+				"energy":  state["energy"]       = int(state["energy"]) + amount
+				"draw":    state["pending_draw"] = int(state.get("pending_draw",0)) + amount
+
+func _apply_equipment_victory() -> void:
+	for equip: EquipmentData in _get_all_equipped():
+		for eff: Dictionary in equip.effects:
+			if String(eff.get("trigger","")) != "on_victory":
+				continue
+			var kind: String  = String(eff.get("kind",""))
+			var amount: int   = int(eff.get("amount", 0))
+			match kind:
+				"heal": run_hp = min(selected_character.max_hp, run_hp + amount)
+				"gold": run_gold += amount
+
+func _equipment_rest_heal_bonus() -> int:
+	var bonus: int = 0
+	for equip: EquipmentData in _get_all_equipped():
+		for eff: Dictionary in equip.effects:
+			if String(eff.get("trigger","")) == "rest" and String(eff.get("kind","")) == "heal_bonus":
+				bonus += int(eff.get("amount", 0))
+	return bonus
+
+func _equipped_summary() -> String:
+	var parts: Array[String] = []
+	for slot: String in ["weapon", "armor", "accessory_1", "accessory_2"]:
+		var e: Variant = run_equipped.get(slot)
+		if e != null:
+			parts.append((e as EquipmentData).display_name)
+	if parts.is_empty():
+		return "無"
+	return ", ".join(parts)
+
+func _equip_item(equip: EquipmentData) -> void:
+	var slot: String = equip.slot
+	if slot == "accessory":
+		if run_equipped["accessory_1"] == null:
+			slot = "accessory_1"
+		elif run_equipped["accessory_2"] == null:
+			slot = "accessory_2"
+		else:
+			slot = "accessory_1"
+	var current: Variant = run_equipped.get(slot)
+	if current != null:
+		run_bag.append(current as EquipmentData)
+	run_equipped[slot] = equip
+	if equip.slot == "accessory" and slot == "accessory_1":
+		pass  # already set above
+
+func _gain_equipment(equip: EquipmentData) -> void:
+	# Auto-equip if slot is empty, else bag it
+	var slot: String = equip.slot
+	var target_slot: String = slot
+	if slot == "accessory":
+		if run_equipped["accessory_1"] == null:
+			target_slot = "accessory_1"
+		elif run_equipped["accessory_2"] == null:
+			target_slot = "accessory_2"
+		else:
+			target_slot = ""  # both full → bag
+	if target_slot != "" and run_equipped.get(target_slot) == null:
+		run_equipped[target_slot] = equip.clone()
+	else:
+		run_bag.append(equip.clone())
+
+func _random_equipment_pool(count: int) -> Array[EquipmentData]:
+	var pool: Array[EquipmentData] = []
+	for equip: EquipmentData in all_equipment:
+		if not _is_equipment_owned(equip.id):
+			pool.append(equip.clone())
+	for equip: EquipmentData in all_char_weapons:
+		if equip.owner == selected_character.id and not _is_equipment_owned(equip.id):
+			pool.append(equip.clone())
+	pool.shuffle()
+	var result: Array[EquipmentData] = []
+	for i: int in range(min(count, pool.size())):
+		result.append(pool[i])
+	return result
+
+func resolve_event_gain_equipment() -> void:
+	var pool: Array[EquipmentData] = _random_equipment_pool(1)
+	if not pool.is_empty():
+		_gain_equipment(pool[0])
+	advance_non_battle_node()
+
+func _gain_equipment_and_advance(equip: EquipmentData) -> void:
+	_gain_equipment(equip)
+	show_progress_screen()
+
+func buy_equipment_from_shop(equip: EquipmentData) -> void:
+	if run_gold < equip.price:
+		return
+	run_gold -= equip.price
+	_gain_equipment(equip)
+	for i: int in range(current_shop_equipment.size()):
+		if current_shop_equipment[i] == equip:
+			current_shop_equipment.remove_at(i)
+			break
+	show_shop_node()
+
+func _shop_equip_button(equip: EquipmentData) -> Button:
+	var button: Button = Button.new()
+	button.custom_minimum_size = Vector2(210, 210)
+	var affordable: bool = run_gold >= equip.price
+	button.text = "%s\n%s %s\n售價 %d 金\n\n%s" % [equip.display_name, equip.slot_display(), equip.rarity_display(), equip.price, equip.description]
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	button.disabled = not affordable
+	var base_color: Color = Color("5c4a20") if affordable else Color("404753")
+	var normal: StyleBoxFlat = _style_box(base_color, Color("d4a844"), 2, 8)
+	var hover: StyleBoxFlat  = _style_box(base_color.lightened(0.12), Color("f5c84a"), 3, 8)
+	var dis: StyleBoxFlat    = _style_box(Color("404753"), Color("7a8190"), 1, 8)
+	button.add_theme_stylebox_override("normal", normal)
+	button.add_theme_stylebox_override("hover", hover)
+	button.add_theme_stylebox_override("disabled", dis)
+	button.add_theme_color_override("font_color", Color("fff8dc"))
+	button.add_theme_color_override("font_hover_color", Color("ffffff"))
+	button.add_theme_color_override("font_disabled_color", Color("b8bec8"))
+	button.add_theme_font_size_override("font_size", 14)
+	if affordable:
+		button.pressed.connect(func(): buy_equipment_from_shop(equip))
+	return button
+
+# ── Equipment Overlay ──────────────────────
+
+func show_equipment_overlay() -> void:
+	close_deck_view()
+	deck_overlay = PanelContainer.new()
+	deck_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	deck_overlay.add_theme_stylebox_override("panel", _style_box(Color("0b111a", 0.94), Color("d4a844"), 2, 8))
+	add_child(deck_overlay)
+	var outer: MarginContainer = MarginContainer.new()
+	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	outer.add_theme_constant_override("margin_left", 34)
+	outer.add_theme_constant_override("margin_top", 28)
+	outer.add_theme_constant_override("margin_right", 34)
+	outer.add_theme_constant_override("margin_bottom", 28)
+	deck_overlay.add_child(outer)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 12)
+	outer.add_child(box)
+	box.add_child(_title("裝備管理", 32))
+	box.add_child(_paragraph("點選倉庫裝備可替換對應槽位。武器槽：專武/神器；防具槽：防具；飾品槽：飾品（共兩格）。"))
+	# Slot display
+	var slots_row: HBoxContainer = HBoxContainer.new()
+	slots_row.add_theme_constant_override("separation", 10)
+	box.add_child(slots_row)
+	for slot_label: String in ["weapon", "armor", "accessory_1", "accessory_2"]:
+		slots_row.add_child(_equip_slot_widget(slot_label))
+	# Bag
+	if not run_bag.is_empty():
+		box.add_child(_title("倉庫", 22))
+		var bag_row: HBoxContainer = HBoxContainer.new()
+		bag_row.add_theme_constant_override("separation", 10)
+		box.add_child(bag_row)
+		for equip: EquipmentData in run_bag:
+			bag_row.add_child(_bag_equip_button(equip))
+	var close_button: Button = _button("關閉")
+	close_button.pressed.connect(close_deck_view)
+	box.add_child(close_button)
+
+func _slot_display_name(slot: String) -> String:
+	match slot:
+		"weapon": return "武器"
+		"armor":  return "防具"
+		"accessory_1": return "飾品①"
+		"accessory_2": return "飾品②"
+	return slot
+
+func _equip_slot_widget(slot: String) -> Control:
+	var panel: PanelContainer = PanelContainer.new()
+	panel.custom_minimum_size = Vector2(200, 160)
+	panel.add_theme_stylebox_override("panel", _style_box(Color("1e2d1e"), Color("8ea88e"), 1, 6))
+	var vbox: VBoxContainer = VBoxContainer.new()
+	panel.add_child(vbox)
+	vbox.add_child(_paragraph(_slot_display_name(slot)))
+	var equip: Variant = run_equipped.get(slot)
+	if equip != null:
+		var e: EquipmentData = equip as EquipmentData
+		var lbl: Label = _paragraph("%s\n%s\n%s" % [e.display_name, e.rarity_display(), e.description])
+		lbl.add_theme_font_size_override("font_size", 13)
+		vbox.add_child(lbl)
+		var unequip_btn: Button = _button("卸下")
+		unequip_btn.custom_minimum_size = Vector2(80, 32)
+		unequip_btn.add_theme_font_size_override("font_size", 14)
+		unequip_btn.pressed.connect(func(): _unequip_slot(slot))
+		vbox.add_child(unequip_btn)
+	else:
+		vbox.add_child(_paragraph("（空）"))
+	return panel
+
+func _bag_equip_button(equip: EquipmentData) -> Button:
+	var button: Button = Button.new()
+	button.custom_minimum_size = Vector2(200, 160)
+	button.text = "%s\n%s %s\n\n%s" % [equip.display_name, equip.slot_display(), equip.rarity_display(), equip.description]
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	button.add_theme_stylebox_override("normal", _style_box(Color("2a2a1a"), Color("d4a844"), 2, 6))
+	button.add_theme_stylebox_override("hover",  _style_box(Color("3d3b20"), Color("f5c84a"), 3, 6))
+	button.add_theme_color_override("font_color", Color("fff8dc"))
+	button.add_theme_font_size_override("font_size", 13)
+	button.pressed.connect(func(): _equip_from_bag(equip))
+	return button
+
+func _unequip_slot(slot: String) -> void:
+	var e: Variant = run_equipped.get(slot)
+	if e != null:
+		run_bag.append(e as EquipmentData)
+		run_equipped[slot] = null
+	show_equipment_overlay()
+
+func _equip_from_bag(equip: EquipmentData) -> void:
+	for i: int in range(run_bag.size()):
+		if run_bag[i] == equip:
+			run_bag.remove_at(i)
+			break
+	_equip_item(equip)
+	show_equipment_overlay()
+
+# ── Artifact Boss & Unlock ──────────────────
+
+func show_artifact_boss_prompt() -> void:
+	_set_background("res://assets/art/event_bg.png")
+	_clear_root()
+	var panel: PanelContainer = _make_panel()
+	root.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 14)
+	panel.add_child(box)
+	box.add_child(_title("神器傳說", 34))
+	box.add_child(_paragraph("擊退拜月教徒之際，洞壁金光乍現，隱約有一道古老威壓滲出。\n傳說天地初開時，神器守護靈就深眠於此。"))
+	box.add_child(_paragraph("HP %d/%d  金幣 %d" % [run_hp, selected_character.max_hp, run_gold]))
+	var challenge_button: Button = _button("挑戰上古守護靈")
+	challenge_button.add_theme_stylebox_override("normal", _style_box(Color("452a10"), Color("f0c060"), 2, 8))
+	challenge_button.add_theme_color_override("font_color", Color("fff8dc"))
+	challenge_button.pressed.connect(_start_artifact_boss_fight)
+	box.add_child(challenge_button)
+	var skip_button: Button = _button("離開，完成冒險")
+	skip_button.pressed.connect(func(): show_result(true))
+	box.add_child(skip_button)
+
+func _start_artifact_boss_fight() -> void:
+	fighting_artifact_boss = true
+	var boss: EnemyData = GameData._artifact_boss()
+	start_next_battle(boss)
+
+func show_artifact_unlock_screen() -> void:
+	_set_background("res://assets/art/event_bg.png")
+	_clear_root()
+	var panel: PanelContainer = _make_panel()
+	root.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 14)
+	panel.add_child(box)
+	box.add_child(_title("神器現世", 34))
+	box.add_child(_paragraph("守護靈消散，留下五件神器的餘韻。選擇一件永久解鎖，此後每次冒險開局皆可攜帶。"))
+	var artifact_row: HBoxContainer = HBoxContainer.new()
+	artifact_row.add_theme_constant_override("separation", 12)
+	box.add_child(artifact_row)
+	for artifact: EquipmentData in all_artifacts:
+		artifact_row.add_child(_artifact_unlock_button(artifact))
+	var skip_button: Button = _button("放棄，不解鎖神器")
+	skip_button.pressed.connect(func(): show_result(true))
+	box.add_child(skip_button)
+
+func _artifact_unlock_button(artifact: EquipmentData) -> Button:
+	var already: bool = unlocked_artifact_ids.has(artifact.id)
+	var button: Button = Button.new()
+	button.custom_minimum_size = Vector2(210, 230)
+	button.text = "%s\n%s\n%s\n\n%s" % [artifact.display_name, artifact.rarity_display(), "（已解鎖）" if already else "（未解鎖）", artifact.description]
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	button.add_theme_stylebox_override("normal", _style_box(Color("3a2a60"), Color("d0a0ff"), 2, 8))
+	button.add_theme_stylebox_override("hover",  _style_box(Color("5040a0"), Color("e8c8ff"), 3, 8))
+	button.add_theme_color_override("font_color", Color("fff8dc"))
+	button.add_theme_font_size_override("font_size", 14)
+	button.pressed.connect(func(): _unlock_artifact(artifact))
+	return button
+
+func _unlock_artifact(artifact: EquipmentData) -> void:
+	if not unlocked_artifact_ids.has(artifact.id):
+		unlocked_artifact_ids.append(artifact.id)
+		_save_unlocks()
+	run_equipped["weapon"] = artifact.clone()
+	show_result(true)
+
+# ── Pre-run artifact selection ──────────────
+
+func show_artifact_selection_screen() -> void:
+	_set_background("res://assets/art/main_menu_bg.png")
+	_clear_root()
+	var panel: PanelContainer = _make_panel()
+	root.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 14)
+	panel.add_child(box)
+	box.add_child(_title("選擇神器（可選）", 32))
+	box.add_child(_paragraph("你已解鎖以下神器，可在武器槽裝備一件帶入本次冒險。"))
+	var artifact_row: HBoxContainer = HBoxContainer.new()
+	artifact_row.add_theme_constant_override("separation", 12)
+	box.add_child(artifact_row)
+	for artifact_id: String in unlocked_artifact_ids:
+		var artifact: EquipmentData = _find_equipment_by_id(artifact_id, all_artifacts)
+		if artifact != null:
+			artifact_row.add_child(_pre_run_artifact_button(artifact))
+	var none_button: Button = _button("不帶神器，直接出發")
+	none_button.pressed.connect(func():
+		run_equipped["weapon"] = null
+		show_progress_screen()
+	)
+	box.add_child(none_button)
+
+func _pre_run_artifact_button(artifact: EquipmentData) -> Button:
+	var equipped: bool = (run_equipped.get("weapon") as EquipmentData) != null and (run_equipped.get("weapon") as EquipmentData).id == artifact.id
+	var button: Button = Button.new()
+	button.custom_minimum_size = Vector2(210, 230)
+	button.text = "%s\n%s\n%s\n\n%s" % [artifact.display_name, artifact.rarity_display(), "【已選】" if equipped else "", artifact.description]
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	button.add_theme_stylebox_override("normal", _style_box(Color("3a2a60"), Color("d0a0ff"), 2, 8))
+	button.add_theme_stylebox_override("hover",  _style_box(Color("5040a0"), Color("e8c8ff"), 3, 8))
+	button.add_theme_color_override("font_color", Color("fff8dc"))
+	button.add_theme_font_size_override("font_size", 14)
+	button.pressed.connect(func():
+		_apply_passive_max_hp()  # reset before re-applying
+		run_equipped["weapon"] = artifact.clone()
+		selected_character.max_hp += _sum_passive_max_hp(artifact)
+		run_hp = selected_character.max_hp
+		show_progress_screen()
+	)
+	return button
+
+func _sum_passive_max_hp(equip: EquipmentData) -> int:
+	var sum: int = 0
+	for eff: Dictionary in equip.effects:
+		if String(eff.get("trigger","")) == "passive" and String(eff.get("kind","")) == "max_hp":
+			sum += int(eff.get("amount", 0))
+	return sum
+
+func _find_equipment_by_id(id: String, pool: Array[EquipmentData]) -> EquipmentData:
+	for equip: EquipmentData in pool:
+		if equip.id == id:
+			return equip
+	return null
+
+# ── Meta-progression saves ──────────────────
+
+func _save_unlocks() -> void:
+	var file: FileAccess = FileAccess.open("user://unlocks.json", FileAccess.WRITE)
+	if file == null:
+		return
+	file.store_string(JSON.stringify({"unlocked_artifact_ids": unlocked_artifact_ids}, "\t"))
+	file.close()
+
+func _load_unlocks() -> void:
+	if not FileAccess.file_exists("user://unlocks.json"):
+		return
+	var file: FileAccess = FileAccess.open("user://unlocks.json", FileAccess.READ)
+	if file == null:
+		return
+	var text: String = file.get_as_text()
+	file.close()
+	var json: JSON = JSON.new()
+	if json.parse(text) != OK:
+		return
+	var data: Dictionary = json.get_data() as Dictionary
+	if data.has("unlocked_artifact_ids"):
+		unlocked_artifact_ids.clear()
+		for id_v: Variant in data["unlocked_artifact_ids"]:
+			unlocked_artifact_ids.append(String(id_v))
 
 func _passive_text() -> String:
 	match selected_character.id:
@@ -1034,14 +1543,16 @@ func _save_run() -> void:
 	if selected_character == null:
 		return
 	var data: Dictionary = {
-		"version": 1,
+		"version": 2,
 		"character_id": selected_character.id,
 		"run_hp": run_hp,
 		"run_gold": run_gold,
 		"run_power_bonus": run_power_bonus,
 		"encounter_index": encounter_index,
 		"run_deck": _serialize_deck(),
-		"encounter_choices": _serialize_encounter_choices()
+		"encounter_choices": _serialize_encounter_choices(),
+		"run_equipped": _serialize_equipped(),
+		"run_bag": _serialize_bag()
 	}
 	var file: FileAccess = FileAccess.open("user://savegame.json", FileAccess.WRITE)
 	if file == null:
@@ -1068,6 +1579,28 @@ func _serialize_encounter_choices() -> Array:
 			serialized_row.append(entry)
 		result.append(serialized_row)
 	return result
+
+func _serialize_equipped() -> Dictionary:
+	var result: Dictionary = {}
+	for slot: String in ["weapon", "armor", "accessory_1", "accessory_2"]:
+		var e: Variant = run_equipped.get(slot)
+		result[slot] = (e as EquipmentData).id if e != null else ""
+	return result
+
+func _serialize_bag() -> Array:
+	var result: Array = []
+	for e: EquipmentData in run_bag:
+		result.append(e.id)
+	return result
+
+func _find_any_equipment_by_id(id: String) -> EquipmentData:
+	for e: EquipmentData in all_equipment:
+		if e.id == id: return e
+	for e: EquipmentData in all_char_weapons:
+		if e.id == id: return e
+	for e: EquipmentData in all_artifacts:
+		if e.id == id: return e
+	return null
 
 func _load_run() -> bool:
 	if not _has_save():
@@ -1118,6 +1651,23 @@ func _load_run() -> bool:
 			row.append(entry)
 		encounter_choices.append(row)
 	current_shop_cards.clear()
+	current_shop_equipment.clear()
+	run_equipped = {"weapon": null, "armor": null, "accessory_1": null, "accessory_2": null}
+	run_bag.clear()
+	if data.has("run_equipped"):
+		var eq_data: Dictionary = data["run_equipped"] as Dictionary
+		for slot: String in ["weapon", "armor", "accessory_1", "accessory_2"]:
+			var eid: String = String(eq_data.get(slot, ""))
+			if eid != "":
+				var found_e: EquipmentData = _find_any_equipment_by_id(eid)
+				if found_e != null:
+					run_equipped[slot] = found_e.clone()
+	if data.has("run_bag"):
+		for bid_v: Variant in data["run_bag"]:
+			var bid: String = String(bid_v)
+			var found_e: EquipmentData = _find_any_equipment_by_id(bid)
+			if found_e != null:
+				run_bag.append(found_e.clone())
 	return true
 
 func _find_card_by_id(id: String) -> CardData:
