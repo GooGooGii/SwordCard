@@ -710,53 +710,155 @@ func resolve_rest_heal() -> void:
 func show_event_node() -> void:
 	_set_background("res://assets/art/event_bg.png")
 	_clear_root()
+	var events: Array = _get_event_definitions()
+	var event: Dictionary = events[randi() % events.size()]
 	var panel: PanelContainer = _make_panel()
 	root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_theme_constant_override("separation", 14)
 	panel.add_child(box)
-	box.add_child(_title("山路異光", 34))
-	box.add_child(_paragraph("石壁間浮現微光，像是前人留下的靈痕。你可以停步調息，也可以冒險汲取其中力量。"))
-	box.add_child(_paragraph("%s  HP %d/%d  本輪增傷 +%d" % [selected_character.display_name, run_hp, selected_character.max_hp, run_power_bonus]))
-	var heal_button: Button = _button("調息：回復 8 HP")
-	heal_button.pressed.connect(func(): resolve_event_heal(8))
-	box.add_child(heal_button)
-	var card_button: Button = _button("探取：失去 6 HP，獲得 1 張卡")
-	card_button.pressed.connect(resolve_event_gain_card)
-	box.add_child(card_button)
-	var power_button: Button = _button("凝神：本輪增傷 +1")
-	power_button.pressed.connect(resolve_event_power)
-	box.add_child(power_button)
-	var upgrade_button: Button = _button("悟法：升級 1 張牌")
-	upgrade_button.disabled = _upgradeable_cards().is_empty()
-	upgrade_button.pressed.connect(show_upgrade_card_view)
-	box.add_child(upgrade_button)
-	var remove_button: Button = _button("洗髓：移除 1 張牌")
-	remove_button.disabled = run_deck.size() <= 5
-	remove_button.pressed.connect(show_remove_card_view)
-	box.add_child(remove_button)
-	var equip_button: Button = _button("探洞：獲得 1 件裝備")
-	equip_button.pressed.connect(resolve_event_gain_equipment)
-	box.add_child(equip_button)
+	box.add_child(_title(String(event["title"]), 34))
+	box.add_child(_paragraph(String(event["description"])))
+	box.add_child(_paragraph("%s  HP %d/%d  金幣 %d  增傷 +%d" % [selected_character.display_name, run_hp, selected_character.max_hp, run_gold, run_power_bonus]))
+	for choice_v: Variant in event["choices"]:
+		var choice: Dictionary = choice_v as Dictionary
+		var condition: String = String(choice.get("condition", ""))
+		var available: bool = _check_event_condition(condition)
+		var btn: Button = _button(String(choice["label"]))
+		btn.disabled = not available
+		if not available and condition != "":
+			btn.text = "%s（%s）" % [String(choice["label"]), _event_condition_hint(condition)]
+		btn.pressed.connect(func(): _resolve_event_choice(choice["effects"] as Array))
+		box.add_child(btn)
 	var deck_button: Button = _button("查看牌組")
 	deck_button.pressed.connect(show_deck_view)
 	box.add_child(deck_button)
 
-func resolve_event_heal(amount: int) -> void:
-	run_hp = min(selected_character.max_hp, run_hp + amount)
-	advance_non_battle_node()
+func _check_event_condition(condition: String) -> bool:
+	if condition == "":
+		return true
+	if condition == "upgradeable":
+		return not _upgradeable_cards().is_empty()
+	if condition.begins_with("deck_min:"):
+		return run_deck.size() >= int(condition.split(":")[1])
+	if condition.begins_with("gold_min:"):
+		return run_gold >= int(condition.split(":")[1])
+	return true
 
-func resolve_event_gain_card() -> void:
-	run_hp = max(1, run_hp - 6)
-	var rewards: Array[CardData] = _make_reward_choices()
-	if not rewards.is_empty():
-		run_deck.append(rewards[0].clone())
-	advance_non_battle_node()
+func _event_condition_hint(condition: String) -> String:
+	if condition == "upgradeable":
+		return "牌組內無可升級的牌"
+	if condition.begins_with("deck_min:"):
+		return "牌組張數不足"
+	if condition.begins_with("gold_min:"):
+		return "需要 %d 金幣" % int(condition.split(":")[1])
+	return ""
 
-func resolve_event_power() -> void:
-	run_power_bonus = run_power_bonus + 1
-	advance_non_battle_node()
+func _resolve_event_choice(effects: Array) -> void:
+	var interactive: String = ""
+	for eff_v: Variant in effects:
+		var eff: Dictionary = eff_v as Dictionary
+		var kind: String  = String(eff.get("kind", ""))
+		var amount: int   = int(eff.get("amount", 0))
+		match kind:
+			"heal":      run_hp = min(selected_character.max_hp, run_hp + amount)
+			"damage":    run_hp = max(1, run_hp - amount)
+			"gold":      run_gold += amount
+			"power":     run_power_bonus += amount
+			"full_heal": run_hp = selected_character.max_hp
+			"gain_card":
+				var pool: Array[CardData] = _make_reward_choices()
+				if not pool.is_empty():
+					run_deck.append(pool[0].clone())
+			"gain_equipment":
+				var eq_pool: Array[EquipmentData] = _random_equipment_pool(1)
+				if not eq_pool.is_empty():
+					_gain_equipment(eq_pool[0])
+			"upgrade_card", "remove_card":
+				interactive = kind
+	if interactive == "upgrade_card":
+		show_upgrade_card_view()
+	elif interactive == "remove_card":
+		show_remove_card_view()
+	else:
+		advance_non_battle_node()
+
+func _get_event_definitions() -> Array:
+	return [
+		{
+			"title": "山路異光",
+			"description": "石壁間浮現微光，像是前人留下的靈痕。山風輕拂，隱隱有古老靈韻流動，令人心生嚮往。",
+			"choices": [
+				{"label": "調息：回復 8 HP",                             "condition": "",            "effects": [{"kind":"heal","amount":8}]},
+				{"label": "探取靈痕：失去 6 HP，獲得 1 張招式",           "condition": "",            "effects": [{"kind":"damage","amount":6},{"kind":"gain_card"}]},
+				{"label": "凝神：本輪增傷 +1",                           "condition": "",            "effects": [{"kind":"power","amount":1}]},
+				{"label": "悟法：升級 1 張牌",                           "condition": "upgradeable", "effects": [{"kind":"upgrade_card"}]},
+				{"label": "洗髓：移除 1 張牌",                           "condition": "deck_min:6",  "effects": [{"kind":"remove_card"}]},
+				{"label": "探索洞窟：獲得 1 件裝備",                      "condition": "",            "effects": [{"kind":"gain_equipment"}]},
+			]
+		},
+		{
+			"title": "古井靈泉",
+			"description": "荒廢的村落邊，一口古井散發淡淡靈氣。水面倒映星光，清澈見底，卻令人難以揣測深處藏著什麼。",
+			"choices": [
+				{"label": "謹慎飲用：回復 15 HP",                        "condition": "",            "effects": [{"kind":"heal","amount":15}]},
+				{"label": "縱情暢飲：失去 8 HP，回復 28 HP",              "condition": "",            "effects": [{"kind":"damage","amount":8},{"kind":"heal","amount":28}]},
+				{"label": "取水售出：獲得 25 金幣",                       "condition": "",            "effects": [{"kind":"gold","amount":25}]},
+				{"label": "離去",                                         "condition": "",            "effects": [{"kind":"nothing"}]},
+			]
+		},
+		{
+			"title": "落魄劍客",
+			"description": "山道旁倒著一名渾身是傷的劍客，氣息奄奄。他掙扎著說：「此地不可久留⋯⋯山賊就在後頭⋯⋯」",
+			"choices": [
+				{"label": "出手相救：失去 12 HP，獲得 1 件裝備",          "condition": "",            "effects": [{"kind":"damage","amount":12},{"kind":"gain_equipment"}]},
+				{"label": "傳授武學：升級 1 張牌",                        "condition": "upgradeable", "effects": [{"kind":"upgrade_card"}]},
+				{"label": "搜其行囊：獲得 35 金幣，失去 8 HP",            "condition": "",            "effects": [{"kind":"gold","amount":35},{"kind":"damage","amount":8}]},
+				{"label": "繼續趕路",                                     "condition": "",            "effects": [{"kind":"nothing"}]},
+			]
+		},
+		{
+			"title": "荒廟神像",
+			"description": "深山廢廟，一尊面目模糊的神像端坐蓮台。香案積滿灰塵，神像底座有一道細縫，隱隱透出微光。",
+			"choices": [
+				{"label": "虔誠祭拜：回復 20 HP",                        "condition": "",            "effects": [{"kind":"heal","amount":20}]},
+				{"label": "探入裂縫：獲得 1 件裝備",                      "condition": "",            "effects": [{"kind":"gain_equipment"}]},
+				{"label": "奉上香火（30 金）：本輪增傷 +2",               "condition": "gold_min:30", "effects": [{"kind":"gold","amount":-30},{"kind":"power","amount":2}]},
+				{"label": "推開神像：移除 1 張牌",                        "condition": "deck_min:6",  "effects": [{"kind":"remove_card"}]},
+			]
+		},
+		{
+			"title": "蠱師遺跡",
+			"description": "被廢棄的山洞，四壁刻滿奇異蠱紋，地上散落著殘破蠱器與枯骨。空氣中瀰漫著古舊的腐朽氣息。",
+			"choices": [
+				{"label": "研習蠱紋：升級 1 張牌",                        "condition": "upgradeable", "effects": [{"kind":"upgrade_card"}]},
+				{"label": "收集殘器：獲得 1 件裝備",                      "condition": "",            "effects": [{"kind":"gain_equipment"}]},
+				{"label": "祭煉蠱術：失去 10 HP，獲得 1 張招式",          "condition": "",            "effects": [{"kind":"damage","amount":10},{"kind":"gain_card"}]},
+				{"label": "立刻撤離",                                     "condition": "",            "effects": [{"kind":"nothing"}]},
+			]
+		},
+		{
+			"title": "靈氣秘地",
+			"description": "深山中一塊天然靈氣匯聚之地，五行元素渾然天成，草木蔥鬱，靈石遍地，令人心曠神怡。",
+			"choices": [
+				{"label": "靜心調息：回復 20 HP，本輪增傷 +1",            "condition": "",            "effects": [{"kind":"heal","amount":20},{"kind":"power","amount":1}]},
+				{"label": "突破修為：失去 15 HP，升級 1 張牌",            "condition": "upgradeable", "effects": [{"kind":"damage","amount":15},{"kind":"upgrade_card"}]},
+				{"label": "廣納靈氣：回復至滿血",                         "condition": "",            "effects": [{"kind":"full_heal"}]},
+				{"label": "感悟劍道：獲得 1 張招式",                      "condition": "",            "effects": [{"kind":"gain_card"}]},
+			]
+		},
+		{
+			"title": "神秘商隊",
+			"description": "山路上遇到一支打扮奇異的小商隊，為首的白髮老者笑容深邃，兜售著來歷不明的奇物。",
+			"choices": [
+				{"label": "以血換法器：失去 18 HP，獲得 1 件裝備",        "condition": "",            "effects": [{"kind":"damage","amount":18},{"kind":"gain_equipment"}]},
+				{"label": "以金易寶（60 金）：獲得 1 件裝備",             "condition": "gold_min:60", "effects": [{"kind":"gold","amount":-60},{"kind":"gain_equipment"}]},
+				{"label": "以技換知：升級 1 張牌",                        "condition": "upgradeable", "effects": [{"kind":"upgrade_card"}]},
+				{"label": "告辭離去",                                     "condition": "",            "effects": [{"kind":"nothing"}]},
+			]
+		},
+	]
 
 func show_remove_card_view() -> void:
 	if run_deck.size() <= 5:
@@ -1226,12 +1328,6 @@ func _random_equipment_pool(count: int) -> Array[EquipmentData]:
 	for i: int in range(min(count, pool.size())):
 		result.append(pool[i])
 	return result
-
-func resolve_event_gain_equipment() -> void:
-	var pool: Array[EquipmentData] = _random_equipment_pool(1)
-	if not pool.is_empty():
-		_gain_equipment(pool[0])
-	advance_non_battle_node()
 
 func _gain_equipment_and_advance(equip: EquipmentData) -> void:
 	_gain_equipment(equip)
