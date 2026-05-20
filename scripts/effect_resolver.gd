@@ -34,12 +34,14 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 		"damage":
 			if from_enemy:
 				var modified: int = max(0, amount - int(state["enemy_weak"]))
+				if int(state["player_vulnerable"]) > 0:
+					modified = int(ceil(modified * 1.5))
 				var blocked: int = min(int(state["player_block"]), modified)
 				state["player_block"] = int(state["player_block"]) - blocked
 				state["player_hp"] = max(0, int(state["player_hp"]) - (modified - blocked))
 				log_lines.append("%s 攻擊，造成 %d 點傷害。" % [state["enemy_name"], modified - blocked])
 			else:
-				var modified: int = amount + int(state["player_power"])
+				var modified: int = max(0, amount + int(state["player_power"]) - int(state["player_weak"]))
 				if int(state["enemy_vulnerable"]) > 0:
 					modified = int(ceil(modified * 1.5))
 				var blocked: int = min(int(state["enemy_block"]), modified)
@@ -71,8 +73,12 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				state["enemy_weak"] = int(state["enemy_weak"]) + amount
 				log_lines.append("敵人受到 %d 層虛弱。" % amount)
 		"vulnerable":
-			state["enemy_vulnerable"] = int(state["enemy_vulnerable"]) + amount
-			log_lines.append("敵人受到 %d 層破綻。" % amount)
+			if from_enemy:
+				state["player_vulnerable"] = int(state["player_vulnerable"]) + amount
+				log_lines.append("你受到 %d 層破綻。" % amount)
+			else:
+				state["enemy_vulnerable"] = int(state["enemy_vulnerable"]) + amount
+				log_lines.append("敵人受到 %d 層破綻。" % amount)
 		"draw":
 			state["pending_draw"] = int(state["pending_draw"]) + amount
 			log_lines.append("抽 %d 張牌。" % amount)
@@ -88,7 +94,7 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 		"consume_energy_damage":
 			var spent: int = int(state["energy"])
 			state["energy"] = 0
-			var damage: int = amount * spent
+			var damage: int = max(0, amount * spent - int(state["player_weak"]))
 			if int(state["enemy_vulnerable"]) > 0:
 				damage = int(ceil(damage * 1.5))
 			state["enemy_hp"] = max(0, int(state["enemy_hp"]) - damage)

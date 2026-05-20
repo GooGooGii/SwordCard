@@ -8,6 +8,7 @@ extends Resource
 @export var portrait_path: String = ""
 @export var starting_deck: Array[CardData] = []
 @export var reward_pool: Array[CardData] = []
+@export var passives: Array[Dictionary] = []
 
 func clone() -> CharacterData:
 	var copy: CharacterData = CharacterData.new()
@@ -22,4 +23,11 @@ func clone() -> CharacterData:
 	copy.reward_pool = []
 	for card in reward_pool:
 		copy.reward_pool.append(card.clone())
+	copy.passives = passives.duplicate(true)
 	return copy
+
+func passive_by_trigger(trigger: String) -> Dictionary:
+	for passive: Dictionary in passives:
+		if String(passive.get("trigger", "")) == trigger:
+			return passive
+	return {}
