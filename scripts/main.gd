@@ -33,15 +33,57 @@ var deck_overlay: Control
 var deck_view_mode: String = "view"
 var card_buttons: Array[Button] = []
 var animating_cards: Array[Button] = []
+var pause_menu: PauseMenu
 
 func _ready() -> void:
 	randomize()
+	SettingsManager.load_settings()
 	characters = GameData.characters()
 	enemies = GameData.enemies()
 	bosses = GameData.bosses()
 	get_tree().set_auto_accept_quit(false)
 	_build_root()
+	_build_pause_menu()
 	show_main_menu()
+
+func _build_pause_menu() -> void:
+	pause_menu = PauseMenu.new()
+	add_child(pause_menu)
+	pause_menu.resume_requested.connect(_on_resume_requested)
+	pause_menu.abandon_requested.connect(_on_abandon_requested)
+	pause_menu.quit_requested.connect(_on_quit_requested)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and (event as InputEventKey).pressed and not (event as InputEventKey).echo:
+		if (event as InputEventKey).keycode == KEY_ESCAPE:
+			_toggle_pause_menu()
+			get_viewport().set_input_as_handled()
+
+func _toggle_pause_menu() -> void:
+	if pause_menu == null:
+		return
+	if pause_menu.visible:
+		_on_resume_requested()
+		return
+	# 主選單下不開暫停選單
+	if run_state == null or run_state.character == null:
+		return
+	pause_menu.open()
+
+func _on_resume_requested() -> void:
+	pause_menu.close()
+
+func _on_abandon_requested() -> void:
+	pause_menu.close()
+	SaveManager.clear()
+	run_state = RunState.new()
+	selected_character = null
+	show_main_menu()
+
+func _on_quit_requested() -> void:
+	if run_state != null and run_state.character != null:
+		SaveManager.save(run_state)
+	get_tree().quit()
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:

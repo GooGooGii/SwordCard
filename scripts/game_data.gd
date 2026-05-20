@@ -30,7 +30,7 @@ static func _li_xiaoyao() -> CharacterData:
 		make_card("lxy_wanjian", "萬劍訣", "李逍遙", 2, "attack", "連續劍氣，造成 5 點傷害三次。", [{"kind": "damage", "amount": 5}, {"kind": "damage", "amount": 5}, {"kind": "damage", "amount": 5}]),
 		make_card("lxy_feilong", "飛龍探雲手", "李逍遙", 1, "skill", "造成 4 點傷害，抽 1 張牌並回復 1 點靈力。", [{"kind": "damage", "amount": 4}, {"kind": "draw", "amount": 1}, {"kind": "energy", "amount": 1}]),
 		make_card("lxy_tianshi", "天師符法", "李逍遙", 1, "attack", "造成 9 點法術傷害。", [{"kind": "damage", "amount": 9}]),
-		make_card("lxy_jiushen", "酒神咒", "李逍遙", 3, "attack", "造成 32 點傷害，自身承受 6 點反噬。", [{"kind": "damage", "amount": 32}, {"kind": "self_damage", "amount": 6}], "rare"),
+		make_card("lxy_jiushen", "酒神咒", "李逍遙", 3, "attack", "造成 28 點傷害，自身承受 8 點反噬。", [{"kind": "damage", "amount": 28}, {"kind": "self_damage", "amount": 8}], "rare"),
 		make_card("lxy_xianfeng", "仙風雲體", "李逍遙", 1, "skill", "獲得 8 點護體，抽 1 張牌。", [{"kind": "block", "amount": 8}, {"kind": "draw", "amount": 1}], "uncommon"),
 		make_card("lxy_zuimeng", "醉夢望月", "李逍遙", 2, "power", "本場戰鬥傷害提升 2。", [{"kind": "power", "amount": 2}], "uncommon"),
 		make_card("lxy_jianqi", "劍氣護身", "李逍遙", 1, "skill", "獲得 10 點護體。", [{"kind": "block", "amount": 10}]),
@@ -109,22 +109,22 @@ static func _passives_for(id: String) -> Array[Dictionary]:
 			return [{
 				"trigger": "battle_start",
 				"kind": "self_heal",
-				"amount": 3,
-				"label": "每場戰鬥開始回復 3 點生命"
+				"amount": 4,
+				"label": "每場戰鬥開始回復 4 點生命"
 			}]
 		"lin_yueru":
 			return [{
 				"trigger": "first_block_counter",
-				"amount": 3,
-				"label": "每回合第一次獲得護體時，造成 3 點反擊傷害",
+				"amount": 4,
+				"label": "每回合第一次獲得護體時，造成 4 點反擊傷害",
 				"status_label": "本回合下一次護體反擊可用"
 			}]
 		"anu":
 			return [{
 				"trigger": "battle_start",
 				"kind": "enemy_poison",
-				"amount": 3,
-				"label": "敵人每場戰鬥開場受到 3 層蠱毒"
+				"amount": 5,
+				"label": "敵人每場戰鬥開場受到 5 層蠱毒"
 			}]
 	return []
 
