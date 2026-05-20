@@ -63,6 +63,39 @@ func _should_upgrade_amount(kind: String) -> bool:
 		"poison_burst"
 	]
 
+func to_dict() -> Dictionary:
+	return {
+		"id": id,
+		"display_name": display_name,
+		"owner": owner,
+		"cost": cost,
+		"card_type": card_type,
+		"description": description,
+		"rarity": rarity,
+		"effects": effects.duplicate(true),
+		"upgraded": upgraded,
+		"art_path": art_path
+	}
+
+static func from_dict(data: Dictionary) -> CardData:
+	var card: CardData = CardData.new()
+	card.id = String(data.get("id", ""))
+	card.display_name = String(data.get("display_name", ""))
+	card.owner = String(data.get("owner", ""))
+	card.cost = int(data.get("cost", 1))
+	card.card_type = String(data.get("card_type", "attack"))
+	card.description = String(data.get("description", ""))
+	card.rarity = String(data.get("rarity", "basic"))
+	card.upgraded = bool(data.get("upgraded", false))
+	card.art_path = String(data.get("art_path", ""))
+	var raw_effects: Array = data.get("effects", []) as Array
+	var typed_effects: Array[Dictionary] = []
+	for entry: Variant in raw_effects:
+		if entry is Dictionary:
+			typed_effects.append((entry as Dictionary).duplicate(true))
+	card.effects = typed_effects
+	return card
+
 func _upgraded_amount(kind: String, amount: int) -> int:
 	match kind:
 		"draw", "energy", "vulnerable":

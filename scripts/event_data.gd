@@ -27,6 +27,22 @@ const VARIANTS: Dictionary = {
 		"gain_cost": 6,
 		"power": 1,
 		"power_label": "凝神"
+	},
+	"treasure_chest": {
+		"title": "寶箱機關",
+		"flavor": "倒塌的木箱半埋在落葉裡。鎖鏈鏽蝕但機關未解，輕觸還可聽見細微的扣響。",
+		"heal": 4,
+		"gain_cost": 3,
+		"power": 1,
+		"power_label": "解鎖"
+	},
+	"ancestor_relic": {
+		"title": "先靈遺骨",
+		"flavor": "古老的祭壇上擺著一具尚未化盡的骨殖，靈氣濃郁。傳說供奉者能繼承一縷意志。",
+		"heal": 5,
+		"gain_cost": 8,
+		"power": 3,
+		"power_label": "祈靈"
 	}
 }
 

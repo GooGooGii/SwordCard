@@ -19,7 +19,10 @@ static func characters() -> Array[CharacterData]:
 	return [_li_xiaoyao(), _zhao_linger(), _lin_yueru(), _anu()]
 
 static func enemies() -> Array[EnemyData]:
-	return [_bandit(), _beast(), _gu_cultist(), _sword_spirit(), _fox_spirit(), _serpent_demon(), _moon_worshipper()]
+	return [_bandit(), _beast(), _gu_cultist(), _sword_spirit(), _fox_spirit(), _serpent_demon()]
+
+static func bosses() -> Array[EnemyData]:
+	return [_moon_worshipper(), _centipede_lord(), _witch_queen()]
 
 static func _li_xiaoyao() -> CharacterData:
 	var cards: Array[CardData] = [
@@ -170,6 +173,7 @@ static func _sword_spirit() -> EnemyData:
 	enemy.display_name = "劍冢靈影"
 	enemy.max_hp = 62
 	enemy.portrait_path = "res://assets/art/enemies/beast.png"
+	enemy.portrait_tint = Color(0.62, 0.82, 1.18)
 	enemy.actions = [
 		{"intent": "劍芒 11", "effects": [{"kind": "damage", "amount": 11}]},
 		{"intent": "護劍 9", "effects": [{"kind": "block", "amount": 9}]},
@@ -183,6 +187,7 @@ static func _fox_spirit() -> EnemyData:
 	enemy.display_name = "魅狐幻影"
 	enemy.max_hp = 52
 	enemy.portrait_path = "res://assets/art/enemies/gu_cultist.png"
+	enemy.portrait_tint = Color(1.08, 0.72, 1.22)
 	enemy.actions = [
 		{"intent": "魅惑 2", "effects": [{"kind": "weak", "amount": 2}]},
 		{"intent": "幻爪 10", "effects": [{"kind": "damage", "amount": 10}]},
@@ -196,6 +201,7 @@ static func _serpent_demon() -> EnemyData:
 	enemy.display_name = "赤蛇妖"
 	enemy.max_hp = 70
 	enemy.portrait_path = "res://assets/art/enemies/beast.png"
+	enemy.portrait_tint = Color(1.22, 0.68, 0.6)
 	enemy.actions = [
 		{"intent": "毒牙 9", "effects": [{"kind": "damage", "amount": 9}, {"kind": "poison", "amount": 2}]},
 		{"intent": "盤身 14", "effects": [{"kind": "block", "amount": 14}]},
@@ -214,5 +220,49 @@ static func _moon_worshipper() -> EnemyData:
 		{"intent": "妖術：蠱毒 4", "effects": [{"kind": "poison", "amount": 4}]},
 		{"intent": "結界 12", "effects": [{"kind": "block", "amount": 12}]},
 		{"intent": "邪月重擊 20", "effects": [{"kind": "damage", "amount": 20}]}
+	]
+	return enemy
+
+static func _centipede_lord() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "centipede_lord"
+	enemy.display_name = "蜈蚣大王"
+	enemy.max_hp = 92
+	enemy.portrait_path = "res://assets/art/enemies/moon_worshipper.png"
+	enemy.portrait_tint = Color(0.72, 1.18, 0.78)
+	enemy.actions = [
+		{"intent": "多足踏擊 5x4", "effects": [
+			{"kind": "damage", "amount": 5},
+			{"kind": "damage", "amount": 5},
+			{"kind": "damage", "amount": 5},
+			{"kind": "damage", "amount": 5}
+		]},
+		{"intent": "毒尾掃 12 + 蠱毒 3", "effects": [
+			{"kind": "damage", "amount": 12},
+			{"kind": "poison", "amount": 3}
+		]},
+		{"intent": "蜷甲防禦 16", "effects": [{"kind": "block", "amount": 16}]},
+		{"intent": "蝕骨蝕魂 18 + 虛弱 1", "effects": [
+			{"kind": "damage", "amount": 18},
+			{"kind": "weak", "amount": 1}
+		]}
+	]
+	return enemy
+
+static func _witch_queen() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "witch_queen"
+	enemy.display_name = "山靈巫后"
+	enemy.max_hp = 78
+	enemy.portrait_path = "res://assets/art/enemies/moon_worshipper.png"
+	enemy.portrait_tint = Color(1.18, 0.7, 1.22)
+	enemy.actions = [
+		{"intent": "蠱咒 蠱毒 5", "effects": [{"kind": "poison", "amount": 5}]},
+		{"intent": "詛咒 虛弱 3", "effects": [{"kind": "weak", "amount": 3}]},
+		{"intent": "邪結界 14", "effects": [{"kind": "block", "amount": 14}]},
+		{"intent": "魂噬 15 + 蠱毒 2", "effects": [
+			{"kind": "damage", "amount": 15},
+			{"kind": "poison", "amount": 2}
+		]}
 	]
 	return enemy

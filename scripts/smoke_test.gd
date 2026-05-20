@@ -4,7 +4,7 @@ func _initialize() -> void:
 	var characters: Array[CharacterData] = GameData.characters()
 	var enemies: Array[EnemyData] = GameData.enemies()
 	assert(characters.size() == 4)
-	assert(enemies.size() >= 7)
+	assert(enemies.size() >= 6)
 	for character: CharacterData in characters:
 		assert(character.display_name.length() > 0)
 		assert(character.max_hp > 0)
@@ -55,15 +55,12 @@ func _initialize() -> void:
 		assert(upgraded_card.upgraded)
 		assert(upgraded_card.display_title().ends_with("+"))
 		assert(upgraded_card.effects.size() == first_card.effects.size())
-	var normal_count: int = 0
-	var boss_count: int = 0
-	for enemy: EnemyData in enemies:
-		if enemy.id == "moon_worshipper":
-			boss_count = boss_count + 1
-		else:
-			normal_count = normal_count + 1
-	assert(normal_count >= 6)
-	assert(boss_count == 1)
+	var bosses: Array[EnemyData] = GameData.bosses()
+	assert(enemies.size() >= 6)
+	assert(bosses.size() >= 1)
+	for boss: EnemyData in bosses:
+		assert(boss.max_hp >= 60)
+		assert(boss.actions.size() >= 3)
 	var map_layer: MapLinkLayer = MapLinkLayer.new()
 	map_layer.set_segments([{"from": Vector2.ZERO, "to": Vector2(10, 10), "active": true}])
 	assert(map_layer.segments.size() == 1)

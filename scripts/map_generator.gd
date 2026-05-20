@@ -1,7 +1,7 @@
 class_name MapGenerator
 extends RefCounted
 
-const EVENT_VARIANTS: Array[String] = ["shrine", "spring", "talisman_cache"]
+const EVENT_VARIANTS: Array[String] = ["shrine", "spring", "talisman_cache", "treasure_chest", "ancestor_relic"]
 const MAP_ROWS: Array = [
 	["battle", "battle", "battle"],
 	["battle", "rest", "event", "shop"],
@@ -9,15 +9,8 @@ const MAP_ROWS: Array = [
 ]
 const BLACK_SHOP_CHANCE: float = 0.25
 
-static func generate(enemies: Array[EnemyData]) -> Array[Array]:
+static func generate(normal_enemies: Array[EnemyData], bosses: Array[EnemyData]) -> Array[Array]:
 	var choices: Array[Array] = []
-	var normal_enemies: Array[EnemyData] = []
-	var boss_enemy: EnemyData = null
-	for enemy: EnemyData in enemies:
-		if enemy.id == "moon_worshipper":
-			boss_enemy = enemy
-		else:
-			normal_enemies.append(enemy)
 	for row_index: int in range(MAP_ROWS.size()):
 		var row: Array[Dictionary] = []
 		var node_types: Array = (MAP_ROWS[row_index] as Array).duplicate()
@@ -26,9 +19,10 @@ static func generate(enemies: Array[EnemyData]) -> Array[Array]:
 			var node_type: String = String(node_types[node_index])
 			row.append(_make_map_node(node_type, node_index, normal_enemies))
 		choices.append(row)
-	if boss_enemy != null:
+	if not bosses.is_empty():
+		var chosen_boss: EnemyData = bosses[randi() % bosses.size()]
 		var boss_row: Array[Dictionary] = []
-		boss_row.append({"type": "boss", "enemy": boss_enemy.clone(), "index": 0, "connects": []})
+		boss_row.append({"type": "boss", "enemy": chosen_boss.clone(), "index": 0, "connects": []})
 		choices.append(boss_row)
 	_add_random_map_connections(choices)
 	return choices

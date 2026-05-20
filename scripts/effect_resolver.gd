@@ -36,12 +36,13 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				var modified: int = max(0, amount - int(state["enemy_weak"]))
 				if int(state["player_vulnerable"]) > 0:
 					modified = int(ceil(modified * 1.5))
+				modified = max(0, modified - int(state.get("damage_taken_reduction", 0)))
 				var blocked: int = min(int(state["player_block"]), modified)
 				state["player_block"] = int(state["player_block"]) - blocked
 				state["player_hp"] = max(0, int(state["player_hp"]) - (modified - blocked))
 				log_lines.append("%s 攻擊，造成 %d 點傷害。" % [state["enemy_name"], modified - blocked])
 			else:
-				var modified: int = max(0, amount + int(state["player_power"]) - int(state["player_weak"]))
+				var modified: int = max(0, amount + int(state["player_power"]) - int(state["player_weak"])) + int(state.get("damage_out_bonus", 0))
 				if int(state["enemy_vulnerable"]) > 0:
 					modified = int(ceil(modified * 1.5))
 				var blocked: int = min(int(state["enemy_block"]), modified)
@@ -53,18 +54,21 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				state["enemy_block"] = int(state["enemy_block"]) + amount
 				log_lines.append("%s 獲得 %d 點護體。" % [state["enemy_name"], amount])
 			else:
-				state["player_block"] = int(state["player_block"]) + amount
-				log_lines.append("獲得 %d 點護體。" % amount)
+				var actual_block: int = amount + int(state.get("block_bonus", 0))
+				state["player_block"] = int(state["player_block"]) + actual_block
+				log_lines.append("獲得 %d 點護體。" % actual_block)
 		"heal":
-			state["player_hp"] = min(int(state["player_max_hp"]), int(state["player_hp"]) + amount)
-			log_lines.append("回復 %d 點生命。" % amount)
+			var actual_heal: int = amount + int(state.get("heal_bonus", 0))
+			state["player_hp"] = min(int(state["player_max_hp"]), int(state["player_hp"]) + actual_heal)
+			log_lines.append("回復 %d 點生命。" % actual_heal)
 		"poison":
 			if from_enemy:
 				state["player_poison"] = int(state["player_poison"]) + amount
 				log_lines.append("被施加 %d 層蠱毒。" % amount)
 			else:
-				state["enemy_poison"] = int(state["enemy_poison"]) + amount
-				log_lines.append("施加 %d 層蠱毒。" % amount)
+				var poison_amount: int = amount + int(state.get("poison_bonus", 0))
+				state["enemy_poison"] = int(state["enemy_poison"]) + poison_amount
+				log_lines.append("施加 %d 層蠱毒。" % poison_amount)
 		"weak":
 			if from_enemy:
 				state["player_weak"] = int(state["player_weak"]) + amount

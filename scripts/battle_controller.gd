@@ -42,9 +42,18 @@ func setup(rs: RunState, chosen_character: CharacterData, chosen_enemy: EnemyDat
 		"pending_draw": 0,
 		"turn": 0,
 		"li_discount_used": false,
-		"lin_block_used": false
+		"lin_block_used": false,
+		"damage_taken_reduction": 0,
+		"damage_out_bonus": 0,
+		"block_bonus": 0,
+		"heal_bonus": 0,
+		"poison_bonus": 0,
+		"draw_next_turn_bonus": 0,
+		"card_played_counts": {}
 	}
+	_apply_relic_modifiers()
 	_apply_battle_start_passive()
+	_fire_relic_triggers("battle_start")
 
 func add_log(line: String) -> void:
 	battle_log.append(line)
@@ -90,7 +99,9 @@ func effective_card_cost(card: CardData) -> int:
 func start_turn() -> Dictionary:
 	state["turn"] = int(state["turn"]) + 1
 	state["energy"] = TURN_ENERGY
-	state["player_block"] = 0
+	# Block carry-over (玄武魂)
+	state["player_block"] = int(state.get("next_turn_block", 0))
+	state["next_turn_block"] = 0
 	state["enemy_block"] = 0
 	state["pending_draw"] = 0
 	state["lin_block_used"] = false
@@ -102,8 +113,11 @@ func start_turn() -> Dictionary:
 	add_logs(resolver.tick_statuses(state))
 	if is_battle_over():
 		return {"before_tick": before_tick, "ended": true}
-	deck.draw(HAND_SIZE)
-	add_log("第 %d 回合開始，抽 %d 張牌。" % [int(state["turn"]), HAND_SIZE])
+	_fire_relic_triggers("turn_start")
+	var draw_count: int = HAND_SIZE + int(state.get("draw_next_turn_bonus", 0))
+	state["draw_next_turn_bonus"] = 0
+	deck.draw(draw_count)
+	add_log("第 %d 回合開始，抽 %d 張牌。" % [int(state["turn"]), draw_count])
 	return {"before_tick": before_tick, "ended": false}
 
 func play_card(card: CardData) -> Dictionary:
@@ -118,6 +132,11 @@ func play_card(card: CardData) -> Dictionary:
 	var before_card: Dictionary = snapshot_state()
 	add_logs(resolver.resolve_card(card, state))
 	_apply_card_play_passive(card)
+	_fire_relic_triggers("card_played", {
+		"card_type": card.card_type,
+		"card_cost": card.cost,
+		"card_effects": card.effects
+	})
 	deck.discard_card(card)
 	if int(state["pending_draw"]) > 0:
 		deck.draw(int(state["pending_draw"]))
@@ -125,6 +144,7 @@ func play_card(card: CardData) -> Dictionary:
 	return {"affordable": true, "before_card": before_card, "ended": is_battle_over()}
 
 func begin_enemy_phase() -> Dictionary:
+	_fire_relic_triggers("turn_end")
 	deck.discard_hand()
 	if int(state["player_weak"]) > 0:
 		state["player_weak"] = int(state["player_weak"]) - 1
@@ -172,6 +192,110 @@ func _apply_battle_start_passive() -> void:
 		"enemy_poison":
 			state["enemy_poison"] = int(state["enemy_poison"]) + amount
 			add_log("%s被動：敵人開場受到 %d 層蠱毒。" % [character.display_name, amount])
+
+func _apply_relic_modifiers() -> void:
+	if run_state == null:
+		return
+	for relic: RelicData in run_state.relics:
+		for trigger: Dictionary in relic.triggers:
+			if String(trigger.get("trigger", "")) != "passive_modifier":
+				continue
+			for effect: Dictionary in (trigger.get("effects", []) as Array):
+				var kind: String = String(effect.get("kind", ""))
+				var amount: int = int(effect.get("amount", 0))
+				if state.has(kind):
+					state[kind] = int(state[kind]) + amount
+
+func _fire_relic_triggers(trigger_name: String, context: Dictionary = {}) -> void:
+	if run_state == null:
+		return
+	for relic: RelicData in run_state.relics:
+		for trigger: Dictionary in relic.triggers:
+			if String(trigger.get("trigger", "")) != trigger_name:
+				continue
+			if not _trigger_filter_matches(trigger.get("filter", {}) as Dictionary, context, relic.id):
+				continue
+			_apply_trigger_effects(trigger.get("effects", []) as Array, relic.display_name)
+
+func _trigger_filter_matches(filter: Dictionary, context: Dictionary, relic_id: String) -> bool:
+	if filter.is_empty():
+		return true
+	if filter.has("card_type"):
+		if String(context.get("card_type", "")) != String(filter["card_type"]):
+			return false
+	if filter.has("effect_has"):
+		var has_kind: bool = false
+		for e: Dictionary in (context.get("card_effects", []) as Array):
+			if String(e.get("kind", "")) == String(filter["effect_has"]):
+				has_kind = true
+				break
+		if not has_kind:
+			return false
+	if filter.has("cost_eq"):
+		if int(context.get("card_cost", -1)) != int(filter["cost_eq"]):
+			return false
+	if filter.has("max_per_battle"):
+		var counts: Dictionary = state.get("card_played_counts", {}) as Dictionary
+		var key: String = "relic_" + relic_id
+		var current: int = int(counts.get(key, 0))
+		if current >= int(filter["max_per_battle"]):
+			return false
+		counts[key] = current + 1
+		state["card_played_counts"] = counts
+	return true
+
+func _apply_trigger_effects(effects: Array, relic_name: String) -> void:
+	for effect: Dictionary in effects:
+		var kind: String = String(effect.get("kind", ""))
+		var amount: int = int(effect.get("amount", 0))
+		match kind:
+			"self_heal":
+				var actual: int = amount + int(state.get("heal_bonus", 0))
+				state["player_hp"] = min(int(state["player_max_hp"]), int(state["player_hp"]) + actual)
+				run_state.sync_hp_from_battle(int(state["player_hp"]))
+				add_log("【%s】回復 %d 生命。" % [relic_name, actual])
+			"self_block":
+				var actual_block: int = amount + int(state.get("block_bonus", 0))
+				state["player_block"] = int(state["player_block"]) + actual_block
+				add_log("【%s】獲得 %d 護體。" % [relic_name, actual_block])
+			"self_energy":
+				state["energy"] = int(state["energy"]) + amount
+				add_log("【%s】回復 %d 靈力。" % [relic_name, amount])
+			"self_draw":
+				state["pending_draw"] = int(state["pending_draw"]) + amount
+				add_log("【%s】抽 %d 張牌。" % [relic_name, amount])
+			"self_draw_next_turn":
+				state["draw_next_turn_bonus"] = int(state["draw_next_turn_bonus"]) + amount
+				add_log("【%s】下回合多抽 %d 張。" % [relic_name, amount])
+			"self_power":
+				state["player_power"] = int(state["player_power"]) + amount
+				add_log("【%s】傷害 +%d。" % [relic_name, amount])
+			"enemy_damage":
+				var dmg: int = amount + int(state.get("damage_out_bonus", 0))
+				var blocked: int = min(int(state["enemy_block"]), dmg)
+				state["enemy_block"] = int(state["enemy_block"]) - blocked
+				state["enemy_hp"] = max(0, int(state["enemy_hp"]) - (dmg - blocked))
+				add_log("【%s】造成 %d 傷害。" % [relic_name, dmg - blocked])
+			"enemy_poison":
+				var poison_amount: int = amount + int(state.get("poison_bonus", 0))
+				state["enemy_poison"] = int(state["enemy_poison"]) + poison_amount
+				add_log("【%s】敵人 +%d 蠱毒。" % [relic_name, poison_amount])
+			"enemy_weak":
+				state["enemy_weak"] = int(state["enemy_weak"]) + amount
+				add_log("【%s】敵人 +%d 虛弱。" % [relic_name, amount])
+			"enemy_vulnerable":
+				state["enemy_vulnerable"] = int(state["enemy_vulnerable"]) + amount
+				add_log("【%s】敵人 +%d 破綻。" % [relic_name, amount])
+			"block_carry":
+				state["next_turn_block"] = int(state.get("next_turn_block", 0)) + amount
+				add_log("【%s】保留 %d 護體到下回合。" % [relic_name, amount])
+			"poison_resonance":
+				# 50% poison damage as direct damage
+				var current_poison: int = int(state["enemy_poison"])
+				var bonus_dmg: int = int(current_poison * 0.5)
+				if bonus_dmg > 0:
+					state["enemy_hp"] = max(0, int(state["enemy_hp"]) - bonus_dmg)
+					add_log("【%s】蠱毒共鳴造成 %d 傷害。" % [relic_name, bonus_dmg])
 
 func _apply_card_play_passive(card: CardData) -> void:
 	var passive: Dictionary = character.passive_by_trigger("first_block_counter")

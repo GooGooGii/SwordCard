@@ -2,6 +2,7 @@ extends Control
 
 var characters: Array[CharacterData] = []
 var enemies: Array[EnemyData] = []
+var bosses: Array[EnemyData] = []
 var selected_character: CharacterData
 var run_state: RunState = RunState.new()
 var battle: BattleController
@@ -19,22 +20,34 @@ var player_hp_value: Label
 var player_status_line: Label
 var player_name_label: Label
 var player_block_badge: BlockBadge
+var player_portrait_wrap: Control
 var enemy_hp_bar: ProgressBar
 var enemy_hp_value: Label
 var enemy_status_line: Label
 var enemy_name_label: Label
 var enemy_block_badge: BlockBadge
+var enemy_portrait_wrap: Control
 var energy_orb: EnergyOrb
+var relic_strip: HBoxContainer
 var deck_overlay: Control
 var deck_view_mode: String = "view"
 var card_buttons: Array[Button] = []
+var animating_cards: Array[Button] = []
 
 func _ready() -> void:
 	randomize()
 	characters = GameData.characters()
 	enemies = GameData.enemies()
+	bosses = GameData.bosses()
+	get_tree().set_auto_accept_quit(false)
 	_build_root()
 	show_main_menu()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		if run_state != null and run_state.character != null:
+			SaveManager.save(run_state)
+		get_tree().quit()
 
 func _build_root() -> void:
 	background_rect = TextureRect.new()
@@ -53,6 +66,10 @@ func _build_root() -> void:
 
 func _clear_root() -> void:
 	close_deck_view()
+	for button: Button in animating_cards:
+		if is_instance_valid(button):
+			button.queue_free()
+	animating_cards.clear()
 	for child: Node in root.get_children():
 		child.queue_free()
 
@@ -74,12 +91,29 @@ func show_main_menu() -> void:
 	panel.add_child(box)
 	box.add_child(_title("SwordCard 仙劍1 同人卡牌原型", 34))
 	box.add_child(_paragraph("私人同人原型：使用原作角色名與招式名，僅供本機學習展示。"))
+	if SaveManager.has_save():
+		var continue_button: Button = _button("繼續冒險")
+		continue_button.pressed.connect(continue_saved_run)
+		box.add_child(continue_button)
 	var start_button: Button = _button("開始遊戲")
 	start_button.pressed.connect(show_character_select)
 	box.add_child(start_button)
 	var quit_button: Button = _button("離開")
 	quit_button.pressed.connect(get_tree().quit)
 	box.add_child(quit_button)
+
+func continue_saved_run() -> void:
+	var data: Dictionary = SaveManager.load_save()
+	if data.is_empty():
+		return
+	var loaded_state: RunState = RunState.new()
+	if not loaded_state.from_dict(data, characters):
+		push_warning("存檔無法載入（角色不存在）。")
+		SaveManager.clear()
+		return
+	run_state = loaded_state
+	selected_character = run_state.character
+	show_progress_screen()
 
 func show_character_select() -> void:
 	_set_background("res://assets/art/main_menu_bg.png")
@@ -135,9 +169,10 @@ func start_run(character: CharacterData) -> void:
 	show_progress_screen()
 
 func _make_encounter_choices() -> Array[Array]:
-	return MapGenerator.generate(enemies)
+	return MapGenerator.generate(enemies, bosses)
 
 func show_progress_screen() -> void:
+	SaveManager.save(run_state)
 	_set_background("res://assets/art/event_bg.png")
 	_clear_root()
 	var panel: PanelContainer = _make_panel()
@@ -150,6 +185,11 @@ func show_progress_screen() -> void:
 	box.add_child(_paragraph("%s  HP %d/%d  銅錢 %d  牌組 %d 張  本輪增傷 +%d" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, run_state.deck.size(), run_state.power_bonus]))
 	box.add_child(_paragraph("選擇亮起的節點前進；灰色節點代表目前路線無法抵達。"))
 	box.add_child(_paragraph(_passive_text()))
+	if not run_state.relics.is_empty():
+		var relic_names: Array[String] = []
+		for r: RelicData in run_state.relics:
+			relic_names.append(r.display_name)
+		box.add_child(_paragraph("裝備：%s" % "、".join(relic_names)))
 	box.add_child(_map_view())
 	var deck_button: Button = _button("查看牌組")
 	deck_button.pressed.connect(show_deck_view)
@@ -360,6 +400,12 @@ func _build_battle_scene() -> void:
 	status_label.add_theme_color_override("font_color", Color("f3ead2"))
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	screen.add_child(status_label)
+	relic_strip = HBoxContainer.new()
+	relic_strip.alignment = BoxContainer.ALIGNMENT_CENTER
+	relic_strip.add_theme_constant_override("separation", 4)
+	relic_strip.mouse_filter = Control.MOUSE_FILTER_PASS
+	screen.add_child(relic_strip)
+	_refresh_relic_strip()
 	var arena: HBoxContainer = HBoxContainer.new()
 	arena.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	arena.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -417,7 +463,7 @@ func _build_enemy_widget(parent: HBoxContainer) -> void:
 	col.add_child(enemy_label)
 	enemy_feedback_label = _feedback_label()
 	col.add_child(enemy_feedback_label)
-	col.add_child(_portrait_with_block_badge(battle.enemy.portrait_path, Vector2(230, 230), true, false))
+	col.add_child(_portrait_with_block_badge(battle.enemy.portrait_path, Vector2(230, 230), true, false, battle.enemy.portrait_tint))
 	enemy_name_label = _card_label(battle.enemy.display_name, 18, Color("ffd9a3"), HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(enemy_name_label)
 	enemy_hp_bar = _hp_bar(Color("c84a3a"), Color("3a1a1a"))
@@ -472,11 +518,12 @@ func _build_right_dock(parent: HBoxContainer) -> void:
 	end_turn_button.pressed.connect(end_player_turn)
 	dock.add_child(end_turn_button)
 
-func _portrait_with_block_badge(path: String, portrait_size: Vector2, show_full: bool, is_player: bool) -> Control:
+func _portrait_with_block_badge(path: String, portrait_size: Vector2, show_full: bool, is_player: bool, tint: Color = Color.WHITE) -> Control:
 	var wrap: Control = Control.new()
 	wrap.custom_minimum_size = portrait_size
 	var portrait: TextureRect = _portrait_rect(path, portrait_size, show_full)
 	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	portrait.modulate = tint
 	wrap.add_child(portrait)
 	var badge: BlockBadge = BlockBadge.new()
 	badge.custom_minimum_size = Vector2(48, 56)
@@ -486,9 +533,41 @@ func _portrait_with_block_badge(path: String, portrait_size: Vector2, show_full:
 	wrap.add_child(badge)
 	if is_player:
 		player_block_badge = badge
+		player_portrait_wrap = wrap
 	else:
 		enemy_block_badge = badge
+		enemy_portrait_wrap = wrap
 	return wrap
+
+func _refresh_relic_strip() -> void:
+	if relic_strip == null:
+		return
+	for child: Node in relic_strip.get_children():
+		child.queue_free()
+	for r: RelicData in run_state.relics:
+		var icon: RelicIcon = RelicIcon.new()
+		icon.custom_minimum_size = Vector2(28, 28)
+		relic_strip.add_child(icon)
+		icon.set_relic(r)
+
+func _grant_relic(relic: RelicData) -> bool:
+	if relic == null:
+		return false
+	if run_state.has_relic(relic.id):
+		return false
+	run_state.add_relic(relic)
+	return true
+
+func _try_random_relic_drop(rarity_chance: float = 0.25) -> RelicData:
+	if randf() > rarity_chance:
+		return null
+	var pool: Array[RelicData] = []
+	for r: RelicData in RelicCatalog.generals():
+		if not run_state.has_relic(r.id):
+			pool.append(r)
+	if pool.is_empty():
+		return null
+	return pool[randi() % pool.size()].clone()
 
 func _hp_bar(fill_color: Color, bg_color: Color) -> ProgressBar:
 	var bar: ProgressBar = ProgressBar.new()
@@ -508,24 +587,33 @@ func _start_player_turn() -> void:
 	_show_state_feedback(result["before_tick"])
 	if _check_battle_end():
 		return
-	_refresh_battle()
+	_refresh_battle(true)
 
-func play_card(card: CardData) -> void:
+func play_card(card: CardData, source_button: Button = null) -> void:
 	var result: Dictionary = battle.play_card(card)
 	if not bool(result["affordable"]):
 		_refresh_battle()
 		return
+	if source_button != null and is_instance_valid(source_button):
+		_detach_card_button(source_button)
+		_refresh_battle()
+		_animate_played_card(source_button, card)
+	else:
+		_refresh_battle()
 	_show_state_feedback(result["before_card"])
 	if bool(result["ended"]) and _check_battle_end():
 		return
-	_refresh_battle()
 
 func end_player_turn() -> void:
 	end_turn_button.disabled = true
+	_animate_hand_discard()
 	var action: Dictionary = battle.begin_enemy_phase()
 	_show_enemy_action_preview(action)
 	_refresh_battle()
 	await get_tree().create_timer(0.8).timeout
+	if _action_has_damage(action):
+		_dash_node(enemy_portrait_wrap, Vector2(-1, 0), 36.0, 0.22)
+		await get_tree().create_timer(0.1).timeout
 	var result: Dictionary = battle.resolve_enemy_phase(action)
 	_show_state_feedback(result["before_enemy"])
 	_refresh_battle()
@@ -533,6 +621,12 @@ func end_player_turn() -> void:
 		return
 	await get_tree().create_timer(0.6).timeout
 	_start_player_turn()
+
+func _action_has_damage(action: Dictionary) -> bool:
+	for effect: Dictionary in (action.get("effects", []) as Array):
+		if String(effect.get("kind", "")) == "damage":
+			return true
+	return false
 
 func _show_enemy_action_preview(action: Dictionary) -> void:
 	var preview_lines: Array[String] = []
@@ -580,8 +674,29 @@ func _check_battle_end() -> bool:
 func _complete_battle_victory() -> void:
 	battle.complete_victory()
 	var gold_reward: int = _battle_gold_reward(battle.enemy)
+	# 聚寶盆：勝利額外金錢
+	for r: RelicData in run_state.relics:
+		for t: Dictionary in r.triggers:
+			if String(t.get("trigger", "")) != "battle_victory":
+				continue
+			for e: Dictionary in (t.get("effects", []) as Array):
+				if String(e.get("kind", "")) == "gold_bonus":
+					gold_reward += int(e.get("amount", 0))
 	run_state.gold = run_state.gold + gold_reward
 	battle.add_log("獲得 %d 枚銅錢。" % gold_reward)
+	# Boss 必掉神器；一般戰鬥 25% 機率掉裝備
+	var dropped: RelicData = null
+	var was_boss: bool = battle.enemy.id == "moon_worshipper" or battle.enemy.id == "centipede_lord" or battle.enemy.id == "witch_queen"
+	if was_boss:
+		for a: RelicData in RelicCatalog.artifacts():
+			if a.boss_id == battle.enemy.id and not run_state.has_relic(a.id):
+				dropped = a.clone()
+				break
+	else:
+		dropped = _try_random_relic_drop(0.25)
+	if dropped != null:
+		run_state.add_relic(dropped)
+		battle.add_log("獲得裝備：%s" % dropped.display_name)
 	run_state.encounter_index = run_state.encounter_index + 1
 	if run_state.encounter_index >= run_state.encounter_choices.size():
 		show_result(true)
@@ -623,8 +738,16 @@ func _make_reward_choices() -> Array[CardData]:
 			used_ids.append(card.id)
 			pool.append(card.clone())
 	pool.shuffle()
+	var count: int = 3
+	for r: RelicData in run_state.relics:
+		for t: Dictionary in r.triggers:
+			if String(t.get("trigger", "")) != "permanent":
+				continue
+			for e: Dictionary in (t.get("effects", []) as Array):
+				if String(e.get("kind", "")) == "card_reward_count_bonus":
+					count += int(e.get("amount", 0))
 	var rewards: Array[CardData] = []
-	for i: int in range(min(3, pool.size())):
+	for i: int in range(min(count, pool.size())):
 		rewards.append(pool[i])
 	return rewards
 
@@ -653,63 +776,70 @@ func _route_node_button(node_data: Dictionary) -> Button:
 	button.pressed.connect(func(): choose_route_node(node_data))
 	return button
 
-func _route_enemy_button(enemy: EnemyData, is_boss: bool = false) -> Button:
+func _build_route_button(text: String, icon_type: String, icon_color: Color, font_color: Color = Color("fff8dc")) -> Button:
 	var button: Button = Button.new()
 	button.custom_minimum_size = Vector2(260, 160)
-	var label: String = "Boss" if is_boss else "戰鬥"
-	button.text = "%s\n%s  HP %d\n%s" % [label, enemy.display_name, enemy.max_hp, _enemy_route_summary(enemy)]
-	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	button.add_theme_font_size_override("font_size", 18)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 8)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(box)
+	var icon: MapNodeIcon = MapNodeIcon.new()
+	icon.custom_minimum_size = Vector2(46, 46)
+	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	icon.set_type(icon_type, icon_color)
+	box.add_child(icon)
+	var label: Label = Label.new()
+	label.text = text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.add_theme_font_size_override("font_size", 16)
+	label.add_theme_color_override("font_color", font_color)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(label)
+	return button
+
+func _route_enemy_button(enemy: EnemyData, is_boss: bool = false) -> Button:
+	var label_prefix: String = "Boss" if is_boss else "戰鬥"
+	var text: String = "%s\n%s  HP %d\n%s" % [label_prefix, enemy.display_name, enemy.max_hp, _enemy_route_summary(enemy)]
+	var icon_type: String = "boss" if is_boss else "battle"
+	var icon_color: Color = Color("f8d29c") if is_boss else Color("e2c486")
+	var button: Button = _build_route_button(text, icon_type, icon_color)
 	var bg_color: Color = Color("452a35") if is_boss else Color("273449")
 	button.add_theme_stylebox_override("normal", _style_box(bg_color, Color("c8b46f"), 2, 8))
 	button.add_theme_stylebox_override("hover", _style_box(bg_color.lightened(0.14), Color("f7df9c"), 3, 8))
 	button.add_theme_stylebox_override("pressed", _style_box(Color("1d2838"), Color("e4c66a"), 2, 8))
-	button.add_theme_color_override("font_color", Color("fff8dc"))
-	button.add_theme_color_override("font_hover_color", Color("ffffff"))
 	return button
 
 func _route_rest_button() -> Button:
 	var heal_amount: int = EventData.rest_heal_for(selected_character.max_hp)
-	var button: Button = Button.new()
-	button.custom_minimum_size = Vector2(260, 160)
-	button.text = "休息\n回復 %d HP\n或升級 1 張牌" % heal_amount
-	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	button.add_theme_font_size_override("font_size", 18)
+	var text: String = "休息\n回復 %d HP\n或升級 1 張牌" % heal_amount
+	var button: Button = _build_route_button(text, "rest", Color("f4a13a"), Color("f4ffe9"))
 	button.add_theme_stylebox_override("normal", _style_box(Color("2f5f4a"), Color("c8e6c9"), 2, 8))
 	button.add_theme_stylebox_override("hover", _style_box(Color("3d755d"), Color("eef9df"), 3, 8))
 	button.add_theme_stylebox_override("pressed", _style_box(Color("244736"), Color("d8f0c4"), 2, 8))
-	button.add_theme_color_override("font_color", Color("f4ffe9"))
-	button.add_theme_color_override("font_hover_color", Color("ffffff"))
 	return button
 
 func _route_event_button() -> Button:
-	var button: Button = Button.new()
-	button.custom_minimum_size = Vector2(260, 160)
-	button.text = "奇遇\n山路異光\n選擇一項機緣"
-	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	button.add_theme_font_size_override("font_size", 18)
+	var button: Button = _build_route_button("奇遇\n山路異光\n選擇一項機緣", "event", Color("e2cdff"))
 	button.add_theme_stylebox_override("normal", _style_box(Color("4f3f73"), Color("d9c2ff"), 2, 8))
 	button.add_theme_stylebox_override("hover", _style_box(Color("66508f"), Color("efe2ff"), 3, 8))
 	button.add_theme_stylebox_override("pressed", _style_box(Color("382d55"), Color("d9c2ff"), 2, 8))
-	button.add_theme_color_override("font_color", Color("fff8dc"))
-	button.add_theme_color_override("font_hover_color", Color("ffffff"))
 	return button
 
 func _route_shop_button(is_black_shop: bool) -> Button:
-	var button: Button = Button.new()
-	button.custom_minimum_size = Vector2(260, 160)
 	var title: String = "黑店" if is_black_shop else "商店"
 	var hint: String = "高價珍品\n升級卡機率高" if is_black_shop else "購買卡牌\n補強牌組"
-	button.text = "%s\n%s\n銅錢 %d" % [title, hint, run_state.gold]
-	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	button.add_theme_font_size_override("font_size", 18)
+	var text: String = "%s\n%s\n銅錢 %d" % [title, hint, run_state.gold]
+	var icon_type: String = "black_shop" if is_black_shop else "shop"
+	var icon_color: Color = Color("e2a86b") if is_black_shop else Color("e4c66a")
+	var button: Button = _build_route_button(text, icon_type, icon_color)
 	var bg_color: Color = Color("2d2036") if is_black_shop else Color("5b4a2f")
 	var border_color: Color = Color("e2a86b") if is_black_shop else Color("e4c66a")
 	button.add_theme_stylebox_override("normal", _style_box(bg_color, border_color, 2, 8))
 	button.add_theme_stylebox_override("hover", _style_box(bg_color.lightened(0.14), Color("f7df9c"), 3, 8))
 	button.add_theme_stylebox_override("pressed", _style_box(bg_color.darkened(0.12), Color("d2b96b"), 2, 8))
-	button.add_theme_color_override("font_color", Color("fff8dc"))
-	button.add_theme_color_override("font_hover_color", Color("ffffff"))
 	return button
 
 func _enemy_route_summary(enemy: EnemyData) -> String:
@@ -749,7 +879,15 @@ func show_rest_node() -> void:
 	box.add_child(deck_button)
 
 func resolve_rest_heal() -> void:
-	run_state.heal(run_state.pending_rest_heal)
+	var bonus: int = 0
+	for r: RelicData in run_state.relics:
+		for t: Dictionary in r.triggers:
+			if String(t.get("trigger", "")) != "permanent":
+				continue
+			for e: Dictionary in (t.get("effects", []) as Array):
+				if String(e.get("kind", "")) == "rest_heal_bonus":
+					bonus += int(e.get("amount", 0))
+	run_state.heal(run_state.pending_rest_heal + bonus)
 	run_state.pending_rest_heal = 0
 	advance_non_battle_node()
 
@@ -802,7 +940,15 @@ func resolve_event_gain_card(hp_cost: int = 6) -> void:
 	advance_non_battle_node()
 
 func resolve_event_power(amount: int = 1) -> void:
-	run_state.power_bonus = run_state.power_bonus + amount
+	var bonus: int = 0
+	for r: RelicData in run_state.relics:
+		for t: Dictionary in r.triggers:
+			if String(t.get("trigger", "")) != "permanent":
+				continue
+			for e: Dictionary in (t.get("effects", []) as Array):
+				if String(e.get("kind", "")) == "event_power_bonus":
+					bonus += int(e.get("amount", 0))
+	run_state.power_bonus = run_state.power_bonus + amount + bonus
 	advance_non_battle_node()
 
 func open_shop_node(is_black_shop: bool) -> void:
@@ -829,6 +975,15 @@ func show_shop_node() -> void:
 	box.add_child(goods_row)
 	for item: Dictionary in run_state.current_shop_inventory:
 		goods_row.add_child(_shop_item_view(item))
+	# 商店多賣 1 件裝備（每次進商店重抽）
+	if not run_state.has_meta("shop_relic_offered_at_index") or int(run_state.get_meta("shop_relic_offered_at_index", -1)) != run_state.encounter_index:
+		run_state.set_meta("shop_relic_offered_at_index", run_state.encounter_index)
+		run_state.set_meta("shop_relic_id", _pick_shop_relic_id())
+	var shop_relic_id: String = String(run_state.get_meta("shop_relic_id", ""))
+	if not shop_relic_id.is_empty() and not run_state.has_relic(shop_relic_id):
+		var relic: RelicData = RelicCatalog.by_id(shop_relic_id)
+		if relic != null:
+			goods_row.add_child(_shop_relic_view(relic))
 	var deck_button: Button = _button("查看牌組")
 	deck_button.pressed.connect(show_deck_view)
 	box.add_child(deck_button)
@@ -836,9 +991,87 @@ func show_shop_node() -> void:
 	leave.pressed.connect(advance_non_battle_node)
 	box.add_child(leave)
 
+func _pick_shop_relic_id() -> String:
+	var pool: Array[RelicData] = []
+	for r: RelicData in RelicCatalog.generals():
+		if not run_state.has_relic(r.id):
+			pool.append(r)
+	if run_state.current_shop_is_black:
+		# 黑店 30% 機率出角色專武
+		var weapon_pool: Array[RelicData] = RelicCatalog.weapons_for_character(selected_character.id)
+		var avail_weapons: Array[RelicData] = []
+		for w: RelicData in weapon_pool:
+			if not run_state.has_relic(w.id):
+				avail_weapons.append(w)
+		if not avail_weapons.is_empty() and randf() < 0.3:
+			return avail_weapons[randi() % avail_weapons.size()].id
+	if pool.is_empty():
+		return ""
+	return pool[randi() % pool.size()].id
+
+func _shop_relic_view(relic: RelicData) -> Control:
+	var price: int = _shop_relic_price(relic)
+	var panel: PanelContainer = _make_panel()
+	panel.custom_minimum_size = Vector2(230, 338)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_child(box)
+	var icon: RelicIcon = RelicIcon.new()
+	icon.custom_minimum_size = Vector2(80, 80)
+	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(icon)
+	icon.set_relic(relic)
+	box.add_child(_card_label(relic.display_name, 17, Color("fff8dc"), HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_card_label(relic.description, 12, Color("d8e0ec"), HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_card_label("價格：%d 銅錢" % price, 14, Color("f7df9c"), HORIZONTAL_ALIGNMENT_CENTER))
+	var can_buy: bool = run_state.gold >= price
+	var buy_button: Button = _button("買下裝備")
+	buy_button.disabled = not can_buy
+	buy_button.pressed.connect(func(): _buy_shop_relic(relic, price))
+	box.add_child(buy_button)
+	return panel
+
+func _shop_relic_price(relic: RelicData) -> int:
+	var base: int = 70
+	match relic.rarity:
+		"uncommon":
+			base = 95
+		"rare":
+			base = 130
+		"legendary":
+			base = 180
+	if run_state.current_shop_is_black:
+		base = int(base * 1.2)
+	# 通寶錢折扣
+	for r: RelicData in run_state.relics:
+		for t: Dictionary in r.triggers:
+			if String(t.get("trigger", "")) != "permanent":
+				continue
+			for e: Dictionary in (t.get("effects", []) as Array):
+				if String(e.get("kind", "")) == "shop_discount":
+					base -= int(e.get("amount", 0))
+	return max(10, base)
+
+func _buy_shop_relic(relic: RelicData, price: int) -> void:
+	if run_state.gold < price:
+		return
+	run_state.gold -= price
+	run_state.add_relic(relic)
+	run_state.set_meta("shop_relic_id", "")  # 清掉這次的商店裝備
+	show_shop_node()
+
 func _shop_item_view(item: Dictionary) -> Control:
 	var card: CardData = item["card"] as CardData
 	var price: int = int(item["price"])
+	# 通寶錢折扣
+	for r: RelicData in run_state.relics:
+		for t: Dictionary in r.triggers:
+			if String(t.get("trigger", "")) != "permanent":
+				continue
+			for e: Dictionary in (t.get("effects", []) as Array):
+				if String(e.get("kind", "")) == "shop_discount":
+					price = max(5, price - int(e.get("amount", 0)))
 	var panel: PanelContainer = _make_panel()
 	panel.custom_minimum_size = Vector2(230, 338)
 	var box: VBoxContainer = VBoxContainer.new()
@@ -1012,6 +1245,7 @@ func _deck_view_card(card: CardData, mode: String = "view") -> Button:
 	return button
 
 func show_result(victory: bool) -> void:
+	SaveManager.clear()
 	_set_background("res://assets/art/event_bg.png")
 	_clear_root()
 	var panel: PanelContainer = _make_panel()
@@ -1036,7 +1270,7 @@ func show_result(victory: bool) -> void:
 	menu.pressed.connect(show_main_menu)
 	box.add_child(menu)
 
-func _refresh_battle() -> void:
+func _refresh_battle(animate_draw: bool = false) -> void:
 	var top_parts: Array[String] = ["第 %d/%d 層" % [run_state.encounter_index + 1, run_state.encounter_choices.size()]]
 	top_parts.append("抽 %d / 棄 %d" % [battle.deck.draw_pile.size(), battle.deck.discard_pile.size()])
 	var passive_status: String = battle.passive_status_text()
@@ -1058,7 +1292,8 @@ func _refresh_battle() -> void:
 		var button: Button = _card_button(card)
 		buttons.append(button)
 		card_buttons.append(button)
-	hand_row.set_cards(buttons)
+	var draw_source: Vector2 = Vector2(120.0, get_viewport_rect().size.y - 70.0)
+	hand_row.set_cards(buttons, animate_draw, draw_source)
 	log_label.text = "\n".join(battle.battle_log.slice(max(0, battle.battle_log.size() - 4)))
 	end_turn_button.disabled = false
 
@@ -1082,7 +1317,7 @@ func _card_button(card: CardData) -> Button:
 	var affordable: bool = int(battle.state["energy"]) >= battle.effective_card_cost(card)
 	var button: Button = _make_card_button(card, card.cost, Vector2(172, 238), affordable, true)
 	button.disabled = not affordable
-	button.pressed.connect(func(): play_card(card))
+	button.pressed.connect(func(): play_card(card, button))
 	return button
 
 func _reward_card_button(card: CardData) -> Button:
@@ -1162,6 +1397,89 @@ func _ignore_child_mouse(node: Node) -> void:
 			(child as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_ignore_child_mouse(child)
 
+func _detach_card_button(button: Button) -> void:
+	var global_pos: Vector2 = button.global_position
+	var preserved_scale: Vector2 = button.scale
+	var parent: Node = button.get_parent()
+	if parent != null:
+		parent.remove_child(button)
+	add_child(button)
+	button.pivot_offset = button.size / 2.0
+	button.rotation = 0.0
+	button.global_position = global_pos
+	button.scale = preserved_scale
+	button.disabled = true
+	button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ignore_child_mouse(button)
+	animating_cards.append(button)
+
+func _animate_played_card(button: Button, card: CardData) -> void:
+	var target_label: Label = enemy_feedback_label if card.card_type == "attack" else player_feedback_label
+	if target_label == null:
+		button.queue_free()
+		return
+	var target_center: Vector2 = target_label.global_position + target_label.size / 2.0
+	var target_pos: Vector2 = target_center - button.size / 2.0
+	var tween: Tween = create_tween().set_parallel(true)
+	tween.tween_property(button, "global_position", target_pos, 0.42).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(button, "scale", Vector2(0.65, 0.65), 0.42)
+	tween.tween_property(button, "modulate:a", 0.0, 0.42).set_delay(0.06)
+	tween.finished.connect(func() -> void:
+		animating_cards.erase(button)
+		if is_instance_valid(button):
+			button.queue_free())
+
+func _shake_node(node: Control, intensity: float = 8.0, duration: float = 0.25) -> void:
+	if node == null:
+		return
+	var orig_pos: Vector2 = node.position
+	var steps: int = 5
+	var step_duration: float = duration / float(steps + 1)
+	var tween: Tween = create_tween()
+	for i: int in range(steps):
+		var offset: Vector2 = Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity))
+		tween.tween_property(node, "position", orig_pos + offset, step_duration).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(node, "position", orig_pos, step_duration)
+
+func _dash_node(node: Control, direction: Vector2, distance: float = 36.0, duration: float = 0.24) -> void:
+	if node == null:
+		return
+	var orig_pos: Vector2 = node.position
+	var tween: Tween = create_tween()
+	tween.tween_property(node, "position", orig_pos + direction.normalized() * distance, duration * 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(node, "position", orig_pos, duration * 0.55).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+func _flash_node(node: Control, color: Color = Color(1.4, 1.4, 1.6), duration: float = 0.22) -> void:
+	if node == null:
+		return
+	var orig_mod: Color = node.modulate
+	var tween: Tween = create_tween()
+	tween.tween_property(node, "modulate", color, duration * 0.35)
+	tween.tween_property(node, "modulate", orig_mod, duration * 0.65)
+
+func _animate_hand_discard() -> void:
+	var snapshot: Array[Button] = []
+	for b: Button in card_buttons:
+		if is_instance_valid(b):
+			snapshot.append(b)
+	if snapshot.is_empty():
+		return
+	var viewport_size: Vector2 = get_viewport_rect().size
+	var discard_target: Vector2 = Vector2(viewport_size.x - 120.0, viewport_size.y - 70.0)
+	for i: int in range(snapshot.size()):
+		var button: Button = snapshot[i]
+		_detach_card_button(button)
+		var delay: float = i * 0.04
+		var target_pos: Vector2 = discard_target - button.size / 2.0
+		var tween: Tween = create_tween().set_parallel(true)
+		tween.tween_property(button, "global_position", target_pos, 0.32).set_delay(delay).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tween.tween_property(button, "scale", Vector2(0.42, 0.42), 0.32).set_delay(delay)
+		tween.tween_property(button, "modulate:a", 0.0, 0.32).set_delay(delay + 0.08)
+		tween.finished.connect(func() -> void:
+			if is_instance_valid(button):
+				button.queue_free())
+	card_buttons.clear()
+
 func _show_state_feedback(before: Dictionary) -> void:
 	var player_lines: Array[String] = []
 	var enemy_lines: Array[String] = []
@@ -1202,6 +1520,14 @@ func _show_state_feedback(before: Dictionary) -> void:
 		_show_feedback(player_feedback_label, player_lines, Color("f4b7a8"))
 	if not enemy_lines.is_empty():
 		_show_feedback(enemy_feedback_label, enemy_lines, Color("f7df9c"))
+	if player_hp_delta < 0:
+		_shake_node(player_portrait_wrap, 7.0, 0.28)
+	if enemy_hp_delta < 0:
+		_shake_node(enemy_portrait_wrap, 7.0, 0.28)
+	if player_block_delta > 0:
+		_flash_node(player_portrait_wrap, Color(1.2, 1.35, 1.55), 0.22)
+	if enemy_block_delta > 0:
+		_flash_node(enemy_portrait_wrap, Color(1.2, 1.35, 1.55), 0.22)
 
 func _show_feedback(label: Label, lines: Array[String], color: Color) -> void:
 	if label == null:
