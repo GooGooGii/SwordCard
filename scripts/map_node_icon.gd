@@ -3,6 +3,7 @@ extends Control
 
 var node_type: String = "battle"
 var icon_color: Color = Color("f7df9c")
+var icon_texture: Texture2D
 
 func _ready() -> void:
 	if custom_minimum_size == Vector2.ZERO:
@@ -12,9 +13,15 @@ func _ready() -> void:
 func set_type(type: String, color: Color = Color("f7df9c")) -> void:
 	node_type = type
 	icon_color = color
+	icon_texture = _load_node_texture(type)
 	queue_redraw()
 
 func _draw() -> void:
+	if icon_texture != null:
+		var draw_size: Vector2 = Vector2.ONE * min(size.x, size.y)
+		var draw_pos: Vector2 = (size - draw_size) * 0.5
+		draw_texture_rect(icon_texture, Rect2(draw_pos, draw_size), false)
+		return
 	var s: float = min(size.x, size.y)
 	var c: Vector2 = size / 2.0
 	match node_type:
@@ -30,6 +37,12 @@ func _draw() -> void:
 			_draw_coin(c, s, Color("c19a55"))
 		"boss":
 			_draw_skull(c, s)
+
+func _load_node_texture(type: String) -> Texture2D:
+	var texture_path: String = "res://assets/ui/node_%s.png" % type
+	if ResourceLoader.exists(texture_path):
+		return load(texture_path) as Texture2D
+	return null
 
 func _draw_swords(c: Vector2, s: float) -> void:
 	var r: float = s * 0.36

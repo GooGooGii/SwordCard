@@ -1,5 +1,7 @@
 extends Control
 
+const BATTLE_END_DELAY: float = 0.8
+
 var characters: Array[CharacterData] = []
 var enemies: Array[EnemyData] = []
 var bosses: Array[EnemyData] = []
@@ -34,6 +36,7 @@ var deck_view_mode: String = "view"
 var card_buttons: Array[Button] = []
 var animating_cards: Array[Button] = []
 var pause_menu: PauseMenu
+var battle_end_pending: bool = false
 
 func _ready() -> void:
 	randomize()
@@ -125,24 +128,136 @@ func _set_background(path: String) -> void:
 func show_main_menu() -> void:
 	_set_background("res://assets/art/main_menu_bg.png")
 	_clear_root()
-	var panel: PanelContainer = _make_panel()
-	root.add_child(panel)
-	var box: VBoxContainer = VBoxContainer.new()
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 18)
-	panel.add_child(box)
-	box.add_child(_title("SwordCard 仙劍1 同人卡牌原型", 34))
-	box.add_child(_paragraph("私人同人原型：使用原作角色名與招式名，僅供本機學習展示。"))
+	var shell: HBoxContainer = HBoxContainer.new()
+	shell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shell.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	shell.alignment = BoxContainer.ALIGNMENT_CENTER
+	shell.add_theme_constant_override("separation", 28)
+	root.add_child(shell)
+
+	var left_panel: PanelContainer = PanelContainer.new()
+	left_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	left_panel.custom_minimum_size = Vector2(560, 0)
+	left_panel.add_theme_stylebox_override("panel", _style_box(Color("101722", 0.80), Color("d7c89a", 0.38), 1, 16))
+	shell.add_child(left_panel)
+
+	var left_margin: MarginContainer = MarginContainer.new()
+	left_margin.add_theme_constant_override("margin_left", 34)
+	left_margin.add_theme_constant_override("margin_top", 34)
+	left_margin.add_theme_constant_override("margin_right", 34)
+	left_margin.add_theme_constant_override("margin_bottom", 34)
+	left_panel.add_child(left_margin)
+
+	var left_box: VBoxContainer = VBoxContainer.new()
+	left_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	left_box.add_theme_constant_override("separation", 18)
+	left_margin.add_child(left_box)
+
+	left_box.add_child(_card_label("仙劍奇俠傳・卡牌冒險原型", 14, Color("f4d985"), HORIZONTAL_ALIGNMENT_LEFT))
+	var title: Label = Label.new()
+	title.text = "SwordCard"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	title.add_theme_font_size_override("font_size", 54)
+	title.add_theme_color_override("font_color", Color("fff6d6"))
+	left_box.add_child(title)
+
+	var subtitle: Label = Label.new()
+	subtitle.text = "踏入山路、抽牌應敵、在每次分歧中決定這趟旅程要長成什麼樣子。"
+	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	subtitle.add_theme_font_size_override("font_size", 20)
+	subtitle.add_theme_color_override("font_color", Color("dbe4ef"))
+	left_box.add_child(subtitle)
+
+	var feature_row: HBoxContainer = HBoxContainer.new()
+	feature_row.add_theme_constant_override("separation", 10)
+	left_box.add_child(feature_row)
+	feature_row.add_child(_menu_chip("牌組構築"))
+	feature_row.add_child(_menu_chip("路線選擇"))
+	feature_row.add_child(_menu_chip("角色流派"))
+
+	var spacer: Control = Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	left_box.add_child(spacer)
+
+	var action_box: VBoxContainer = VBoxContainer.new()
+	action_box.add_theme_constant_override("separation", 12)
+	left_box.add_child(action_box)
 	if SaveManager.has_save():
-		var continue_button: Button = _button("繼續冒險")
+		var continue_button: Button = _main_menu_button("繼續冒險", true)
 		continue_button.pressed.connect(continue_saved_run)
-		box.add_child(continue_button)
-	var start_button: Button = _button("開始遊戲")
+		action_box.add_child(continue_button)
+	var start_button: Button = _main_menu_button("開始遊戲")
 	start_button.pressed.connect(show_character_select)
-	box.add_child(start_button)
-	var quit_button: Button = _button("離開")
+	action_box.add_child(start_button)
+	var quit_button: Button = _main_menu_button("離開遊戲")
 	quit_button.pressed.connect(get_tree().quit)
-	box.add_child(quit_button)
+	action_box.add_child(quit_button)
+
+	var footer: VBoxContainer = VBoxContainer.new()
+	footer.add_theme_constant_override("separation", 8)
+	left_box.add_child(footer)
+	footer.add_child(_paragraph("從四位角色中挑選起手流派，穿越地圖事件、商店與戰鬥節點，完成一輪小型冒險。"))
+	footer.add_child(_card_label("角色 %d 位  ・  一般敵人 %d 種" % [characters.size(), enemies.size()], 14, Color("9fb0c8"), HORIZONTAL_ALIGNMENT_LEFT))
+
+	var right_panel: PanelContainer = PanelContainer.new()
+	right_panel.custom_minimum_size = Vector2(420, 0)
+	right_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right_panel.add_theme_stylebox_override("panel", _style_box(Color("0d121b", 0.72), Color("8ea3c4", 0.28), 1, 16))
+	shell.add_child(right_panel)
+
+	var right_margin: MarginContainer = MarginContainer.new()
+	right_margin.add_theme_constant_override("margin_left", 24)
+	right_margin.add_theme_constant_override("margin_top", 24)
+	right_margin.add_theme_constant_override("margin_right", 24)
+	right_margin.add_theme_constant_override("margin_bottom", 24)
+	right_panel.add_child(right_margin)
+
+	var right_box: VBoxContainer = VBoxContainer.new()
+	right_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right_box.add_theme_constant_override("separation", 18)
+	right_margin.add_child(right_box)
+
+	var preview_character: CharacterData = characters[0] if not characters.is_empty() else null
+	if selected_character != null:
+		preview_character = selected_character
+
+	var preview_frame: PanelContainer = PanelContainer.new()
+	preview_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	preview_frame.add_theme_stylebox_override("panel", _style_box(Color("e8dcc0", 0.10), Color("f4d985", 0.44), 2, 18))
+	right_box.add_child(preview_frame)
+
+	var preview_wrap: MarginContainer = MarginContainer.new()
+	preview_wrap.add_theme_constant_override("margin_left", 18)
+	preview_wrap.add_theme_constant_override("margin_top", 18)
+	preview_wrap.add_theme_constant_override("margin_right", 18)
+	preview_wrap.add_theme_constant_override("margin_bottom", 18)
+	preview_frame.add_child(preview_wrap)
+
+	var preview_box: VBoxContainer = VBoxContainer.new()
+	preview_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	preview_box.add_theme_constant_override("separation", 14)
+	preview_wrap.add_child(preview_box)
+
+	preview_box.add_child(_card_label("本次旅程推薦", 14, Color("f4d985"), HORIZONTAL_ALIGNMENT_LEFT))
+	if preview_character != null:
+		var portrait: TextureRect = _portrait_rect(preview_character.portrait_path, Vector2(340, 420), true)
+		portrait.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		preview_box.add_child(portrait)
+		var name_label: Label = Label.new()
+		name_label.text = preview_character.display_name
+		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		name_label.add_theme_font_size_override("font_size", 28)
+		name_label.add_theme_color_override("font_color", Color("fff6d6"))
+		preview_box.add_child(name_label)
+		preview_box.add_child(_paragraph(preview_character.battle_style))
+
+	var quick_info: VBoxContainer = VBoxContainer.new()
+	quick_info.add_theme_constant_override("separation", 10)
+	right_box.add_child(quick_info)
+	quick_info.add_child(_menu_info_row("遊玩節奏", "地圖探索 + 戰鬥回合制"))
+	quick_info.add_child(_menu_info_row("目前內容", "角色選擇、事件、商店、戰鬥與遺物"))
+	quick_info.add_child(_menu_info_row("操作入口", "可從主選單直接開始或接續存檔"))
 
 func continue_saved_run() -> void:
 	var data: Dictionary = SaveManager.load_save()
@@ -157,52 +272,166 @@ func continue_saved_run() -> void:
 	selected_character = run_state.character
 	show_progress_screen()
 
-func show_character_select() -> void:
+func show_character_select(preview_id: String = "") -> void:
 	_set_background("res://assets/art/main_menu_bg.png")
 	_clear_root()
-	var layout: VBoxContainer = VBoxContainer.new()
-	layout.add_theme_constant_override("separation", 16)
-	root.add_child(layout)
-	layout.add_child(_title("選擇角色", 30))
-	layout.add_child(_paragraph("四層小型冒險：路線中會出現戰鬥、休息與事件，第四層挑戰拜月教徒。"))
-	var scroll: ScrollContainer = ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	layout.add_child(scroll)
-	var grid: GridContainer = GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 14)
-	grid.add_theme_constant_override("v_separation", 14)
-	scroll.add_child(grid)
+	var preview_character: CharacterData = characters[0]
 	for character: CharacterData in characters:
-		grid.add_child(_character_card(character))
+		if character.id == preview_id:
+			preview_character = character
+			break
+	var screen: VBoxContainer = VBoxContainer.new()
+	screen.add_theme_constant_override("separation", 10)
+	screen.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	screen.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_child(screen)
+	screen.add_child(_title("選擇角色", 30))
+	var stage: Control = _character_select_stage(preview_character)
+	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	screen.add_child(stage)
+	var thumb_row: HBoxContainer = HBoxContainer.new()
+	thumb_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	thumb_row.add_theme_constant_override("separation", 12)
+	screen.add_child(thumb_row)
+	for character: CharacterData in characters:
+		thumb_row.add_child(_character_thumb(character, character.id == preview_character.id))
 	var back: Button = _button("返回主選單")
 	back.pressed.connect(show_main_menu)
-	layout.add_child(back)
+	screen.add_child(back)
 
-func _character_card(character: CharacterData) -> Control:
-	var panel: PanelContainer = _make_panel()
-	panel.custom_minimum_size = Vector2(590, 255)
-	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", 14)
-	panel.add_child(row)
-	var portrait: TextureRect = _portrait_rect(character.portrait_path, Vector2(160, 220), true)
-	if portrait.texture != null:
-		row.add_child(portrait)
-	var box: VBoxContainer = VBoxContainer.new()
-	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	box.add_theme_constant_override("separation", 8)
-	row.add_child(box)
-	box.add_child(_title(character.display_name, 24))
-	box.add_child(_paragraph(character.battle_style))
+func _character_select_stage(character: CharacterData) -> Control:
+	var stage: Control = Control.new()
+	stage.custom_minimum_size = Vector2(1120, 520)
+	var halo: PanelContainer = PanelContainer.new()
+	halo.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	halo.custom_minimum_size = Vector2(470, 470)
+	halo.size = Vector2(470, 470)
+	halo.position = Vector2(-235, -228)
+	halo.add_theme_stylebox_override("panel", _style_box(Color("d8dec6", 0.18), Color("d7c06d", 0.72), 2, 235))
+	stage.add_child(halo)
+	var portrait: TextureRect = _portrait_rect(character.portrait_path, Vector2(430, 455), true)
+	portrait.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	portrait.size = Vector2(430, 455)
+	portrait.position = Vector2(-215, -232)
+	stage.add_child(portrait)
+	var name_label: Label = _title(character.display_name, 28)
+	name_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	name_label.position = Vector2(-180, -74)
+	name_label.custom_minimum_size = Vector2(360, 42)
+	name_label.size = Vector2(360, 42)
+	stage.add_child(name_label)
+	var poem_path: String = _character_poem_image_path(character.id)
+	var poem_texture: Texture2D = _load_texture(poem_path)
+	if poem_texture != null:
+		var poem_image: TextureRect = TextureRect.new()
+		poem_image.custom_minimum_size = Vector2(180, 420)
+		poem_image.size = Vector2(180, 420)
+		poem_image.position = Vector2(12, 34)
+		poem_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		poem_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		poem_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		poem_image.texture = poem_texture
+		stage.add_child(poem_image)
+	else:
+		var poem_box: HBoxContainer = HBoxContainer.new()
+		poem_box.custom_minimum_size = Vector2(180, 420)
+		poem_box.position = Vector2(12, 34)
+		poem_box.add_theme_constant_override("separation", 18)
+		stage.add_child(poem_box)
+		var poem_lines: Array[String] = _character_poem(character.id)
+		for index: int in range(0, poem_lines.size(), 2):
+			var merged_line: String = poem_lines[index]
+			if index + 1 < poem_lines.size():
+				merged_line += "，" + poem_lines[index + 1]
+			poem_box.add_child(_vertical_poem_line(merged_line))
+	var info_panel: PanelContainer = PanelContainer.new()
+	info_panel.custom_minimum_size = Vector2(320, 300)
+	info_panel.size = Vector2(320, 300)
+	info_panel.anchor_left = 1.0
+	info_panel.anchor_right = 1.0
+	info_panel.offset_left = -352
+	info_panel.offset_right = -24
+	info_panel.offset_top = 84
+	info_panel.offset_bottom = 384
+	info_panel.add_theme_stylebox_override("panel", _style_box(Color("0d151f", 0.58), Color("8ea3c4", 0.48), 1, 8))
+	stage.add_child(info_panel)
+	var info_box: VBoxContainer = VBoxContainer.new()
+	info_box.add_theme_constant_override("separation", 10)
+	info_panel.add_child(info_box)
+	info_box.add_child(_title("角色說明", 22))
+	info_box.add_child(_paragraph(character.battle_style))
+	info_box.add_child(_paragraph("生命值：%d" % character.max_hp))
 	var card_names: Array[String] = []
 	for card: CardData in character.starting_deck:
 		card_names.append(card.display_title())
 	var deck_text: String = "起始牌組：" + ", ".join(card_names)
-	box.add_child(_paragraph(deck_text))
+	info_box.add_child(_paragraph(deck_text))
 	var choose: Button = _button("以 %s 出戰" % character.display_name)
 	choose.pressed.connect(func(): start_run(character))
-	box.add_child(choose)
-	return panel
+	info_box.add_child(choose)
+	return stage
+
+func _character_thumb(character: CharacterData, selected: bool) -> Control:
+	var button: Button = Button.new()
+	button.custom_minimum_size = Vector2(112, 92)
+	button.focus_mode = Control.FOCUS_NONE
+	button.text = ""
+	var base: Color = Color("18212f", 0.86) if not selected else Color("33435c", 0.92)
+	var border: Color = Color("536277", 0.75) if not selected else Color("f4d985")
+	button.add_theme_stylebox_override("normal", _style_box(base, border, 2 if selected else 1, 8))
+	button.add_theme_stylebox_override("hover", _style_box(base.lightened(0.12), Color("f7df9c"), 2, 8))
+	button.add_theme_stylebox_override("pressed", _style_box(base.darkened(0.1), Color("f4d985"), 2, 8))
+	button.pressed.connect(func(): show_character_select(character.id))
+	var image: TextureRect = _portrait_rect(character.portrait_path, Vector2(96, 72), true)
+	image.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	image.size = Vector2(96, 72)
+	image.position = Vector2(-48, 6)
+	button.add_child(image)
+	var label: Label = _card_label(character.display_name, 13, Color("fff8dc"), HORIZONTAL_ALIGNMENT_CENTER)
+	label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	label.position = Vector2(-50, -22)
+	label.custom_minimum_size = Vector2(100, 20)
+	label.size = Vector2(100, 20)
+	button.add_child(label)
+	_ignore_child_mouse(button)
+	return button
+
+func _character_poem(character_id: String) -> Array[String]:
+	match character_id:
+		"li_xiaoyao":
+			return ["少年御劍出雲關", "一壺清夢照塵寰", "萬里仙途憑笑闖", "逍遙風起斬妖還"]
+		"zhao_linger":
+			return ["靈澤如煙護月華", "五行清露洗塵沙", "夢蛇一現山河靜", "慈念長明照萬家"]
+		"lin_yueru":
+			return ["月映長鞭破夜寒", "英姿一劍動雲端", "回身敢向強敵笑", "赤膽芳心照玉欄"]
+		"anu":
+			return ["苗疆鈴響引春風", "蠱影花香入霧中", "笑語偏藏奇術妙", "忘憂一曲月朦朧"]
+	return ["劍影初分照遠山", "清風入袖試新關", "此身既赴仙途路", "一念凌雲破夜寒"]
+
+func _character_poem_image_path(character_id: String) -> String:
+	match character_id:
+		"li_xiaoyao":
+			return "res://assets/ui/poems/li_xiaoyao_poem.png"
+		"zhao_linger":
+			return "res://assets/ui/poems/zhao_linger_poem.png"
+		"lin_yueru":
+			return "res://assets/ui/poems/lin_yueru_poem.png"
+		"anu":
+			return "res://assets/ui/poems/anu_poem.png"
+	return ""
+
+func _vertical_poem_line(text: String) -> Control:
+	var column: VBoxContainer = VBoxContainer.new()
+	column.alignment = BoxContainer.ALIGNMENT_CENTER
+	column.add_theme_constant_override("separation", 8)
+	for character: String in text:
+		var glyph: Label = _card_label(character, 24, Color("c98b42"), HORIZONTAL_ALIGNMENT_CENTER)
+		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		glyph.custom_minimum_size = Vector2(28, 34)
+		glyph.add_theme_color_override("font_outline_color", Color("f5dfb0", 0.32))
+		glyph.add_theme_constant_override("outline_size", 1)
+		column.add_child(glyph)
+	return column
 
 func start_run(character: CharacterData) -> void:
 	selected_character = character.clone()
@@ -215,7 +444,7 @@ func _make_encounter_choices() -> Array[Array]:
 
 func show_progress_screen() -> void:
 	SaveManager.save(run_state)
-	_set_background("res://assets/art/event_bg.png")
+	_set_background("res://assets/art/map_bg.png")
 	_clear_root()
 	var panel: PanelContainer = _make_panel()
 	root.add_child(panel)
@@ -241,13 +470,22 @@ func show_progress_screen() -> void:
 	box.add_child(menu)
 
 func _map_view() -> Control:
+	return _map_view_sts()
 	var map_panel: PanelContainer = PanelContainer.new()
-	map_panel.custom_minimum_size = Vector2(1040, 430)
-	map_panel.add_theme_stylebox_override("panel", _style_box(Color("0d1520", 0.58), Color("536277"), 1, 8))
+	map_panel.custom_minimum_size = Vector2(1040, 540)
+	map_panel.add_theme_stylebox_override("panel", _style_box(Color("f4edd8", 0.08), Color("d7c89a", 0.3), 1, 8))
 	var map_area: Control = Control.new()
-	map_area.custom_minimum_size = Vector2(1040, 420)
+	map_area.custom_minimum_size = Vector2(1040, 540)
 	map_area.clip_contents = false
 	map_panel.add_child(map_area)
+	var map_bg: TextureRect = TextureRect.new()
+	map_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	map_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	map_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	map_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	map_bg.modulate = Color(1, 1, 1, 0.86)
+	map_bg.texture = _load_texture("res://assets/art/map_bg.png")
+	map_area.add_child(map_bg)
 	var line_layer: Control = preload("res://scripts/map_link_layer.gd").new()
 	line_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	line_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -278,6 +516,93 @@ func _map_view() -> Control:
 	map_area.add_child(map_row)
 	call_deferred("_refresh_map_link_layer", line_layer, node_buttons)
 	return map_panel
+
+func _map_view_sts() -> Control:
+	var map_panel: PanelContainer = PanelContainer.new()
+	map_panel.custom_minimum_size = Vector2(1040, 580)
+	map_panel.add_theme_stylebox_override("panel", _style_box(Color("f4edd8", 0.04), Color("d7c89a", 0.18), 1, 8))
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(1040, 580)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.follow_focus = true
+	map_panel.add_child(scroll)
+	var map_area: Control = Control.new()
+	var total_rows: int = run_state.encounter_choices.size()
+	var content_size: Vector2 = _map_content_size(total_rows)
+	map_area.custom_minimum_size = content_size
+	map_area.size = content_size
+	map_area.clip_contents = false
+	scroll.add_child(map_area)
+	var map_bg: TextureRect = TextureRect.new()
+	map_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	map_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	map_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	map_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	map_bg.modulate = Color(1.06, 1.03, 0.98, 0.92)
+	map_bg.texture = _load_texture("res://assets/art/map_bg.png")
+	map_area.add_child(map_bg)
+	var line_layer: Control = preload("res://scripts/map_link_layer.gd").new()
+	line_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	line_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	map_area.add_child(line_layer)
+	var node_buttons: Array[Dictionary] = []
+	for row_index: int in range(total_rows):
+		var row: Array = run_state.encounter_choices[row_index]
+		for node_variant: Variant in row:
+			var node_data: Dictionary = node_variant as Dictionary
+			var node_button: Button = _map_node_button(node_data, row_index)
+			var node_index: int = int(node_data.get("index", 0))
+			node_button.position = _map_node_position(row_index, node_index, row.size(), total_rows, map_area.custom_minimum_size)
+			map_area.add_child(node_button)
+			node_buttons.append({"button": node_button, "row": row_index, "index": node_index})
+	call_deferred("_refresh_map_link_layer", line_layer, node_buttons)
+	call_deferred("_focus_map_row", scroll, total_rows, content_size)
+	return map_panel
+
+func _map_content_size(total_rows: int) -> Vector2:
+	return Vector2(1040, max(1180.0, 360.0 + float(total_rows) * 320.0))
+
+func _focus_map_row(scroll: ScrollContainer, total_rows: int, content_size: Vector2) -> void:
+	if scroll == null:
+		return
+	var viewport_height: float = scroll.size.y
+	if viewport_height <= 0.0:
+		viewport_height = scroll.custom_minimum_size.y
+	var target_row: int = clamp(run_state.encounter_index, 0, max(0, total_rows - 1))
+	var anchor: Vector2 = _map_node_position(target_row, 0, 1, total_rows, content_size)
+	var target_scroll: float = anchor.y - viewport_height * 0.55
+	var max_scroll: float = max(0.0, content_size.y - viewport_height)
+	scroll.scroll_vertical = int(clamp(target_scroll, 0.0, max_scroll))
+
+func _map_node_position(row_index: int, node_index: int, row_size: int, total_rows: int, area_size: Vector2) -> Vector2:
+	var top_margin: float = 72.0
+	var bottom_margin: float = 150.0
+	var left_margin: float = 80.0
+	var right_margin: float = 80.0
+	var usable_height: float = max(1.0, area_size.y - top_margin - bottom_margin)
+	var usable_width: float = max(1.0, area_size.x - left_margin - right_margin)
+	var y_ratio: float = 0.0 if total_rows <= 1 else float(row_index) / float(total_rows - 1)
+	var y: float = area_size.y - bottom_margin - usable_height * y_ratio
+	var lane_patterns: Dictionary = {
+		1: [0.5],
+		2: [0.34, 0.66],
+		3: [0.22, 0.5, 0.78],
+		4: [0.14, 0.38, 0.62, 0.86],
+		5: [0.1, 0.3, 0.5, 0.7, 0.9],
+		6: [0.08, 0.24, 0.4, 0.6, 0.76, 0.92]
+	}
+	var pattern: Array = lane_patterns.get(row_size, []) as Array
+	if pattern.is_empty():
+		for lane_index: int in range(row_size):
+			pattern.append(float(lane_index + 1) / float(row_size + 1))
+	var normalized_x: float = float(pattern[min(node_index, pattern.size() - 1)])
+	var row_sway: float = sin(float(row_index) * 0.95 + 0.3) * 48.0
+	var node_sway: float = sin(float(row_index) * 1.25 + float(node_index) * 1.55) * 34.0
+	var bend_bias: float = cos(float(row_index + node_index) * 1.1) * 18.0
+	var x: float = left_margin + usable_width * normalized_x + row_sway + node_sway + bend_bias
+	var y_offset: float = cos(float(row_index) * 1.2 + float(node_index) * 0.85) * 14.0
+	return Vector2(x - 38.0, y - 46.0 + y_offset)
 
 func _refresh_map_link_layer(line_layer: Control, node_buttons: Array[Dictionary]) -> void:
 	if line_layer == null:
@@ -327,19 +652,58 @@ func _map_node_button(node_data: Dictionary, row_index: int) -> Button:
 	var button: Button = _route_node_button(node_data)
 	var selectable: bool = _is_map_node_selectable(row_index, node_index)
 	var selected: bool = row_index < run_state.chosen_map_path.size() and run_state.chosen_map_path[row_index] == node_index
-	button.custom_minimum_size = Vector2(180, 104)
-	button.text = _map_node_text(node_data, row_index, selected)
+	button.custom_minimum_size = Vector2(76, 92)
+	button.text = _map_node_compact_text(node_data, row_index, selected)
 	button.disabled = not selectable
+	button.focus_mode = Control.FOCUS_NONE
+	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_style_map_node_button(button, node_data, selected, selectable)
 	if selected:
-		button.add_theme_stylebox_override("disabled", _style_box(Color("1f4d3b"), Color("d8f0c4"), 2, 8))
-		button.add_theme_color_override("font_disabled_color", Color("f4ffe9"))
+		button.add_theme_stylebox_override("disabled", _style_box(Color("214130", 0.3), Color("f5f1d6"), 2, 28))
+		button.add_theme_color_override("font_disabled_color", Color("25313b"))
 	elif row_index < run_state.encounter_index:
-		button.add_theme_stylebox_override("disabled", _style_box(Color("263141"), Color("596678"), 1, 8))
-		button.add_theme_color_override("font_disabled_color", Color("aeb9c8"))
+		button.add_theme_stylebox_override("disabled", _style_box(Color("5f6570", 0.16), Color("5f6570", 0.4), 1, 28))
+		button.add_theme_color_override("font_disabled_color", Color("51606d"))
 	elif not selectable:
-		button.add_theme_stylebox_override("disabled", _style_box(Color("262a31"), Color("59606b"), 1, 8))
-		button.add_theme_color_override("font_disabled_color", Color("8f98a5"))
+		button.add_theme_stylebox_override("disabled", _style_box(Color("5f6570", 0.1), Color("5f6570", 0.28), 1, 28))
+		button.add_theme_color_override("font_disabled_color", Color("697785"))
+	var node_type: String = String(node_data.get("type", "battle"))
+	if node_type == "boss":
+		button.custom_minimum_size = Vector2(92, 110)
+	call_deferred("_animate_map_node", button, selected, selectable, node_type == "boss")
 	return button
+
+func _style_map_node_button(button: Button, node_data: Dictionary, selected: bool, selectable: bool) -> void:
+	button.add_theme_stylebox_override("normal", _style_box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, 28))
+	button.add_theme_stylebox_override("hover", _style_box(Color("f4edd8", 0.08), Color("25313b", 0.24), 1, 28))
+	button.add_theme_stylebox_override("pressed", _style_box(Color("f4edd8", 0.12), Color("f5f1d6"), 1, 28))
+	button.add_theme_font_size_override("font_size", 12)
+	button.add_theme_constant_override("v_separation", 0)
+	button.add_theme_color_override("font_color", Color("25313b", 0.55))
+	button.add_theme_color_override("font_hover_color", Color("1d2838", 0.75))
+	button.add_theme_color_override("font_pressed_color", Color("1d2838", 0.75))
+	button.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var icon: Control = null
+	if button.has_meta("route_icon"):
+		icon = button.get_meta("route_icon") as Control
+	if icon != null:
+		var node_type: String = String(node_data.get("type", "battle"))
+		icon.custom_minimum_size = Vector2(72, 72) if node_type == "boss" else Vector2(56, 56)
+		icon.position.y = max(0.0, icon.position.y - 8.0)
+	var label: Label = null
+	if button.has_meta("route_label"):
+		label = button.get_meta("route_label") as Label
+	if label != null:
+		label.text = ""
+		label.custom_minimum_size = Vector2(0, 0)
+		label.visible = false
+	if not selectable and not selected:
+		button.modulate = Color(0.64, 0.64, 0.64, 0.72)
+	else:
+		button.modulate = Color.WHITE
+
+func _map_node_compact_text(node_data: Dictionary, row_index: int, selected: bool) -> String:
+	return ""
 
 func _map_node_text(node_data: Dictionary, row_index: int, selected: bool) -> String:
 	var title: String = _map_node_title(node_data)
@@ -428,6 +792,7 @@ func choose_route_node(node_data: Dictionary) -> void:
 func start_next_battle(enemy: EnemyData) -> void:
 	battle = BattleController.new()
 	battle.setup(run_state, selected_character, enemy)
+	battle_end_pending = false
 	_build_battle_scene()
 	_start_player_turn()
 
@@ -632,6 +997,8 @@ func _start_player_turn() -> void:
 	_refresh_battle(true)
 
 func play_card(card: CardData, source_button: Button = null) -> void:
+	if battle_end_pending:
+		return
 	var result: Dictionary = battle.play_card(card)
 	if not bool(result["affordable"]):
 		_refresh_battle()
@@ -643,10 +1010,12 @@ func play_card(card: CardData, source_button: Button = null) -> void:
 	else:
 		_refresh_battle()
 	_show_state_feedback(result["before_card"])
-	if bool(result["ended"]) and _check_battle_end():
+	if bool(result["ended"]) and await _finish_battle_after_delay():
 		return
 
 func end_player_turn() -> void:
+	if battle_end_pending:
+		return
 	end_turn_button.disabled = true
 	_animate_hand_discard()
 	var action: Dictionary = battle.begin_enemy_phase()
@@ -659,7 +1028,7 @@ func end_player_turn() -> void:
 	var result: Dictionary = battle.resolve_enemy_phase(action)
 	_show_state_feedback(result["before_enemy"])
 	_refresh_battle()
-	if bool(result["ended"]) and _check_battle_end():
+	if bool(result["ended"]) and await _finish_battle_after_delay():
 		return
 	await get_tree().create_timer(0.6).timeout
 	_start_player_turn()
@@ -712,6 +1081,29 @@ func _check_battle_end() -> bool:
 		show_result(false)
 		return true
 	return false
+
+func _finish_battle_after_delay() -> bool:
+	if battle_end_pending:
+		return true
+	if not battle.is_battle_over():
+		return false
+	battle_end_pending = true
+	_set_battle_input_enabled(false)
+	await get_tree().create_timer(BATTLE_END_DELAY).timeout
+	if battle.is_victory():
+		_complete_battle_victory()
+		return true
+	if battle.is_defeat():
+		show_result(false)
+		return true
+	return false
+
+func _set_battle_input_enabled(enabled: bool) -> void:
+	if end_turn_button != null:
+		end_turn_button.disabled = not enabled
+	for button: Button in card_buttons:
+		if is_instance_valid(button):
+			button.disabled = not enabled
 
 func _complete_battle_victory() -> void:
 	battle.complete_victory()
@@ -828,10 +1220,11 @@ func _build_route_button(text: String, icon_type: String, icon_color: Color, fon
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(box)
 	var icon: MapNodeIcon = MapNodeIcon.new()
-	icon.custom_minimum_size = Vector2(46, 46)
+	icon.custom_minimum_size = Vector2(58, 58)
 	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	icon.set_type(icon_type, icon_color)
 	box.add_child(icon)
+	button.set_meta("route_icon", icon)
 	var label: Label = Label.new()
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -840,7 +1233,28 @@ func _build_route_button(text: String, icon_type: String, icon_color: Color, fon
 	label.add_theme_color_override("font_color", font_color)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(label)
+	button.set_meta("route_label", label)
 	return button
+
+func _animate_map_node(button: Button, selected: bool, selectable: bool, is_boss: bool) -> void:
+	if button == null:
+		return
+	button.pivot_offset = button.size * 0.5
+	var target: Control = button
+	if button.has_meta("route_icon"):
+		target = button.get_meta("route_icon") as Control
+	if target != null:
+		target.pivot_offset = target.size * 0.5
+	if selected:
+		button.self_modulate = Color(1.12, 1.2, 1.05, 1.0)
+	elif selectable:
+		var glow: Tween = create_tween().set_loops()
+		glow.tween_property(button, "self_modulate", Color(1.22, 1.18, 0.9, 1.0), 0.9).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		glow.tween_property(button, "self_modulate", Color(1.0, 1.0, 1.0, 1.0), 0.9).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	if is_boss and target != null:
+		var pulse: Tween = create_tween().set_loops()
+		pulse.tween_property(target, "scale", Vector2(1.12, 1.12), 0.72).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		pulse.tween_property(target, "scale", Vector2.ONE, 0.72).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 func _route_enemy_button(enemy: EnemyData, is_boss: bool = false) -> Button:
 	var label_prefix: String = "Boss" if is_boss else "戰鬥"
@@ -1385,27 +1799,16 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	type_bar.custom_minimum_size = Vector2(0, 5)
 	type_bar.add_theme_stylebox_override("panel", _strip_box(_card_color(card.card_type, true).lightened(0.16), 3))
 	box.add_child(type_bar)
-	var header: HBoxContainer = HBoxContainer.new()
-	header.add_theme_constant_override("separation", 4)
-	box.add_child(header)
-	var title: Label = _card_label(card.display_title(), 14, Color("fff8dc"), HORIZONTAL_ALIGNMENT_LEFT)
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(title)
-	var rarity_badge: Label = _card_label(_card_rarity_name(card), 11, _card_rarity_color(card), HORIZONTAL_ALIGNMENT_RIGHT)
-	header.add_child(rarity_badge)
-	var cost_badge: PanelContainer = PanelContainer.new()
-	cost_badge.custom_minimum_size = Vector2(30, 26)
-	cost_badge.add_theme_stylebox_override("panel", _style_box(Color("161d2a", 0.92), Color("f4d985"), 1, 6))
-	header.add_child(cost_badge)
-	var cost_label: Label = _card_label(str(cost), 15, Color("f7df9c"), HORIZONTAL_ALIGNMENT_CENTER)
-	cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	cost_badge.add_child(cost_label)
 	var art_frame: PanelContainer = PanelContainer.new()
-	art_frame.custom_minimum_size = Vector2(size.x - 22, max(86.0, size.y * 0.42))
-	art_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	art_frame.custom_minimum_size = Vector2(size.x - 22, max(104.0, size.y * 0.5))
 	art_frame.add_theme_stylebox_override("panel", _style_box(Color("0b111a", 0.42), _card_rarity_color(card), 1, 6))
 	box.add_child(art_frame)
+	var art_layer: Control = Control.new()
+	art_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art_frame.add_child(art_layer)
 	var art: TextureRect = TextureRect.new()
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1414,7 +1817,40 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 		art.texture = texture
 	if not affordable or not selectable:
 		art.modulate = Color(0.72, 0.72, 0.72, 0.62)
-	art_frame.add_child(art)
+	art_layer.add_child(art)
+	var title_back: PanelContainer = PanelContainer.new()
+	title_back.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	title_back.offset_left = 0
+	title_back.offset_top = -38
+	title_back.offset_right = 0
+	title_back.offset_bottom = 0
+	title_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_back.add_theme_stylebox_override("panel", _style_box(Color(0.04, 0.06, 0.1, 0.78), Color(0, 0, 0, 0), 0, 6))
+	art_layer.add_child(title_back)
+	var title_row: HBoxContainer = HBoxContainer.new()
+	title_row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	title_row.add_theme_constant_override("separation", 4)
+	title_back.add_child(title_row)
+	var title: Label = _card_label(card.display_title(), 14, Color("fff8dc"), HORIZONTAL_ALIGNMENT_LEFT)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title_row.add_child(title)
+	var rarity_badge: Label = _card_label(_card_rarity_name(card), 11, _card_rarity_color(card), HORIZONTAL_ALIGNMENT_RIGHT)
+	rarity_badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title_row.add_child(rarity_badge)
+	var cost_badge: PanelContainer = PanelContainer.new()
+	cost_badge.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	cost_badge.offset_left = -34
+	cost_badge.offset_top = 8
+	cost_badge.offset_right = -2
+	cost_badge.offset_bottom = 38
+	cost_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cost_badge.add_theme_stylebox_override("panel", _style_box(Color("161d2a", 0.94), Color("f4d985"), 1, 6))
+	art_layer.add_child(cost_badge)
+	var cost_label: Label = _card_label(str(cost), 15, Color("f7df9c"), HORIZONTAL_ALIGNMENT_CENTER)
+	cost_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cost_badge.add_child(cost_label)
 	var type_line: Label = _card_label(_card_type_name(card.card_type), 12, Color("f7df9c"), HORIZONTAL_ALIGNMENT_CENTER)
 	box.add_child(type_line)
 	var desc: Label = _card_label(card.display_description(), 12, Color("e8edf3"), HORIZONTAL_ALIGNMENT_LEFT)
@@ -1734,6 +2170,41 @@ func _button(text: String) -> Button:
 	button.add_theme_font_size_override("font_size", 18)
 	_style_button(button)
 	return button
+
+func _main_menu_button(text: String, emphasized: bool = false) -> Button:
+	var button: Button = Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(0, 58)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.add_theme_font_size_override("font_size", 20)
+	var base: Color = Color("d3b15c") if emphasized else Color("243246")
+	var hover: Color = Color("ebca74") if emphasized else Color("33455e")
+	var pressed: Color = Color("b38f42") if emphasized else Color("192434")
+	var border: Color = Color("fff1bf") if emphasized else Color("9db4d8")
+	var font_color: Color = Color("1b160d") if emphasized else Color("edf2f7")
+	button.add_theme_stylebox_override("normal", _style_box(base, border, 2, 10))
+	button.add_theme_stylebox_override("hover", _style_box(hover, border.lightened(0.08), 2, 10))
+	button.add_theme_stylebox_override("pressed", _style_box(pressed, border, 2, 10))
+	button.add_theme_color_override("font_color", font_color)
+	button.add_theme_color_override("font_hover_color", font_color)
+	button.add_theme_color_override("font_pressed_color", font_color)
+	return button
+
+func _menu_chip(text: String) -> Control:
+	var chip: PanelContainer = PanelContainer.new()
+	chip.add_theme_stylebox_override("panel", _style_box(Color("f4d985", 0.10), Color("f4d985", 0.34), 1, 999))
+	chip.add_child(_card_label(text, 13, Color("f7e7a2"), HORIZONTAL_ALIGNMENT_CENTER))
+	return chip
+
+func _menu_info_row(label_text: String, value_text: String) -> Control:
+	var panel: PanelContainer = PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _style_box(Color("111926", 0.70), Color("61748f", 0.32), 1, 10))
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	panel.add_child(box)
+	box.add_child(_card_label(label_text, 13, Color("9fb0c8"), HORIZONTAL_ALIGNMENT_LEFT))
+	box.add_child(_card_label(value_text, 16, Color("edf2f7"), HORIZONTAL_ALIGNMENT_LEFT))
+	return panel
 
 func _portrait_rect(path: String, size: Vector2, show_full_image: bool = false) -> TextureRect:
 	var rect: TextureRect = TextureRect.new()

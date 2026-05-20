@@ -4,22 +4,25 @@ extends Control
 const ARC_RADIUS: float = 600.0
 const MAX_TOTAL_ANGLE_DEG: float = 36.0
 const ANGLE_PER_CARD_DEG: float = 7.0
-const HOVER_LIFT: float = 28.0
-const HOVER_SCALE: float = 1.12
+const HAND_BASE_LIFT: float = 72.0
+const HOVER_LIFT: float = 56.0
+const HOVER_SCALE: float = 1.06
 const ANIM_DURATION: float = 0.12
-const DRAW_ANIM_DURATION: float = 0.3
-const DRAW_ANIM_STAGGER: float = 0.06
+const DRAW_ANIM_DURATION: float = 0.18
+const DRAW_ANIM_STAGGER: float = 0.015
 
 var _card_buttons: Array[Button] = []
 var _base_positions: Array[Vector2] = []
 var _base_rotations: Array[float] = []
 var _hovered_index: int = -1
+var _draw_animation_id: int = 0
 
 func _ready() -> void:
 	clip_contents = false
 	resized.connect(_layout)
 
 func set_cards(buttons: Array[Button], animate: bool = false, animate_from: Vector2 = Vector2.ZERO) -> void:
+	_draw_animation_id += 1
 	for child: Node in get_children():
 		child.queue_free()
 	_card_buttons.clear()
@@ -34,8 +37,26 @@ func set_cards(buttons: Array[Button], animate: bool = false, animate_from: Vect
 		button.mouse_entered.connect(func() -> void: _on_hover(idx))
 		button.mouse_exited.connect(func() -> void: _on_unhover(idx))
 		_card_buttons.append(button)
+	if animate:
+		for button: Button in _card_buttons:
+			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			button.position = animate_from - global_position
+			button.rotation = 0.0
+			button.scale = Vector2(0.55, 0.55)
+			button.modulate.a = 0.0
+		call_deferred("_start_draw_animation", animate_from, _draw_animation_id)
+		return
 	_compute_base_layout()
-	_apply_layout(animate, animate_from)
+	_apply_layout(false, Vector2.ZERO)
+
+func _start_draw_animation(animate_from: Vector2, animation_id: int) -> void:
+	await get_tree().process_frame
+	if not is_inside_tree():
+		return
+	if animation_id != _draw_animation_id:
+		return
+	_compute_base_layout()
+	_apply_layout(true, animate_from)
 
 func _layout() -> void:
 	_compute_base_layout()
@@ -56,7 +77,7 @@ func _compute_base_layout() -> void:
 		var t: float = 0.5 if n == 1 else float(i) / float(n - 1)
 		var angle_deg: float = -total_angle_deg / 2.0 + total_angle_deg * t
 		var angle_rad: float = deg_to_rad(angle_deg)
-		var base_pos: Vector2 = Vector2(w / 2.0 - card_size.x / 2.0, h - card_size.y)
+		var base_pos: Vector2 = Vector2(w / 2.0 - card_size.x / 2.0, h - card_size.y - HAND_BASE_LIFT)
 		_base_positions.append(base_pos)
 		_base_rotations.append(angle_rad)
 
@@ -101,7 +122,7 @@ func _on_hover(index: int) -> void:
 	button.z_index = 1000
 	var tween: Tween = create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(button, "rotation", 0.0, ANIM_DURATION)
+	tween.tween_property(button, "rotation", _base_rotations[index], ANIM_DURATION)
 	tween.tween_property(button, "scale", Vector2(HOVER_SCALE, HOVER_SCALE), ANIM_DURATION)
 	tween.tween_property(button, "position", _base_positions[index] + Vector2(0, -HOVER_LIFT), ANIM_DURATION)
 
