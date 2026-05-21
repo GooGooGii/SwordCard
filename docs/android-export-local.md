@@ -128,3 +128,126 @@ Get-Item $apk
 Get-FileHash $apk -Algorithm SHA256
 & "$sdk\build-tools\35.0.1\apksigner.bat" verify --verbose $apk
 ```
+
+## GitHub Actions 自動產 APK
+
+2026-05-21 已確認 GitHub Actions 可以在 push 到 `main` 時自動產生 Android APK。
+
+成功 commit:
+
+- `2deea3d ci: build Android APK on push`
+
+成功 workflow run:
+
+- `Build Android APK`
+- Run URL: `https://github.com/GooGooGii/SwordCard/actions/runs/26207930283`
+- Event: `push`
+- Branch: `main`
+- Result: `success`
+- Artifact: `SwordCard-debug-apk`
+
+Artifact 內容：
+
+- `SwordCard.apk`
+- `export.log`
+
+下載 artifact 後本機驗證結果：
+
+- APK size: `61,134,400 bytes`
+- `apksigner verify --verbose`: `Verifies`
+- v2 signature: `true`
+- v3 signature: `true`
+- Number of signers: `1`
+
+### CI 成功要點
+
+Actions workflow 使用 `.github/workflows/build-android.yml`，關鍵條件如下。
+
+1. 每次 push 到 `main` 觸發：
+
+```yaml
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+```
+
+2. 使用 `barichello/godot-ci:4.6` container，搭配 repo 內的 Godot 4.6 Android preset。
+
+3. Android SDK 需明確補齊以下套件：
+
+```text
+platform-tools
+platforms;android-35
+build-tools;35.0.1
+cmake;3.10.2.4988404
+ndk;28.1.13356709
+```
+
+只裝 `platform-tools`、`platforms`、`build-tools` 不夠。Godot 4.6 Android export validation 也會檢查 NDK/CMake，缺少時可能只顯示：
+
+```text
+Cannot export project with preset "Android" due to configuration errors:
+```
+
+4. CI 直接寫入 Android SDK license hash 到 `$ANDROID_SDK/licenses`，避免 `sdkmanager --licenses` 在非互動環境卡住。
+
+5. CI 產生 debug keystore：
+
+```text
+$HOME/debug.keystore
+alias: androiddebugkey
+storepass/keypass: android
+```
+
+並同時設定：
+
+```text
+GODOT_ANDROID_KEYSTORE_DEBUG_PATH
+GODOT_ANDROID_KEYSTORE_DEBUG_USER
+GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD
+```
+
+6. 走本機已驗證成功的非 Gradle legacy APK build：
+
+```ini
+gradle_build/use_gradle_build=false
+gradle_build/min_sdk=""
+gradle_build/target_sdk=""
+architectures/arm64-v8a=true
+package/signed=true
+```
+
+非 Gradle build 不要填 `min_sdk` / `target_sdk`。這兩個欄位只有 Gradle build 可覆寫。
+
+7. Launcher icons 必須使用已提交的 PNG 檔：
+
+```ini
+launcher_icons/main_192x192="res://icon_192.png"
+launcher_icons/adaptive_foreground_432x432="res://icon_foreground_432.png"
+launcher_icons/adaptive_background_432x432="res://icon_background_432.png"
+```
+
+8. `project.godot` 必須包含 Android texture import 設定：
+
+```ini
+textures/vram_compression/import_etc2_astc=true
+```
+
+9. 匯出後要在 CI 內立即驗證 APK：
+
+```bash
+apksigner verify --verbose build/android/SwordCard.apk
+```
+
+10. 上傳 artifact 時同時保留 APK 與 export log：
+
+```yaml
+path: |
+  build/android/SwordCard.apk
+  build/android/export.log
+```
+
+### 目前 CI 已知提醒
+
+GitHub Actions 目前會顯示 Node.js 20 deprecation warning，來源是 `actions/checkout@v4` 與 `actions/upload-artifact@v4`。這不是 APK build failure，且 2026-05-21 的 run 已成功產出 APK。
