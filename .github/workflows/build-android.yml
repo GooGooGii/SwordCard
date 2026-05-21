@@ -120,6 +120,22 @@ jobs:
         run: |
           godot --headless --import || true
 
+      - name: Sanity check — export Android PCK only
+        run: |
+          mkdir -p /tmp/test
+          godot --headless --verbose --export-pack "Android" /tmp/test/test.pck 2>&1 | tail -20
+          if [ -f /tmp/test/test.pck ]; then
+            echo "PCK exported OK — project itself is fine, Android APK validation is the issue"
+            ls -la /tmp/test/
+          else
+            echo "PCK export also failed — project has issues beyond Android config"
+          fi
+
+      - name: Start ADB server (Godot may probe ADB during validation)
+        run: |
+          adb start-server || true
+          adb devices || true
+
       - name: Export Android APK (debug)
         run: |
           mkdir -p build/android
