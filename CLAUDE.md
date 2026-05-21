@@ -38,6 +38,7 @@ scripts/
   card_format.gd         卡片/敵人 action 純格式化（顏色、名稱、intent badge、傷害預測）
   damage_popup.gd        戰鬥中浮動傷害/治療/格擋數字（Label，self-managed tween）
   bestiary.gd            跨 run 持久化的敵將擊敗紀錄（user://bestiary.cfg）
+  ascension.gd           難度層級 A0-A4，cumulative modifiers + 解鎖紀錄（user://progression.cfg）
   debug_menu.gd          F1 開的開發者選單（CanvasLayer，桌面限定）
   pause_menu.gd          暫停選單（CanvasLayer）
   hand_fan.gd            手牌扇形排列
@@ -168,6 +169,15 @@ smoke test 用 9 組 (block, vuln, weak, attack) 組合驗證兩者一致。改 
 - **敵將圖鑑**：主選單「敵將圖鑑」按鈕進入 `show_bestiary()`。9 個敵將（6 一般 + 3 boss）3 欄 grid。
   未擊敗顯示黑色 silhouette + `???` + `尚未交手`；擊敗後顯示肖像、名字、HP、擊敗次數、所有 intent。
   資料寫在 `user://bestiary.cfg`（獨立於 savegame，abandon run 不會清掉）；`_complete_battle_victory` 呼叫 `Bestiary.mark_defeated(enemy.id)`
+- **難度層級 (Ascension)**：主選單「開始遊戲」按鈕下方有 `◀ 難度: A0 ▶` picker，描述當前層級會 buff/nerf 什麼。
+  5 級 cumulative（A0 標準 → A1 一般 HP +20% → A2 加 boss HP +20% → A3 加 起始 HP -15% → A4 加 銅錢 -25%）。
+  完成 A_N 的 run 後 `Ascension.mark_cleared(N)` 解鎖 A_(N+1)。Run 中的層級存在 `RunState.ascension_level`，
+  舊存檔自動 default 為 0（`from_dict` 用 `data.get("ascension_level", 0)`）。
+  Modifier 套用點：
+    - `start_run`：套 `Ascension.starting_hp_multiplier`
+    - `start_next_battle`：套 `Ascension.enemy_hp_multiplier` 到 battle.state（區分 boss / 一般）
+    - `_battle_gold_reward`：套 `Ascension.gold_multiplier`
+  改 modifier 數值記得更新 `Ascension.describe()`
 
 ### Debug menu (桌面開發用)
 
@@ -202,7 +212,7 @@ main.gd
 
 ## 測試
 
-`scripts/smoke_test.gd` 是 SceneTree-based，跑 21 個獨立測試：
+`scripts/smoke_test.gd` 是 SceneTree-based，跑 22 個獨立測試：
 
 - 資料完整性（角色 / 敵人 / 卡片）
 - 戰鬥機制（虛弱/破綻/格擋/中毒/能量耗盡/power 疊加/poison_burst）
@@ -213,6 +223,7 @@ main.gd
 - 地圖生成：30 次 random seed 都無孤兒節點、boss 可達
 - 傷害預測一致性：CardFormat.predict_enemy_damage vs EffectResolver 跨 9 組組合
 - Bestiary persistence：clear → mark → kill_count 累加 → load_all round-trip
+- Ascension persistence + modifier 計算（A0-A4 解鎖、HP / gold 倍數）
 - 平衡 regression（基礎）：4 角色 vs 山賊頭目，30 場隨機 AI 無時限，全 100%（純 regression 偵測）
 - 平衡 regression（中段）：4 角色 vs 蜈蚣大王，10 回合時限，30 場。
   zhao_linger baseline 20%（雙向偵測），其餘 100%（regression-only）。
