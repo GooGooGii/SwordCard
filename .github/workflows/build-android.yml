@@ -46,35 +46,34 @@ jobs:
           unzip -oq "$TEMPLATE_DIR/android_source.zip" -d android/build
           echo "4.4.stable" > android/.build_version
 
-      - name: Detect Android SDK and JDK paths
-        id: paths
+      - name: Configure SDK/JDK paths and (re)generate keystore
         run: |
-          # Look for common SDK locations in barichello image
-          SDK=$(find / -maxdepth 5 -name "platform-tools" -type d 2>/dev/null | head -1 | xargs dirname || true)
-          JDK=$(find / -maxdepth 5 -name "javac" -executable 2>/dev/null | head -1 | xargs dirname | xargs dirname || true)
-          if [ -z "$SDK" ] || [ -z "$JDK" ]; then
-            echo "ERROR: SDK=$SDK JDK=$JDK"
-            ls /opt /usr/local 2>/dev/null
-            exit 1
+          # Trust env vars from barichello container
+          ANDROID_SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/lib/android-sdk}}"
+          JDK="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}"
+          # Fall back to find if env vars unset
+          if [ ! -d "$ANDROID_SDK" ]; then
+            ANDROID_SDK=$(find / -maxdepth 5 -name "platform-tools" -type d 2>/dev/null | head -1 | xargs dirname)
           fi
-          echo "Found SDK: $SDK"
-          echo "Found JDK: $JDK"
-          echo "android_sdk=$SDK" >> $GITHUB_OUTPUT
-          echo "java_sdk=$JDK" >> $GITHUB_OUTPUT
-
-      - name: Generate debug keystore and configure editor settings
-        env:
-          ANDROID_SDK: ${{ steps.paths.outputs.android_sdk }}
-          JAVA_SDK: ${{ steps.paths.outputs.java_sdk }}
-        run: |
-          # Generate JKS keystore
-          keytool -genkey -v \
-            -keystore /root/debug.keystore \
-            -storetype JKS \
-            -alias androiddebugkey \
-            -storepass android -keypass android \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -dname "CN=Android Debug,O=Android,C=US"
+          if [ ! -f "$JDK/bin/javac" ]; then
+            JDK=$(find /usr/lib/jvm /opt -maxdepth 3 -name "javac" -executable 2>/dev/null | head -1 | xargs dirname | xargs dirname)
+          fi
+          echo "ANDROID_SDK=$ANDROID_SDK"
+          echo "JDK=$JDK"
+          test -d "$ANDROID_SDK" || { echo "Android SDK not found"; ls / /opt /usr/lib 2>/dev/null; exit 1; }
+          test -f "$JDK/bin/javac" || { echo "JDK not found"; exit 1; }
+          # Reuse existing debug.keystore if present, else generate fresh
+          if [ ! -f /root/debug.keystore ]; then
+            keytool -genkey -v \
+              -keystore /root/debug.keystore \
+              -storetype JKS \
+              -alias androiddebugkey \
+              -storepass android -keypass android \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          else
+            echo "Reusing existing /root/debug.keystore"
+          fi
           # Write editor_settings for Godot 4.4
           mkdir -p /root/.config/godot
           {
@@ -82,7 +81,7 @@ jobs:
             echo ''
             echo '[resource]'
             echo "export/android/android_sdk_path = \"$ANDROID_SDK\""
-            echo "export/android/java_sdk_path = \"$JAVA_SDK\""
+            echo "export/android/java_sdk_path = \"$JDK\""
             echo 'export/android/debug_keystore = "/root/debug.keystore"'
             echo 'export/android/debug_keystore_user = "androiddebugkey"'
             echo 'export/android/debug_keystore_pass = "android"'
