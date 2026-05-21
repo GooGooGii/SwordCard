@@ -67,6 +67,7 @@ func _initialize() -> void:
 	map_layer.free()
 	_test_save_round_trip(characters)
 	_test_save_manager_cycle(characters)
+	_test_save_migration(characters)
 	_test_battle_status_stacking(characters[0], enemies[0])
 	_test_status_decay()
 	_test_poison_tick_and_decay()
@@ -101,6 +102,21 @@ func _test_save_round_trip(characters: Array[CharacterData]) -> void:
 	assert(restored.character.id == state.character.id, "character_id mismatch")
 	assert(restored.deck.size() == state.deck.size(), "deck size mismatch")
 	assert(restored.relics.size() == state.relics.size(), "relics size mismatch")
+
+func _test_save_migration(characters: Array[CharacterData]) -> void:
+	# 模擬「沒有 save_version 欄位的舊存檔」（v0 → v1 升級路徑）
+	var state: RunState = RunState.new()
+	state.init_for(characters[0])
+	state.gold = 222
+	var legacy: Dictionary = state.to_dict()
+	legacy.erase("save_version")
+	var migrated: Dictionary = SaveManager.migrate(legacy)
+	assert(int(migrated.get("save_version", 0)) == SaveManager.SAVE_VERSION,
+		"migrate should stamp save_version to current; got %d" % int(migrated.get("save_version", 0)))
+	# 驗證升級後的 dict 仍可被 RunState.from_dict 還原
+	var restored: RunState = RunState.new()
+	assert(restored.from_dict(migrated, characters), "migrated legacy save should from_dict cleanly")
+	assert(restored.gold == 222, "migration should preserve gold")
 
 func _test_save_manager_cycle(characters: Array[CharacterData]) -> void:
 	SaveManager.clear()

@@ -46,10 +46,27 @@ static func load_save() -> Dictionary:
 		push_error("存檔內容無法解析，已備份到 %s" % SAVE_CORRUPT_PATH)
 		_backup_corrupt(text)
 		return {}
-	var data: Dictionary = parsed as Dictionary
-	var version: int = int(data.get("save_version", 1))
+	return migrate(parsed as Dictionary)
+
+# 把舊版存檔逐步升級到 SAVE_VERSION。
+# 新增破壞性結構改動時：把 SAVE_VERSION + 1，並在 match 加上對應的 case。
+# 例如 SAVE_VERSION 升到 2 時，加 `1:` 分支處理 v1 → v2 的欄位變動。
+# Public（沒底線）以便測試直接呼叫；正常流程從 load_save 進入。
+static func migrate(data: Dictionary) -> Dictionary:
+	var version: int = int(data.get("save_version", 0))
 	if version > SAVE_VERSION:
 		push_warning("存檔版本 %d 比目前支援的 %d 新，可能不相容" % [version, SAVE_VERSION])
+		return data
+	while version < SAVE_VERSION:
+		match version:
+			0:
+				# 早期還沒寫入 save_version 的存檔；結構與 v1 相同，只需補欄位。
+				pass
+			_:
+				push_warning("缺少 save version %d → %d 的 migrator" % [version, version + 1])
+				return data
+		version += 1
+		data["save_version"] = version
 	return data
 
 static func _backup_corrupt(text: String) -> void:
