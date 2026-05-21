@@ -1,8 +1,8 @@
 name: Build Android APK
 
 on:
-  push:
-    branches: [main]
+  # 自動 push 觸發已禁用 — Godot 4.x 在 CI 內 Android export 有一個不印訊息的內部驗證 bug
+  # 仍可手動觸發測試。本機匯出見 docs/android-export-local.md
   workflow_dispatch:
 
 jobs:

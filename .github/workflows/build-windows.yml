@@ -1,0 +1,51 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.6.3"
+  GODOT_RELEASE: "stable"
+
+jobs:
+  build-windows:
+    name: Export Windows EXE
+    runs-on: ubuntu-22.04
+    container:
+      image: barichello/godot-ci:4.6
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show templates dir
+        run: |
+          find / -name "Godot_v4.6*" -type f 2>/dev/null | head -5 || true
+          ls /root/.local/share/godot/export_templates/ 2>/dev/null || true
+          find / -path "*godot/export_templates*" -name "windows*" 2>/dev/null | head -5 || true
+
+      - name: Pre-import project
+        run: godot --headless --import || true
+
+      - name: Export Windows EXE (debug)
+        run: |
+          mkdir -p build/windows
+          godot --headless --verbose --export-debug "Windows Desktop" build/windows/SwordCard.exe 2>&1 | tail -50
+          ls -la build/windows/
+
+      - name: Package output (exe + pck)
+        run: |
+          cd build/windows
+          ls -la
+          # Bundle into zip for cleaner download
+          zip -j ../SwordCard-Windows.zip *.exe *.pck 2>/dev/null || zip -j ../SwordCard-Windows.zip *
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SwordCard-Windows
+          path: build/SwordCard-Windows.zip
+          if-no-files-found: error
+          retention-days: 30
