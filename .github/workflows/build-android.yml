@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  GODOT_VERSION: "4.4"
+  GODOT_VERSION: "4.6.3"
   GODOT_RELEASE: "stable"
 
 jobs:
@@ -29,6 +29,36 @@ jobs:
         with:
           packages: "platform-tools platforms;android-34 build-tools;34.0.0"
 
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/bin/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}-linux
+
+      - name: Download Godot editor
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          GODOT_TAG="${GODOT_VERSION}-${GODOT_RELEASE}"
+          ZIP_NAME="Godot_v${GODOT_TAG}_linux.x86_64.zip"
+          curl -L "https://github.com/godotengine/godot/releases/download/${GODOT_TAG}/${ZIP_NAME}" -o godot.zip
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_TAG}_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+
+      - name: Download Godot export templates
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          GODOT_TAG="${GODOT_VERSION}-${GODOT_RELEASE}"
+          curl -L "https://github.com/godotengine/godot/releases/download/${GODOT_TAG}/Godot_v${GODOT_TAG}_export_templates.tpz" -o templates.tpz
+          TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}"
+          mkdir -p "$TEMPLATE_DIR"
+          unzip -q templates.tpz
+          mv templates/* "$TEMPLATE_DIR/"
+          rmdir templates
+
       - name: Generate debug keystore (JKS)
         run: |
           keytool -genkey -v \
@@ -39,6 +69,29 @@ jobs:
             -keyalg RSA -keysize 2048 -validity 10000 \
             -dname "CN=Android Debug,O=Android,C=US"
 
+      - name: Configure Godot editor settings
+        run: |
+          mkdir -p "$HOME/.config/godot"
+          {
+            echo '[gd_resource type="EditorSettings" format=3]'
+            echo ''
+            echo '[resource]'
+            echo "export/android/android_sdk_path = \"$ANDROID_SDK_ROOT\""
+            echo "export/android/java_sdk_path = \"$JAVA_HOME\""
+            echo "export/android/debug_keystore = \"$HOME/debug.keystore\""
+            echo 'export/android/debug_keystore_user = "androiddebugkey"'
+            echo 'export/android/debug_keystore_pass = "android"'
+            echo "export/android/release_keystore = \"$HOME/debug.keystore\""
+            echo 'export/android/release_keystore_user = "androiddebugkey"'
+            echo 'export/android/release_keystore_pass = "android"'
+            echo 'export/android/force_system_user = false'
+            echo 'export/android/shutdown_adb_on_exit = true'
+            echo 'export/android/one_click_deploy_clear_previous_install = false'
+          } | tee \
+            "$HOME/.config/godot/editor_settings-4.tres" \
+            "$HOME/.config/godot/editor_settings-${GODOT_VERSION}.tres" \
+            "$HOME/.config/godot/editor_settings-$(echo ${GODOT_VERSION} | cut -d. -f1-2).tres" > /dev/null
+
       - name: Generate PNG launcher icons from SVG
         run: |
           sudo apt-get update -qq
@@ -47,7 +100,14 @@ jobs:
           rsvg-convert -w 432 -h 432 icon.svg -o icon_fg_432.png
           convert -size 432x432 xc:'#2a3a5a' icon_bg_432.png
 
-      - name: Patch export preset (Gradle build + PNG icons)
+      - name: Install Android build template
+        run: |
+          TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}"
+          mkdir -p android/build
+          unzip -oq "$TEMPLATE_DIR/android_source.zip" -d android/build
+          echo "${GODOT_VERSION}.${GODOT_RELEASE}" > android/.build_version
+
+      - name: Patch export preset
         run: |
           sed -i 's|launcher_icons/main_192x192="res://icon.svg"|launcher_icons/main_192x192="res://icon_192.png"|' export_presets.cfg
           sed -i 's|launcher_icons/adaptive_foreground_432x432="res://icon.svg"|launcher_icons/adaptive_foreground_432x432="res://icon_fg_432.png"|' export_presets.cfg
@@ -56,47 +116,27 @@ jobs:
           sed -i 's|gradle_build/min_sdk=""|gradle_build/min_sdk="24"|' export_presets.cfg
           sed -i 's|gradle_build/target_sdk=""|gradle_build/target_sdk="34"|' export_presets.cfg
 
-      - name: Pre-download templates and install Android build template
+      - name: Pre-import project resources
         run: |
-          TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}"
-          mkdir -p "$TEMPLATE_DIR"
-          if [ ! -f "$TEMPLATE_DIR/android_source.zip" ]; then
-            curl -L "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_export_templates.tpz" -o templates.tpz
-            unzip -q templates.tpz
-            mv templates/* "$TEMPLATE_DIR/"
-            rmdir templates
+          godot --headless --import || true
+
+      - name: Export Android APK (debug)
+        run: |
+          mkdir -p build/android
+          godot --headless --verbose --export-debug "Android" build/android/SwordCard.apk 2>&1 | tee export.log
+          if [ ! -f build/android/SwordCard.apk ]; then
+            echo "::error::APK not generated"
+            echo "=== editor_settings AFTER ==="
+            ls -la "$HOME/.config/godot/"
+            cat "$HOME/.config/godot/editor_settings-"*.tres 2>/dev/null | head -30
+            exit 1
           fi
-          mkdir -p android/build
-          unzip -oq "$TEMPLATE_DIR/android_source.zip" -d android/build
-          echo "${GODOT_VERSION}.${GODOT_RELEASE}" > android/.build_version
-          ls android/build | head -5
-
-      - name: Export Godot project (community action)
-        id: export
-        uses: firebelley/godot-export@v6.0.0
-        with:
-          godot_executable_download_url: "https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}/Godot_v${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}_linux.x86_64.zip"
-          godot_export_templates_download_url: "https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}/Godot_v${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}_export_templates.tpz"
-          relative_project_path: ./
-          archive_output: false
-          use_preset_export_path: true
-          export_debug: true
-        env:
-          ANDROID_KEYSTORE_PATH: /home/runner/debug.keystore
-          ANDROID_KEYSTORE_USER: androiddebugkey
-          ANDROID_KEYSTORE_PASSWORD: android
-
-      - name: Locate built APK
-        run: |
-          find . -name "*.apk" -type f 2>/dev/null
-          ls -la build/android/ 2>/dev/null || true
+          ls -la build/android/
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: SwordCard-debug-apk
-          path: |
-            build/android/*.apk
-            **/*.apk
+          path: build/android/SwordCard.apk
           if-no-files-found: error
           retention-days: 30
