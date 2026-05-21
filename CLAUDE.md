@@ -178,6 +178,14 @@ smoke test 用 9 組 (block, vuln, weak, attack) 組合驗證兩者一致。改 
     - `start_next_battle`：套 `Ascension.enemy_hp_multiplier` 到 battle.state（區分 boss / 一般）
     - `_battle_gold_reward`：套 `Ascension.gold_multiplier`
   改 modifier 數值記得更新 `Ascension.describe()`
+- **Boss phase**：`EnemyData.phase_2_actions` 是可選的第二招式組。`BattleController._check_phase_transition()`
+  在 `play_card` 結算傷害後檢查，HP * 2 < max_hp 時 `phased = true`、`action_index` 歸零、log 提示。
+  `next_enemy_action` 會在 phased 後改抽 phase_2_actions。3 個 boss 都已配對應的 phase 2 招式。
+  舊存檔的 EnemyData 沒這欄位也不會 crash（`from_dict` 用 `data.get("phase_2_actions", [])`）
+- **種子分享 / 每日挑戰**：主選單除了「開始遊戲」（隨機 seed），還有「每日挑戰」（用今天日期 hash）和「輸入種子」（彈窗 LineEdit，任意字串 hash 成 int）。
+  `start_run` 流程：`seed(pending_seed if non-zero else randi())` → `_make_encounter_choices()` → `randomize()` 恢復隨機。
+  Seed 存在 `RunState.map_seed`，progress screen 顯示在難度 A_N 旁邊方便截圖分享。
+  Smoke test 驗證同 seed 兩次 generate 結構一致
 
 ### Debug menu (桌面開發用)
 
@@ -212,7 +220,7 @@ main.gd
 
 ## 測試
 
-`scripts/smoke_test.gd` 是 SceneTree-based，跑 22 個獨立測試：
+`scripts/smoke_test.gd` 是 SceneTree-based，跑 25 個獨立測試：
 
 - 資料完整性（角色 / 敵人 / 卡片）
 - 戰鬥機制（虛弱/破綻/格擋/中毒/能量耗盡/power 疊加/poison_burst）
@@ -224,6 +232,9 @@ main.gd
 - 傷害預測一致性：CardFormat.predict_enemy_damage vs EffectResolver 跨 9 組組合
 - Bestiary persistence：clear → mark → kill_count 累加 → load_all round-trip
 - Ascension persistence + modifier 計算（A0-A4 解鎖、HP / gold 倍數）
+- Boss phase transition（3 boss 都有 phase_2_actions、HP <50% 觸發切換、next_enemy_action 用新招式）
+- Event variety（至少 10 種 variant，欄位齊全，MapGenerator pool 包含全部）
+- Map seed determinism（同 seed 兩次 generate 結構完全一致）
 - 平衡 regression（基礎）：4 角色 vs 山賊頭目，30 場隨機 AI 無時限，全 100%（純 regression 偵測）
 - 平衡 regression（中段）：4 角色 vs 蜈蚣大王，10 回合時限，30 場。
   zhao_linger baseline 20%（雙向偵測），其餘 100%（regression-only）。
