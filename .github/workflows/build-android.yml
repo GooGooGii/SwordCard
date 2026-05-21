@@ -60,14 +60,18 @@ jobs:
           mv templates/* "$TEMPLATE_DIR/"
           rmdir templates
 
-      - name: Generate debug keystore
+      - name: Generate debug keystore (JKS format)
         run: |
+          # Force JKS format (Java 9+ defaults to PKCS12 but Godot expects JKS)
           keytool -genkey -v \
             -keystore "$HOME/debug.keystore" \
+            -storetype JKS \
             -alias androiddebugkey \
             -storepass android -keypass android \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -dname "CN=Android Debug,O=Android,C=US"
+          echo "=== keystore info ==="
+          keytool -list -keystore "$HOME/debug.keystore" -storepass android | head -10
 
       - name: Configure Godot editor settings
         run: |
