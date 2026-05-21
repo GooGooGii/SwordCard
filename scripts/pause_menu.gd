@@ -60,7 +60,7 @@ func _build() -> void:
 	_root_panel.custom_minimum_size = Vector2(420, 380)
 	var box_style: StyleBoxFlat = StyleBoxFlat.new()
 	box_style.bg_color = Color("13202c", 0.96)
-	box_style.border_color = Color("c8b46f")
+	box_style.border_color = ThemeColors.BORDER_GOLD
 	box_style.set_border_width_all(2)
 	box_style.set_corner_radius_all(10)
 	box_style.content_margin_left = 24
@@ -158,7 +158,7 @@ func _volume_row(label_text: String, value: float, on_change: Callable) -> HBoxC
 	value_label.custom_minimum_size = Vector2(36, 0)
 	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	value_label.add_theme_font_size_override("font_size", 15)
-	value_label.add_theme_color_override("font_color", Color("c8b46f"))
+	value_label.add_theme_color_override("font_color", ThemeColors.BORDER_GOLD)
 	row.add_child(value_label)
 	slider.value_changed.connect(func(v: float) -> void:
 		value_label.text = "%d" % int(v)
@@ -170,11 +170,11 @@ func _menu_button(text: String) -> Button:
 	btn.text = text
 	btn.custom_minimum_size = Vector2(280, 44)
 	btn.add_theme_font_size_override("font_size", 18)
-	btn.add_theme_color_override("font_color", Color("fff8dc"))
+	btn.add_theme_color_override("font_color", ThemeColors.TEXT_LIGHT)
 	btn.add_theme_color_override("font_hover_color", Color("ffffff"))
-	var normal: StyleBoxFlat = _stylebox(Color("273449"), Color("c8b46f"), 2)
-	var hover: StyleBoxFlat = _stylebox(Color("324663"), Color("f7df9c"), 3)
-	var pressed: StyleBoxFlat = _stylebox(Color("1c2737"), Color("c8b46f"), 2)
+	var normal: StyleBoxFlat = _stylebox(ThemeColors.PANEL_NAVY, ThemeColors.BORDER_GOLD, 2)
+	var hover: StyleBoxFlat = _stylebox(ThemeColors.PANEL_NAVY_HOV, ThemeColors.ACCENT_GOLD, 3)
+	var pressed: StyleBoxFlat = _stylebox(ThemeColors.PANEL_NAVY_PRS, ThemeColors.BORDER_GOLD, 2)
 	btn.add_theme_stylebox_override("normal", normal)
 	btn.add_theme_stylebox_override("hover", hover)
 	btn.add_theme_stylebox_override("pressed", pressed)
@@ -193,5 +193,5 @@ func _title_label(text: String) -> Label:
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 28)
-	label.add_theme_color_override("font_color", Color("f7df9c"))
+	label.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
 	return label

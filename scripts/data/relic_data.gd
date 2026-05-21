@@ -13,7 +13,7 @@ extends Resource
 @export var character_id: String = ""  # only for "weapon" slot
 @export var boss_id: String = ""  # only for "artifact" slot (drops from this boss)
 @export var triggers: Array[Dictionary] = []
-@export var icon_color: Color = Color("c8b46f")
+@export var icon_color: Color = ThemeColors.BORDER_GOLD
 @export var icon_shape: String = "diamond"  # diamond | circle | hex | star
 
 func clone() -> RelicData:

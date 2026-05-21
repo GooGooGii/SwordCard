@@ -2,7 +2,7 @@ class_name MapNodeIcon
 extends Control
 
 var node_type: String = "battle"
-var icon_color: Color = Color("f7df9c")
+var icon_color: Color = ThemeColors.ACCENT_GOLD
 var icon_texture: Texture2D
 
 func _ready() -> void:
@@ -10,7 +10,7 @@ func _ready() -> void:
 		custom_minimum_size = Vector2(48, 48)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-func set_type(type: String, color: Color = Color("f7df9c")) -> void:
+func set_type(type: String, color: Color = ThemeColors.ACCENT_GOLD) -> void:
 	node_type = type
 	icon_color = color
 	icon_texture = _load_node_texture(type)

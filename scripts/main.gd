@@ -78,11 +78,11 @@ func _build_pause_button() -> void:
 	pause_button.size = PAUSE_BUTTON_SIZE
 	pause_button.set_anchors_preset(Control.PRESET_TOP_RIGHT, false)
 	pause_button.add_theme_font_size_override("font_size", 18)
-	pause_button.add_theme_color_override("font_color", Color("fff8dc"))
+	pause_button.add_theme_color_override("font_color", ThemeColors.TEXT_LIGHT)
 	pause_button.add_theme_color_override("font_hover_color", Color("ffffff"))
-	pause_button.add_theme_stylebox_override("normal", _pause_button_style(Color("273449"), Color("c8b46f"), 2))
-	pause_button.add_theme_stylebox_override("hover", _pause_button_style(Color("324663"), Color("f7df9c"), 3))
-	pause_button.add_theme_stylebox_override("pressed", _pause_button_style(Color("1c2737"), Color("c8b46f"), 2))
+	pause_button.add_theme_stylebox_override("normal", _pause_button_style(ThemeColors.PANEL_NAVY, ThemeColors.BORDER_GOLD, 2))
+	pause_button.add_theme_stylebox_override("hover", _pause_button_style(ThemeColors.PANEL_NAVY_HOV, ThemeColors.ACCENT_GOLD, 3))
+	pause_button.add_theme_stylebox_override("pressed", _pause_button_style(ThemeColors.PANEL_NAVY_PRS, ThemeColors.BORDER_GOLD, 2))
 	pause_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	pause_button.visible = false
 	pause_button.pressed.connect(_toggle_pause_menu)
@@ -236,7 +236,7 @@ func show_main_menu() -> void:
 	left_box.add_theme_constant_override("separation", 18)
 	left_margin.add_child(left_box)
 
-	left_box.add_child(UIFactory.card_label("仙劍奇俠傳・卡牌冒險原型", 14, Color("f4d985"), HORIZONTAL_ALIGNMENT_LEFT))
+	left_box.add_child(UIFactory.card_label("仙劍奇俠傳・卡牌冒險原型", 14, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_LEFT))
 	var title: Label = Label.new()
 	title.text = "SwordCard"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -248,7 +248,7 @@ func show_main_menu() -> void:
 	subtitle.text = "踏入山路、抽牌應敵、在每次分歧中決定這趟旅程要長成什麼樣子。"
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	subtitle.add_theme_font_size_override("font_size", 20)
-	subtitle.add_theme_color_override("font_color", Color("dbe4ef"))
+	subtitle.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
 	left_box.add_child(subtitle)
 
 	var feature_row: HBoxContainer = HBoxContainer.new()
@@ -321,7 +321,7 @@ func show_main_menu() -> void:
 	preview_box.add_theme_constant_override("separation", 14)
 	preview_wrap.add_child(preview_box)
 
-	preview_box.add_child(UIFactory.card_label("本次旅程推薦", 14, Color("f4d985"), HORIZONTAL_ALIGNMENT_LEFT))
+	preview_box.add_child(UIFactory.card_label("本次旅程推薦", 14, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_LEFT))
 	if preview_character != null:
 		var portrait: TextureRect = UIFactory.portrait_rect(preview_character.portrait_path, Vector2(340, 420), true)
 		portrait.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -459,17 +459,17 @@ func _character_thumb(character: CharacterData, selected: bool) -> Control:
 	button.focus_mode = Control.FOCUS_NONE
 	button.text = ""
 	var base: Color = Color("18212f", 0.86) if not selected else Color("33435c", 0.92)
-	var border: Color = Color("536277", 0.75) if not selected else Color("f4d985")
+	var border: Color = Color("536277", 0.75) if not selected else ThemeColors.HIGHLIGHT_GOLD
 	button.add_theme_stylebox_override("normal", UIFactory.style_box(base, border, 2 if selected else 1, 8))
-	button.add_theme_stylebox_override("hover", UIFactory.style_box(base.lightened(0.12), Color("f7df9c"), 2, 8))
-	button.add_theme_stylebox_override("pressed", UIFactory.style_box(base.darkened(0.1), Color("f4d985"), 2, 8))
+	button.add_theme_stylebox_override("hover", UIFactory.style_box(base.lightened(0.12), ThemeColors.ACCENT_GOLD, 2, 8))
+	button.add_theme_stylebox_override("pressed", UIFactory.style_box(base.darkened(0.1), ThemeColors.HIGHLIGHT_GOLD, 2, 8))
 	button.pressed.connect(func(): show_character_select(character.id))
 	var image: TextureRect = UIFactory.portrait_rect(character.portrait_path, Vector2(96, 72), true)
 	image.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	image.size = Vector2(96, 72)
 	image.position = Vector2(-48, 6)
 	button.add_child(image)
-	var label: Label = UIFactory.card_label(character.display_name, 13, Color("fff8dc"), HORIZONTAL_ALIGNMENT_CENTER)
+	var label: Label = UIFactory.card_label(character.display_name, 13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
 	label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
 	label.position = Vector2(-50, -22)
 	label.custom_minimum_size = Vector2(100, 20)
@@ -581,7 +581,7 @@ func _map_view() -> Control:
 		var column: VBoxContainer = VBoxContainer.new()
 		column.add_theme_constant_override("separation", 8)
 		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var title: Label = UIFactory.card_label("第 %d 層" % (row_index + 1), 15, Color("f7df9c"), HORIZONTAL_ALIGNMENT_CENTER)
+		var title: Label = UIFactory.card_label("第 %d 層" % (row_index + 1), 15, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 		column.add_child(title)
 		var row: Array = run_state.encounter_choices[row_index]
 		for node_variant: Variant in row:
@@ -591,7 +591,7 @@ func _map_view() -> Control:
 			node_buttons.append({"button": node_button, "row": row_index, "index": int(node_data.get("index", 0))})
 		map_row.add_child(column)
 		if row_index < run_state.encounter_choices.size() - 1:
-			var path_hint: Label = UIFactory.card_label("", 24, Color("c8b46f"), HORIZONTAL_ALIGNMENT_CENTER)
+			var path_hint: Label = UIFactory.card_label("", 24, ThemeColors.BORDER_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 			path_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 			path_hint.custom_minimum_size = Vector2(22, 180)
 			map_row.add_child(path_hint)
@@ -926,11 +926,11 @@ func _build_player_widget(parent: HBoxContainer) -> void:
 	player_feedback_label = UIFactory.feedback_label()
 	col.add_child(player_feedback_label)
 	col.add_child(_portrait_with_block_badge(selected_character.portrait_path, Vector2(220, 230), true, true))
-	player_name_label = UIFactory.card_label(selected_character.display_name, 18, Color("fff8dc"), HORIZONTAL_ALIGNMENT_CENTER)
+	player_name_label = UIFactory.card_label(selected_character.display_name, 18, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(player_name_label)
-	player_hp_bar = UIFactory.hp_bar(Color("c84a3a"), Color("3a1a1a"))
+	player_hp_bar = UIFactory.hp_bar(ThemeColors.HP_FILL, ThemeColors.HP_BG_DARK)
 	col.add_child(player_hp_bar)
-	player_hp_value = UIFactory.card_label("", 13, Color("fff8dc"), HORIZONTAL_ALIGNMENT_CENTER)
+	player_hp_value = UIFactory.card_label("", 13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(player_hp_value)
 	player_status_line = UIFactory.card_label("", 13, Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
 	player_status_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -948,16 +948,16 @@ func _build_enemy_widget(parent: HBoxContainer) -> void:
 	enemy_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	enemy_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	enemy_label.add_theme_font_size_override("font_size", 16)
-	enemy_label.add_theme_color_override("font_color", Color("f7df9c"))
+	enemy_label.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
 	col.add_child(enemy_label)
 	enemy_feedback_label = UIFactory.feedback_label()
 	col.add_child(enemy_feedback_label)
 	col.add_child(_portrait_with_block_badge(battle.enemy.portrait_path, Vector2(230, 230), true, false, battle.enemy.portrait_tint))
 	enemy_name_label = UIFactory.card_label(battle.enemy.display_name, 18, Color("ffd9a3"), HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(enemy_name_label)
-	enemy_hp_bar = UIFactory.hp_bar(Color("c84a3a"), Color("3a1a1a"))
+	enemy_hp_bar = UIFactory.hp_bar(ThemeColors.HP_FILL, ThemeColors.HP_BG_DARK)
 	col.add_child(enemy_hp_bar)
-	enemy_hp_value = UIFactory.card_label("", 13, Color("fff8dc"), HORIZONTAL_ALIGNMENT_CENTER)
+	enemy_hp_value = UIFactory.card_label("", 13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(enemy_hp_value)
 	enemy_status_line = UIFactory.card_label("", 13, Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
 	enemy_status_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -979,7 +979,7 @@ func _build_left_dock(parent: HBoxContainer) -> void:
 	log_label.fit_content = true
 	log_label.scroll_following = true
 	log_label.bbcode_enabled = false
-	log_label.add_theme_color_override("default_color", Color("c5cad6"))
+	log_label.add_theme_color_override("default_color", ThemeColors.TEXT_MUTED)
 	log_label.add_theme_font_size_override("normal_font_size", 12)
 	dock.add_child(log_label)
 	var deck_button: Button = _button("查看牌組")
@@ -1000,9 +1000,9 @@ func _build_right_dock(parent: HBoxContainer) -> void:
 	end_turn_button.add_theme_font_size_override("font_size", 20)
 	end_turn_button.add_theme_color_override("font_color", Color("fff5cf"))
 	end_turn_button.add_theme_color_override("font_hover_color", Color("ffffff"))
-	end_turn_button.add_theme_stylebox_override("normal", UIFactory.style_box(Color("8a3a2e"), Color("f4d985"), 3, 12))
+	end_turn_button.add_theme_stylebox_override("normal", UIFactory.style_box(Color("8a3a2e"), ThemeColors.HIGHLIGHT_GOLD, 3, 12))
 	end_turn_button.add_theme_stylebox_override("hover", UIFactory.style_box(Color("a44a36"), Color("ffeab0"), 4, 12))
-	end_turn_button.add_theme_stylebox_override("pressed", UIFactory.style_box(Color("662a22"), Color("c8b46f"), 3, 12))
+	end_turn_button.add_theme_stylebox_override("pressed", UIFactory.style_box(Color("662a22"), ThemeColors.BORDER_GOLD, 3, 12))
 	end_turn_button.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("4a3530"), Color("786258"), 2, 12))
 	end_turn_button.pressed.connect(end_player_turn)
 	dock.add_child(end_turn_button)
@@ -1114,7 +1114,7 @@ func _show_enemy_action_preview(action: Dictionary) -> void:
 	var effect_text: String = _enemy_action_effect_summary(action)
 	if not effect_text.is_empty():
 		preview_lines.append(effect_text)
-	_show_feedback(enemy_feedback_label, preview_lines, Color("f7df9c"))
+	_show_feedback(enemy_feedback_label, preview_lines, ThemeColors.ACCENT_GOLD)
 
 func _enemy_action_effect_summary(action: Dictionary) -> String:
 	var effects: Array = action.get("effects", []) as Array
@@ -1279,7 +1279,7 @@ func _route_node_button(node_data: Dictionary) -> Button:
 	button.pressed.connect(func(): choose_route_node(node_data))
 	return button
 
-func _build_route_button(text: String, icon_type: String, icon_color: Color, font_color: Color = Color("fff8dc")) -> Button:
+func _build_route_button(text: String, icon_type: String, icon_color: Color, font_color: Color = ThemeColors.TEXT_LIGHT) -> Button:
 	var button: Button = Button.new()
 	button.custom_minimum_size = Vector2(260, 160)
 	var box: VBoxContainer = VBoxContainer.new()
@@ -1331,9 +1331,9 @@ func _route_enemy_button(enemy: EnemyData, is_boss: bool = false) -> Button:
 	var icon_type: String = "boss" if is_boss else "battle"
 	var icon_color: Color = Color("f8d29c") if is_boss else Color("e2c486")
 	var button: Button = _build_route_button(text, icon_type, icon_color)
-	var bg_color: Color = Color("452a35") if is_boss else Color("273449")
-	button.add_theme_stylebox_override("normal", UIFactory.style_box(bg_color, Color("c8b46f"), 2, 8))
-	button.add_theme_stylebox_override("hover", UIFactory.style_box(bg_color.lightened(0.14), Color("f7df9c"), 3, 8))
+	var bg_color: Color = Color("452a35") if is_boss else ThemeColors.PANEL_NAVY
+	button.add_theme_stylebox_override("normal", UIFactory.style_box(bg_color, ThemeColors.BORDER_GOLD, 2, 8))
+	button.add_theme_stylebox_override("hover", UIFactory.style_box(bg_color.lightened(0.14), ThemeColors.ACCENT_GOLD, 3, 8))
 	button.add_theme_stylebox_override("pressed", UIFactory.style_box(Color("1d2838"), Color("e4c66a"), 2, 8))
 	return button
 
@@ -1363,7 +1363,7 @@ func _route_shop_button(is_black_shop: bool) -> Button:
 	var bg_color: Color = Color("2d2036") if is_black_shop else Color("5b4a2f")
 	var border_color: Color = Color("e2a86b") if is_black_shop else Color("e4c66a")
 	button.add_theme_stylebox_override("normal", UIFactory.style_box(bg_color, border_color, 2, 8))
-	button.add_theme_stylebox_override("hover", UIFactory.style_box(bg_color.lightened(0.14), Color("f7df9c"), 3, 8))
+	button.add_theme_stylebox_override("hover", UIFactory.style_box(bg_color.lightened(0.14), ThemeColors.ACCENT_GOLD, 3, 8))
 	button.add_theme_stylebox_override("pressed", UIFactory.style_box(bg_color.darkened(0.12), Color("d2b96b"), 2, 8))
 	return button
 
@@ -1547,9 +1547,9 @@ func _shop_relic_view(relic: RelicData) -> Control:
 	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	box.add_child(icon)
 	icon.set_relic(relic)
-	box.add_child(UIFactory.card_label(relic.display_name, 17, Color("fff8dc"), HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(UIFactory.card_label(relic.display_name, 17, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(UIFactory.card_label(relic.description, 12, Color("d8e0ec"), HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(UIFactory.card_label("價格：%d 銅錢" % price, 14, Color("f7df9c"), HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(UIFactory.card_label("價格：%d 銅錢" % price, 14, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER))
 	var can_buy: bool = run_state.gold >= price
 	var buy_button: Button = _button("買下裝備")
 	buy_button.disabled = not can_buy
@@ -1607,7 +1607,7 @@ func _shop_item_view(item: Dictionary) -> Control:
 	card_button.disabled = not can_buy
 	card_button.pressed.connect(func(): buy_shop_card(card, price))
 	box.add_child(card_button)
-	var price_label: Label = UIFactory.card_label("價格：%d 銅錢" % price, 15, Color("f7df9c"), HORIZONTAL_ALIGNMENT_CENTER)
+	var price_label: Label = UIFactory.card_label("價格：%d 銅錢" % price, 15, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	box.add_child(price_label)
 	var buy_button: Button = _button("買下")
 	buy_button.disabled = not can_buy
@@ -1680,7 +1680,7 @@ func show_deck_view(mode: String = "view") -> void:
 	deck_view_mode = mode
 	deck_overlay = PanelContainer.new()
 	deck_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	deck_overlay.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.94), Color("c8b46f"), 2, 8))
+	deck_overlay.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.94), ThemeColors.BORDER_GOLD, 2, 8))
 	add_child(deck_overlay)
 	var outer: MarginContainer = MarginContainer.new()
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -1766,7 +1766,7 @@ func _deck_view_card(card: CardData, mode: String = "view") -> Button:
 		button.pressed.connect(func(): upgrade_card_in_deck(card))
 	else:
 		button.add_theme_stylebox_override("disabled", UIFactory.style_box(_card_color(card.card_type, true), Color("e7d38a"), 2, 8))
-		button.add_theme_color_override("font_disabled_color", Color("fff8dc"))
+		button.add_theme_color_override("font_disabled_color", ThemeColors.TEXT_LIGHT)
 	return button
 
 func show_result(victory: bool) -> void:
@@ -1888,7 +1888,7 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	title_row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	title_row.add_theme_constant_override("separation", 4)
 	title_back.add_child(title_row)
-	var title: Label = UIFactory.card_label(card.display_title(), 14, Color("fff8dc"), HORIZONTAL_ALIGNMENT_LEFT)
+	var title: Label = UIFactory.card_label(card.display_title(), 14, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_LEFT)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title_row.add_child(title)
@@ -1902,13 +1902,13 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	cost_badge.offset_right = -2
 	cost_badge.offset_bottom = 38
 	cost_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	cost_badge.add_theme_stylebox_override("panel", UIFactory.style_box(Color("161d2a", 0.94), Color("f4d985"), 1, 6))
+	cost_badge.add_theme_stylebox_override("panel", UIFactory.style_box(Color("161d2a", 0.94), ThemeColors.HIGHLIGHT_GOLD, 1, 6))
 	art_layer.add_child(cost_badge)
-	var cost_label: Label = UIFactory.card_label(str(cost), 15, Color("f7df9c"), HORIZONTAL_ALIGNMENT_CENTER)
+	var cost_label: Label = UIFactory.card_label(str(cost), 15, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	cost_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cost_badge.add_child(cost_label)
-	var type_line: Label = UIFactory.card_label(_card_type_name(card.card_type), 12, Color("f7df9c"), HORIZONTAL_ALIGNMENT_CENTER)
+	var type_line: Label = UIFactory.card_label(_card_type_name(card.card_type), 12, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	box.add_child(type_line)
 	var desc: Label = UIFactory.card_label(card.display_description(), 12, Color("e8edf3"), HORIZONTAL_ALIGNMENT_LEFT)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2011,7 +2011,7 @@ func _show_state_feedback(before: Dictionary) -> void:
 	if not player_lines.is_empty():
 		_show_feedback(player_feedback_label, player_lines, Color("f4b7a8"))
 	if not enemy_lines.is_empty():
-		_show_feedback(enemy_feedback_label, enemy_lines, Color("f7df9c"))
+		_show_feedback(enemy_feedback_label, enemy_lines, ThemeColors.ACCENT_GOLD)
 	if player_hp_delta < 0:
 		UIFactory.shake_node(player_portrait_wrap, 7.0, 0.28)
 	if enemy_hp_delta < 0:
@@ -2098,7 +2098,7 @@ func _card_rarity_name(card: CardData) -> String:
 
 func _card_rarity_color(card: CardData) -> Color:
 	if card.upgraded:
-		return Color("f7df9c")
+		return ThemeColors.ACCENT_GOLD
 	match card.rarity:
 		"rare":
 			return Color("d9c2ff")
@@ -2117,7 +2117,7 @@ func _style_card_button(button: Button, card: CardData, affordable: bool) -> voi
 	button.add_theme_stylebox_override("hover", hover)
 	button.add_theme_stylebox_override("pressed", pressed)
 	button.add_theme_stylebox_override("disabled", disabled)
-	button.add_theme_color_override("font_color", Color("fff8dc"))
+	button.add_theme_color_override("font_color", ThemeColors.TEXT_LIGHT)
 	button.add_theme_color_override("font_hover_color", Color("ffffff"))
 	button.add_theme_color_override("font_pressed_color", Color("fff0bd"))
 	button.add_theme_color_override("font_disabled_color", Color("b8bec8"))

@@ -36,7 +36,7 @@ static func title_label(text: String, size: int) -> Label:
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size", size)
-	label.add_theme_color_override("font_color", Color("f7df9c"))
+	label.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
 	return label
 
 static func paragraph(text: String) -> Label:
@@ -44,11 +44,11 @@ static func paragraph(text: String) -> Label:
 	label.text = text
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size", 17)
-	label.add_theme_color_override("font_color", Color("dbe4ef"))
+	label.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
 	return label
 
 static func style_button(button: Button) -> void:
-	button.add_theme_stylebox_override("normal", style_box(Color("273449"), Color("8ea3c4"), 1, 6))
+	button.add_theme_stylebox_override("normal", style_box(ThemeColors.PANEL_NAVY, Color("8ea3c4"), 1, 6))
 	button.add_theme_stylebox_override("hover", style_box(Color("33435c"), Color("c3d3ee"), 2, 6))
 	button.add_theme_stylebox_override("pressed", style_box(Color("1f2a3c"), Color("e4c66a"), 2, 6))
 	button.add_theme_color_override("font_color", Color("edf2f7"))
@@ -90,7 +90,7 @@ static func feedback_label() -> Label:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size", 22)
-	label.add_theme_color_override("font_color", Color("f7df9c"))
+	label.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
 	label.modulate.a = 0.0
 	return label
 

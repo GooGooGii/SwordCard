@@ -121,4 +121,4 @@ func _rarity_border() -> Color:
 			return Color("d9c2ff")
 		"legendary":
 			return Color("ffb84a")
-	return Color("c8b46f")
+	return ThemeColors.BORDER_GOLD
