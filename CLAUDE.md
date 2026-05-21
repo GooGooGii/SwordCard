@@ -121,7 +121,7 @@ main.gd
 
 ## 測試
 
-`scripts/smoke_test.gd` 是 SceneTree-based，跑 15 個獨立測試：
+`scripts/smoke_test.gd` 是 SceneTree-based，跑 17 個獨立測試：
 
 - 資料完整性（角色 / 敵人 / 卡片）
 - 戰鬥機制（虛弱/破綻/格擋/中毒/能量耗盡/power 疊加/poison_burst）
@@ -129,10 +129,32 @@ main.gd
 - Save round-trip (RunState ↔ dict ↔ JSON)
 - SaveManager 完整 save→load→from_dict 循環
 - 地圖生成：30 次 random seed 都無孤兒節點、boss 可達
+- 平衡 regression：4 角色 vs 第一個敵人，每角色 30 場隨機 AI 模擬
 
 新增測試：在 `_initialize()` 加一個 `_test_xxx()` 呼叫，然後實作該函式用 `assert()`。
 
 成功要 print `"SwordCard smoke test passed."` 並 `quit(0)`，CI 用 grep 該字串判定成功。
+
+### 平衡 regression 失敗時怎麼處理
+
+`_test_balance_regression()` 對每個角色用起始牌組 + 隨機 AI 出牌，跑 30 場固定 seed 模擬。基準 (`BALANCE_BASELINES`) 寫死在 smoke_test.gd 頂部，容差 `BALANCE_TOLERANCE_PP = 15` 個百分點。
+
+當 assert fail 時要先判斷是哪種狀況：
+
+1. **意外的 regression**（沒有故意改平衡，但測試掛了）
+   → 看是哪張卡 / 哪個 effect / 哪個 relic 的改動讓勝率掉下來，回頭檢查
+   → 多半是 EffectResolver 改 effect 處理時有 off-by-one，或 BattleController 的狀態順序改了
+
+2. **故意的平衡調整**（例如把李逍遙弱化、把山賊強化）
+   → 重新跑 `godot --headless --path . -s scripts/smoke_test.gd` 看實際勝率
+   → 把新觀測值寫進 `BALANCE_BASELINES`
+   → 在 commit message 寫清楚「故意調整：X 從 100% → 80%，因為...」
+
+3. **整套機制大改**（換了戰鬥系統、加了新卡片類型）
+   → 暫時把該角色從 `BALANCE_BASELINES` 移掉（會印觀測值但不 assert）
+   → 改完穩定後再補回 baseline
+
+容差 15 pp 是給隨機 AI 的雜訊空間，不是給「小調整」的緩衝；如果你做的調整在容差內，那其實就是無關緊要的改動，可以不更新 baseline。
 
 ## 常見地雷
 
