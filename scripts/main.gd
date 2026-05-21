@@ -272,7 +272,7 @@ func _build_root() -> void:
 	root.add_theme_constant_override("margin_left", 28)
 	root.add_theme_constant_override("margin_top", 20)
 	root.add_theme_constant_override("margin_right", 28)
-	root.add_theme_constant_override("margin_bottom", 20)
+	root.add_theme_constant_override("margin_bottom", 32)
 	add_child(root)
 
 func _clear_root() -> void:
@@ -296,49 +296,66 @@ func _set_background(path: String) -> void:
 func show_main_menu() -> void:
 	_set_background("res://assets/art/main_menu_bg.png")
 	_clear_root()
+	var viewport_size: Vector2 = get_viewport_rect().size
+	var ultra_compact: bool = viewport_size.y <= 760.0
+	var compact_layout: bool = viewport_size.y <= 900.0
+	root.add_theme_constant_override("margin_left", 20 if ultra_compact else 28)
+	root.add_theme_constant_override("margin_top", 16 if ultra_compact else 20)
+	root.add_theme_constant_override("margin_right", 20 if ultra_compact else 28)
+	root.add_theme_constant_override("margin_bottom", 18 if ultra_compact else 32)
+	var shell_gap: int = 14 if ultra_compact else (18 if compact_layout else 28)
+	var panel_margin: int = 18 if ultra_compact else (24 if compact_layout else 34)
+	var section_gap: int = 10 if ultra_compact else (14 if compact_layout else 18)
+	var button_height: float = 40.0 if ultra_compact else (48.0 if compact_layout else 58.0)
+	var button_font_size: int = 18 if ultra_compact else 20
+	var title_size: int = 36 if ultra_compact else (44 if compact_layout else 54)
+	var subtitle_size: int = 16 if ultra_compact else (18 if compact_layout else 20)
+	var preview_gap: int = 8 if ultra_compact else (10 if compact_layout else 14)
+	var preview_size: Vector2 = Vector2(190, 220) if ultra_compact else (Vector2(260, 300) if compact_layout else Vector2(340, 420))
+
 	var shell: HBoxContainer = HBoxContainer.new()
 	shell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	shell.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	shell.alignment = BoxContainer.ALIGNMENT_CENTER
-	shell.add_theme_constant_override("separation", 28)
+	shell.add_theme_constant_override("separation", shell_gap)
 	root.add_child(shell)
 
 	var left_panel: PanelContainer = PanelContainer.new()
 	left_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	left_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	left_panel.custom_minimum_size = Vector2(560, 0)
+	left_panel.custom_minimum_size = Vector2(500 if ultra_compact else (520 if compact_layout else 560), 0)
 	left_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("101722", 0.80), Color("d7c89a", 0.38), 1, 16))
 	shell.add_child(left_panel)
 
 	var left_margin: MarginContainer = MarginContainer.new()
-	left_margin.add_theme_constant_override("margin_left", 34)
-	left_margin.add_theme_constant_override("margin_top", 34)
-	left_margin.add_theme_constant_override("margin_right", 34)
-	left_margin.add_theme_constant_override("margin_bottom", 34)
+	left_margin.add_theme_constant_override("margin_left", panel_margin)
+	left_margin.add_theme_constant_override("margin_top", panel_margin)
+	left_margin.add_theme_constant_override("margin_right", panel_margin)
+	left_margin.add_theme_constant_override("margin_bottom", panel_margin)
 	left_panel.add_child(left_margin)
 
 	var left_box: VBoxContainer = VBoxContainer.new()
 	left_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	left_box.add_theme_constant_override("separation", 18)
+	left_box.add_theme_constant_override("separation", section_gap)
 	left_margin.add_child(left_box)
 
 	left_box.add_child(UIFactory.card_label("仙劍奇俠傳・卡牌冒險原型", 14, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_LEFT))
 	var title: Label = Label.new()
 	title.text = "SwordCard"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	title.add_theme_font_size_override("font_size", 54)
+	title.add_theme_font_size_override("font_size", title_size)
 	title.add_theme_color_override("font_color", Color("fff6d6"))
 	left_box.add_child(title)
 
 	var subtitle: Label = Label.new()
 	subtitle.text = "踏入山路、抽牌應敵、在每次分歧中決定這趟旅程要長成什麼樣子。"
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	subtitle.add_theme_font_size_override("font_size", 20)
+	subtitle.add_theme_font_size_override("font_size", subtitle_size)
 	subtitle.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
 	left_box.add_child(subtitle)
 
 	var feature_row: HBoxContainer = HBoxContainer.new()
-	feature_row.add_theme_constant_override("separation", 10)
+	feature_row.add_theme_constant_override("separation", 8 if ultra_compact else 10)
 	left_box.add_child(feature_row)
 	feature_row.add_child(UIFactory.menu_chip("牌組構築"))
 	feature_row.add_child(UIFactory.menu_chip("路線選擇"))
@@ -349,60 +366,61 @@ func show_main_menu() -> void:
 	left_box.add_child(spacer)
 
 	var action_box: VBoxContainer = VBoxContainer.new()
-	action_box.add_theme_constant_override("separation", 12)
+	action_box.add_theme_constant_override("separation", 10 if compact_layout else 12)
 	left_box.add_child(action_box)
 	if SaveManager.has_save():
-		var continue_button: Button = UIFactory.main_menu_button("繼續冒險", true)
+		var continue_button: Button = UIFactory.main_menu_button("繼續冒險", true, button_height, button_font_size)
 		continue_button.pressed.connect(continue_saved_run)
 		action_box.add_child(continue_button)
 		var summary: String = _saved_run_summary()
-		if not summary.is_empty():
+		if not summary.is_empty() and not ultra_compact:
 			var summary_label: Label = Label.new()
 			summary_label.text = summary
 			summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			summary_label.add_theme_font_size_override("font_size", 13)
+			summary_label.add_theme_font_size_override("font_size", 12 if compact_layout else 13)
 			summary_label.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
 			action_box.add_child(summary_label)
-	var start_button: Button = UIFactory.main_menu_button("開始遊戲")
+	var start_button: Button = UIFactory.main_menu_button("開始遊戲", false, button_height, button_font_size)
 	start_button.pressed.connect(_on_start_random_pressed)
 	action_box.add_child(start_button)
-	var daily_button: Button = UIFactory.main_menu_button("每日挑戰")
+	var daily_button: Button = UIFactory.main_menu_button("每日挑戰", false, button_height, button_font_size)
 	daily_button.pressed.connect(_on_daily_challenge_pressed)
 	action_box.add_child(daily_button)
-	var seed_button: Button = UIFactory.main_menu_button("輸入種子")
+	var seed_button: Button = UIFactory.main_menu_button("輸入種子", false, button_height, button_font_size)
 	seed_button.pressed.connect(_show_seed_input_popup)
 	action_box.add_child(seed_button)
-	action_box.add_child(_build_ascension_picker())
-	var bestiary_button: Button = UIFactory.main_menu_button("敵將圖鑑")
+	action_box.add_child(_build_ascension_picker(compact_layout, ultra_compact))
+	var bestiary_button: Button = UIFactory.main_menu_button("敵將圖鑑", false, button_height, button_font_size)
 	bestiary_button.pressed.connect(show_bestiary)
 	action_box.add_child(bestiary_button)
-	var quit_button: Button = UIFactory.main_menu_button("離開遊戲")
+	var quit_button: Button = UIFactory.main_menu_button("離開遊戲", false, button_height, button_font_size)
 	quit_button.pressed.connect(get_tree().quit)
 	action_box.add_child(quit_button)
 
-	var footer: VBoxContainer = VBoxContainer.new()
-	footer.add_theme_constant_override("separation", 8)
-	left_box.add_child(footer)
-	footer.add_child(UIFactory.paragraph("從四位角色中挑選起手流派，穿越地圖事件、商店與戰鬥節點，完成一輪小型冒險。"))
-	footer.add_child(UIFactory.card_label("角色 %d 位  ・  一般敵人 %d 種" % [characters.size(), enemies.size()], 14, Color("9fb0c8"), HORIZONTAL_ALIGNMENT_LEFT))
+	if not compact_layout:
+		var footer: VBoxContainer = VBoxContainer.new()
+		footer.add_theme_constant_override("separation", 8)
+		left_box.add_child(footer)
+		footer.add_child(UIFactory.paragraph("從四位角色中挑選起手流派，穿越地圖事件、商店與戰鬥節點，完成一輪小型冒險。"))
+		footer.add_child(UIFactory.card_label("角色 %d 位  ・  一般敵人 %d 種" % [characters.size(), enemies.size()], 14, Color("9fb0c8"), HORIZONTAL_ALIGNMENT_LEFT))
 
 	var right_panel: PanelContainer = PanelContainer.new()
-	right_panel.custom_minimum_size = Vector2(420, 0)
+	right_panel.custom_minimum_size = Vector2(320 if ultra_compact else (360 if compact_layout else 420), 0)
 	right_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	right_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0d121b", 0.72), Color("8ea3c4", 0.28), 1, 16))
 	shell.add_child(right_panel)
 
 	var right_margin: MarginContainer = MarginContainer.new()
-	right_margin.add_theme_constant_override("margin_left", 24)
-	right_margin.add_theme_constant_override("margin_top", 24)
-	right_margin.add_theme_constant_override("margin_right", 24)
-	right_margin.add_theme_constant_override("margin_bottom", 24)
+	right_margin.add_theme_constant_override("margin_left", 18 if compact_layout else 24)
+	right_margin.add_theme_constant_override("margin_top", 18 if compact_layout else 24)
+	right_margin.add_theme_constant_override("margin_right", 18 if compact_layout else 24)
+	right_margin.add_theme_constant_override("margin_bottom", 18 if compact_layout else 24)
 	right_panel.add_child(right_margin)
 
 	var right_box: VBoxContainer = VBoxContainer.new()
 	right_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right_box.add_theme_constant_override("separation", 18)
+	right_box.add_theme_constant_override("separation", section_gap)
 	right_margin.add_child(right_box)
 
 	var preview_character: CharacterData = characters[0] if not characters.is_empty() else null
@@ -415,36 +433,37 @@ func show_main_menu() -> void:
 	right_box.add_child(preview_frame)
 
 	var preview_wrap: MarginContainer = MarginContainer.new()
-	preview_wrap.add_theme_constant_override("margin_left", 18)
-	preview_wrap.add_theme_constant_override("margin_top", 18)
-	preview_wrap.add_theme_constant_override("margin_right", 18)
-	preview_wrap.add_theme_constant_override("margin_bottom", 18)
+	preview_wrap.add_theme_constant_override("margin_left", 12 if ultra_compact else 18)
+	preview_wrap.add_theme_constant_override("margin_top", 12 if ultra_compact else 18)
+	preview_wrap.add_theme_constant_override("margin_right", 12 if ultra_compact else 18)
+	preview_wrap.add_theme_constant_override("margin_bottom", 12 if ultra_compact else 18)
 	preview_frame.add_child(preview_wrap)
 
 	var preview_box: VBoxContainer = VBoxContainer.new()
 	preview_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	preview_box.add_theme_constant_override("separation", 14)
+	preview_box.add_theme_constant_override("separation", preview_gap)
 	preview_wrap.add_child(preview_box)
 
 	preview_box.add_child(UIFactory.card_label("本次旅程推薦", 14, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_LEFT))
 	if preview_character != null:
-		var portrait: TextureRect = UIFactory.portrait_rect(preview_character.portrait_path, Vector2(340, 420), true)
-		portrait.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		var portrait: TextureRect = UIFactory.portrait_rect(preview_character.portrait_path, preview_size, true)
+		portrait.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		preview_box.add_child(portrait)
 		var name_label: Label = Label.new()
 		name_label.text = preview_character.display_name
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		name_label.add_theme_font_size_override("font_size", 28)
+		name_label.add_theme_font_size_override("font_size", 20 if ultra_compact else (24 if compact_layout else 28))
 		name_label.add_theme_color_override("font_color", Color("fff6d6"))
 		preview_box.add_child(name_label)
 		preview_box.add_child(UIFactory.paragraph(preview_character.battle_style))
 
-	var quick_info: VBoxContainer = VBoxContainer.new()
-	quick_info.add_theme_constant_override("separation", 10)
-	right_box.add_child(quick_info)
-	quick_info.add_child(UIFactory.menu_info_row("遊玩節奏", "地圖探索 + 戰鬥回合制"))
-	quick_info.add_child(UIFactory.menu_info_row("目前內容", "角色選擇、事件、商店、戰鬥與遺物"))
-	quick_info.add_child(UIFactory.menu_info_row("操作入口", "可從主選單直接開始或接續存檔"))
+	if not compact_layout:
+		var quick_info: VBoxContainer = VBoxContainer.new()
+		quick_info.add_theme_constant_override("separation", 10)
+		right_box.add_child(quick_info)
+		quick_info.add_child(UIFactory.menu_info_row("遊玩節奏", "地圖探索 + 戰鬥回合制"))
+		quick_info.add_child(UIFactory.menu_info_row("目前內容", "角色選擇、事件、商店、戰鬥與遺物"))
+		quick_info.add_child(UIFactory.menu_info_row("操作入口", "可從主選單直接開始或接續存檔"))
 
 func _saved_run_summary() -> String:
 	if not SaveManager.has_save():
@@ -523,22 +542,25 @@ func _show_seed_input_popup() -> void:
 	popup.popup_centered()
 	input.grab_focus()
 
-func _build_ascension_picker() -> Control:
+func _build_ascension_picker(compact_layout: bool = false, ultra_compact: bool = false) -> Control:
 	var unlocked_max: int = Ascension.get_unlocked_max()
 	selected_ascension = clamp(selected_ascension, 0, unlocked_max)
+	var row_height: float = 30.0 if ultra_compact else (34.0 if compact_layout else 36.0)
+	var font_size: int = 15 if ultra_compact else (16 if compact_layout else 18)
+	var note_font_size: int = 10 if ultra_compact else 11
 	var panel: PanelContainer = PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("111926", 0.55), Color("8ea3c4", 0.28), 1, 8))
 	var box: VBoxContainer = VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
+	box.add_theme_constant_override("separation", 4 if ultra_compact else 6)
 	panel.add_child(box)
 	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
+	row.add_theme_constant_override("separation", 6 if ultra_compact else 8)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_child(row)
 	var prev_btn: Button = Button.new()
 	prev_btn.text = "◀"
-	prev_btn.custom_minimum_size = Vector2(40, 36)
-	prev_btn.add_theme_font_size_override("font_size", 16)
+	prev_btn.custom_minimum_size = Vector2(36 if ultra_compact else 40, row_height)
+	prev_btn.add_theme_font_size_override("font_size", font_size)
 	UIFactory.style_button(prev_btn)
 	prev_btn.disabled = selected_ascension <= 0
 	prev_btn.pressed.connect(func() -> void:
@@ -548,15 +570,15 @@ func _build_ascension_picker() -> Control:
 	var label: Label = Label.new()
 	label.text = "難度: A%d" % selected_ascension
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
-	label.custom_minimum_size = Vector2(120, 36)
+	label.custom_minimum_size = Vector2(104 if ultra_compact else 120, row_height)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(label)
 	var next_btn: Button = Button.new()
 	next_btn.text = "▶"
-	next_btn.custom_minimum_size = Vector2(40, 36)
-	next_btn.add_theme_font_size_override("font_size", 16)
+	next_btn.custom_minimum_size = Vector2(36 if ultra_compact else 40, row_height)
+	next_btn.add_theme_font_size_override("font_size", font_size)
 	UIFactory.style_button(next_btn)
 	next_btn.disabled = selected_ascension >= unlocked_max
 	next_btn.pressed.connect(func() -> void:
@@ -567,7 +589,7 @@ func _build_ascension_picker() -> Control:
 	desc.text = Ascension.describe(selected_ascension)
 	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.add_theme_font_size_override("font_size", 12)
+	desc.add_theme_font_size_override("font_size", 11 if compact_layout else 12)
 	desc.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
 	desc.custom_minimum_size = Vector2(0, 0)
 	box.add_child(desc)
@@ -577,8 +599,9 @@ func _build_ascension_picker() -> Control:
 	else:
 		unlock_note.text = "已達 A%d 上限" % Ascension.MAX_LEVEL
 	unlock_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	unlock_note.add_theme_font_size_override("font_size", 11)
+	unlock_note.add_theme_font_size_override("font_size", note_font_size)
 	unlock_note.add_theme_color_override("font_color", ThemeColors.TEXT_MUTED)
+	unlock_note.visible = not ultra_compact
 	box.add_child(unlock_note)
 	return panel
 
@@ -860,24 +883,34 @@ func show_progress_screen() -> void:
 	SaveManager.save(run_state)
 	_set_background("res://assets/art/map_bg_ink.png")
 	_clear_root()
+	var viewport_size: Vector2 = get_viewport_rect().size
+	var compact_map: bool = viewport_size.y <= 760.0
 	var panel: PanelContainer = UIFactory.make_panel()
 	root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 14)
+	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_theme_constant_override("separation", 8 if compact_map else 14)
 	panel.add_child(box)
-	box.add_child(_title("第 %d / %d 層" % [run_state.encounter_index + 1, run_state.encounter_choices.size()], 34))
-	box.add_child(UIFactory.paragraph("%s  HP %d/%d  銅錢 %d  牌組 %d 張  本輪增傷 +%d" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, run_state.deck.size(), run_state.power_bonus]))
+	box.add_child(_title("第 %d / %d 層" % [run_state.encounter_index + 1, run_state.encounter_choices.size()], 28 if compact_map else 34))
+	var map_summary: Label = UIFactory.paragraph("%s  HP %d/%d  銅錢 %d  牌組 %d 張  本輪增傷 +%d" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, run_state.deck.size(), run_state.power_bonus])
+	map_summary.add_theme_font_size_override("font_size", 14 if compact_map else 17)
+	box.add_child(map_summary)
 	if run_state.map_seed != 0:
 		var seed_label: Label = UIFactory.card_label("種子 %d  ·  難度 A%d" % [run_state.map_seed, run_state.ascension_level], 12, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 		box.add_child(seed_label)
-	box.add_child(UIFactory.paragraph("選擇亮起的節點前進；灰色節點代表目前路線無法抵達。"))
-	box.add_child(UIFactory.paragraph(_passive_text()))
+	if not compact_map:
+		box.add_child(UIFactory.paragraph("選擇亮起的節點前進；灰色節點代表目前路線無法抵達。"))
+	var passive_label: Label = UIFactory.paragraph(_passive_text())
+	passive_label.add_theme_font_size_override("font_size", 14 if compact_map else 17)
+	box.add_child(passive_label)
 	if not run_state.relics.is_empty():
 		var relic_names: Array[String] = []
 		for r: RelicData in run_state.relics:
 			relic_names.append(r.display_name)
-		box.add_child(UIFactory.paragraph("裝備：%s" % "、".join(relic_names)))
+		var relic_label: Label = UIFactory.paragraph("裝備：%s" % "、".join(relic_names))
+		relic_label.add_theme_font_size_override("font_size", 14 if compact_map else 17)
+		box.add_child(relic_label)
 	box.add_child(_map_view())
 	var button_row: HBoxContainer = HBoxContainer.new()
 	button_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -942,11 +975,16 @@ func _map_view() -> Control:
 	return map_panel
 
 func _map_view_sts() -> Control:
+	var viewport_size: Vector2 = get_viewport_rect().size
+	var compact_map: bool = viewport_size.y <= 760.0
+	var panel_height: float = clamp(viewport_size.y - (280.0 if compact_map else 240.0), 300.0, 580.0)
 	var map_panel: PanelContainer = PanelContainer.new()
-	map_panel.custom_minimum_size = Vector2(1040, 580)
+	map_panel.custom_minimum_size = Vector2(1040, panel_height)
+	map_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	map_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("f4edd8", 0.04), Color("d7c89a", 0.18), 1, 8))
 	var scroll: ScrollContainer = ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(1040, 580)
+	scroll.custom_minimum_size = Vector2(1040, panel_height)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	scroll.follow_focus = true

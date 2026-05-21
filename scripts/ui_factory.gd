@@ -55,12 +55,12 @@ static func style_button(button: Button) -> void:
 	button.add_theme_color_override("font_hover_color", Color("ffffff"))
 	button.add_theme_color_override("font_pressed_color", Color("f7e7a2"))
 
-static func main_menu_button(text: String, emphasized: bool = false) -> Button:
+static func main_menu_button(text: String, emphasized: bool = false, min_height: float = 58.0, font_size: int = 20) -> Button:
 	var button: Button = Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(0, 58)
+	button.custom_minimum_size = Vector2(0, min_height)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.add_theme_font_size_override("font_size", 20)
+	button.add_theme_font_size_override("font_size", font_size)
 	var base: Color = Color("d3b15c") if emphasized else Color("243246")
 	var hover: Color = Color("ebca74") if emphasized else Color("33455e")
 	var pressed: Color = Color("b38f42") if emphasized else Color("192434")
@@ -97,7 +97,10 @@ static func feedback_label() -> Label:
 static func menu_chip(text: String) -> Control:
 	var chip: PanelContainer = PanelContainer.new()
 	chip.add_theme_stylebox_override("panel", style_box(Color("f4d985", 0.10), Color("f4d985", 0.34), 1, 999))
-	chip.add_child(card_label(text, 13, Color("f7e7a2"), HORIZONTAL_ALIGNMENT_CENTER))
+	chip.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var label: Label = card_label(text, 13, Color("f7e7a2"), HORIZONTAL_ALIGNMENT_CENTER)
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	chip.add_child(label)
 	return chip
 
 static func menu_info_row(label_text: String, value_text: String) -> Control:
