@@ -218,6 +218,14 @@ static func _moon_worshipper() -> EnemyData:
 		{"intent": "結界 12", "effects": [{"kind": "block", "amount": 12}]},
 		{"intent": "邪月重擊 20", "effects": [{"kind": "damage", "amount": 20}]}
 	]
+	enemy.phase_2_actions = [
+		{"intent": "月蝕重擊 18 + 虛弱 2", "effects": [
+			{"kind": "damage", "amount": 18},
+			{"kind": "weak", "amount": 2}
+		]},
+		{"intent": "邪結界 18", "effects": [{"kind": "block", "amount": 18}]},
+		{"intent": "拜月狂咒 24", "effects": [{"kind": "damage", "amount": 24}]}
+	]
 	return enemy
 
 static func _centipede_lord() -> EnemyData:
@@ -243,6 +251,19 @@ static func _centipede_lord() -> EnemyData:
 			{"kind": "weak", "amount": 1}
 		]}
 	]
+	enemy.phase_2_actions = [
+		{"intent": "怒爪掃 7x4", "effects": [
+			{"kind": "damage", "amount": 7},
+			{"kind": "damage", "amount": 7},
+			{"kind": "damage", "amount": 7},
+			{"kind": "damage", "amount": 7}
+		]},
+		{"intent": "噬魂咒 22", "effects": [{"kind": "damage", "amount": 22}]},
+		{"intent": "毒霧 蠱毒 6 + 破綻 2", "effects": [
+			{"kind": "poison", "amount": 6},
+			{"kind": "vulnerable", "amount": 2}
+		]}
+	]
 	return enemy
 
 static func _witch_queen() -> EnemyData:
@@ -258,6 +279,20 @@ static func _witch_queen() -> EnemyData:
 		{"intent": "魂噬 15 + 蠱毒 2", "effects": [
 			{"kind": "damage", "amount": 15},
 			{"kind": "poison", "amount": 2}
+		]}
+	]
+	enemy.phase_2_actions = [
+		{"intent": "山靈怒火 20 + 虛弱 1", "effects": [
+			{"kind": "damage", "amount": 20},
+			{"kind": "weak", "amount": 1}
+		]},
+		{"intent": "蠱噬 蠱毒 6 + 破綻 2", "effects": [
+			{"kind": "poison", "amount": 6},
+			{"kind": "vulnerable", "amount": 2}
+		]},
+		{"intent": "邪音咒 12 + 破綻 3", "effects": [
+			{"kind": "damage", "amount": 12},
+			{"kind": "vulnerable", "amount": 3}
 		]}
 	]
 	return enemy

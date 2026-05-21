@@ -79,6 +79,9 @@ func _initialize() -> void:
 	_test_predict_enemy_damage_matches_resolver()
 	_test_bestiary_persistence()
 	_test_ascension_persistence_and_modifiers()
+	_test_boss_phase_transition(bosses)
+	_test_event_variety()
+	_test_map_seed_determinism(enemies, bosses)
 	_test_balance_regression(characters, enemies)
 	_test_balance_regression_mid(characters, bosses)
 	print("SwordCard smoke test passed.")
@@ -409,6 +412,66 @@ func _test_ascension_persistence_and_modifiers() -> void:
 	assert(Ascension.starting_hp_multiplier(3) == 0.85)
 	assert(Ascension.gold_multiplier(3) == 1.0)
 	assert(Ascension.gold_multiplier(4) == 0.75)
+
+func _test_boss_phase_transition(bosses: Array[EnemyData]) -> void:
+	# 三個 boss 都該有 phase_2_actions 設定；damage 跌破 50% 後 phased 變 true
+	for boss: EnemyData in bosses:
+		assert(not boss.phase_2_actions.is_empty(),
+			"boss %s should have phase_2_actions defined" % boss.id)
+	# 真實流程模擬：手工把 boss HP 打到 49%，下一張卡觸發 _check_phase_transition
+	var characters: Array[CharacterData] = GameData.characters()
+	var run_state: RunState = RunState.new()
+	run_state.init_for(characters[0])
+	var boss: EnemyData = bosses[0].clone()
+	var bc: BattleController = BattleController.new()
+	bc.setup(run_state, characters[0], boss)
+	assert(not bc.phased, "fresh battle should not be phased")
+	# 把 boss 打到剛好 50% 以上、再用一張卡把它打到 < 50%
+	bc.state["enemy_hp"] = int(float(bc.state["enemy_max_hp"]) * 0.51)
+	var tick_card: CardData = GameData.make_card("phase_test_1", "微擊", "P", 0, "attack", "造成 5 點傷害。", [{"kind": "damage", "amount": 5}])
+	bc.state["energy"] = 99
+	bc.play_card(tick_card)
+	assert(bc.phased, "boss should phase after dropping below 50%% (hp=%d / max=%d)" % [int(bc.state["enemy_hp"]), int(bc.state["enemy_max_hp"])])
+	# 切換後 next_enemy_action 應該回傳 phase_2_actions 的招式
+	var next_action: Dictionary = bc.next_enemy_action()
+	var phase_2_intents: Array[String] = []
+	for action: Dictionary in boss.phase_2_actions:
+		phase_2_intents.append(String(action.get("intent", "")))
+	assert(String(next_action.get("intent", "")) in phase_2_intents,
+		"after phase, next_enemy_action should pick from phase_2_actions")
+
+func _test_event_variety() -> void:
+	# 至少 10 種 event variant、每種都有合理的欄位
+	var variant_keys: Array = EventData.VARIANTS.keys()
+	assert(variant_keys.size() >= 10, "should have at least 10 event variants; got %d" % variant_keys.size())
+	for key: Variant in variant_keys:
+		var data: Dictionary = EventData.for_variant(String(key))
+		assert(data.has("title") and not String(data["title"]).is_empty(), "variant %s missing title" % key)
+		assert(data.has("heal"), "variant %s missing heal" % key)
+		assert(data.has("gain_cost"), "variant %s missing gain_cost" % key)
+		assert(data.has("power"), "variant %s missing power" % key)
+		assert(data.has("power_label"), "variant %s missing power_label" % key)
+	# MapGenerator 應該知道所有 variant（不該 stale）
+	for key_v: Variant in variant_keys:
+		assert(MapGenerator.EVENT_VARIANTS.has(String(key_v)),
+			"variant %s defined in EventData but not in MapGenerator.EVENT_VARIANTS" % key_v)
+
+func _test_map_seed_determinism(enemies: Array[EnemyData], bosses: Array[EnemyData]) -> void:
+	# 相同 seed 兩次跑 generate，產出的節點結構一致
+	seed(424242)
+	var map_a: Array[Array] = MapGenerator.generate(enemies, bosses)
+	seed(424242)
+	var map_b: Array[Array] = MapGenerator.generate(enemies, bosses)
+	assert(map_a.size() == map_b.size(), "row count differs across same-seed runs")
+	for row_index: int in range(map_a.size()):
+		var row_a: Array = map_a[row_index]
+		var row_b: Array = map_b[row_index]
+		assert(row_a.size() == row_b.size(), "row %d size differs" % row_index)
+		for node_index: int in range(row_a.size()):
+			var a: Dictionary = row_a[node_index] as Dictionary
+			var b: Dictionary = row_b[node_index] as Dictionary
+			assert(String(a.get("type", "")) == String(b.get("type", "")),
+				"row %d node %d type differs: %s vs %s" % [row_index, node_index, a.get("type"), b.get("type")])
 
 func _test_bestiary_persistence() -> void:
 	# 注意：此 test 會清掉真實 bestiary 檔案；smoke test 環境是測試專用 user:// 不用擔心

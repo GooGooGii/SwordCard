@@ -6,6 +6,7 @@ extends Resource
 @export var max_hp: int = 60
 @export var portrait_path: String = ""
 @export var actions: Array[Dictionary] = []
+@export var phase_2_actions: Array[Dictionary] = []  # boss HP < 50% 切換到的招式組，空 = 不進入二階段
 @export var portrait_tint: Color = Color.WHITE
 
 func clone() -> EnemyData:
@@ -15,6 +16,7 @@ func clone() -> EnemyData:
 	copy.max_hp = max_hp
 	copy.portrait_path = portrait_path
 	copy.actions = actions.duplicate(true)
+	copy.phase_2_actions = phase_2_actions.duplicate(true)
 	copy.portrait_tint = portrait_tint
 	return copy
 
@@ -25,6 +27,7 @@ func to_dict() -> Dictionary:
 		"max_hp": max_hp,
 		"portrait_path": portrait_path,
 		"actions": actions.duplicate(true),
+		"phase_2_actions": phase_2_actions.duplicate(true),
 		"portrait_tint": [portrait_tint.r, portrait_tint.g, portrait_tint.b, portrait_tint.a]
 	}
 
@@ -40,6 +43,12 @@ static func from_dict(data: Dictionary) -> EnemyData:
 		if entry is Dictionary:
 			typed_actions.append((entry as Dictionary).duplicate(true))
 	enemy.actions = typed_actions
+	var raw_phase_2: Array = data.get("phase_2_actions", []) as Array
+	var typed_phase_2: Array[Dictionary] = []
+	for entry: Variant in raw_phase_2:
+		if entry is Dictionary:
+			typed_phase_2.append((entry as Dictionary).duplicate(true))
+	enemy.phase_2_actions = typed_phase_2
 	var tint_data: Array = data.get("portrait_tint", []) as Array
 	if tint_data.size() >= 3:
 		enemy.portrait_tint = Color(

@@ -1,7 +1,7 @@
 class_name MapGenerator
 extends RefCounted
 
-const EVENT_VARIANTS: Array[String] = ["shrine", "spring", "talisman_cache", "treasure_chest", "ancestor_relic"]
+const EVENT_VARIANTS: Array[String] = ["shrine", "spring", "talisman_cache", "treasure_chest", "ancestor_relic", "wandering_sage", "moonlit_pool", "broken_temple", "yokai_pact", "forgotten_altar"]
 const BLACK_SHOP_CHANCE: float = 0.25
 const MIN_NORMAL_ROW_COUNT: int = 9
 const MAX_NORMAL_ROW_COUNT: int = 11

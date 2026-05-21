@@ -46,6 +46,7 @@ var _card_preview_overlay: Control = null
 var _suppress_next_card_play: bool = false
 
 var selected_ascension: int = 0
+var pending_seed: int = 0  # 0 = 隨機；非 0 = 下次 start_run 用此 seed 生地圖
 
 const BASE_MARGIN_H: int = 28
 const BASE_MARGIN_V: int = 20
@@ -364,8 +365,14 @@ func show_main_menu() -> void:
 			summary_label.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
 			action_box.add_child(summary_label)
 	var start_button: Button = UIFactory.main_menu_button("開始遊戲")
-	start_button.pressed.connect(show_character_select)
+	start_button.pressed.connect(_on_start_random_pressed)
 	action_box.add_child(start_button)
+	var daily_button: Button = UIFactory.main_menu_button("每日挑戰")
+	daily_button.pressed.connect(_on_daily_challenge_pressed)
+	action_box.add_child(daily_button)
+	var seed_button: Button = UIFactory.main_menu_button("輸入種子")
+	seed_button.pressed.connect(_show_seed_input_popup)
+	action_box.add_child(seed_button)
 	action_box.add_child(_build_ascension_picker())
 	var bestiary_button: Button = UIFactory.main_menu_button("敵將圖鑑")
 	bestiary_button.pressed.connect(show_bestiary)
@@ -461,6 +468,60 @@ func _saved_run_summary() -> String:
 	return "%s  ·  第 %d/%d 層\nHP %d/%d  ·  銅錢 %d  ·  牌組 %d 張  ·  遺物 %d 件" % [
 		char_name, encounter_index + 1, total_rows, hp, max_hp, gold, deck_size, relic_count
 	]
+
+func _on_start_random_pressed() -> void:
+	pending_seed = 0
+	show_character_select()
+
+func _on_daily_challenge_pressed() -> void:
+	pending_seed = Time.get_date_string_from_system().hash()
+	show_character_select()
+
+func _show_seed_input_popup() -> void:
+	var popup: PopupPanel = _make_battle_popup()
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
+	box.custom_minimum_size = Vector2(360, 0)
+	var title: Label = Label.new()
+	title.text = "輸入種子字串"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
+	box.add_child(title)
+	var hint: Label = Label.new()
+	hint.text = "任意字串會被 hash 成 seed；相同字串總是產生同一張地圖。"
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_font_size_override("font_size", 12)
+	hint.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
+	box.add_child(hint)
+	var input: LineEdit = LineEdit.new()
+	input.placeholder_text = "例：spring-2026"
+	input.add_theme_font_size_override("font_size", 16)
+	box.add_child(input)
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_child(row)
+	var cancel: Button = _button("取消")
+	cancel.pressed.connect(popup.hide)
+	row.add_child(cancel)
+	var confirm: Button = _button("挑戰此種子")
+	var on_confirm: Callable = func() -> void:
+		var text: String = input.text.strip_edges()
+		if text.is_empty():
+			popup.hide()
+			return
+		pending_seed = text.hash() if text.hash() != 0 else 1
+		popup.hide()
+		show_character_select()
+	confirm.pressed.connect(on_confirm)
+	input.text_submitted.connect(func(_t: String) -> void: on_confirm.call())
+	row.add_child(confirm)
+	popup.add_child(box)
+	get_viewport().add_child(popup)
+	popup.popup_hide.connect(popup.queue_free)
+	popup.popup_centered()
+	input.grab_focus()
 
 func _build_ascension_picker() -> Control:
 	var unlocked_max: int = Ascension.get_unlocked_max()
@@ -780,11 +841,16 @@ func _vertical_poem_line(text: String) -> Control:
 func start_run(character: CharacterData) -> void:
 	selected_character = character.clone()
 	run_state.ascension_level = selected_ascension
+	var seed_for_run: int = pending_seed if pending_seed != 0 else randi()
+	seed(seed_for_run)
+	run_state.map_seed = seed_for_run
 	run_state.init_for(selected_character)
 	var hp_mult: float = Ascension.starting_hp_multiplier(run_state.ascension_level)
 	if hp_mult != 1.0:
 		run_state.hp = max(1, int(round(float(run_state.max_hp) * hp_mult)))
 	run_state.encounter_choices = _make_encounter_choices()
+	randomize()  # 地圖生成完，戰鬥/獎勵恢復隨機 RNG
+	pending_seed = 0  # 消費掉
 	show_progress_screen()
 
 func _make_encounter_choices() -> Array[Array]:
@@ -802,6 +868,9 @@ func show_progress_screen() -> void:
 	panel.add_child(box)
 	box.add_child(_title("第 %d / %d 層" % [run_state.encounter_index + 1, run_state.encounter_choices.size()], 34))
 	box.add_child(UIFactory.paragraph("%s  HP %d/%d  銅錢 %d  牌組 %d 張  本輪增傷 +%d" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, run_state.deck.size(), run_state.power_bonus]))
+	if run_state.map_seed != 0:
+		var seed_label: Label = UIFactory.card_label("種子 %d  ·  難度 A%d" % [run_state.map_seed, run_state.ascension_level], 12, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+		box.add_child(seed_label)
 	box.add_child(UIFactory.paragraph("選擇亮起的節點前進；灰色節點代表目前路線無法抵達。"))
 	box.add_child(UIFactory.paragraph(_passive_text()))
 	if not run_state.relics.is_empty():

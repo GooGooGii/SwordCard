@@ -43,6 +43,46 @@ const VARIANTS: Dictionary = {
 		"gain_cost": 8,
 		"power": 3,
 		"power_label": "祈靈"
+	},
+	"wandering_sage": {
+		"title": "雲遊隱士",
+		"flavor": "竹笠下白髮垂胸的老者煮著一壺粗茶，看你走來只是抬眼，不發一語。",
+		"heal": 10,
+		"gain_cost": 5,
+		"power": 2,
+		"power_label": "問道"
+	},
+	"moonlit_pool": {
+		"title": "月光浸水潭",
+		"flavor": "夜色凝在潭面，倒映出比山更深的星辰。傳說潭水能洗去俗血、也能引出舊傷。",
+		"heal": 15,
+		"gain_cost": 9,
+		"power": 1,
+		"power_label": "沐月"
+	},
+	"broken_temple": {
+		"title": "廢棄山神廟",
+		"flavor": "山神泥像剝落大半，神龕底卻還壓著一道暗紅符紙，墨色仍鮮。",
+		"heal": 4,
+		"gain_cost": 2,
+		"power": 3,
+		"power_label": "撕符"
+	},
+	"yokai_pact": {
+		"title": "妖契",
+		"flavor": "黑霧中浮起一張瓜子臉，眼底比夜還黑。「給我一點，我給你十倍。」",
+		"heal": 0,
+		"gain_cost": 4,
+		"power": 4,
+		"power_label": "立契"
+	},
+	"forgotten_altar": {
+		"title": "棄祭壇",
+		"flavor": "風吹過破爛的供品。香爐裡還有一炷未滅的香，灰燼下隱約有字跡。",
+		"heal": 7,
+		"gain_cost": 6,
+		"power": 2,
+		"power_label": "焚香"
 	}
 }
 
