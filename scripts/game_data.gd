@@ -34,8 +34,8 @@ static func _li_xiaoyao() -> CharacterData:
 		make_card("lxy_xianfeng", "仙風雲體", "李逍遙", 1, "skill", "獲得 8 點護體，抽 1 張牌。", [{"kind": "block", "amount": 8}, {"kind": "draw", "amount": 1}], "uncommon"),
 		make_card("lxy_zuimeng", "醉夢望月", "李逍遙", 2, "power", "本場戰鬥傷害提升 2。", [{"kind": "power", "amount": 2}], "uncommon"),
 		make_card("lxy_jianqi", "劍氣護身", "李逍遙", 1, "skill", "獲得 10 點護體。", [{"kind": "block", "amount": 10}]),
-		make_card("lxy_linghuo", "靈火符", "李逍遙", 1, "attack", "造成 6 點傷害，施加 1 層破綻。", [{"kind": "damage", "amount": 6}, {"kind": "vulnerable", "amount": 1}], "uncommon", "lxy_tianshi"),
-		make_card("lxy_xiaoyao_you", "逍遙遊", "李逍遙", 0, "skill", "抽 1 張牌並回復 1 點靈力。", [{"kind": "draw", "amount": 1}, {"kind": "energy", "amount": 1}], "rare", "lxy_feilong")
+		make_card("lxy_linghuo", "靈火符", "李逍遙", 1, "attack", "造成 6 點傷害，施加 1 層破綻。", [{"kind": "damage", "amount": 6}, {"kind": "vulnerable", "amount": 1}], "uncommon"),
+		make_card("lxy_xiaoyao_you", "逍遙遊", "李逍遙", 0, "skill", "抽 1 張牌並回復 1 點靈力。", [{"kind": "draw", "amount": 1}, {"kind": "energy", "amount": 1}], "rare")
 	]
 	return _character("li_xiaoyao", "李逍遙", 74, "劍術、爆發、偷取與酒神系高風險高傷害。", cards)
 
@@ -49,8 +49,8 @@ static func _zhao_linger() -> CharacterData:
 		make_card("zl_fengling", "風靈符", "趙靈兒", 0, "skill", "抽 1 張牌。", [{"kind": "draw", "amount": 1}], "uncommon"),
 		make_card("zl_tianlei", "天雷破", "趙靈兒", 2, "attack", "造成 18 點傷害。", [{"kind": "damage", "amount": 18}], "uncommon"),
 		make_card("zl_lingguang", "靈光護體", "趙靈兒", 1, "skill", "獲得 12 點護體。", [{"kind": "block", "amount": 12}]),
-		make_card("zl_huanyu", "幻雨咒", "趙靈兒", 1, "skill", "獲得 7 點護體，使敵人虛弱 1 層。", [{"kind": "block", "amount": 7}, {"kind": "weak", "amount": 1}], "uncommon", "zl_xuanbing"),
-		make_card("zl_nvwa", "女媧靈息", "趙靈兒", 2, "power", "回復 6 點生命，本場戰鬥傷害提升 2。", [{"kind": "heal", "amount": 6}, {"kind": "power", "amount": 2}], "rare", "zl_mengshe")
+		make_card("zl_huanyu", "幻雨咒", "趙靈兒", 1, "skill", "獲得 7 點護體，使敵人虛弱 1 層。", [{"kind": "block", "amount": 7}, {"kind": "weak", "amount": 1}], "uncommon"),
+		make_card("zl_nvwa", "女媧靈息", "趙靈兒", 2, "power", "回復 6 點生命，本場戰鬥傷害提升 2。", [{"kind": "heal", "amount": 6}, {"kind": "power", "amount": 2}], "rare")
 	]
 	return _character("zhao_linger", "趙靈兒", 68, "五靈仙術、治療、護盾與夢蛇爆發。", cards)
 
@@ -64,8 +64,8 @@ static func _lin_yueru() -> CharacterData:
 		make_card("lyr_bianying", "鞭影連環", "林月如", 1, "attack", "造成 4 點傷害兩次，施加 1 層破綻。", [{"kind": "damage", "amount": 4}, {"kind": "damage", "amount": 4}, {"kind": "vulnerable", "amount": 1}]),
 		make_card("lyr_shenfa", "月影身法", "林月如", 1, "skill", "獲得 7 點護體，抽 1 張牌。", [{"kind": "block", "amount": 7}, {"kind": "draw", "amount": 1}], "uncommon"),
 		make_card("lyr_juesha", "絕殺一擊", "林月如", 2, "attack", "造成 14 點傷害，施加 2 層破綻。", [{"kind": "damage", "amount": 14}, {"kind": "vulnerable", "amount": 2}], "uncommon"),
-		make_card("lyr_lianhuan", "連環快斬", "林月如", 1, "attack", "造成 3 點傷害三次。", [{"kind": "damage", "amount": 3}, {"kind": "damage", "amount": 3}, {"kind": "damage", "amount": 3}], "uncommon", "lyr_bianying"),
-		make_card("lyr_jinchan", "金蟬卸力", "林月如", 1, "skill", "獲得 5 點護體，抽 2 張牌。", [{"kind": "block", "amount": 5}, {"kind": "draw", "amount": 2}], "rare", "lyr_shenfa")
+		make_card("lyr_lianhuan", "連環快斬", "林月如", 1, "attack", "造成 3 點傷害三次。", [{"kind": "damage", "amount": 3}, {"kind": "damage", "amount": 3}, {"kind": "damage", "amount": 3}], "uncommon"),
+		make_card("lyr_jinchan", "金蟬卸力", "林月如", 1, "skill", "獲得 5 點護體，抽 2 張牌。", [{"kind": "block", "amount": 5}, {"kind": "draw", "amount": 2}], "rare")
 	]
 	return _character("lin_yueru", "林月如", 72, "鞭劍武學、連擊、反擊與單體爆發。", cards)
 
@@ -79,8 +79,8 @@ static func _anu() -> CharacterData:
 		make_card("anu_jiedu", "解毒咒", "阿奴", 1, "skill", "回復 7 點生命並獲得 5 點護體。", [{"kind": "heal", "amount": 7}, {"kind": "block", "amount": 5}]),
 		make_card("anu_guling", "蠱靈護身", "阿奴", 1, "skill", "獲得 12 點護體。", [{"kind": "block", "amount": 12}], "uncommon"),
 		make_card("anu_wangyou", "忘憂蠱", "阿奴", 2, "skill", "施加 4 層蠱毒與 2 層破綻。", [{"kind": "poison", "amount": 4}, {"kind": "vulnerable", "amount": 2}], "uncommon"),
-		make_card("anu_duwu", "毒霧繚繞", "阿奴", 1, "skill", "施加 3 層蠱毒，使敵人虛弱 1 層。", [{"kind": "poison", "amount": 3}, {"kind": "weak", "amount": 1}], "uncommon", "anu_mihun"),
-		make_card("anu_guxue", "蠱血共鳴", "阿奴", 2, "power", "本場戰鬥傷害提升 1，施加 5 層蠱毒。", [{"kind": "power", "amount": 1}, {"kind": "poison", "amount": 5}], "rare", "anu_wangyou")
+		make_card("anu_duwu", "毒霧繚繞", "阿奴", 1, "skill", "施加 3 層蠱毒，使敵人虛弱 1 層。", [{"kind": "poison", "amount": 3}, {"kind": "weak", "amount": 1}], "uncommon"),
+		make_card("anu_guxue", "蠱血共鳴", "阿奴", 2, "power", "本場戰鬥傷害提升 1，施加 5 層蠱毒。", [{"kind": "power", "amount": 1}, {"kind": "poison", "amount": 5}], "rare")
 	]
 	return _character("anu", "阿奴", 66, "蠱毒、召喚、持續傷害、削弱與干擾。", cards)
 
@@ -172,8 +172,7 @@ static func _sword_spirit() -> EnemyData:
 	enemy.id = "sword_spirit"
 	enemy.display_name = "劍冢靈影"
 	enemy.max_hp = 62
-	enemy.portrait_path = "res://assets/art/enemies/beast.png"
-	enemy.portrait_tint = Color(0.62, 0.82, 1.18)
+	enemy.portrait_path = "res://assets/art/enemies/sword_spirit.png"
 	enemy.actions = [
 		{"intent": "劍芒 11", "effects": [{"kind": "damage", "amount": 11}]},
 		{"intent": "護劍 9", "effects": [{"kind": "block", "amount": 9}]},
@@ -186,8 +185,7 @@ static func _fox_spirit() -> EnemyData:
 	enemy.id = "fox_spirit"
 	enemy.display_name = "魅狐幻影"
 	enemy.max_hp = 52
-	enemy.portrait_path = "res://assets/art/enemies/gu_cultist.png"
-	enemy.portrait_tint = Color(1.08, 0.72, 1.22)
+	enemy.portrait_path = "res://assets/art/enemies/fox_spirit.png"
 	enemy.actions = [
 		{"intent": "魅惑 2", "effects": [{"kind": "weak", "amount": 2}]},
 		{"intent": "幻爪 10", "effects": [{"kind": "damage", "amount": 10}]},
@@ -200,8 +198,7 @@ static func _serpent_demon() -> EnemyData:
 	enemy.id = "serpent_demon"
 	enemy.display_name = "赤蛇妖"
 	enemy.max_hp = 70
-	enemy.portrait_path = "res://assets/art/enemies/beast.png"
-	enemy.portrait_tint = Color(1.22, 0.68, 0.6)
+	enemy.portrait_path = "res://assets/art/enemies/serpent_demon.png"
 	enemy.actions = [
 		{"intent": "毒牙 9", "effects": [{"kind": "damage", "amount": 9}, {"kind": "poison", "amount": 2}]},
 		{"intent": "盤身 14", "effects": [{"kind": "block", "amount": 14}]},
@@ -228,8 +225,7 @@ static func _centipede_lord() -> EnemyData:
 	enemy.id = "centipede_lord"
 	enemy.display_name = "蜈蚣大王"
 	enemy.max_hp = 92
-	enemy.portrait_path = "res://assets/art/enemies/moon_worshipper.png"
-	enemy.portrait_tint = Color(0.72, 1.18, 0.78)
+	enemy.portrait_path = "res://assets/art/enemies/centipede_lord.png"
 	enemy.actions = [
 		{"intent": "多足踏擊 5x4", "effects": [
 			{"kind": "damage", "amount": 5},
@@ -254,8 +250,7 @@ static func _witch_queen() -> EnemyData:
 	enemy.id = "witch_queen"
 	enemy.display_name = "山靈巫后"
 	enemy.max_hp = 78
-	enemy.portrait_path = "res://assets/art/enemies/moon_worshipper.png"
-	enemy.portrait_tint = Color(1.18, 0.7, 1.22)
+	enemy.portrait_path = "res://assets/art/enemies/witch_queen.png"
 	enemy.actions = [
 		{"intent": "蠱咒 蠱毒 5", "effects": [{"kind": "poison", "amount": 5}]},
 		{"intent": "詛咒 虛弱 3", "effects": [{"kind": "weak", "amount": 3}]},
