@@ -83,6 +83,23 @@ jobs:
           export/android/debug_keystore_pass = "android"
           EOF
 
+      - name: Generate PNG launcher icons (SVG not accepted for Android)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq librsvg2-bin imagemagick
+          rsvg-convert -w 192 -h 192 icon.svg -o icon_192.png
+          rsvg-convert -w 432 -h 432 icon.svg -o icon_fg_432.png
+          convert -size 432x432 xc:'#2a3a5a' icon_bg_432.png
+          ls -la icon_*.png
+
+      - name: Patch export preset to use PNG icons
+        run: |
+          sed -i 's|launcher_icons/main_192x192="res://icon.svg"|launcher_icons/main_192x192="res://icon_192.png"|' export_presets.cfg
+          sed -i 's|launcher_icons/adaptive_foreground_432x432="res://icon.svg"|launcher_icons/adaptive_foreground_432x432="res://icon_fg_432.png"|' export_presets.cfg
+          sed -i 's|launcher_icons/adaptive_background_432x432="res://icon.svg"|launcher_icons/adaptive_background_432x432="res://icon_bg_432.png"|' export_presets.cfg
+          echo "=== patched preset Android section ==="
+          grep -A 2 "launcher_icons" export_presets.cfg
+
       - name: Pre-import project resources
         run: |
           godot --headless --import || true
