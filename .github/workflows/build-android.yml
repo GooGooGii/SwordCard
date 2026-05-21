@@ -29,9 +29,8 @@ jobs:
           sed -i 's|launcher_icons/main_192x192="res://icon.svg"|launcher_icons/main_192x192="res://icon_192.png"|' export_presets.cfg
           sed -i 's|launcher_icons/adaptive_foreground_432x432="res://icon.svg"|launcher_icons/adaptive_foreground_432x432="res://icon_fg_432.png"|' export_presets.cfg
           sed -i 's|launcher_icons/adaptive_background_432x432="res://icon.svg"|launcher_icons/adaptive_background_432x432="res://icon_bg_432.png"|' export_presets.cfg
-          sed -i 's|gradle_build/use_gradle_build=false|gradle_build/use_gradle_build=true|' export_presets.cfg
           sed -i 's|gradle_build/min_sdk=""|gradle_build/min_sdk="24"|' export_presets.cfg
-          sed -i 's|gradle_build/target_sdk=""|gradle_build/target_sdk="34"|' export_presets.cfg
+          sed -i 's|gradle_build/target_sdk=""|gradle_build/target_sdk="35"|' export_presets.cfg
 
       - name: Install Godot export templates
         run: |
@@ -45,9 +44,7 @@ jobs:
           echo "Templates at: $TEMPLATE_DIR"
           mkdir -p "$HOME/.local/share/godot/export_templates"
           cp -R "$TEMPLATE_DIR" "$HOME/.local/share/godot/export_templates/$TEMPLATE_VERSION"
-          mkdir -p android/build
-          unzip -oq "$HOME/.local/share/godot/export_templates/$TEMPLATE_VERSION/android_source.zip" -d android/build
-          echo "$TEMPLATE_VERSION" > android/.build_version
+          ls -la "$HOME/.local/share/godot/export_templates/$TEMPLATE_VERSION"/android_*.apk
 
       - name: Configure SDK/JDK paths and (re)generate keystore
         run: |
@@ -77,7 +74,7 @@ jobs:
           else
             echo "Reusing existing $HOME/debug.keystore"
           fi
-          # Write editor_settings for Godot 4.4
+          # Write editor_settings for Godot 4.6
           mkdir -p $HOME/.config/godot
           {
             echo '[gd_resource type="EditorSettings" format=3]'
@@ -95,10 +92,6 @@ jobs:
             echo 'export/android/shutdown_adb_on_exit = true'
             echo 'export/android/one_click_deploy_clear_previous_install = false'
           } | tee $HOME/.config/godot/editor_settings-4.tres $HOME/.config/godot/editor_settings-4.6.tres > /dev/null
-          # Bump target_sdk to 33 since build-tools 33.0.2 is what's available in barichello image
-          sed -i 's|gradle_build/target_sdk="34"|gradle_build/target_sdk="33"|' export_presets.cfg
-          # Disable APK signing for debug build to bypass any silent signing validation
-          sed -i 's|package/signed=true|package/signed=false|' export_presets.cfg
           echo "=== final preset ==="
           grep -E "package/signed|gradle_build|min_sdk|target_sdk|launcher_icons" export_presets.cfg
 
