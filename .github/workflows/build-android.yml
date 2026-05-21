@@ -1,0 +1,102 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  # 改這兩個變數來換 Godot 版本
+  GODOT_VERSION: "4.3"
+  GODOT_RELEASE: "stable"
+
+jobs:
+  build-android:
+    name: Export debug APK
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools platforms;android-34 build-tools;34.0.0"
+
+      - name: Cache Godot binary and templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/bin/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}-linux
+
+      - name: Download Godot editor
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          GODOT_TAG="${GODOT_VERSION}-${GODOT_RELEASE}"
+          ZIP_NAME="Godot_v${GODOT_TAG}_linux.x86_64.zip"
+          curl -L "https://github.com/godotengine/godot/releases/download/${GODOT_TAG}/${ZIP_NAME}" -o godot.zip
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_TAG}_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+
+      - name: Download Godot export templates
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          GODOT_TAG="${GODOT_VERSION}-${GODOT_RELEASE}"
+          curl -L "https://github.com/godotengine/godot/releases/download/${GODOT_TAG}/Godot_v${GODOT_TAG}_export_templates.tpz" -o templates.tpz
+          TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}"
+          mkdir -p "$TEMPLATE_DIR"
+          unzip -q templates.tpz
+          mv templates/* "$TEMPLATE_DIR/"
+          rmdir templates
+
+      - name: Generate debug keystore
+        run: |
+          keytool -genkey -v \
+            -keystore "$HOME/debug.keystore" \
+            -alias androiddebugkey \
+            -storepass android -keypass android \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Configure Godot editor settings
+        run: |
+          mkdir -p "$HOME/.config/godot"
+          cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "${ANDROID_SDK_ROOT}"
+          export/android/java_sdk_path = "${JAVA_HOME}"
+          export/android/debug_keystore = "${HOME}/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
+
+      - name: Pre-import project resources
+        run: |
+          godot --headless --import || true
+
+      - name: Export Android APK (debug)
+        run: |
+          mkdir -p build/android
+          godot --headless --export-debug "Android" build/android/SwordCard.apk
+          ls -la build/android/
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SwordCard-debug-apk
+          path: build/android/SwordCard.apk
+          if-no-files-found: error
+          retention-days: 30

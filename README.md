@@ -48,12 +48,30 @@ Godot 4 仙劍1 同人卡牌戰鬥原型。這個專案是私人學習/展示用
 
 ## 匯出
 
+### 本機匯出（手動）
+
 - `export_presets.cfg` 已包含 Windows Desktop 與 Android 草稿。
 - Android 匯出仍需在 Godot Editor 內設定 Android SDK、debug keystore 與 export templates。
 - Windows 匯出需安裝 Godot export templates。
 
+### GitHub Actions 自動建構 Android APK
+
+每次 push 到 `main` 會自動跑 [.github/workflows/build-android.yml](.github/workflows/build-android.yml)。
+
+**取得 APK 步驟**：
+
+1. push 後到 GitHub repo 的 **Actions** 頁
+2. 點最新一次「Build Android APK」執行紀錄
+3. 拉到底，**Artifacts** 區下載 `SwordCard-debug-apk`
+4. 解壓得到 `SwordCard.apk`
+5. 傳到手機安裝（需開啟「允許未知來源」）
+
+**版本控制**：workflow 預設用 Godot **4.3-stable**。若你本機改用其他版本（如 4.4 / 4.5），修改 workflow 開頭的 `GODOT_VERSION` env var。
+
+**手動觸發**：Actions 頁面點「Build Android APK」→「Run workflow」即可不 push 就跑。
+
 ## 下一步
 
-- 補卡牌框與節點圖示。
-- 加入 Android / Windows 實機匯出測試。
-- 擴充遺物、更多 Boss 與存檔。
+- 補卡牌框與更精緻的節點圖示。
+- 戰鬥音效。
+- 自訂啟動圖示與 splash。
