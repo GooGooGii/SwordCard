@@ -74,6 +74,7 @@ func _initialize() -> void:
 	_test_consume_energy_damage()
 	_test_power_stacks_with_damage()
 	_test_multi_turn_battle(characters[0], enemies[0])
+	_test_map_generator_reachability(enemies, bosses)
 	print("SwordCard smoke test passed.")
 	quit(0)
 
@@ -274,3 +275,57 @@ func _test_multi_turn_battle(character: CharacterData, enemy_template: EnemyData
 	assert(int(bc.state["enemy_hp"]) <= 0, "enemy hp should be 0 on victory")
 	bc.complete_victory()
 	assert(run_state.hp == int(bc.state["player_hp"]), "complete_victory should sync hp to run_state")
+
+func _test_map_generator_reachability(enemies: Array[EnemyData], bosses: Array[EnemyData]) -> void:
+	# 跑 30 次隨機產生的地圖，驗證每張都沒有孤兒節點、且 boss 可達
+	for trial: int in range(30):
+		seed(trial * 1009 + 7)
+		var choices: Array[Array] = MapGenerator.generate(enemies, bosses)
+		assert(choices.size() >= 2, "trial %d: map should have at least one normal row + boss" % trial)
+		# 1. 每個非首層節點都要有至少一個來源
+		for row_index: int in range(1, choices.size()):
+			var row: Array = choices[row_index]
+			var incoming_counts: Array[int] = []
+			for _i: int in range(row.size()):
+				incoming_counts.append(0)
+			var prev_row: Array = choices[row_index - 1]
+			for prev_node_v: Variant in prev_row:
+				var prev_node: Dictionary = prev_node_v as Dictionary
+				for target_v: Variant in (prev_node.get("connects", []) as Array):
+					var target: int = int(target_v)
+					assert(target >= 0 and target < row.size(),
+						"trial %d row %d: connect index %d out of range (row size %d)" % [trial, row_index, target, row.size()])
+					incoming_counts[target] += 1
+			for node_index: int in range(row.size()):
+				assert(incoming_counts[node_index] > 0,
+					"trial %d row %d node %d: orphan (no incoming connections)" % [trial, row_index, node_index])
+		# 2. BFS 從 row 0 任一節點，驗證 boss 行所有節點皆可達
+		var reachable: Array[Dictionary] = []  # [{row: int, index: int}, ...]
+		var frontier: Array[Dictionary] = []
+		for start_index: int in range(choices[0].size()):
+			frontier.append({"row": 0, "index": start_index})
+			reachable.append({"row": 0, "index": start_index})
+		while not frontier.is_empty():
+			var current: Dictionary = frontier.pop_front()
+			var current_row: int = int(current["row"])
+			var current_index: int = int(current["index"])
+			if current_row + 1 >= choices.size():
+				continue
+			var current_node: Dictionary = choices[current_row][current_index] as Dictionary
+			for target_v: Variant in (current_node.get("connects", []) as Array):
+				var next_entry: Dictionary = {"row": current_row + 1, "index": int(target_v)}
+				var already_in: bool = false
+				for r: Dictionary in reachable:
+					if int(r["row"]) == int(next_entry["row"]) and int(r["index"]) == int(next_entry["index"]):
+						already_in = true
+						break
+				if not already_in:
+					reachable.append(next_entry)
+					frontier.append(next_entry)
+		var boss_row: int = choices.size() - 1
+		var boss_reachable: bool = false
+		for r: Dictionary in reachable:
+			if int(r["row"]) == boss_row:
+				boss_reachable = true
+				break
+		assert(boss_reachable, "trial %d: boss row unreachable from row 0" % trial)
