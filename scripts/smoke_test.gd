@@ -77,7 +77,9 @@ func _initialize() -> void:
 	_test_multi_turn_battle(characters[0], enemies[0])
 	_test_map_generator_reachability(enemies, bosses)
 	_test_predict_enemy_damage_matches_resolver()
+	_test_bestiary_persistence()
 	_test_balance_regression(characters, enemies)
+	_test_balance_regression_mid(characters, bosses)
 	print("SwordCard smoke test passed.")
 	quit(0)
 
@@ -385,6 +387,20 @@ func _test_predict_enemy_damage_matches_resolver() -> void:
 			"predict mismatch: block=%d vuln=%d weak=%d atk=%d → predicted %d, actual %d" %
 			[block_amt, vuln, enemy_weak, attack, int(pred["dealt"]), actual_dealt])
 
+func _test_bestiary_persistence() -> void:
+	# 注意：此 test 會清掉真實 bestiary 檔案；smoke test 環境是測試專用 user:// 不用擔心
+	Bestiary.clear_all()
+	assert(not Bestiary.is_defeated("smoke_test_dummy"), "should be clean after clear_all")
+	Bestiary.mark_defeated("smoke_test_dummy")
+	assert(Bestiary.is_defeated("smoke_test_dummy"))
+	assert(Bestiary.kill_count("smoke_test_dummy") == 1)
+	Bestiary.mark_defeated("smoke_test_dummy")
+	assert(Bestiary.kill_count("smoke_test_dummy") == 2, "second mark should increment to 2")
+	var data: Dictionary = Bestiary.load_all()
+	assert(int(data.get("smoke_test_dummy", 0)) == 2)
+	Bestiary.clear_all()
+	assert(not Bestiary.is_defeated("smoke_test_dummy"))
+
 const BALANCE_TRIALS: int = 30
 const BALANCE_TOLERANCE_PP: int = 15  # 容許勝率漂移 ±15 個百分點
 # 對第一個敵人（赤蛇妖），用起始牌組 + 隨機 AI 出牌，跑 30 場。
@@ -393,6 +409,16 @@ const BALANCE_TOLERANCE_PP: int = 15  # 容許勝率漂移 ±15 個百分點
 const BALANCE_BASELINES: Dictionary = {
 	"li_xiaoyao": 100,
 	"zhao_linger": 100,
+	"lin_yueru": 100,
+	"anu": 100
+}
+# 蜈蚣大王（bosses[1]）+ 10 回合上限：起始牌組對 boss 的「速贏率」。
+# 給夠時間 random AI 都會贏，限時才能拿到中段勝率做雙向偵測。
+# li_xiaoyao / lin_yueru / anu 是高傷快攻牌組，10 回合內必勝 → 100% baseline 只抓 nerf；
+# zhao_linger 是治療/控制牌組，10 回合內勉強 20% → 雙向偵測。
+const BALANCE_BASELINES_MID: Dictionary = {
+	"li_xiaoyao": 100,
+	"zhao_linger": 20,
 	"lin_yueru": 100,
 	"anu": 100
 }
@@ -420,13 +446,39 @@ func _test_balance_regression(characters: Array[CharacterData], enemies: Array[E
 			"balance regression: %s win rate %d%% drifted %d pp from baseline %d%% (tolerance %d pp)" %
 			[character.id, win_rate, delta, baseline, BALANCE_TOLERANCE_PP])
 
-func _simulate_random_battle(character: CharacterData, enemy_template: EnemyData) -> bool:
+func _test_balance_regression_mid(characters: Array[CharacterData], bosses: Array[EnemyData]) -> void:
+	if bosses.size() < 2:
+		return
+	# 蜈蚣大王 (bosses[1]) HP 92 + 5x4 多足攻擊。
+	# 卡 8 回合上限：random AI 給夠時間都會贏，限時才能拿到中段勝率做雙向偵測
+	var enemy_template: EnemyData = bosses[1]
+	var turn_limit: int = 10
+	print("Balance regression vs %s (boss, %d-turn limit), %d trials/character:" % [enemy_template.display_name, turn_limit, BALANCE_TRIALS])
+	for character: CharacterData in characters:
+		var wins: int = 0
+		for trial: int in range(BALANCE_TRIALS):
+			seed(trial * 7919 + hash(character.id) * 17 + 5)
+			if _simulate_random_battle(character, enemy_template, turn_limit):
+				wins += 1
+		var win_rate: int = int(round(100.0 * float(wins) / float(BALANCE_TRIALS)))
+		var baseline_v: Variant = BALANCE_BASELINES_MID.get(character.id, null)
+		if baseline_v == null:
+			print("  %s: %d%% (no mid baseline; record if expected)" % [character.id, win_rate])
+			continue
+		var baseline: int = int(baseline_v)
+		var delta: int = abs(win_rate - baseline)
+		print("  %s: %d%% (mid baseline %d%%, delta %d pp)" % [character.id, win_rate, baseline, delta])
+		assert(delta <= BALANCE_TOLERANCE_PP,
+			"mid balance regression: %s win rate %d%% drifted %d pp from baseline %d%% (tolerance %d pp)" %
+			[character.id, win_rate, delta, baseline, BALANCE_TOLERANCE_PP])
+
+func _simulate_random_battle(character: CharacterData, enemy_template: EnemyData, max_turns: int = 20) -> bool:
 	var run_state: RunState = RunState.new()
 	run_state.init_for(character)
 	var enemy: EnemyData = enemy_template.clone()
 	var bc: BattleController = BattleController.new()
 	bc.setup(run_state, character, enemy)
-	for _turn: int in range(20):
+	for _turn: int in range(max_turns):
 		bc.start_turn()
 		if bc.is_battle_over():
 			break
