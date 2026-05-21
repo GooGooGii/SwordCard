@@ -40,6 +40,11 @@ var pause_button: Button
 var debug_menu: DebugMenu
 var battle_end_pending: bool = false
 
+var _end_turn_warning_id: int = 0
+var _card_preview_id: int = 0
+var _card_preview_overlay: Control = null
+var _suppress_next_card_play: bool = false
+
 const BASE_MARGIN_H: int = 28
 const BASE_MARGIN_V: int = 20
 const PAUSE_BUTTON_SIZE: Vector2 = Vector2(96, 56)
@@ -269,6 +274,8 @@ func _build_root() -> void:
 
 func _clear_root() -> void:
 	close_deck_view()
+	_hide_card_preview()
+	_cancel_end_turn_warning()
 	for button: Button in animating_cards:
 		if is_instance_valid(button):
 			button.queue_free()
@@ -634,7 +641,7 @@ func _make_encounter_choices() -> Array[Array]:
 
 func show_progress_screen() -> void:
 	SaveManager.save(run_state)
-	_set_background("res://assets/art/map_bg.png")
+	_set_background("res://assets/art/map_bg_ink.png")
 	_clear_root()
 	var panel: PanelContainer = UIFactory.make_panel()
 	root.add_child(panel)
@@ -674,7 +681,7 @@ func _map_view() -> Control:
 	map_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	map_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	map_bg.modulate = Color(1, 1, 1, 0.86)
-	map_bg.texture = UIFactory.load_texture("res://assets/art/map_bg.png")
+	map_bg.texture = UIFactory.load_texture("res://assets/art/map_bg_ink.png")
 	map_area.add_child(map_bg)
 	var line_layer: Control = preload("res://scripts/map_link_layer.gd").new()
 	line_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -730,7 +737,7 @@ func _map_view_sts() -> Control:
 	map_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	map_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	map_bg.modulate = Color(1.06, 1.03, 0.98, 0.92)
-	map_bg.texture = UIFactory.load_texture("res://assets/art/map_bg.png")
+	map_bg.texture = UIFactory.load_texture("res://assets/art/map_bg_ink.png")
 	map_area.add_child(map_bg)
 	var line_layer: Control = preload("res://scripts/map_link_layer.gd").new()
 	line_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -1176,6 +1183,7 @@ func _start_player_turn() -> void:
 func play_card(card: CardData, source_button: Button = null) -> void:
 	if battle_end_pending:
 		return
+	_cancel_end_turn_warning()
 	var result: Dictionary = battle.play_card(card)
 	if not bool(result["affordable"]):
 		_refresh_battle()
@@ -1193,6 +1201,11 @@ func play_card(card: CardData, source_button: Button = null) -> void:
 func end_player_turn() -> void:
 	if battle_end_pending:
 		return
+	if _end_turn_warning_id == 0 and int(battle.state["energy"]) > 0 and _has_affordable_card_in_hand():
+		_show_end_turn_warning()
+		return
+	_end_turn_warning_id = 0
+	end_turn_button.text = "結束回合"
 	end_turn_button.disabled = true
 	_animate_hand_discard()
 	var action: Dictionary = battle.begin_enemy_phase()
@@ -1209,6 +1222,29 @@ func end_player_turn() -> void:
 		return
 	await get_tree().create_timer(0.6).timeout
 	_start_player_turn()
+
+func _has_affordable_card_in_hand() -> bool:
+	for card: CardData in battle.deck.hand:
+		if battle.effective_card_cost(card) <= int(battle.state["energy"]):
+			return true
+	return false
+
+func _show_end_turn_warning() -> void:
+	_end_turn_warning_id += 1
+	var my_id: int = _end_turn_warning_id
+	end_turn_button.text = "再按確認\n剩 %d 點靈力" % int(battle.state["energy"])
+	UIFactory.flash_node(end_turn_button, Color(1.4, 1.3, 1.0), 0.3)
+	await get_tree().create_timer(1.0).timeout
+	if _end_turn_warning_id != my_id:
+		return
+	end_player_turn()  # auto-confirm
+
+func _cancel_end_turn_warning() -> void:
+	if _end_turn_warning_id == 0:
+		return
+	_end_turn_warning_id = 0
+	if is_instance_valid(end_turn_button):
+		end_turn_button.text = "結束回合"
 
 func _show_enemy_action_preview(action: Dictionary) -> void:
 	var preview_lines: Array[String] = []
@@ -1846,7 +1882,9 @@ func _deck_view_card(card: CardData, mode: String = "view") -> Button:
 	return button
 
 func show_result(victory: bool) -> void:
-	SaveManager.clear()
+	if victory:
+		SaveManager.clear()
+	# 失敗時暫時保留存檔，retry 用得到；其他按鈕的 callback 會自己 clear
 	_set_background("res://assets/art/event_bg.png")
 	_clear_root()
 	var panel: PanelContainer = UIFactory.make_panel()
@@ -1861,15 +1899,45 @@ func show_result(victory: bool) -> void:
 	else:
 		box.add_child(_title("戰鬥失敗", 34))
 		box.add_child(UIFactory.paragraph("%s 敗於 %s。調整出牌節奏再試一次。" % [selected_character.display_name, battle.enemy.display_name]))
-	var retry: Button = _button("重新開始此角色")
-	retry.pressed.connect(func(): start_run(selected_character))
-	box.add_child(retry)
+		var general_count: int = 0
+		for r: RelicData in run_state.relics:
+			if r.slot == "general":
+				general_count += 1
+		var retry_text: String = "重打這一場 (滿血，扣 1 件遺物)" if general_count > 0 else "重打這一場 (滿血)"
+		var retry_battle: Button = _button(retry_text)
+		retry_battle.pressed.connect(_retry_current_battle)
+		box.add_child(retry_battle)
+	var retry_run: Button = _button("重新開始此角色")
+	retry_run.pressed.connect(func() -> void:
+		SaveManager.clear()
+		start_run(selected_character))
+	box.add_child(retry_run)
 	var select: Button = _button("重新選擇角色")
-	select.pressed.connect(show_character_select)
+	select.pressed.connect(func() -> void:
+		SaveManager.clear()
+		show_character_select())
 	box.add_child(select)
 	var menu: Button = _button("返回主選單")
-	menu.pressed.connect(show_main_menu)
+	menu.pressed.connect(func() -> void:
+		SaveManager.clear()
+		show_main_menu())
 	box.add_child(menu)
+
+func _retry_current_battle() -> void:
+	if battle == null or battle.enemy == null:
+		return
+	var enemy_to_retry: EnemyData = battle.enemy.clone()
+	# 扣 1 件 general 遺物（不扣專武 / 神器）
+	var general_indices: Array[int] = []
+	for i: int in range(run_state.relics.size()):
+		if run_state.relics[i].slot == "general":
+			general_indices.append(i)
+	if not general_indices.is_empty():
+		var idx: int = general_indices[randi() % general_indices.size()]
+		run_state.relics.remove_at(idx)
+	run_state.hp = run_state.max_hp
+	SaveManager.save(run_state)
+	start_next_battle(enemy_to_retry)
 
 func _refresh_battle(animate_draw: bool = false) -> void:
 	var top_parts: Array[String] = ["第 %d/%d 層" % [run_state.encounter_index + 1, run_state.encounter_choices.size()]]
@@ -1915,8 +1983,74 @@ func _card_button(card: CardData) -> Button:
 	var affordable: bool = int(battle.state["energy"]) >= battle.effective_card_cost(card)
 	var button: Button = _make_card_button(card, card.cost, Vector2(172, 238), affordable, true)
 	button.disabled = not affordable
-	button.pressed.connect(func(): play_card(card, button))
+	button.pressed.connect(func() -> void: _on_card_button_pressed(card, button))
+	button.button_down.connect(func() -> void: _start_card_long_press(card, button))
+	button.button_up.connect(_cancel_card_long_press)
 	return button
+
+func _on_card_button_pressed(card: CardData, button: Button) -> void:
+	if _suppress_next_card_play:
+		_suppress_next_card_play = false
+		return
+	play_card(card, button)
+
+func _start_card_long_press(card: CardData, button: Button) -> void:
+	_card_preview_id += 1
+	var my_id: int = _card_preview_id
+	await get_tree().create_timer(0.5).timeout
+	if my_id != _card_preview_id:
+		return
+	if not is_instance_valid(button) or not button.button_pressed:
+		return
+	_show_card_preview(card)
+	_suppress_next_card_play = true
+
+func _cancel_card_long_press() -> void:
+	_card_preview_id += 1  # invalidate any pending timer
+	_hide_card_preview()
+
+func _hide_card_preview() -> void:
+	if _card_preview_overlay != null and is_instance_valid(_card_preview_overlay):
+		_card_preview_overlay.queue_free()
+	_card_preview_overlay = null
+
+func _show_card_preview(card: CardData) -> void:
+	_hide_card_preview()
+	var overlay: Control = Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.z_index = 300
+	add_child(overlay)
+	_card_preview_overlay = overlay
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0, 0, 0, 0.55)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.add_child(backdrop)
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+	var stack: HBoxContainer = HBoxContainer.new()
+	stack.add_theme_constant_override("separation", 24)
+	stack.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.add_child(stack)
+	var big: Button = _make_card_button(card, card.cost, Vector2(260, 360), true, true)
+	big.disabled = true
+	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.add_child(big)
+	if not card.upgraded:
+		var arrow: Label = Label.new()
+		arrow.text = "→\n升級後"
+		arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		arrow.add_theme_font_size_override("font_size", 20)
+		arrow.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
+		stack.add_child(arrow)
+		var upgraded: CardData = card.upgraded_copy()
+		var up_btn: Button = _make_card_button(upgraded, upgraded.cost, Vector2(260, 360), true, true)
+		up_btn.disabled = true
+		up_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		stack.add_child(up_btn)
 
 func _reward_card_button(card: CardData) -> Button:
 	return _make_card_button(card, card.cost, Vector2(230, 300), true, true)
