@@ -17,6 +17,7 @@ var _base_rotations: Array[float] = []
 var _hovered_index: int = -1
 var _draw_animation_id: int = 0
 var _hover_tweens: Dictionary = {}
+var _selected_index: int = -1
 
 func _ready() -> void:
 	clip_contents = false
@@ -30,6 +31,7 @@ func set_cards(buttons: Array[Button], animate: bool = false, animate_from: Vect
 	_base_positions.clear()
 	_base_rotations.clear()
 	_hovered_index = -1
+	_selected_index = -1
 	for tween: Tween in _hover_tweens.values():
 		if tween != null and tween.is_valid():
 			tween.kill()
@@ -54,6 +56,16 @@ func set_cards(buttons: Array[Button], animate: bool = false, animate_from: Vect
 		call_deferred("_start_draw_animation", animate_from, _draw_animation_id)
 		return
 	_compute_base_layout()
+	_apply_layout(false, Vector2.ZERO)
+
+func set_selected_button(button: Button) -> void:
+	_selected_index = -1
+	if button != null:
+		_selected_index = _card_buttons.find(button)
+	_apply_layout(false, Vector2.ZERO)
+
+func clear_selected_button() -> void:
+	_selected_index = -1
 	_apply_layout(false, Vector2.ZERO)
 
 func _start_draw_animation(animate_from: Vector2, animation_id: int) -> void:
@@ -98,7 +110,7 @@ func _apply_layout(animate: bool, animate_from: Vector2) -> void:
 		var card_size: Vector2 = button.custom_minimum_size
 		button.size = card_size
 		button.pivot_offset = Vector2(card_size.x / 2.0, card_size.y + ARC_RADIUS)
-		button.z_index = i
+		button.z_index = 1100 if i == _selected_index else i
 		if animate:
 			button.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			button.position = local_from
@@ -116,10 +128,7 @@ func _apply_layout(animate: bool, animate_from: Vector2) -> void:
 				if is_instance_valid(target_button):
 					target_button.mouse_filter = Control.MOUSE_FILTER_STOP)
 		else:
-			button.position = _base_positions[i]
-			button.rotation = _base_rotations[i]
-			button.scale = Vector2.ONE
-			button.modulate.a = 1.0
+			_apply_button_rest_state(button, i)
 
 func _kill_hover_tween(index: int) -> void:
 	if _hover_tweens.has(index):
@@ -130,6 +139,8 @@ func _kill_hover_tween(index: int) -> void:
 
 func _on_hover(index: int) -> void:
 	if index < 0 or index >= _card_buttons.size():
+		return
+	if index == _selected_index:
 		return
 	_hovered_index = index
 	var button: Button = _card_buttons[index]
@@ -145,6 +156,8 @@ func _on_hover(index: int) -> void:
 func _on_unhover(index: int) -> void:
 	if index < 0 or index >= _card_buttons.size():
 		return
+	if index == _selected_index:
+		return
 	if _hovered_index == index:
 		_hovered_index = -1
 	var button: Button = _card_buttons[index]
@@ -156,3 +169,15 @@ func _on_unhover(index: int) -> void:
 	tween.tween_property(button, "scale", Vector2.ONE, ANIM_DURATION)
 	tween.tween_property(button, "position", _base_positions[index], ANIM_DURATION)
 	_hover_tweens[index] = tween
+
+func _apply_button_rest_state(button: Button, index: int) -> void:
+	if index == _selected_index:
+		button.position = _base_positions[index] + Vector2(0, -HOVER_LIFT)
+		button.rotation = _base_rotations[index]
+		button.scale = Vector2(HOVER_SCALE, HOVER_SCALE)
+		button.modulate.a = 1.0
+		return
+	button.position = _base_positions[index]
+	button.rotation = _base_rotations[index]
+	button.scale = Vector2.ONE
+	button.modulate.a = 1.0

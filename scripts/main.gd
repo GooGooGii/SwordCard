@@ -39,18 +39,26 @@ var pause_menu: PauseMenu
 var pause_button: Button
 var debug_menu: DebugMenu
 var battle_end_pending: bool = false
+var active_map_scroll: ScrollContainer = null
+var _map_drag_candidate: bool = false
+var _map_dragging: bool = false
+var _map_drag_start_pointer: Vector2 = Vector2.ZERO
+var _map_drag_start_scroll: Vector2 = Vector2.ZERO
 
 var _end_turn_warning_id: int = 0
 var _card_preview_id: int = 0
 var _card_preview_overlay: Control = null
 var _suppress_next_card_play: bool = false
+var _selected_hand_card: CardData = null
+var _selected_hand_button: Button = null
 
 var selected_ascension: int = 0
 var pending_seed: int = 0  # 0 = 隨機；非 0 = 下次 start_run 用此 seed 生地圖
 
 const BASE_MARGIN_H: int = 28
 const BASE_MARGIN_V: int = 20
-const PAUSE_BUTTON_SIZE: Vector2 = Vector2(96, 56)
+const PAUSE_BUTTON_SIZE: Vector2 = Vector2(40, 40)
+const MAP_DRAG_THRESHOLD: float = 12.0
 
 func _ready() -> void:
 	randomize()
@@ -96,6 +104,16 @@ func _build_pause_button() -> void:
 	pause_button.add_theme_stylebox_override("pressed", _pause_button_style(ThemeColors.PANEL_NAVY_PRS, ThemeColors.BORDER_GOLD, 2))
 	pause_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	pause_button.visible = false
+	pause_button.text = "⚙"
+	pause_button.custom_minimum_size = Vector2(40, 40)
+	pause_button.size = pause_button.custom_minimum_size
+	pause_button.add_theme_font_size_override("font_size", 28)
+	pause_button.add_theme_color_override("font_color", Color("fff6e4", 0.92))
+	pause_button.add_theme_color_override("font_hover_color", Color("ffffff"))
+	pause_button.add_theme_color_override("font_pressed_color", Color("f0dcc1"))
+	pause_button.add_theme_stylebox_override("normal", _pause_button_style(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0))
+	pause_button.add_theme_stylebox_override("hover", _pause_button_style(Color(0, 0, 0, 0.10), Color(0, 0, 0, 0), 0))
+	pause_button.add_theme_stylebox_override("pressed", _pause_button_style(Color(0, 0, 0, 0.16), Color(0, 0, 0, 0), 0))
 	pause_button.pressed.connect(_toggle_pause_menu)
 	add_child(pause_button)
 
@@ -147,6 +165,76 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif keycode == KEY_F1:
 			_toggle_debug_menu()
 			get_viewport().set_input_as_handled()
+	if _handle_map_pointer_input(event):
+		get_viewport().set_input_as_handled()
+
+func _handle_map_pointer_input(event: InputEvent) -> bool:
+	if active_map_scroll == null or not is_instance_valid(active_map_scroll) or not active_map_scroll.visible:
+		_map_drag_candidate = false
+		_map_dragging = false
+		return false
+	var scroll_rect: Rect2 = active_map_scroll.get_global_rect()
+	if event is InputEventMouseButton:
+		var mouse_button: InputEventMouseButton = event as InputEventMouseButton
+		if mouse_button.button_index != MOUSE_BUTTON_LEFT:
+			return false
+		if mouse_button.pressed:
+			if not scroll_rect.has_point(mouse_button.position):
+				return false
+			_map_drag_candidate = true
+			_map_dragging = false
+			_map_drag_start_pointer = mouse_button.position
+			_map_drag_start_scroll = Vector2(active_map_scroll.scroll_horizontal, active_map_scroll.scroll_vertical)
+			return false
+		var was_dragging: bool = _map_dragging
+		_map_drag_candidate = false
+		_map_dragging = false
+		return was_dragging
+	if event is InputEventMouseMotion:
+		var motion: InputEventMouseMotion = event as InputEventMouseMotion
+		if not _map_drag_candidate:
+			return false
+		var delta_from_start: Vector2 = motion.position - _map_drag_start_pointer
+		if not _map_dragging and delta_from_start.length() < MAP_DRAG_THRESHOLD:
+			return false
+		_map_dragging = true
+		_apply_map_scroll_from_drag(delta_from_start)
+		return true
+	if event is InputEventScreenTouch:
+		var touch: InputEventScreenTouch = event as InputEventScreenTouch
+		if touch.pressed:
+			if not scroll_rect.has_point(touch.position):
+				return false
+			_map_drag_candidate = true
+			_map_dragging = false
+			_map_drag_start_pointer = touch.position
+			_map_drag_start_scroll = Vector2(active_map_scroll.scroll_horizontal, active_map_scroll.scroll_vertical)
+			return false
+		var was_touch_dragging: bool = _map_dragging
+		_map_drag_candidate = false
+		_map_dragging = false
+		return was_touch_dragging
+	if event is InputEventScreenDrag:
+		var screen_drag: InputEventScreenDrag = event as InputEventScreenDrag
+		if not _map_drag_candidate:
+			return false
+		var touch_delta_from_start: Vector2 = screen_drag.position - _map_drag_start_pointer
+		if not _map_dragging and touch_delta_from_start.length() < MAP_DRAG_THRESHOLD:
+			return false
+		_map_dragging = true
+		_apply_map_scroll_from_drag(touch_delta_from_start)
+		return true
+	return false
+
+func _apply_map_scroll_from_drag(pointer_delta: Vector2) -> void:
+	if active_map_scroll == null or not is_instance_valid(active_map_scroll):
+		return
+	var hbar: HScrollBar = active_map_scroll.get_h_scroll_bar()
+	var vbar: VScrollBar = active_map_scroll.get_v_scroll_bar()
+	var max_h: float = hbar.max_value - hbar.page if hbar != null else 0.0
+	var max_v: float = vbar.max_value - vbar.page if vbar != null else 0.0
+	active_map_scroll.scroll_horizontal = int(clamp(_map_drag_start_scroll.x - pointer_delta.x, 0.0, max(0.0, max_h)))
+	active_map_scroll.scroll_vertical = int(clamp(_map_drag_start_scroll.y - pointer_delta.y, 0.0, max(0.0, max_v)))
 
 func _toggle_pause_menu() -> void:
 	if pause_menu == null:
@@ -279,6 +367,9 @@ func _clear_root() -> void:
 	close_deck_view()
 	_hide_card_preview()
 	_cancel_end_turn_warning()
+	active_map_scroll = null
+	_map_drag_candidate = false
+	_map_dragging = false
 	for button: Button in animating_cards:
 		if is_instance_valid(button):
 			button.queue_free()
@@ -294,11 +385,13 @@ func _set_background(path: String) -> void:
 		background_rect.texture = texture
 
 func show_main_menu() -> void:
-	_set_background("res://assets/art/main_menu_bg.png")
+	_set_background("res://assets/art/login_background.jpg")
 	_clear_root()
 	var viewport_size: Vector2 = get_viewport_rect().size
 	var ultra_compact: bool = viewport_size.y <= 760.0
 	var compact_layout: bool = viewport_size.y <= 900.0
+	_build_minimal_main_menu(ultra_compact, compact_layout, viewport_size)
+	return
 	root.add_theme_constant_override("margin_left", 20 if ultra_compact else 28)
 	root.add_theme_constant_override("margin_top", 16 if ultra_compact else 20)
 	root.add_theme_constant_override("margin_right", 20 if ultra_compact else 28)
@@ -465,6 +558,85 @@ func show_main_menu() -> void:
 		quick_info.add_child(UIFactory.menu_info_row("目前內容", "角色選擇、事件、商店、戰鬥與遺物"))
 		quick_info.add_child(UIFactory.menu_info_row("操作入口", "可從主選單直接開始或接續存檔"))
 
+func _build_minimal_main_menu(ultra_compact: bool, compact_layout: bool, viewport_size: Vector2) -> void:
+	root.add_theme_constant_override("margin_left", 16 if ultra_compact else 24)
+	root.add_theme_constant_override("margin_top", 16 if ultra_compact else 24)
+	root.add_theme_constant_override("margin_right", 16 if ultra_compact else 24)
+	root.add_theme_constant_override("margin_bottom", 16 if ultra_compact else 24)
+	var panel_margin: int = 16 if ultra_compact else (20 if compact_layout else 24)
+	var section_gap: int = 10 if ultra_compact else 12
+	var button_height: float = 34.0 if ultra_compact else (38.0 if compact_layout else 42.0)
+	var button_font_size: int = 14 if ultra_compact else 16
+	var shell_width: float = min(viewport_size.x - (32 if ultra_compact else 48), 460.0 if compact_layout else 520.0)
+	var content_width: float = shell_width - float(panel_margin * 2)
+
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root.add_child(center)
+
+	var card: PanelContainer = PanelContainer.new()
+	card.custom_minimum_size = Vector2(shell_width, 0)
+	card.add_theme_stylebox_override("panel", UIFactory.style_box(Color("f8f3ea", 0.18), Color(1, 1, 1, 0.0), 0, 24))
+	center.add_child(card)
+
+	var margin: MarginContainer = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", panel_margin)
+	margin.add_theme_constant_override("margin_top", panel_margin)
+	margin.add_theme_constant_override("margin_right", panel_margin)
+	margin.add_theme_constant_override("margin_bottom", panel_margin)
+	card.add_child(margin)
+
+	var content: VBoxContainer = VBoxContainer.new()
+	content.add_theme_constant_override("separation", section_gap)
+	margin.add_child(content)
+
+	var action_box: VBoxContainer = VBoxContainer.new()
+	action_box.add_theme_constant_override("separation", 8 if compact_layout else 10)
+	content.add_child(action_box)
+	if SaveManager.has_save():
+		var continue_button: Button = UIFactory.main_menu_button("繼續冒險", true, button_height, button_font_size)
+		continue_button.custom_minimum_size.x = content_width
+		continue_button.pressed.connect(continue_saved_run)
+		action_box.add_child(continue_button)
+		var summary: String = _saved_run_summary()
+		if not summary.is_empty():
+			var summary_label: Label = Label.new()
+			summary_label.text = summary
+			summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			summary_label.add_theme_font_size_override("font_size", 11 if compact_layout else 12)
+			summary_label.add_theme_color_override("font_color", Color("f6efe0"))
+			action_box.add_child(summary_label)
+
+	var start_button: Button = UIFactory.main_menu_button("開始遊戲", false, button_height, button_font_size)
+	start_button.custom_minimum_size.x = content_width
+	start_button.pressed.connect(_on_start_random_pressed)
+	action_box.add_child(start_button)
+
+	var daily_button: Button = UIFactory.main_menu_button("每日挑戰", false, button_height, button_font_size)
+	daily_button.custom_minimum_size.x = content_width
+	daily_button.pressed.connect(_on_daily_challenge_pressed)
+	action_box.add_child(daily_button)
+
+	var seed_button: Button = UIFactory.main_menu_button("輸入種子", false, button_height, button_font_size)
+	seed_button.custom_minimum_size.x = content_width
+	seed_button.pressed.connect(_show_seed_input_popup)
+	action_box.add_child(seed_button)
+
+	var ascension_picker: Control = _build_ascension_picker(compact_layout, ultra_compact)
+	ascension_picker.custom_minimum_size.x = content_width
+	action_box.add_child(ascension_picker)
+
+	var bestiary_button: Button = UIFactory.main_menu_button("敵將圖鑑", false, button_height, button_font_size)
+	bestiary_button.custom_minimum_size.x = content_width
+	bestiary_button.pressed.connect(show_bestiary)
+	action_box.add_child(bestiary_button)
+
+	var quit_button: Button = UIFactory.main_menu_button("離開遊戲", false, button_height, button_font_size)
+	quit_button.custom_minimum_size.x = content_width
+	quit_button.pressed.connect(get_tree().quit)
+	action_box.add_child(quit_button)
+
 func _saved_run_summary() -> String:
 	if not SaveManager.has_save():
 		return ""
@@ -549,7 +721,7 @@ func _build_ascension_picker(compact_layout: bool = false, ultra_compact: bool =
 	var font_size: int = 15 if ultra_compact else (16 if compact_layout else 18)
 	var note_font_size: int = 10 if ultra_compact else 11
 	var panel: PanelContainer = PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("111926", 0.55), Color("8ea3c4", 0.28), 1, 8))
+	panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("f6f1e6", 0.16), Color("f4efe6", 0.0), 0, 18))
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4 if ultra_compact else 6)
 	panel.add_child(box)
@@ -558,28 +730,34 @@ func _build_ascension_picker(compact_layout: bool = false, ultra_compact: bool =
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_child(row)
 	var prev_btn: Button = Button.new()
-	prev_btn.text = "◀"
+	prev_btn.text = "<"
 	prev_btn.custom_minimum_size = Vector2(36 if ultra_compact else 40, row_height)
 	prev_btn.add_theme_font_size_override("font_size", font_size)
-	UIFactory.style_button(prev_btn)
+	prev_btn.add_theme_stylebox_override("normal", UIFactory.style_box(Color("f8f3ea", 0.68), Color("f0e7d8", 0.0), 0, 999))
+	prev_btn.add_theme_stylebox_override("hover", UIFactory.style_box(Color("fff9f0", 0.88), Color("f0e7d8", 0.0), 0, 999))
+	prev_btn.add_theme_stylebox_override("pressed", UIFactory.style_box(Color("eadfcf", 0.92), Color("f0e7d8", 0.0), 0, 999))
+	prev_btn.add_theme_color_override("font_color", Color("5a4a33"))
 	prev_btn.disabled = selected_ascension <= 0
 	prev_btn.pressed.connect(func() -> void:
 		selected_ascension = max(0, selected_ascension - 1)
 		show_main_menu())
 	row.add_child(prev_btn)
 	var label: Label = Label.new()
-	label.text = "難度: A%d" % selected_ascension
+	label.text = "難度 A%d" % selected_ascension
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
+	label.add_theme_color_override("font_color", Color("fff6e4"))
 	label.custom_minimum_size = Vector2(104 if ultra_compact else 120, row_height)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(label)
 	var next_btn: Button = Button.new()
-	next_btn.text = "▶"
+	next_btn.text = ">"
 	next_btn.custom_minimum_size = Vector2(36 if ultra_compact else 40, row_height)
 	next_btn.add_theme_font_size_override("font_size", font_size)
-	UIFactory.style_button(next_btn)
+	next_btn.add_theme_stylebox_override("normal", UIFactory.style_box(Color("f8f3ea", 0.68), Color("f0e7d8", 0.0), 0, 999))
+	next_btn.add_theme_stylebox_override("hover", UIFactory.style_box(Color("fff9f0", 0.88), Color("f0e7d8", 0.0), 0, 999))
+	next_btn.add_theme_stylebox_override("pressed", UIFactory.style_box(Color("eadfcf", 0.92), Color("f0e7d8", 0.0), 0, 999))
+	next_btn.add_theme_color_override("font_color", Color("5a4a33"))
 	next_btn.disabled = selected_ascension >= unlocked_max
 	next_btn.pressed.connect(func() -> void:
 		selected_ascension = min(unlocked_max, selected_ascension + 1)
@@ -590,7 +768,7 @@ func _build_ascension_picker(compact_layout: bool = false, ultra_compact: bool =
 	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc.add_theme_font_size_override("font_size", 11 if compact_layout else 12)
-	desc.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
+	desc.add_theme_color_override("font_color", Color("f4ecdd"))
 	desc.custom_minimum_size = Vector2(0, 0)
 	box.add_child(desc)
 	var unlock_note: Label = Label.new()
@@ -885,6 +1063,8 @@ func show_progress_screen() -> void:
 	_clear_root()
 	var viewport_size: Vector2 = get_viewport_rect().size
 	var compact_map: bool = viewport_size.y <= 760.0
+	_build_streamlined_progress_screen(compact_map)
+	return
 	var panel: PanelContainer = UIFactory.make_panel()
 	root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
@@ -974,21 +1154,65 @@ func _map_view() -> Control:
 	call_deferred("_refresh_map_link_layer", line_layer, node_buttons)
 	return map_panel
 
+func _build_streamlined_progress_screen(compact_map: bool) -> void:
+	root.add_theme_constant_override("margin_left", 14 if compact_map else 18)
+	root.add_theme_constant_override("margin_top", 14 if compact_map else 18)
+	root.add_theme_constant_override("margin_right", 14 if compact_map else 18)
+	root.add_theme_constant_override("margin_bottom", 14 if compact_map else 18)
+	var layer: Control = Control.new()
+	layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root.add_child(layer)
+	var map_panel: Control = _map_view_sts()
+	map_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(map_panel)
+	layer.add_child(_build_map_toolbar())
+
+func _build_map_toolbar() -> Control:
+	var toolbar: HBoxContainer = HBoxContainer.new()
+	toolbar.set_anchors_preset(Control.PRESET_TOP_RIGHT, false)
+	toolbar.offset_left = -140
+	toolbar.offset_top = 4
+	toolbar.offset_right = -PAUSE_BUTTON_SIZE.x - 10
+	toolbar.offset_bottom = 44
+	toolbar.alignment = BoxContainer.ALIGNMENT_END
+	toolbar.add_theme_constant_override("separation", 8)
+	toolbar.add_child(_map_icon_button("人", "角色狀態", _show_map_status_popup))
+	toolbar.add_child(_map_icon_button("牌", "查看牌組", func() -> void: show_deck_view()))
+	return toolbar
+
+func _map_icon_button(symbol: String, tooltip: String, action: Callable) -> Button:
+	var button: Button = Button.new()
+	button.text = symbol
+	button.tooltip_text = tooltip
+	button.custom_minimum_size = Vector2(40, 40)
+	button.focus_mode = Control.FOCUS_NONE
+	button.add_theme_font_size_override("font_size", 22)
+	button.add_theme_color_override("font_color", Color("fff6e4", 0.94))
+	button.add_theme_color_override("font_hover_color", Color("ffffff"))
+	button.add_theme_color_override("font_pressed_color", Color("f0dcc1"))
+	button.add_theme_stylebox_override("normal", _pause_button_style(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0))
+	button.add_theme_stylebox_override("hover", _pause_button_style(Color(0, 0, 0, 0.10), Color(0, 0, 0, 0), 0))
+	button.add_theme_stylebox_override("pressed", _pause_button_style(Color(0, 0, 0, 0.16), Color(0, 0, 0, 0), 0))
+	button.pressed.connect(action)
+	return button
+
 func _map_view_sts() -> Control:
 	var viewport_size: Vector2 = get_viewport_rect().size
 	var compact_map: bool = viewport_size.y <= 760.0
-	var panel_height: float = clamp(viewport_size.y - (280.0 if compact_map else 240.0), 300.0, 580.0)
+	var panel_height: float = clamp(viewport_size.y - (56.0 if compact_map else 64.0), 360.0, 760.0)
 	var map_panel: PanelContainer = PanelContainer.new()
 	map_panel.custom_minimum_size = Vector2(1040, panel_height)
 	map_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	map_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("f4edd8", 0.04), Color("d7c89a", 0.18), 1, 8))
+	map_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("f4edd8", 0.02), Color("f4edd8", 0.08), 1, 8))
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(1040, panel_height)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	scroll.follow_focus = true
+	scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	map_panel.add_child(scroll)
+	active_map_scroll = scroll
 	var map_area: Control = Control.new()
 	var total_rows: int = run_state.encounter_choices.size()
 	var content_size: Vector2 = _map_content_size(total_rows)
@@ -1019,22 +1243,43 @@ func _map_view_sts() -> Control:
 			map_area.add_child(node_button)
 			node_buttons.append({"button": node_button, "row": row_index, "index": node_index})
 	call_deferred("_refresh_map_link_layer", line_layer, node_buttons)
-	call_deferred("_focus_map_row", scroll, total_rows, content_size)
+	call_deferred("_focus_map_row", scroll, _map_focus_anchor(total_rows, content_size), content_size)
 	return map_panel
 
 func _map_content_size(total_rows: int) -> Vector2:
 	return Vector2(1040, max(1180.0, 360.0 + float(total_rows) * 320.0))
 
-func _focus_map_row(scroll: ScrollContainer, total_rows: int, content_size: Vector2) -> void:
+func _map_focus_anchor(total_rows: int, content_size: Vector2) -> Vector2:
+	var target_row: int = clamp(run_state.encounter_index, 0, max(0, total_rows - 1))
+	var row: Array = run_state.encounter_choices[target_row] if target_row < run_state.encounter_choices.size() else []
+	var target_index: int = 0
+	if target_row < run_state.chosen_map_path.size():
+		target_index = clamp(int(run_state.chosen_map_path[target_row]), 0, max(0, row.size() - 1))
+	else:
+		for node_variant: Variant in row:
+			var node_data: Dictionary = node_variant as Dictionary
+			var node_index: int = int(node_data.get("index", 0))
+			if _is_map_node_selectable(target_row, node_index):
+				target_index = node_index
+				break
+	var anchor: Vector2 = _map_node_position(target_row, target_index, max(1, row.size()), total_rows, content_size)
+	return anchor + Vector2(38.0, 46.0)
+
+func _focus_map_row(scroll: ScrollContainer, anchor: Vector2, content_size: Vector2) -> void:
 	if scroll == null:
+		return
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if scroll == null or not is_instance_valid(scroll):
 		return
 	var viewport_height: float = scroll.size.y
 	if viewport_height <= 0.0:
 		viewport_height = scroll.custom_minimum_size.y
-	var target_row: int = clamp(run_state.encounter_index, 0, max(0, total_rows - 1))
-	var anchor: Vector2 = _map_node_position(target_row, 0, 1, total_rows, content_size)
-	var target_scroll: float = anchor.y - viewport_height * 0.55
+	var target_scroll: float = anchor.y - viewport_height * 0.48
+	var vbar: VScrollBar = scroll.get_v_scroll_bar()
 	var max_scroll: float = max(0.0, content_size.y - viewport_height)
+	if vbar != null:
+		max_scroll = max(0.0, vbar.max_value - vbar.page)
 	scroll.scroll_vertical = int(clamp(target_scroll, 0.0, max_scroll))
 
 func _map_node_position(row_index: int, node_index: int, row_size: int, total_rows: int, area_size: Vector2) -> Vector2:
@@ -1114,31 +1359,47 @@ func _map_node_button(node_data: Dictionary, row_index: int) -> Button:
 	var button: Button = _route_node_button(node_data)
 	var selectable: bool = _is_map_node_selectable(row_index, node_index)
 	var selected: bool = row_index < run_state.chosen_map_path.size() and run_state.chosen_map_path[row_index] == node_index
+	var completed: bool = row_index < run_state.encounter_index
 	button.custom_minimum_size = Vector2(76, 92)
 	button.text = _map_node_compact_text(node_data, row_index, selected)
 	button.disabled = not selectable
 	button.focus_mode = Control.FOCUS_NONE
 	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_style_map_node_button(button, node_data, selected, selectable)
+	_style_map_node_button(button, node_data, selected, selectable, completed)
 	if selected:
-		button.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("214130", 0.3), Color("f5f1d6"), 2, 28))
+		button.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("214130", 0.34), Color("f5f1d6"), 2, 28))
 		button.add_theme_color_override("font_disabled_color", Color("25313b"))
-	elif row_index < run_state.encounter_index:
-		button.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("5f6570", 0.16), Color("5f6570", 0.4), 1, 28))
-		button.add_theme_color_override("font_disabled_color", Color("51606d"))
+	elif completed:
+		button.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("345b45", 0.28), Color("8fd2a2", 0.78), 2, 28))
+		button.add_theme_color_override("font_disabled_color", Color("dff3e3"))
 	elif not selectable:
-		button.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("5f6570", 0.1), Color("5f6570", 0.28), 1, 28))
-		button.add_theme_color_override("font_disabled_color", Color("697785"))
+		button.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("5f6570", 0.08), Color("778899", 0.24), 1, 28))
+		button.add_theme_color_override("font_disabled_color", Color("8c99a6"))
 	var node_type: String = String(node_data.get("type", "battle"))
 	if node_type == "boss":
 		button.custom_minimum_size = Vector2(92, 110)
 	call_deferred("_animate_map_node", button, selected, selectable, node_type == "boss")
 	return button
 
-func _style_map_node_button(button: Button, node_data: Dictionary, selected: bool, selectable: bool) -> void:
-	button.add_theme_stylebox_override("normal", UIFactory.style_box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, 28))
-	button.add_theme_stylebox_override("hover", UIFactory.style_box(Color("f4edd8", 0.08), Color("25313b", 0.24), 1, 28))
-	button.add_theme_stylebox_override("pressed", UIFactory.style_box(Color("f4edd8", 0.12), Color("f5f1d6"), 1, 28))
+func _style_map_node_button(button: Button, node_data: Dictionary, selected: bool, selectable: bool, completed: bool = false) -> void:
+	var normal_bg: Color = Color(0, 0, 0, 0)
+	var hover_bg: Color = Color("f4edd8", 0.08)
+	var pressed_bg: Color = Color("f4edd8", 0.12)
+	var hover_border: Color = Color("25313b", 0.24)
+	var pressed_border: Color = Color("f5f1d6")
+	if completed:
+		hover_bg = Color("7db58b", 0.18)
+		pressed_bg = Color("5f9d73", 0.22)
+		hover_border = Color("8fd2a2", 0.6)
+		pressed_border = Color("dff3e3", 0.9)
+	elif selectable or selected:
+		hover_bg = Color("f0d79a", 0.18)
+		pressed_bg = Color("e4c67a", 0.24)
+		hover_border = Color("ecd89a", 0.72)
+		pressed_border = Color("fff4d2", 0.94)
+	button.add_theme_stylebox_override("normal", UIFactory.style_box(normal_bg, Color(0, 0, 0, 0), 0, 28))
+	button.add_theme_stylebox_override("hover", UIFactory.style_box(hover_bg, hover_border, 1, 28))
+	button.add_theme_stylebox_override("pressed", UIFactory.style_box(pressed_bg, pressed_border, 1, 28))
 	button.add_theme_font_size_override("font_size", 12)
 	button.add_theme_constant_override("v_separation", 0)
 	button.add_theme_color_override("font_color", Color("25313b", 0.55))
@@ -1159,7 +1420,9 @@ func _style_map_node_button(button: Button, node_data: Dictionary, selected: boo
 		label.text = ""
 		label.custom_minimum_size = Vector2(0, 0)
 		label.visible = false
-	if not selectable and not selected:
+	if completed:
+		button.modulate = Color(0.82, 1.0, 0.86, 0.98)
+	elif not selectable and not selected:
 		button.modulate = Color(0.64, 0.64, 0.64, 0.72)
 	else:
 		button.modulate = Color.WHITE
@@ -1450,6 +1713,7 @@ func _try_random_relic_drop(rarity_chance: float = 0.25) -> RelicData:
 	return pool[randi() % pool.size()].clone()
 
 func _start_player_turn() -> void:
+	_clear_selected_hand_card()
 	var result: Dictionary = battle.start_turn()
 	_show_state_feedback(result["before_tick"])
 	if _check_battle_end():
@@ -1459,6 +1723,7 @@ func _start_player_turn() -> void:
 func play_card(card: CardData, source_button: Button = null) -> void:
 	if battle_end_pending:
 		return
+	_clear_selected_hand_card()
 	_cancel_end_turn_warning()
 	var result: Dictionary = battle.play_card(card)
 	if not bool(result["affordable"]):
@@ -1477,6 +1742,7 @@ func play_card(card: CardData, source_button: Button = null) -> void:
 func end_player_turn() -> void:
 	if battle_end_pending:
 		return
+	_clear_selected_hand_card()
 	if _end_turn_warning_id == 0 and int(battle.state["energy"]) > 0 and _has_affordable_card_in_hand():
 		_show_end_turn_warning()
 		return
@@ -2250,6 +2516,53 @@ func _show_battle_relics_popup() -> void:
 	popup.popup_hide.connect(popup.queue_free)
 	popup.popup_centered()
 
+func _show_map_status_popup() -> void:
+	var popup: PopupPanel = _make_battle_popup()
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
+	box.custom_minimum_size = Vector2(460, 0)
+	var title: Label = Label.new()
+	title.text = "角色狀態"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
+	box.add_child(title)
+	box.add_child(UIFactory.paragraph("%s  HP %d/%d  銅錢 %d  牌組 %d 張  本輪增傷 +%d" % [
+		selected_character.display_name,
+		run_state.hp,
+		selected_character.max_hp,
+		run_state.gold,
+		run_state.deck.size(),
+		run_state.power_bonus
+	]))
+	if run_state.map_seed != 0:
+		box.add_child(UIFactory.paragraph("種子 %d  ·  難度 A%d" % [run_state.map_seed, run_state.ascension_level]))
+	var passive_text: String = _passive_text()
+	if not passive_text.is_empty():
+		box.add_child(UIFactory.paragraph(passive_text))
+	if run_state.relics.is_empty():
+		box.add_child(UIFactory.paragraph("目前沒有遺物。"))
+	else:
+		var relic_title: Label = Label.new()
+		relic_title.text = "遺物"
+		relic_title.add_theme_font_size_override("font_size", 16)
+		relic_title.add_theme_color_override("font_color", ThemeColors.HIGHLIGHT_GOLD)
+		box.add_child(relic_title)
+		var scroll: ScrollContainer = ScrollContainer.new()
+		scroll.custom_minimum_size = Vector2(440, 320)
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		box.add_child(scroll)
+		var list: VBoxContainer = VBoxContainer.new()
+		list.add_theme_constant_override("separation", 8)
+		list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		scroll.add_child(list)
+		for relic: RelicData in run_state.relics:
+			list.add_child(_relic_popup_entry(relic))
+	popup.add_child(box)
+	get_viewport().add_child(popup)
+	popup.popup_hide.connect(popup.queue_free)
+	popup.popup_centered()
+
 func _relic_popup_entry(relic: RelicData) -> Control:
 	var entry: PanelContainer = PanelContainer.new()
 	var border: Color = _relic_rarity_color_for_popup(relic)
@@ -2404,12 +2717,17 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 	energy_orb.set_energy(int(battle.state["energy"]), BattleController.TURN_ENERGY)
 	var buttons: Array[Button] = []
 	card_buttons.clear()
+	_selected_hand_button = null
 	for card: CardData in battle.deck.hand:
 		var button: Button = _card_button(card)
 		buttons.append(button)
 		card_buttons.append(button)
+		if card == _selected_hand_card:
+			_selected_hand_button = button
 	var draw_source: Vector2 = Vector2(120.0, get_viewport_rect().size.y - 70.0)
 	hand_row.set_cards(buttons, animate_draw, draw_source)
+	if _selected_hand_button != null:
+		hand_row.set_selected_button(_selected_hand_button)
 	log_label.text = "\n".join(battle.battle_log.slice(max(0, battle.battle_log.size() - 4)))
 	end_turn_button.disabled = false
 
@@ -2430,7 +2748,13 @@ func _on_card_button_pressed(card: CardData, button: Button) -> void:
 	if _suppress_next_card_play:
 		_suppress_next_card_play = false
 		return
-	play_card(card, button)
+	if _selected_hand_card == card and _selected_hand_button == button:
+		play_card(card, button)
+		return
+	_selected_hand_card = card
+	_selected_hand_button = button
+	if hand_row != null:
+		hand_row.set_selected_button(button)
 
 func _start_card_long_press(card: CardData, button: Button) -> void:
 	_card_preview_id += 1
@@ -2446,6 +2770,12 @@ func _start_card_long_press(card: CardData, button: Button) -> void:
 func _cancel_card_long_press() -> void:
 	_card_preview_id += 1  # invalidate any pending timer
 	_hide_card_preview()
+
+func _clear_selected_hand_card() -> void:
+	_selected_hand_card = null
+	_selected_hand_button = null
+	if hand_row != null:
+		hand_row.clear_selected_button()
 
 func _hide_card_preview() -> void:
 	if _card_preview_overlay != null and is_instance_valid(_card_preview_overlay):
@@ -2493,29 +2823,47 @@ func _show_card_preview(card: CardData) -> void:
 func _reward_card_button(card: CardData) -> Button:
 	return _make_card_button(card, card.cost, Vector2(230, 300), true, true)
 
+func _card_frame_texture_path(card_type: String) -> String:
+	match card_type:
+		"skill":
+			return "res://assets/ui/card_frame_skill.png"
+		"power":
+			return "res://assets/ui/card_frame_power.png"
+		_:
+			return "res://assets/ui/card_frame_attack.png"
+
 func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: bool, selectable: bool) -> Button:
 	var button: Button = Button.new()
 	button.text = ""
 	button.custom_minimum_size = size
 	button.focus_mode = Control.FOCUS_NONE
 	_style_card_button(button, card, affordable)
+	var frame: TextureRect = TextureRect.new()
+	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	frame.stretch_mode = TextureRect.STRETCH_SCALE
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.texture = UIFactory.load_texture(_card_frame_texture_path(card.card_type))
+	if not affordable or not selectable:
+		frame.modulate = Color(0.82, 0.82, 0.82, 0.78)
+	button.add_child(frame)
 	var outer: MarginContainer = MarginContainer.new()
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	outer.add_theme_constant_override("margin_left", 8)
-	outer.add_theme_constant_override("margin_top", 8)
-	outer.add_theme_constant_override("margin_right", 8)
-	outer.add_theme_constant_override("margin_bottom", 8)
+	outer.add_theme_constant_override("margin_left", int(round(size.x * 0.11)))
+	outer.add_theme_constant_override("margin_top", int(round(size.y * 0.065)))
+	outer.add_theme_constant_override("margin_right", int(round(size.x * 0.11)))
+	outer.add_theme_constant_override("margin_bottom", int(round(size.y * 0.08)))
 	button.add_child(outer)
 	var box: VBoxContainer = VBoxContainer.new()
-	box.add_theme_constant_override("separation", 5)
+	box.add_theme_constant_override("separation", 3)
 	outer.add_child(box)
 	var type_bar: PanelContainer = PanelContainer.new()
-	type_bar.custom_minimum_size = Vector2(0, 5)
-	type_bar.add_theme_stylebox_override("panel", UIFactory.strip_box(CardFormat.card_color(card.card_type, true).lightened(0.16), 3))
+	type_bar.custom_minimum_size = Vector2(0, max(4.0, size.y * 0.015))
+	type_bar.add_theme_stylebox_override("panel", UIFactory.strip_box(CardFormat.card_color(card.card_type, true).lightened(0.16), 999))
 	box.add_child(type_bar)
 	var art_frame: PanelContainer = PanelContainer.new()
-	art_frame.custom_minimum_size = Vector2(size.x - 22, max(104.0, size.y * 0.5))
-	art_frame.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.42), CardFormat.card_rarity_color(card), 1, 6))
+	art_frame.custom_minimum_size = Vector2(size.x - 22, max(92.0, size.y * 0.41))
+	art_frame.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.14), Color(1, 1, 1, 0), 0, 6))
 	box.add_child(art_frame)
 	var art_layer: Control = Control.new()
 	art_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -2535,42 +2883,56 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	var title_back: PanelContainer = PanelContainer.new()
 	title_back.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	title_back.offset_left = 0
-	title_back.offset_top = -38
+	title_back.offset_top = -28
 	title_back.offset_right = 0
 	title_back.offset_bottom = 0
 	title_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	title_back.add_theme_stylebox_override("panel", UIFactory.style_box(Color(0.04, 0.06, 0.1, 0.78), Color(0, 0, 0, 0), 0, 6))
+	title_back.add_theme_stylebox_override("panel", UIFactory.style_box(Color(0.06, 0.05, 0.04, 0.32), Color(0, 0, 0, 0), 0, 6))
 	art_layer.add_child(title_back)
 	var title_row: HBoxContainer = HBoxContainer.new()
 	title_row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	title_row.add_theme_constant_override("separation", 4)
 	title_back.add_child(title_row)
-	var title: Label = UIFactory.card_label(card.display_title(), 14, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_LEFT)
+	var title: Label = UIFactory.card_label(card.display_title(), 13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_LEFT)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title_row.add_child(title)
-	var rarity_badge: Label = UIFactory.card_label(CardFormat.card_rarity_name(card), 11, CardFormat.card_rarity_color(card), HORIZONTAL_ALIGNMENT_RIGHT)
+	var rarity_badge: Label = UIFactory.card_label(CardFormat.card_rarity_name(card), 10, CardFormat.card_rarity_color(card), HORIZONTAL_ALIGNMENT_RIGHT)
 	rarity_badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title_row.add_child(rarity_badge)
 	var cost_badge: PanelContainer = PanelContainer.new()
 	cost_badge.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	cost_badge.offset_left = -34
 	cost_badge.offset_top = 8
-	cost_badge.offset_right = -2
-	cost_badge.offset_bottom = 38
+	cost_badge.offset_right = -6
+	cost_badge.offset_bottom = 34
 	cost_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	cost_badge.add_theme_stylebox_override("panel", UIFactory.style_box(Color("161d2a", 0.94), ThemeColors.HIGHLIGHT_GOLD, 1, 6))
+	cost_badge.add_theme_stylebox_override("panel", UIFactory.style_box(Color(0.10, 0.08, 0.05, 0.42), Color("f2d48a", 0.45), 1, 8))
 	art_layer.add_child(cost_badge)
-	var cost_label: Label = UIFactory.card_label(str(cost), 15, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	var cost_label: Label = UIFactory.card_label(str(cost), 14, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	cost_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cost_badge.add_child(cost_label)
-	var type_line: Label = UIFactory.card_label(CardFormat.card_type_name(card.card_type), 12, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-	box.add_child(type_line)
-	var desc: Label = UIFactory.card_label(card.display_description(), 12, Color("e8edf3"), HORIZONTAL_ALIGNMENT_LEFT)
+	var rules_panel: PanelContainer = PanelContainer.new()
+	rules_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	rules_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color(0.90, 0.87, 0.76, 0.78), Color(0, 0, 0, 0), 0, 10))
+	box.add_child(rules_panel)
+	var rules_margin: MarginContainer = MarginContainer.new()
+	rules_margin.add_theme_constant_override("margin_left", 10)
+	rules_margin.add_theme_constant_override("margin_top", 8)
+	rules_margin.add_theme_constant_override("margin_right", 10)
+	rules_margin.add_theme_constant_override("margin_bottom", 12)
+	rules_panel.add_child(rules_margin)
+	var rules_box: VBoxContainer = VBoxContainer.new()
+	rules_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	rules_box.add_theme_constant_override("separation", 4)
+	rules_margin.add_child(rules_box)
+	var type_line: Label = UIFactory.card_label(CardFormat.card_type_name(card.card_type), 11, CardFormat.card_color(card.card_type, true).darkened(0.05), HORIZONTAL_ALIGNMENT_CENTER)
+	rules_box.add_child(type_line)
+	var desc: Label = UIFactory.card_label(card.display_description(), 12, Color("2d2418"), HORIZONTAL_ALIGNMENT_LEFT)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	box.add_child(desc)
+	rules_box.add_child(desc)
 	UIFactory.ignore_child_mouse(button)
 	return button
 
@@ -2710,12 +3072,12 @@ func _passive_text() -> String:
 	return "\n".join(labels)
 
 func _style_card_button(button: Button, card: CardData, affordable: bool) -> void:
-	var base_color: Color = CardFormat.card_color(card.card_type, affordable)
-	var border_color: Color = CardFormat.card_rarity_color(card)
-	var normal: StyleBoxFlat = UIFactory.style_box(base_color, border_color, 2, 8)
-	var hover: StyleBoxFlat = UIFactory.style_box(base_color.lightened(0.12), border_color.lightened(0.18), 3, 8)
-	var pressed: StyleBoxFlat = UIFactory.style_box(base_color.darkened(0.12), border_color, 2, 8)
-	var disabled: StyleBoxFlat = UIFactory.style_box(Color("404753"), Color("7a8190"), 1, 8)
+	var hover_tint: Color = CardFormat.card_color(card.card_type, true).lightened(0.18)
+	var press_tint: Color = CardFormat.card_color(card.card_type, true).darkened(0.2)
+	var normal: StyleBoxFlat = UIFactory.style_box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, 18)
+	var hover: StyleBoxFlat = UIFactory.style_box(Color(hover_tint.r, hover_tint.g, hover_tint.b, 0.12), Color(1, 0.98, 0.88, 0.38), 1, 18)
+	var pressed: StyleBoxFlat = UIFactory.style_box(Color(press_tint.r, press_tint.g, press_tint.b, 0.18), Color(1, 0.9, 0.62, 0.45), 1, 18)
+	var disabled: StyleBoxFlat = UIFactory.style_box(Color(0, 0, 0, 0.08), Color(0, 0, 0, 0), 0, 18)
 	button.add_theme_stylebox_override("normal", normal)
 	button.add_theme_stylebox_override("hover", hover)
 	button.add_theme_stylebox_override("pressed", pressed)
