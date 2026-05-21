@@ -45,6 +45,8 @@ var _card_preview_id: int = 0
 var _card_preview_overlay: Control = null
 var _suppress_next_card_play: bool = false
 
+var selected_ascension: int = 0
+
 const BASE_MARGIN_H: int = 28
 const BASE_MARGIN_V: int = 20
 const PAUSE_BUTTON_SIZE: Vector2 = Vector2(96, 56)
@@ -364,6 +366,7 @@ func show_main_menu() -> void:
 	var start_button: Button = UIFactory.main_menu_button("開始遊戲")
 	start_button.pressed.connect(show_character_select)
 	action_box.add_child(start_button)
+	action_box.add_child(_build_ascension_picker())
 	var bestiary_button: Button = UIFactory.main_menu_button("敵將圖鑑")
 	bestiary_button.pressed.connect(show_bestiary)
 	action_box.add_child(bestiary_button)
@@ -458,6 +461,65 @@ func _saved_run_summary() -> String:
 	return "%s  ·  第 %d/%d 層\nHP %d/%d  ·  銅錢 %d  ·  牌組 %d 張  ·  遺物 %d 件" % [
 		char_name, encounter_index + 1, total_rows, hp, max_hp, gold, deck_size, relic_count
 	]
+
+func _build_ascension_picker() -> Control:
+	var unlocked_max: int = Ascension.get_unlocked_max()
+	selected_ascension = clamp(selected_ascension, 0, unlocked_max)
+	var panel: PanelContainer = PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("111926", 0.55), Color("8ea3c4", 0.28), 1, 8))
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	panel.add_child(box)
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_child(row)
+	var prev_btn: Button = Button.new()
+	prev_btn.text = "◀"
+	prev_btn.custom_minimum_size = Vector2(40, 36)
+	prev_btn.add_theme_font_size_override("font_size", 16)
+	UIFactory.style_button(prev_btn)
+	prev_btn.disabled = selected_ascension <= 0
+	prev_btn.pressed.connect(func() -> void:
+		selected_ascension = max(0, selected_ascension - 1)
+		show_main_menu())
+	row.add_child(prev_btn)
+	var label: Label = Label.new()
+	label.text = "難度: A%d" % selected_ascension
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
+	label.custom_minimum_size = Vector2(120, 36)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(label)
+	var next_btn: Button = Button.new()
+	next_btn.text = "▶"
+	next_btn.custom_minimum_size = Vector2(40, 36)
+	next_btn.add_theme_font_size_override("font_size", 16)
+	UIFactory.style_button(next_btn)
+	next_btn.disabled = selected_ascension >= unlocked_max
+	next_btn.pressed.connect(func() -> void:
+		selected_ascension = min(unlocked_max, selected_ascension + 1)
+		show_main_menu())
+	row.add_child(next_btn)
+	var desc: Label = Label.new()
+	desc.text = Ascension.describe(selected_ascension)
+	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc.add_theme_font_size_override("font_size", 12)
+	desc.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
+	desc.custom_minimum_size = Vector2(0, 0)
+	box.add_child(desc)
+	var unlock_note: Label = Label.new()
+	if selected_ascension < Ascension.MAX_LEVEL:
+		unlock_note.text = "解鎖至 A%d / A%d 上限" % [unlocked_max, Ascension.MAX_LEVEL]
+	else:
+		unlock_note.text = "已達 A%d 上限" % Ascension.MAX_LEVEL
+	unlock_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	unlock_note.add_theme_font_size_override("font_size", 11)
+	unlock_note.add_theme_color_override("font_color", ThemeColors.TEXT_MUTED)
+	box.add_child(unlock_note)
+	return panel
 
 func show_bestiary() -> void:
 	_set_background("res://assets/art/main_menu_bg.png")
@@ -717,7 +779,11 @@ func _vertical_poem_line(text: String) -> Control:
 
 func start_run(character: CharacterData) -> void:
 	selected_character = character.clone()
+	run_state.ascension_level = selected_ascension
 	run_state.init_for(selected_character)
+	var hp_mult: float = Ascension.starting_hp_multiplier(run_state.ascension_level)
+	if hp_mult != 1.0:
+		run_state.hp = max(1, int(round(float(run_state.max_hp) * hp_mult)))
 	run_state.encounter_choices = _make_encounter_choices()
 	show_progress_screen()
 
@@ -1081,6 +1147,12 @@ func choose_route_node(node_data: Dictionary) -> void:
 func start_next_battle(enemy: EnemyData) -> void:
 	battle = BattleController.new()
 	battle.setup(run_state, selected_character, enemy)
+	var mult: float = Ascension.enemy_hp_multiplier(run_state.ascension_level, Ascension.is_boss_id(enemy.id))
+	if mult != 1.0:
+		var scaled_max: int = max(1, int(round(float(battle.state["enemy_max_hp"]) * mult)))
+		battle.state["enemy_max_hp"] = scaled_max
+		battle.state["enemy_hp"] = scaled_max
+		battle.enemy.max_hp = scaled_max
 	battle_end_pending = false
 	_build_battle_scene()
 	_start_player_turn()
@@ -1469,9 +1541,8 @@ func choose_reward_card(card: CardData) -> void:
 	show_progress_screen()
 
 func _battle_gold_reward(enemy: EnemyData) -> int:
-	if enemy.id == "moon_worshipper":
-		return 65
-	return 28 + run_state.encounter_index * 8
+	var base: int = 65 if enemy.id == "moon_worshipper" else 28 + run_state.encounter_index * 8
+	return max(0, int(round(float(base) * Ascension.gold_multiplier(run_state.ascension_level))))
 
 func _route_node_button(node_data: Dictionary) -> Button:
 	var node_type: String = String(node_data.get("type", "battle"))
@@ -1981,6 +2052,7 @@ func _deck_view_card(card: CardData, mode: String = "view") -> Button:
 
 func show_result(victory: bool) -> void:
 	if victory:
+		Ascension.mark_cleared(run_state.ascension_level)
 		SaveManager.clear()
 	# 失敗時暫時保留存檔，retry 用得到；其他按鈕的 callback 會自己 clear
 	_set_background("res://assets/art/event_bg.png")

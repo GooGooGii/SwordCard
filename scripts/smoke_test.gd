@@ -78,6 +78,7 @@ func _initialize() -> void:
 	_test_map_generator_reachability(enemies, bosses)
 	_test_predict_enemy_damage_matches_resolver()
 	_test_bestiary_persistence()
+	_test_ascension_persistence_and_modifiers()
 	_test_balance_regression(characters, enemies)
 	_test_balance_regression_mid(characters, bosses)
 	print("SwordCard smoke test passed.")
@@ -386,6 +387,28 @@ func _test_predict_enemy_damage_matches_resolver() -> void:
 		assert(int(pred["dealt"]) == actual_dealt,
 			"predict mismatch: block=%d vuln=%d weak=%d atk=%d → predicted %d, actual %d" %
 			[block_amt, vuln, enemy_weak, attack, int(pred["dealt"]), actual_dealt])
+
+func _test_ascension_persistence_and_modifiers() -> void:
+	# 持久化：clear → mark(2) → unlocked == 3
+	Ascension.clear_all()
+	assert(Ascension.get_unlocked_max() == 0, "fresh start should unlock only A0")
+	Ascension.mark_cleared(0)
+	assert(Ascension.get_unlocked_max() == 1)
+	Ascension.mark_cleared(2)
+	assert(Ascension.get_unlocked_max() == 3, "mark(2) should unlock A3")
+	Ascension.mark_cleared(1)  # 倒退式 mark 不該降級
+	assert(Ascension.get_unlocked_max() == 3, "lower mark should not regress unlock")
+	Ascension.clear_all()
+	# Modifier 計算
+	assert(Ascension.enemy_hp_multiplier(0, false) == 1.0)
+	assert(Ascension.enemy_hp_multiplier(1, false) == 1.2, "A1 buff 一般敵人")
+	assert(Ascension.enemy_hp_multiplier(1, true) == 1.0, "A1 不影響 boss")
+	assert(abs(Ascension.enemy_hp_multiplier(2, true) - 1.2) < 0.001, "A2 buff boss")
+	assert(abs(Ascension.enemy_hp_multiplier(2, false) - 1.2) < 0.001, "A2 仍 buff 一般")
+	assert(Ascension.starting_hp_multiplier(2) == 1.0)
+	assert(Ascension.starting_hp_multiplier(3) == 0.85)
+	assert(Ascension.gold_multiplier(3) == 1.0)
+	assert(Ascension.gold_multiplier(4) == 0.75)
 
 func _test_bestiary_persistence() -> void:
 	# 注意：此 test 會清掉真實 bestiary 檔案；smoke test 環境是測試專用 user:// 不用擔心

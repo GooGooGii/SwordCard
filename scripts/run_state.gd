@@ -19,6 +19,7 @@ var current_shop_inventory: Array[Dictionary] = []
 var current_shop_is_black: bool = false
 var current_event_variant: String = "shrine"
 var relics: Array[RelicData] = []
+var ascension_level: int = 0
 
 func init_for(chosen: CharacterData) -> void:
 	character = chosen
@@ -113,7 +114,8 @@ func to_dict() -> Dictionary:
 		"current_shop_inventory": _serialize_shop_inventory(),
 		"current_shop_is_black": current_shop_is_black,
 		"current_event_variant": current_event_variant,
-		"relics": relics_data
+		"relics": relics_data,
+		"ascension_level": ascension_level
 	}
 
 func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> bool:
@@ -147,6 +149,7 @@ func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> 
 	for relic_data: Variant in (data.get("relics", []) as Array):
 		if relic_data is Dictionary:
 			relics.append(RelicData.from_dict(relic_data as Dictionary))
+	ascension_level = int(data.get("ascension_level", 0))
 	return true
 
 func _serialize_choices() -> Array:
