@@ -94,6 +94,10 @@ jobs:
           } | tee $HOME/.config/godot/editor_settings-4.tres $HOME/.config/godot/editor_settings-4.4.tres > /dev/null
           # Bump target_sdk to 33 since build-tools 33.0.2 is what's available in barichello image
           sed -i 's|gradle_build/target_sdk="34"|gradle_build/target_sdk="33"|' export_presets.cfg
+          # Disable APK signing for debug build to bypass any silent signing validation
+          sed -i 's|package/signed=true|package/signed=false|' export_presets.cfg
+          echo "=== final preset ==="
+          grep -E "package/signed|gradle_build|min_sdk|target_sdk|launcher_icons" export_presets.cfg
 
       - name: Pre-import
         run: godot --headless --import || true
