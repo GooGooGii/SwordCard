@@ -56,6 +56,21 @@ jobs:
           sed -i 's|gradle_build/min_sdk=""|gradle_build/min_sdk="24"|' export_presets.cfg
           sed -i 's|gradle_build/target_sdk=""|gradle_build/target_sdk="34"|' export_presets.cfg
 
+      - name: Pre-download templates and install Android build template
+        run: |
+          TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}"
+          mkdir -p "$TEMPLATE_DIR"
+          if [ ! -f "$TEMPLATE_DIR/android_source.zip" ]; then
+            curl -L "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_export_templates.tpz" -o templates.tpz
+            unzip -q templates.tpz
+            mv templates/* "$TEMPLATE_DIR/"
+            rmdir templates
+          fi
+          mkdir -p android/build
+          unzip -oq "$TEMPLATE_DIR/android_source.zip" -d android/build
+          echo "${GODOT_VERSION}.${GODOT_RELEASE}" > android/.build_version
+          ls android/build | head -5
+
       - name: Export Godot project (community action)
         id: export
         uses: firebelley/godot-export@v6.0.0
@@ -67,7 +82,7 @@ jobs:
           use_preset_export_path: true
           export_debug: true
         env:
-          ANDROID_KEYSTORE_PATH: ${{ env.HOME }}/debug.keystore
+          ANDROID_KEYSTORE_PATH: /home/runner/debug.keystore
           ANDROID_KEYSTORE_USER: androiddebugkey
           ANDROID_KEYSTORE_PASSWORD: android
 
