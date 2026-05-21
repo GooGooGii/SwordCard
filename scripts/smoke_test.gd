@@ -75,6 +75,7 @@ func _initialize() -> void:
 	_test_power_stacks_with_damage()
 	_test_multi_turn_battle(characters[0], enemies[0])
 	_test_map_generator_reachability(enemies, bosses)
+	_test_balance_regression(characters, enemies)
 	print("SwordCard smoke test passed.")
 	quit(0)
 
@@ -329,3 +330,67 @@ func _test_map_generator_reachability(enemies: Array[EnemyData], bosses: Array[E
 				boss_reachable = true
 				break
 		assert(boss_reachable, "trial %d: boss row unreachable from row 0" % trial)
+
+const BALANCE_TRIALS: int = 30
+const BALANCE_TOLERANCE_PP: int = 15  # 容許勝率漂移 ±15 個百分點
+# 對第一個敵人（赤蛇妖），用起始牌組 + 隨機 AI 出牌，跑 30 場。
+# 起始戰理應穩贏；baseline 100% 表示「跌出 85% 以下視為平衡 regression」。
+# 改卡片/敵人/relic 後重跑：若有性格動到、勝率掉到 85% 以下，就 fail。
+const BALANCE_BASELINES: Dictionary = {
+	"li_xiaoyao": 100,
+	"zhao_linger": 100,
+	"lin_yueru": 100,
+	"anu": 100
+}
+
+func _test_balance_regression(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	if enemies.is_empty():
+		return
+	var enemy_template: EnemyData = enemies[0]
+	print("Balance regression vs %s, %d trials/character:" % [enemy_template.display_name, BALANCE_TRIALS])
+	for character: CharacterData in characters:
+		var wins: int = 0
+		for trial: int in range(BALANCE_TRIALS):
+			seed(trial * 7919 + hash(character.id) * 17)
+			if _simulate_random_battle(character, enemy_template):
+				wins += 1
+		var win_rate: int = int(round(100.0 * float(wins) / float(BALANCE_TRIALS)))
+		var baseline_v: Variant = BALANCE_BASELINES.get(character.id, null)
+		if baseline_v == null:
+			print("  %s: %d%% (no baseline; record this if expected)" % [character.id, win_rate])
+			continue
+		var baseline: int = int(baseline_v)
+		var delta: int = abs(win_rate - baseline)
+		print("  %s: %d%% (baseline %d%%, delta %d pp)" % [character.id, win_rate, baseline, delta])
+		assert(delta <= BALANCE_TOLERANCE_PP,
+			"balance regression: %s win rate %d%% drifted %d pp from baseline %d%% (tolerance %d pp)" %
+			[character.id, win_rate, delta, baseline, BALANCE_TOLERANCE_PP])
+
+func _simulate_random_battle(character: CharacterData, enemy_template: EnemyData) -> bool:
+	var run_state: RunState = RunState.new()
+	run_state.init_for(character)
+	var enemy: EnemyData = enemy_template.clone()
+	var bc: BattleController = BattleController.new()
+	bc.setup(run_state, character, enemy)
+	for _turn: int in range(20):
+		bc.start_turn()
+		if bc.is_battle_over():
+			break
+		for _attempt: int in range(20):
+			if bc.is_battle_over():
+				break
+			var affordable: Array[CardData] = []
+			for card: CardData in bc.deck.hand:
+				if bc.effective_card_cost(card) <= int(bc.state["energy"]):
+					affordable.append(card)
+			if affordable.is_empty():
+				break
+			var chosen: CardData = affordable[randi() % affordable.size()]
+			var played: Dictionary = bc.play_card(chosen)
+			if not bool(played.get("affordable", false)):
+				break
+		if bc.is_battle_over():
+			break
+		var action: Dictionary = bc.begin_enemy_phase()
+		bc.resolve_enemy_phase(action)
+	return bc.is_victory()
