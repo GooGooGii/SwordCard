@@ -24,11 +24,14 @@ jobs:
           rsvg-convert -w 432 -h 432 icon.svg -o icon_fg_432.png
           convert -size 432x432 xc:'#2a3a5a' icon_bg_432.png
 
-      - name: Patch export preset for standard APK + PNG icons
+      - name: Patch export preset for Gradle APK + PNG icons
         run: |
           sed -i 's|launcher_icons/main_192x192="res://icon.svg"|launcher_icons/main_192x192="res://icon_192.png"|' export_presets.cfg
           sed -i 's|launcher_icons/adaptive_foreground_432x432="res://icon.svg"|launcher_icons/adaptive_foreground_432x432="res://icon_fg_432.png"|' export_presets.cfg
           sed -i 's|launcher_icons/adaptive_background_432x432="res://icon.svg"|launcher_icons/adaptive_background_432x432="res://icon_bg_432.png"|' export_presets.cfg
+          sed -i 's|gradle_build/use_gradle_build=false|gradle_build/use_gradle_build=true|' export_presets.cfg
+          sed -i 's|gradle_build/min_sdk=""|gradle_build/min_sdk="24"|' export_presets.cfg
+          sed -i 's|gradle_build/target_sdk=""|gradle_build/target_sdk="35"|' export_presets.cfg
 
       - name: Install Godot export templates
         run: |
@@ -42,7 +45,10 @@ jobs:
           echo "Templates at: $TEMPLATE_DIR"
           mkdir -p "$HOME/.local/share/godot/export_templates"
           cp -R "$TEMPLATE_DIR" "$HOME/.local/share/godot/export_templates/$TEMPLATE_VERSION"
-          ls -la "$HOME/.local/share/godot/export_templates/$TEMPLATE_VERSION"/android_*.apk
+          ls -la "$HOME/.local/share/godot/export_templates/$TEMPLATE_VERSION"/android_*
+          mkdir -p android/build
+          unzip -oq "$HOME/.local/share/godot/export_templates/$TEMPLATE_VERSION/android_source.zip" -d android/build
+          echo "$TEMPLATE_VERSION" > android/.build_version
 
       - name: Configure SDK/JDK paths and (re)generate keystore
         run: |
