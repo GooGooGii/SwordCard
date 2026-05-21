@@ -345,6 +345,15 @@ func show_main_menu() -> void:
 		var continue_button: Button = UIFactory.main_menu_button("繼續冒險", true)
 		continue_button.pressed.connect(continue_saved_run)
 		action_box.add_child(continue_button)
+		var summary: String = _saved_run_summary()
+		if not summary.is_empty():
+			var summary_label: Label = Label.new()
+			summary_label.text = summary
+			summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			summary_label.add_theme_font_size_override("font_size", 13)
+			summary_label.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
+			action_box.add_child(summary_label)
 	var start_button: Button = UIFactory.main_menu_button("開始遊戲")
 	start_button.pressed.connect(show_character_select)
 	action_box.add_child(start_button)
@@ -416,6 +425,29 @@ func show_main_menu() -> void:
 	quick_info.add_child(UIFactory.menu_info_row("遊玩節奏", "地圖探索 + 戰鬥回合制"))
 	quick_info.add_child(UIFactory.menu_info_row("目前內容", "角色選擇、事件、商店、戰鬥與遺物"))
 	quick_info.add_child(UIFactory.menu_info_row("操作入口", "可從主選單直接開始或接續存檔"))
+
+func _saved_run_summary() -> String:
+	if not SaveManager.has_save():
+		return ""
+	var data: Dictionary = SaveManager.load_save()
+	if data.is_empty():
+		return ""
+	var char_id: String = String(data.get("character_id", ""))
+	var char_name: String = char_id
+	for c: CharacterData in characters:
+		if c.id == char_id:
+			char_name = c.display_name
+			break
+	var hp: int = int(data.get("hp", 0))
+	var max_hp: int = int(data.get("max_hp", 0))
+	var gold: int = int(data.get("gold", 0))
+	var encounter_index: int = int(data.get("encounter_index", 0))
+	var total_rows: int = (data.get("encounter_choices", []) as Array).size()
+	var deck_size: int = (data.get("deck", []) as Array).size()
+	var relic_count: int = (data.get("relics", []) as Array).size()
+	return "%s  ·  第 %d/%d 層\nHP %d/%d  ·  銅錢 %d  ·  牌組 %d 張  ·  遺物 %d 件" % [
+		char_name, encounter_index + 1, total_rows, hp, max_hp, gold, deck_size, relic_count
+	]
 
 func continue_saved_run() -> void:
 	var data: Dictionary = SaveManager.load_save()
@@ -1853,7 +1885,16 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 	enemy_block_badge.set_amount(int(battle.state["enemy_block"]))
 	enemy_status_line.text = UIFactory.status_summary(int(battle.state["enemy_poison"]), int(battle.state["enemy_weak"]), int(battle.state["enemy_vulnerable"]))
 	var next_action: Dictionary = battle.next_enemy_action()
-	enemy_label.text = "%s  下一步\n%s" % [CardFormat.intent_badge(next_action), String(next_action["intent"])]
+	var intent_lines: Array[String] = ["%s  下一步" % CardFormat.intent_badge(next_action), String(next_action["intent"])]
+	if CardFormat.action_has_damage(next_action):
+		var pred: Dictionary = CardFormat.predict_enemy_damage(next_action, battle.state)
+		var dealt: int = int(pred["dealt"])
+		var blocked: int = int(pred["blocked"])
+		if blocked > 0:
+			intent_lines.append("實受 %d (擋 %d)" % [dealt, blocked])
+		elif dealt < int(pred["raw"]):
+			intent_lines.append("實受 %d" % dealt)
+	enemy_label.text = "\n".join(intent_lines)
 	energy_orb.set_energy(int(battle.state["energy"]), BattleController.TURN_ENERGY)
 	var buttons: Array[Button] = []
 	card_buttons.clear()
@@ -2058,12 +2099,24 @@ func _show_state_feedback(before: Dictionary) -> void:
 		_show_feedback(enemy_feedback_label, enemy_lines, ThemeColors.ACCENT_GOLD)
 	if player_hp_delta < 0:
 		UIFactory.shake_node(player_portrait_wrap, 7.0, 0.28)
+		_spawn_damage_popup(player_portrait_wrap, abs(player_hp_delta), "damage")
+	elif player_hp_delta > 0:
+		_spawn_damage_popup(player_portrait_wrap, player_hp_delta, "heal")
 	if enemy_hp_delta < 0:
 		UIFactory.shake_node(enemy_portrait_wrap, 7.0, 0.28)
+		_spawn_damage_popup(enemy_portrait_wrap, abs(enemy_hp_delta), "damage")
 	if player_block_delta > 0:
 		UIFactory.flash_node(player_portrait_wrap, Color(1.2, 1.35, 1.55), 0.22)
+		_spawn_damage_popup(player_portrait_wrap, player_block_delta, "block")
 	if enemy_block_delta > 0:
 		UIFactory.flash_node(enemy_portrait_wrap, Color(1.2, 1.35, 1.55), 0.22)
+		_spawn_damage_popup(enemy_portrait_wrap, enemy_block_delta, "block")
+
+func _spawn_damage_popup(target: Control, amount: int, kind: String) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	var world_pos: Vector2 = target.global_position + Vector2(target.size.x * 0.5 - 40, target.size.y * 0.35)
+	DamagePopup.spawn(self, world_pos, amount, kind)
 
 func _show_feedback(label: Label, lines: Array[String], color: Color) -> void:
 	if label == null:
