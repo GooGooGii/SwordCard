@@ -54,21 +54,20 @@ Godot 4 仙劍1 同人卡牌戰鬥原型。這個專案是私人學習/展示用
 - Android 匯出仍需在 Godot Editor 內設定 Android SDK、debug keystore 與 export templates。
 - Windows 匯出需安裝 Godot export templates。
 
-### GitHub Actions 自動建構 Android APK
+### GitHub Actions 自動建構
 
-每次 push 到 `main` 會自動跑 [.github/workflows/build-android.yml](.github/workflows/build-android.yml)。
+| Workflow | 自動觸發 | 狀態 |
+|----------|---------|------|
+| **Build Windows EXE** ([build-windows.yml](.github/workflows/build-windows.yml)) | push 到 main | ✅ 可用 |
+| **Build Android APK** ([build-android.yml](.github/workflows/build-android.yml)) | 僅手動觸發 | ⚠ CI 卡關，本機匯出見 [docs/android-export-local.md](docs/android-export-local.md) |
 
-**取得 APK 步驟**：
+**取得 Windows EXE**：
+1. push 後到 [Actions 頁](https://github.com/GooGooGii/SwordCard/actions)
+2. 點最新「Build Windows EXE」執行
+3. 拉到底，Artifacts 區下載 `SwordCard-Windows` (~63MB zip)
+4. 解壓得到 `SwordCard.exe` + `SwordCard.pck`，雙擊執行
 
-1. push 後到 GitHub repo 的 **Actions** 頁
-2. 點最新一次「Build Android APK」執行紀錄
-3. 拉到底，**Artifacts** 區下載 `SwordCard-debug-apk`
-4. 解壓得到 `SwordCard.apk`
-5. 傳到手機安裝（需開啟「允許未知來源」）
-
-**版本控制**：workflow 預設用 Godot **4.3-stable**。若你本機改用其他版本（如 4.4 / 4.5），修改 workflow 開頭的 `GODOT_VERSION` env var。
-
-**手動觸發**：Actions 頁面點「Build Android APK」→「Run workflow」即可不 push 就跑。
+**Android APK**：CI 內 Godot 4.x 對 Android 匯出有一個不印訊息的 silent validation（試過 4.3 / 4.4 / 4.6.3、Docker / 非 Docker、firebelley action、各種 SDK 版本）。請參考 [docs/android-export-local.md](docs/android-export-local.md) 在本機（有圖形界面）匯出。
 
 ## 下一步
 
