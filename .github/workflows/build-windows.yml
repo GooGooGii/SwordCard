@@ -20,19 +20,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Show templates dir
+      - name: Install Godot export templates
         run: |
-          find / -name "Godot_v4.6*" -type f 2>/dev/null | head -5 || true
-          ls /root/.local/share/godot/export_templates/ 2>/dev/null || true
-          find / -path "*godot/export_templates*" -name "windows*" 2>/dev/null | head -5 || true
+          TEMPLATE_VERSION="4.6.stable"
+          TEMPLATE_DIR=$(find /root /github/home -path "*/godot/export_templates/$TEMPLATE_VERSION" -type d 2>/dev/null | head -1)
+          if [ -z "$TEMPLATE_DIR" ]; then
+            echo "ERROR: templates dir not found"
+            find / -path "*godot/export_templates*" -type d 2>/dev/null
+            exit 1
+          fi
+          echo "Templates at: $TEMPLATE_DIR"
+          mkdir -p "$HOME/.local/share/godot/export_templates"
+          cp -R "$TEMPLATE_DIR" "$HOME/.local/share/godot/export_templates/$TEMPLATE_VERSION"
 
       - name: Pre-import project
         run: godot --headless --import || true
 
       - name: Export Windows EXE (debug)
+        shell: bash
         run: |
+          set -o pipefail
           mkdir -p build/windows
-          godot --headless --verbose --export-debug "Windows Desktop" build/windows/SwordCard.exe 2>&1 | tail -50
+          godot --headless --verbose --export-debug "Windows Desktop" build/windows/SwordCard.exe 2>&1 | tee export.log
+          test -f build/windows/SwordCard.exe || { echo "::error::Windows EXE not generated"; exit 1; }
           ls -la build/windows/
 
       - name: Package output (exe + pck)

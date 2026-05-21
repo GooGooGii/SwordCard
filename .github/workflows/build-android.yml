@@ -33,18 +33,21 @@ jobs:
           sed -i 's|gradle_build/min_sdk=""|gradle_build/min_sdk="24"|' export_presets.cfg
           sed -i 's|gradle_build/target_sdk=""|gradle_build/target_sdk="34"|' export_presets.cfg
 
-      - name: Install Android build template (Docker image already has templates)
+      - name: Install Godot export templates
         run: |
-          TEMPLATE_DIR=$(find / -path "*/godot/export_templates/4.6*" -type d 2>/dev/null | head -1)
+          TEMPLATE_VERSION="4.6.stable"
+          TEMPLATE_DIR=$(find /root /github/home -path "*/godot/export_templates/$TEMPLATE_VERSION" -type d 2>/dev/null | head -1)
           if [ -z "$TEMPLATE_DIR" ]; then
             echo "ERROR: templates dir not found"
             find / -name "android_source.zip" 2>/dev/null
             exit 1
           fi
           echo "Templates at: $TEMPLATE_DIR"
+          mkdir -p "$HOME/.local/share/godot/export_templates"
+          cp -R "$TEMPLATE_DIR" "$HOME/.local/share/godot/export_templates/$TEMPLATE_VERSION"
           mkdir -p android/build
-          unzip -oq "$TEMPLATE_DIR/android_source.zip" -d android/build
-          echo "4.6.stable" > android/.build_version
+          unzip -oq "$HOME/.local/share/godot/export_templates/$TEMPLATE_VERSION/android_source.zip" -d android/build
+          echo "$TEMPLATE_VERSION" > android/.build_version
 
       - name: Configure SDK/JDK paths and (re)generate keystore
         run: |
@@ -103,9 +106,12 @@ jobs:
         run: godot --headless --import || true
 
       - name: Export Android APK (debug)
+        shell: bash
         run: |
+          set -o pipefail
           mkdir -p build/android
           godot --headless --verbose --export-debug "Android" build/android/SwordCard.apk 2>&1 | tee export.log
+          test -f build/android/SwordCard.apk || { echo "::error::APK not generated"; exit 1; }
           ls -la build/android/
 
       - name: Upload APK artifact
