@@ -104,8 +104,8 @@ jobs:
           if [ -f "$TEMPLATE_DIR/android_source.zip" ]; then
             mkdir -p android/build
             unzip -oq "$TEMPLATE_DIR/android_source.zip" -d android/build
-            # Mark template installed for Godot
-            echo "1" > android/.build_version
+            # 標示 template 安裝的 Godot 版本（Godot 會驗證版本相符）
+            echo "${GODOT_VERSION}.${GODOT_RELEASE}" > android/.build_version
             ls android/build | head -10
           else
             echo "ERROR: android_source.zip not found in $TEMPLATE_DIR"
@@ -119,7 +119,7 @@ jobs:
           sed -i 's|launcher_icons/adaptive_foreground_432x432="res://icon.svg"|launcher_icons/adaptive_foreground_432x432="res://icon_fg_432.png"|' export_presets.cfg
           sed -i 's|launcher_icons/adaptive_background_432x432="res://icon.svg"|launcher_icons/adaptive_background_432x432="res://icon_bg_432.png"|' export_presets.cfg
           sed -i 's|gradle_build/use_gradle_build=false|gradle_build/use_gradle_build=true|' export_presets.cfg
-          sed -i 's|gradle_build/min_sdk=""|gradle_build/min_sdk="21"|' export_presets.cfg
+          sed -i 's|gradle_build/min_sdk=""|gradle_build/min_sdk="24"|' export_presets.cfg
           sed -i 's|gradle_build/target_sdk=""|gradle_build/target_sdk="34"|' export_presets.cfg
           echo "=== patched preset Android section ==="
           grep -E "launcher_icons|gradle_build" export_presets.cfg
