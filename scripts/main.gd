@@ -563,21 +563,31 @@ func _build_minimal_main_menu(ultra_compact: bool, compact_layout: bool, viewpor
 	root.add_theme_constant_override("margin_top", 16 if ultra_compact else 24)
 	root.add_theme_constant_override("margin_right", 16 if ultra_compact else 24)
 	root.add_theme_constant_override("margin_bottom", 16 if ultra_compact else 24)
-	var panel_margin: int = 16 if ultra_compact else (20 if compact_layout else 24)
-	var section_gap: int = 10 if ultra_compact else 12
-	var button_height: float = 34.0 if ultra_compact else (38.0 if compact_layout else 42.0)
-	var button_font_size: int = 14 if ultra_compact else 16
-	var shell_width: float = min(viewport_size.x - (32 if ultra_compact else 48), 460.0 if compact_layout else 520.0)
+	var panel_margin: int = 12 if ultra_compact else (16 if compact_layout else 18)
+	var section_gap: int = 8 if ultra_compact else 10
+	var button_height: float = 30.0 if ultra_compact else (32.0 if compact_layout else 36.0)
+	var button_font_size: int = 13 if ultra_compact else 14
+	var shell_width: float = min(viewport_size.x - (32 if ultra_compact else 48), 360.0 if compact_layout else 410.0)
 	var content_width: float = shell_width - float(panel_margin * 2)
 
-	var center: CenterContainer = CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root.add_child(center)
+	var stage: VBoxContainer = VBoxContainer.new()
+	stage.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	stage.alignment = BoxContainer.ALIGNMENT_END
+	root.add_child(stage)
+
+	var top_spacer: Control = Control.new()
+	top_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	stage.add_child(top_spacer)
 
 	var card: PanelContainer = PanelContainer.new()
 	card.custom_minimum_size = Vector2(shell_width, 0)
-	card.add_theme_stylebox_override("panel", UIFactory.style_box(Color("f8f3ea", 0.18), Color(1, 1, 1, 0.0), 0, 24))
-	center.add_child(card)
+	card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	card.add_theme_stylebox_override("panel", UIFactory.style_box(Color("14202a", 0.26), Color("f0e6d6", 0.12), 1, 20))
+	stage.add_child(card)
+
+	var bottom_gap: Control = Control.new()
+	bottom_gap.custom_minimum_size = Vector2(0, 20 if ultra_compact else 28)
+	stage.add_child(bottom_gap)
 
 	var margin: MarginContainer = MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", panel_margin)
@@ -605,7 +615,7 @@ func _build_minimal_main_menu(ultra_compact: bool, compact_layout: bool, viewpor
 			summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			summary_label.add_theme_font_size_override("font_size", 11 if compact_layout else 12)
-			summary_label.add_theme_color_override("font_color", Color("f6efe0"))
+			summary_label.add_theme_color_override("font_color", Color("21303a", 0.92))
 			action_box.add_child(summary_label)
 
 	var start_button: Button = UIFactory.main_menu_button("開始遊戲", false, button_height, button_font_size)
@@ -746,7 +756,7 @@ func _build_ascension_picker(compact_layout: bool = false, ultra_compact: bool =
 	label.text = "難度 A%d" % selected_ascension
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", Color("fff6e4"))
+	label.add_theme_color_override("font_color", Color("21303a", 0.96))
 	label.custom_minimum_size = Vector2(104 if ultra_compact else 120, row_height)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(label)
@@ -768,7 +778,7 @@ func _build_ascension_picker(compact_layout: bool = false, ultra_compact: bool =
 	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc.add_theme_font_size_override("font_size", 11 if compact_layout else 12)
-	desc.add_theme_color_override("font_color", Color("f4ecdd"))
+	desc.add_theme_color_override("font_color", Color("22333d", 0.92))
 	desc.custom_minimum_size = Vector2(0, 0)
 	box.add_child(desc)
 	var unlock_note: Label = Label.new()
