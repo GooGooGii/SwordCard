@@ -100,6 +100,12 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$HOME/debug.keystore"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_USER="androiddebugkey"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD="android"
+          export GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$HOME/debug.keystore"
+          export GODOT_ANDROID_KEYSTORE_RELEASE_USER="androiddebugkey"
+          export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD="android"
           mkdir -p build/android
           godot --headless --verbose --export-debug "Android" build/android/SwordCard.apk 2>&1 | tee export.log
           test -f build/android/SwordCard.apk || { echo "::error::APK not generated"; exit 1; }
