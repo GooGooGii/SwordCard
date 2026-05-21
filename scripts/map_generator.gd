@@ -74,8 +74,9 @@ static func _make_map_node(node_type: String, node_index: int, normal_enemies: A
 		"connects": []
 	}
 	if node_type == "battle":
-		normal_enemies.shuffle()
-		node_data["enemy"] = normal_enemies[0].clone()
+		var pool: Array[EnemyData] = normal_enemies.duplicate()
+		pool.shuffle()
+		node_data["enemy"] = pool[0].clone()
 	elif node_type == "event":
 		node_data["event_variant"] = EVENT_VARIANTS[randi_range(0, EVENT_VARIANTS.size() - 1)]
 	elif node_type == "shop":
