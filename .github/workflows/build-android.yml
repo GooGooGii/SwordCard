@@ -1,13 +1,13 @@
 name: Build Android APK
 
 on:
-  # 自動 push 觸發已禁用 — Godot 4.x 在 CI 內 Android export 有一個不印訊息的內部驗證 bug
-  # 仍可手動觸發測試。本機匯出見 docs/android-export-local.md
+  push:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   build-android:
-    name: Export debug APK (Docker)
+    name: Export debug APK
     runs-on: ubuntu-22.04
     container:
       image: barichello/godot-ci:4.6
@@ -16,119 +16,138 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Generate PNG launcher icons from SVG
+      - name: Install Android SDK packages
+        shell: bash
         run: |
-          apt-get update -qq
-          apt-get install -y -qq librsvg2-bin imagemagick
-          rsvg-convert -w 192 -h 192 icon.svg -o icon_192.png
-          rsvg-convert -w 432 -h 432 icon.svg -o icon_fg_432.png
-          convert -size 432x432 xc:'#2a3a5a' icon_bg_432.png
+          set -euo pipefail
 
-      - name: Patch export preset for Gradle APK + PNG icons
-        run: |
-          sed -i 's|launcher_icons/main_192x192="res://icon.svg"|launcher_icons/main_192x192="res://icon_192.png"|' export_presets.cfg
-          sed -i 's|launcher_icons/adaptive_foreground_432x432="res://icon.svg"|launcher_icons/adaptive_foreground_432x432="res://icon_fg_432.png"|' export_presets.cfg
-          sed -i 's|launcher_icons/adaptive_background_432x432="res://icon.svg"|launcher_icons/adaptive_background_432x432="res://icon_bg_432.png"|' export_presets.cfg
-          sed -i 's|gradle_build/use_gradle_build=false|gradle_build/use_gradle_build=true|' export_presets.cfg
-          sed -i 's|gradle_build/min_sdk=""|gradle_build/min_sdk="24"|' export_presets.cfg
-          sed -i 's|gradle_build/target_sdk=""|gradle_build/target_sdk="35"|' export_presets.cfg
-
-      - name: Install Godot export templates
-        run: |
-          TEMPLATE_VERSION="4.6.stable"
-          TEMPLATE_DIR=$(find /root /github/home -path "*/godot/export_templates/$TEMPLATE_VERSION" -type d 2>/dev/null | head -1)
-          if [ -z "$TEMPLATE_DIR" ]; then
-            echo "ERROR: templates dir not found"
-            find / -name "android_source.zip" 2>/dev/null
-            exit 1
-          fi
-          echo "Templates at: $TEMPLATE_DIR"
-          mkdir -p "$HOME/.local/share/godot/export_templates"
-          cp -R "$TEMPLATE_DIR" "$HOME/.local/share/godot/export_templates/$TEMPLATE_VERSION"
-          ls -la "$HOME/.local/share/godot/export_templates/$TEMPLATE_VERSION"/android_*
-          mkdir -p android/build
-          unzip -oq "$HOME/.local/share/godot/export_templates/$TEMPLATE_VERSION/android_source.zip" -d android/build
-          echo "$TEMPLATE_VERSION" > android/.build_version
-
-      - name: Configure SDK/JDK paths and (re)generate keystore
-        run: |
-          # Trust env vars from barichello container
           ANDROID_SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/lib/android-sdk}}"
           JDK="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}"
-          # Fall back to find if env vars unset
+
           if [ ! -d "$ANDROID_SDK" ]; then
             ANDROID_SDK=$(find / -maxdepth 5 -name "platform-tools" -type d 2>/dev/null | head -1 | xargs dirname)
           fi
+
           if [ ! -f "$JDK/bin/javac" ]; then
-            JDK=$(find /usr/lib/jvm /opt -maxdepth 3 -name "javac" -executable 2>/dev/null | head -1 | xargs dirname | xargs dirname)
+            JDK=$(find /usr/lib/jvm /opt -maxdepth 4 -name "javac" -executable 2>/dev/null | head -1 | xargs dirname | xargs dirname)
           fi
-          echo "ANDROID_SDK=$ANDROID_SDK"
-          echo "JDK=$JDK"
-          test -d "$ANDROID_SDK" || { echo "Android SDK not found"; ls / /opt /usr/lib 2>/dev/null; exit 1; }
-          test -f "$JDK/bin/javac" || { echo "JDK not found"; exit 1; }
-          yes | sdkmanager --sdk_root="$ANDROID_SDK" --licenses >/dev/null
+
+          test -d "$ANDROID_SDK" || { echo "::error::Android SDK not found"; exit 1; }
+          test -f "$JDK/bin/javac" || { echo "::error::JDK not found"; exit 1; }
+
+          echo "ANDROID_SDK=$ANDROID_SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$ANDROID_SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK" >> "$GITHUB_ENV"
+          echo "JAVA_HOME=$JDK" >> "$GITHUB_ENV"
+          echo "$JDK/bin" >> "$GITHUB_PATH"
+          echo "$ANDROID_SDK/platform-tools" >> "$GITHUB_PATH"
+          echo "$ANDROID_SDK/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "$ANDROID_SDK/build-tools/35.0.1" >> "$GITHUB_PATH"
+          echo "$ANDROID_SDK/cmake/3.10.2.4988404/bin" >> "$GITHUB_PATH"
+
+          mkdir -p "$ANDROID_SDK/licenses"
+          {
+            echo "8933bad161af4178b1185d1a37fbf41ea5269c55"
+            echo "d56f5187479451eabf01fb78af6dfcb131a6481e"
+            echo "24333f8a63b6825ea9c5514f83c2829b004d1fee"
+          } > "$ANDROID_SDK/licenses/android-sdk-license"
+          echo "84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_SDK/licenses/android-sdk-preview-license"
+
           sdkmanager --sdk_root="$ANDROID_SDK" \
             "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.1" \
-            "cmdline-tools;latest" \
             "cmake;3.10.2.4988404" \
             "ndk;28.1.13356709"
-          # Reuse existing debug.keystore if present, else generate fresh
-          if [ ! -f $HOME/debug.keystore ]; then
-            keytool -genkey -v \
-              -keystore $HOME/debug.keystore \
-              -storetype JKS \
-              -alias androiddebugkey \
-              -storepass android -keypass android \
-              -keyalg RSA -keysize 2048 -validity 10000 \
-              -dname "CN=Android Debug,O=Android,C=US"
-          else
-            echo "Reusing existing $HOME/debug.keystore"
-          fi
-          # Write editor_settings for Godot 4.6
-          mkdir -p $HOME/.config/godot
-          {
-            echo '[gd_resource type="EditorSettings" format=3]'
-            echo ''
-            echo '[resource]'
-            echo "export/android/android_sdk_path = \"$ANDROID_SDK\""
-            echo "export/android/java_sdk_path = \"$JDK\""
-            echo "export/android/debug_keystore = \"$HOME/debug.keystore\""
-            echo 'export/android/debug_keystore_user = "androiddebugkey"'
-            echo 'export/android/debug_keystore_pass = "android"'
-            echo "export/android/release_keystore = \"$HOME/debug.keystore\""
-            echo 'export/android/release_keystore_user = "androiddebugkey"'
-            echo 'export/android/release_keystore_pass = "android"'
-            echo 'export/android/force_system_user = false'
-            echo 'export/android/shutdown_adb_on_exit = true'
-            echo 'export/android/one_click_deploy_clear_previous_install = false'
-          } | tee $HOME/.config/godot/editor_settings-4.tres $HOME/.config/godot/editor_settings-4.6.tres > /dev/null
-          echo "=== final preset ==="
-          grep -E "package/signed|gradle_build|min_sdk|target_sdk|launcher_icons" export_presets.cfg
 
-      - name: Pre-import
-        run: godot --headless --import || true
-
-      - name: Export Android APK (debug)
+      - name: Install Godot export templates
         shell: bash
         run: |
-          set -o pipefail
-          export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$HOME/debug.keystore"
-          export GODOT_ANDROID_KEYSTORE_DEBUG_USER="androiddebugkey"
-          export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD="android"
-          export GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$HOME/debug.keystore"
-          export GODOT_ANDROID_KEYSTORE_RELEASE_USER="androiddebugkey"
-          export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD="android"
+          set -euo pipefail
+
+          TEMPLATE_VERSION="4.6.stable"
+          TEMPLATE_DIR=$(find /root /github/home -path "*/godot/export_templates/$TEMPLATE_VERSION" -type d 2>/dev/null | head -1)
+
+          if [ -z "$TEMPLATE_DIR" ]; then
+            echo "::error::Godot export templates not found"
+            find / -path "*godot/export_templates*" -type d 2>/dev/null || true
+            exit 1
+          fi
+
+          mkdir -p "$HOME/.local/share/godot/export_templates"
+          cp -R "$TEMPLATE_DIR" "$HOME/.local/share/godot/export_templates/$TEMPLATE_VERSION"
+          ls -la "$HOME/.local/share/godot/export_templates/$TEMPLATE_VERSION"/android_*
+
+      - name: Configure Godot Android export
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          KEYSTORE="$HOME/debug.keystore"
+
+          if [ ! -f "$KEYSTORE" ]; then
+            keytool -genkeypair -v \
+              -keystore "$KEYSTORE" \
+              -storetype JKS \
+              -alias androiddebugkey \
+              -storepass android \
+              -keypass android \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+          mkdir -p "$HOME/.config/godot"
+          cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_SDK"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          export/android/debug_keystore = "$KEYSTORE"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
+
+          cp "$HOME/.config/godot/editor_settings-4.tres" "$HOME/.config/godot/editor_settings-4.6.tres"
+
+          {
+            echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$KEYSTORE"
+            echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey"
+            echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android"
+          } >> "$GITHUB_ENV"
+
+          grep -E "gradle_build/use_gradle_build|gradle_build/min_sdk|gradle_build/target_sdk|architectures/arm64-v8a|launcher_icons|package/signed" export_presets.cfg
+          grep -E "textures/vram_compression/import_etc2_astc" project.godot
+
+      - name: Pre-import project
+        run: godot --headless --import || true
+
+      - name: Export Android APK
+        shell: bash
+        run: |
+          set -euo pipefail
           mkdir -p build/android
-          godot --headless --verbose --export-debug "Android" build/android/SwordCard.apk 2>&1 | tee export.log
+          rm -f build/android/SwordCard.apk
+          godot --headless --verbose --export-debug "Android" build/android/SwordCard.apk 2>&1 | tee build/android/export.log
           test -f build/android/SwordCard.apk || { echo "::error::APK not generated"; exit 1; }
-          ls -la build/android/
+
+      - name: Verify APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="build/android/SwordCard.apk"
+          ls -lh "$APK"
+          sha256sum "$APK"
+          apksigner verify --verbose "$APK"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: SwordCard-debug-apk
-          path: build/android/SwordCard.apk
+          path: |
+            build/android/SwordCard.apk
+            build/android/export.log
           if-no-files-found: error
           retention-days: 30
