@@ -48,6 +48,33 @@ func _ready() -> void:
 	_build_root()
 	_build_pause_menu()
 	show_main_menu()
+	get_viewport().size_changed.connect(_apply_safe_area_margins)
+	_apply_safe_area_margins()
+
+func _apply_safe_area_margins() -> void:
+	if root == null:
+		return
+	var base_h: int = 20
+	var base_w: int = 28
+	var left: int = base_w
+	var top: int = base_h
+	var right: int = base_w
+	var bottom: int = base_h
+	if OS.has_feature("mobile"):
+		var window_size: Vector2i = DisplayServer.window_get_size()
+		var safe: Rect2i = DisplayServer.get_display_safe_area()
+		if window_size.x > 0 and window_size.y > 0 and safe.size.x > 0 and safe.size.y > 0:
+			var game_size: Vector2 = get_viewport().get_visible_rect().size
+			var scale_x: float = game_size.x / float(window_size.x)
+			var scale_y: float = game_size.y / float(window_size.y)
+			left = max(base_w, int(safe.position.x * scale_x))
+			top = max(base_h, int(safe.position.y * scale_y))
+			right = max(base_w, int((window_size.x - (safe.position.x + safe.size.x)) * scale_x))
+			bottom = max(base_h, int((window_size.y - (safe.position.y + safe.size.y)) * scale_y))
+	root.add_theme_constant_override("margin_left", left)
+	root.add_theme_constant_override("margin_top", top)
+	root.add_theme_constant_override("margin_right", right)
+	root.add_theme_constant_override("margin_bottom", bottom)
 
 func _build_pause_menu() -> void:
 	pause_menu = PauseMenu.new()
