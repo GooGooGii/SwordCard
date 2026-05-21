@@ -87,11 +87,38 @@ jobs:
         run: |
           godot --headless --import || true
 
+      - name: Diagnostic — show environment
+        run: |
+          echo "=== editor_settings ==="
+          cat "$HOME/.config/godot/editor_settings-4.tres" || true
+          echo ""
+          echo "=== ANDROID_SDK_ROOT ==="
+          echo "$ANDROID_SDK_ROOT"
+          ls -la "$ANDROID_SDK_ROOT" || true
+          echo ""
+          echo "=== JAVA_HOME ==="
+          echo "$JAVA_HOME"
+          ls -la "$JAVA_HOME/bin" | head -20 || true
+          echo ""
+          echo "=== template dir ==="
+          TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}"
+          ls -la "$TEMPLATE_DIR" || true
+          echo ""
+          echo "=== keystore ==="
+          ls -la "$HOME/debug.keystore" || true
+          echo ""
+          echo "=== build-tools ==="
+          ls "$ANDROID_SDK_ROOT/build-tools/" || true
+          echo ""
+          echo "=== platforms ==="
+          ls "$ANDROID_SDK_ROOT/platforms/" || true
+
       - name: Export Android APK (debug)
         run: |
           mkdir -p build/android
-          godot --headless --export-debug "Android" build/android/SwordCard.apk
-          ls -la build/android/
+          godot --headless --verbose --export-debug "Android" build/android/SwordCard.apk 2>&1 | tee export.log
+          echo "=== exit code: $? ==="
+          ls -la build/android/ || true
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
