@@ -124,6 +124,13 @@ jobs:
       - name: Pre-import project
         run: godot --headless --import || true
 
+      - name: Run smoke tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . -s scripts/smoke_test.gd 2>&1 | tee smoke.log
+          grep -q "SwordCard smoke test passed." smoke.log || { echo "::error::smoke test did not report success"; exit 1; }
+
       - name: Export Android APK
         shell: bash
         run: |
