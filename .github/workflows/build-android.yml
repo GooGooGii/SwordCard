@@ -42,10 +42,62 @@ jobs:
             exit 1
           fi
           echo "Templates at: $TEMPLATE_DIR"
-          ls -la "$TEMPLATE_DIR"
           mkdir -p android/build
           unzip -oq "$TEMPLATE_DIR/android_source.zip" -d android/build
           echo "4.4.stable" > android/.build_version
+
+      - name: Detect Android SDK and JDK paths
+        id: paths
+        run: |
+          # Look for common SDK locations in barichello image
+          SDK=$(find / -maxdepth 5 -name "platform-tools" -type d 2>/dev/null | head -1 | xargs dirname || true)
+          JDK=$(find / -maxdepth 5 -name "javac" -executable 2>/dev/null | head -1 | xargs dirname | xargs dirname || true)
+          if [ -z "$SDK" ] || [ -z "$JDK" ]; then
+            echo "ERROR: SDK=$SDK JDK=$JDK"
+            ls /opt /usr/local 2>/dev/null
+            exit 1
+          fi
+          echo "Found SDK: $SDK"
+          echo "Found JDK: $JDK"
+          echo "android_sdk=$SDK" >> $GITHUB_OUTPUT
+          echo "java_sdk=$JDK" >> $GITHUB_OUTPUT
+
+      - name: Generate debug keystore and configure editor settings
+        env:
+          ANDROID_SDK: ${{ steps.paths.outputs.android_sdk }}
+          JAVA_SDK: ${{ steps.paths.outputs.java_sdk }}
+        run: |
+          # Generate JKS keystore
+          keytool -genkey -v \
+            -keystore /root/debug.keystore \
+            -storetype JKS \
+            -alias androiddebugkey \
+            -storepass android -keypass android \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+          # Write editor_settings for Godot 4.4
+          mkdir -p /root/.config/godot
+          {
+            echo '[gd_resource type="EditorSettings" format=3]'
+            echo ''
+            echo '[resource]'
+            echo "export/android/android_sdk_path = \"$ANDROID_SDK\""
+            echo "export/android/java_sdk_path = \"$JAVA_SDK\""
+            echo 'export/android/debug_keystore = "/root/debug.keystore"'
+            echo 'export/android/debug_keystore_user = "androiddebugkey"'
+            echo 'export/android/debug_keystore_pass = "android"'
+            echo 'export/android/release_keystore = "/root/debug.keystore"'
+            echo 'export/android/release_keystore_user = "androiddebugkey"'
+            echo 'export/android/release_keystore_pass = "android"'
+            echo 'export/android/force_system_user = false'
+            echo 'export/android/shutdown_adb_on_exit = true'
+            echo 'export/android/one_click_deploy_clear_previous_install = false'
+          } | tee /root/.config/godot/editor_settings-4.tres /root/.config/godot/editor_settings-4.4.tres > /dev/null
+          # Bump target_sdk to 33 since build-tools 33.0.2 is what's available in barichello image
+          sed -i 's|gradle_build/target_sdk="34"|gradle_build/target_sdk="33"|' export_presets.cfg
+
+      - name: Pre-import
+        run: godot --headless --import || true
 
       - name: Export Android APK (debug)
         run: |
