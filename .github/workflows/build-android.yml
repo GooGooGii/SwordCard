@@ -81,6 +81,12 @@ jobs:
           export/android/debug_keystore = "${HOME}/debug.keystore"
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
+          export/android/release_keystore = "${HOME}/debug.keystore"
+          export/android/release_keystore_user = "androiddebugkey"
+          export/android/release_keystore_pass = "android"
+          export/android/force_system_user = false
+          export/android/shutdown_adb_on_exit = true
+          export/android/one_click_deploy_clear_previous_install = false
           EOF
 
       - name: Generate PNG launcher icons (SVG not accepted for Android)
@@ -103,6 +109,23 @@ jobs:
       - name: Pre-import project resources
         run: |
           godot --headless --import || true
+
+      - name: Diagnostic — show Android build tools
+        run: |
+          BT=$(ls "$ANDROID_SDK_ROOT/build-tools/" | sort -V | tail -1)
+          echo "=== latest build-tools: $BT ==="
+          ls -la "$ANDROID_SDK_ROOT/build-tools/$BT/" | head -20
+          echo ""
+          echo "=== apksigner ==="
+          ls -la "$ANDROID_SDK_ROOT/build-tools/$BT/apksigner" || true
+          "$ANDROID_SDK_ROOT/build-tools/$BT/apksigner" --version || true
+          echo ""
+          echo "=== zipalign ==="
+          ls -la "$ANDROID_SDK_ROOT/build-tools/$BT/zipalign" || true
+          echo ""
+          echo "=== jarsigner (from JDK) ==="
+          ls -la "$JAVA_HOME/bin/jarsigner" || true
+          "$JAVA_HOME/bin/jarsigner" -help 2>&1 | head -2 || true
 
       - name: Diagnostic — show environment
         run: |
