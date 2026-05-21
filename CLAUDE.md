@@ -151,6 +151,16 @@ smoke test 用 9 組 (block, vuln, weak, attack) 組合驗證兩者一致。改 
 
 不改結構但加新欄位（純加）通常不用升版本，`from_dict` 用 `data.get(key, default)` 就好。
 
+### 戰鬥輸入體驗
+
+- **End Turn 確認**：按下「結束回合」時若還有靈力且手上有可打的卡，按鈕文字變成「再按確認 / 剩 X 點靈力」並 flash 黃光。
+  1 秒內再按一次 → 立即結束；過 1 秒 → 自動結束。
+  期間若打了任一張卡 → 警告自動取消（`_cancel_end_turn_warning`，由 `play_card` 觸發）
+- **長按卡片預覽**：在手牌卡片上按住 0.5 秒，跳出滿版 overlay 並排展示「當前卡（260×360）」與「升級後預覽」。
+  按住期間鬆開即關閉、且**不會觸發出牌**（`_suppress_next_card_play` 旗標在 `_on_card_button_pressed` 攔截）
+- **戰敗 retry**：`show_result(false)` 不再立刻 `SaveManager.clear()`，而是多一顆「重打這一場（滿血，扣 1 件遺物）」按鈕。
+  其他三顆按鈕（重新角色 / 重選角色 / 主選單）的 callback 才各自 clear save
+
 ### Debug menu (桌面開發用)
 
 按 **F1** 切換，只在 `!OS.has_feature("mobile")` 時建構、只在 run 進行中可開啟。
