@@ -76,6 +76,7 @@ func _initialize() -> void:
 	_test_power_stacks_with_damage()
 	_test_multi_turn_battle(characters[0], enemies[0])
 	_test_map_generator_reachability(enemies, bosses)
+	_test_predict_enemy_damage_matches_resolver()
 	_test_balance_regression(characters, enemies)
 	print("SwordCard smoke test passed.")
 	quit(0)
@@ -346,6 +347,43 @@ func _test_map_generator_reachability(enemies: Array[EnemyData], bosses: Array[E
 				boss_reachable = true
 				break
 		assert(boss_reachable, "trial %d: boss row unreachable from row 0" % trial)
+
+func _test_predict_enemy_damage_matches_resolver() -> void:
+	# 對多組 (block, vuln, weak, attack_amount) 組合，驗證 CardFormat.predict_enemy_damage 跟
+	# EffectResolver 實際結算後的 HP 損失一致。
+	var resolver: EffectResolver = EffectResolver.new()
+	var cases: Array[Array] = [
+		# [block, player_vulnerable_before_phase, enemy_weak, amount]
+		[0, 0, 0, 10],   # 純傷害
+		[5, 0, 0, 10],   # 部分擋
+		[20, 0, 0, 10],  # 全擋
+		[0, 1, 0, 10],   # 破綻：begin_enemy_phase -1 後變 0，理論上不該乘 1.5
+		[0, 2, 0, 10],   # 破綻：-1 後仍有 1 層，10 * 1.5 = 15
+		[5, 2, 0, 10],   # 破綻 + 部分擋：15 - 5 = 10
+		[0, 0, 3, 10],   # 敵人虛弱：10 - 3 = 7
+		[0, 2, 3, 10],   # 虛弱 + 破綻：(10-3)*1.5 = ceil(10.5) = 11
+		[100, 2, 0, 10], # 大量 block 全擋
+	]
+	for c: Array in cases:
+		var block_amt: int = int(c[0])
+		var vuln: int = int(c[1])
+		var enemy_weak: int = int(c[2])
+		var attack: int = int(c[3])
+		var state: Dictionary = _make_state()
+		state["player_block"] = block_amt
+		state["player_vulnerable"] = vuln
+		state["enemy_weak"] = enemy_weak
+		var action: Dictionary = {"intent": "test", "effects": [{"kind": "damage", "amount": attack}]}
+		var pred: Dictionary = CardFormat.predict_enemy_damage(action, state)
+		# 模擬 begin_enemy_phase 對玩家狀態的衰減
+		if int(state["player_vulnerable"]) > 0:
+			state["player_vulnerable"] -= 1
+		var hp_before: int = int(state["player_hp"])
+		resolver.resolve_enemy_action(action, state)
+		var actual_dealt: int = hp_before - int(state["player_hp"])
+		assert(int(pred["dealt"]) == actual_dealt,
+			"predict mismatch: block=%d vuln=%d weak=%d atk=%d → predicted %d, actual %d" %
+			[block_amt, vuln, enemy_weak, attack, int(pred["dealt"]), actual_dealt])
 
 const BALANCE_TRIALS: int = 30
 const BALANCE_TOLERANCE_PP: int = 15  # 容許勝率漂移 ±15 個百分點

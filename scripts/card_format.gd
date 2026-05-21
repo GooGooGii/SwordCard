@@ -98,3 +98,31 @@ static func action_has_damage(action: Dictionary) -> bool:
 		if String(effect.get("kind", "")) == "damage":
 			return true
 	return false
+
+# 預測敵人 action 結算後玩家會受到的實際傷害。
+# 與 EffectResolver._resolve_effect 的「from_enemy=true、damage」分支保持同步。
+# 回傳: {raw, blocked, dealt} 三個 int。
+# 注意：begin_enemy_phase 會在敵人攻擊前先把 player_weak / player_vulnerable -1，
+# 所以這裡使用 max(0, value-1) 模擬。state 中的 enemy_weak 維持原值不變。
+static func predict_enemy_damage(action: Dictionary, state: Dictionary) -> Dictionary:
+	var enemy_weak: int = int(state.get("enemy_weak", 0))
+	var player_vuln_at_hit: int = max(0, int(state.get("player_vulnerable", 0)) - 1)
+	var damage_reduction: int = int(state.get("damage_taken_reduction", 0))
+	var remaining_block: int = int(state.get("player_block", 0))
+	var raw: int = 0
+	var blocked: int = 0
+	var dealt: int = 0
+	for effect: Dictionary in (action.get("effects", []) as Array):
+		if String(effect.get("kind", "")) != "damage":
+			continue
+		var amount: int = int(effect.get("amount", 0))
+		var modified: int = max(0, amount - enemy_weak)
+		if player_vuln_at_hit > 0:
+			modified = int(ceil(modified * 1.5))
+		modified = max(0, modified - damage_reduction)
+		var b: int = min(remaining_block, modified)
+		remaining_block -= b
+		raw += amount
+		blocked += b
+		dealt += modified - b
+	return {"raw": raw, "blocked": blocked, "dealt": dealt}
