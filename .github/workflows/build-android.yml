@@ -10,7 +10,7 @@ jobs:
     name: Export debug APK (Docker)
     runs-on: ubuntu-22.04
     container:
-      image: barichello/godot-ci:4.4
+      image: barichello/godot-ci:4.6
 
     steps:
       - name: Checkout
@@ -35,7 +35,7 @@ jobs:
 
       - name: Install Android build template (Docker image already has templates)
         run: |
-          TEMPLATE_DIR=$(find / -path "*/godot/export_templates/4.4*" -type d 2>/dev/null | head -1)
+          TEMPLATE_DIR=$(find / -path "*/godot/export_templates/4.6*" -type d 2>/dev/null | head -1)
           if [ -z "$TEMPLATE_DIR" ]; then
             echo "ERROR: templates dir not found"
             find / -name "android_source.zip" 2>/dev/null
@@ -44,7 +44,7 @@ jobs:
           echo "Templates at: $TEMPLATE_DIR"
           mkdir -p android/build
           unzip -oq "$TEMPLATE_DIR/android_source.zip" -d android/build
-          echo "4.4.stable" > android/.build_version
+          echo "4.6.stable" > android/.build_version
 
       - name: Configure SDK/JDK paths and (re)generate keystore
         run: |
@@ -91,7 +91,7 @@ jobs:
             echo 'export/android/force_system_user = false'
             echo 'export/android/shutdown_adb_on_exit = true'
             echo 'export/android/one_click_deploy_clear_previous_install = false'
-          } | tee $HOME/.config/godot/editor_settings-4.tres $HOME/.config/godot/editor_settings-4.4.tres > /dev/null
+          } | tee $HOME/.config/godot/editor_settings-4.tres $HOME/.config/godot/editor_settings-4.6.tres > /dev/null
           # Bump target_sdk to 33 since build-tools 33.0.2 is what's available in barichello image
           sed -i 's|gradle_build/target_sdk="34"|gradle_build/target_sdk="33"|' export_presets.cfg
           # Disable APK signing for debug build to bypass any silent signing validation
