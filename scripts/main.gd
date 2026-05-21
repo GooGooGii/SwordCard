@@ -659,9 +659,16 @@ func show_progress_screen() -> void:
 			relic_names.append(r.display_name)
 		box.add_child(UIFactory.paragraph("裝備：%s" % "、".join(relic_names)))
 	box.add_child(_map_view())
+	var button_row: HBoxContainer = HBoxContainer.new()
+	button_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	button_row.add_theme_constant_override("separation", 12)
+	box.add_child(button_row)
+	var overview_button: Button = _button("路線總覽")
+	overview_button.pressed.connect(_show_map_overview_popup)
+	button_row.add_child(overview_button)
 	var deck_button: Button = _button("查看牌組")
 	deck_button.pressed.connect(show_deck_view)
-	box.add_child(deck_button)
+	button_row.add_child(deck_button)
 	var menu: Button = _button("放棄並返回主選單")
 	menu.pressed.connect(show_main_menu)
 	box.add_child(menu)
@@ -1102,6 +1109,11 @@ func _build_left_dock(parent: HBoxContainer) -> void:
 	deck_button.custom_minimum_size = Vector2(0, 32)
 	deck_button.pressed.connect(show_deck_view)
 	dock.add_child(deck_button)
+	var relics_button: Button = _button("遺物 (%d)" % run_state.relics.size())
+	relics_button.add_theme_font_size_override("font_size", 13)
+	relics_button.custom_minimum_size = Vector2(0, 32)
+	relics_button.pressed.connect(_show_battle_relics_popup)
+	dock.add_child(relics_button)
 
 func _build_right_dock(parent: HBoxContainer) -> void:
 	var dock: VBoxContainer = VBoxContainer.new()
@@ -1922,6 +1934,167 @@ func show_result(victory: bool) -> void:
 		SaveManager.clear()
 		show_main_menu())
 	box.add_child(menu)
+
+func _make_battle_popup() -> PopupPanel:
+	var popup: PopupPanel = PopupPanel.new()
+	popup.exclusive = false
+	popup.process_mode = Node.PROCESS_MODE_ALWAYS
+	var panel_style: StyleBoxFlat = StyleBoxFlat.new()
+	panel_style.bg_color = Color(ThemeColors.OVERLAY_BG.r, ThemeColors.OVERLAY_BG.g, ThemeColors.OVERLAY_BG.b, 0.97)
+	panel_style.border_color = ThemeColors.BORDER_GOLD
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(10)
+	panel_style.content_margin_left = 18
+	panel_style.content_margin_right = 18
+	panel_style.content_margin_top = 14
+	panel_style.content_margin_bottom = 14
+	popup.add_theme_stylebox_override("panel", panel_style)
+	return popup
+
+func _show_battle_relics_popup() -> void:
+	var popup: PopupPanel = _make_battle_popup()
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
+	box.custom_minimum_size = Vector2(460, 0)
+	var title: Label = Label.new()
+	title.text = "遺物清單 (%d)" % run_state.relics.size()
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
+	box.add_child(title)
+	if run_state.relics.is_empty():
+		var empty: Label = Label.new()
+		empty.text = "尚未持有任何遺物"
+		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		empty.add_theme_font_size_override("font_size", 14)
+		empty.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
+		box.add_child(empty)
+	else:
+		var scroll: ScrollContainer = ScrollContainer.new()
+		scroll.custom_minimum_size = Vector2(440, 420)
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		box.add_child(scroll)
+		var list: VBoxContainer = VBoxContainer.new()
+		list.add_theme_constant_override("separation", 8)
+		list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		scroll.add_child(list)
+		for r: RelicData in run_state.relics:
+			list.add_child(_relic_popup_entry(r))
+	popup.add_child(box)
+	get_viewport().add_child(popup)
+	popup.popup_hide.connect(popup.queue_free)
+	popup.popup_centered()
+
+func _relic_popup_entry(relic: RelicData) -> Control:
+	var entry: PanelContainer = PanelContainer.new()
+	var border: Color = _relic_rarity_color_for_popup(relic)
+	entry.add_theme_stylebox_override("panel", UIFactory.style_box(Color("111926", 0.65), border, 1, 8))
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	entry.add_child(row)
+	var icon: RelicIcon = RelicIcon.new()
+	icon.custom_minimum_size = Vector2(40, 40)
+	icon.set_relic(relic)
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE  # popup 已顯示說明，不需要再開一層
+	row.add_child(icon)
+	var text_box: VBoxContainer = VBoxContainer.new()
+	text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_box.add_theme_constant_override("separation", 2)
+	row.add_child(text_box)
+	var name_label: Label = Label.new()
+	name_label.text = relic.display_name
+	name_label.add_theme_font_size_override("font_size", 16)
+	name_label.add_theme_color_override("font_color", border)
+	text_box.add_child(name_label)
+	var desc: Label = Label.new()
+	desc.text = relic.description
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc.add_theme_font_size_override("font_size", 13)
+	desc.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
+	desc.custom_minimum_size = Vector2(360, 0)
+	text_box.add_child(desc)
+	return entry
+
+func _relic_rarity_color_for_popup(relic: RelicData) -> Color:
+	match relic.rarity:
+		"uncommon":
+			return Color("76c4d8")
+		"rare":
+			return Color("d9c2ff")
+		"legendary":
+			return Color("ffb84a")
+	return ThemeColors.BORDER_GOLD
+
+func _show_map_overview_popup() -> void:
+	var popup: PopupPanel = _make_battle_popup()
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	box.custom_minimum_size = Vector2(520, 0)
+	var title: Label = Label.new()
+	title.text = "路線總覽"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
+	box.add_child(title)
+	var hint: Label = Label.new()
+	hint.text = "★ 當前位置  ✓ 已走過  · 待選"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_font_size_override("font_size", 13)
+	hint.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
+	box.add_child(hint)
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(500, 460)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(scroll)
+	var list: VBoxContainer = VBoxContainer.new()
+	list.add_theme_constant_override("separation", 6)
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(list)
+	for row_index: int in range(run_state.encounter_choices.size()):
+		list.add_child(_map_overview_row(row_index))
+	popup.add_child(box)
+	get_viewport().add_child(popup)
+	popup.popup_hide.connect(popup.queue_free)
+	popup.popup_centered()
+
+func _map_overview_row(row_index: int) -> Control:
+	var is_current: bool = row_index == run_state.encounter_index
+	var is_past: bool = row_index < run_state.encounter_index
+	var bg: Color = Color("f4d985", 0.18) if is_current else (Color("273449", 0.4) if is_past else Color("273449", 0.7))
+	var border: Color = ThemeColors.ACCENT_GOLD if is_current else (Color("5f6570", 0.5) if is_past else Color("8ea3c4", 0.5))
+	var entry: PanelContainer = PanelContainer.new()
+	entry.add_theme_stylebox_override("panel", UIFactory.style_box(bg, border, 2 if is_current else 1, 6))
+	var hb: HBoxContainer = HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 12)
+	entry.add_child(hb)
+	var prefix: String = "★" if is_current else ("✓" if is_past else "·")
+	var prefix_label: Label = Label.new()
+	prefix_label.text = prefix
+	prefix_label.add_theme_font_size_override("font_size", 18)
+	prefix_label.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD if is_current else ThemeColors.TEXT_MUTED)
+	prefix_label.custom_minimum_size = Vector2(22, 0)
+	hb.add_child(prefix_label)
+	var row_data: Array = run_state.encounter_choices[row_index]
+	var chosen_idx: int = -1
+	if row_index < run_state.chosen_map_path.size():
+		chosen_idx = int(run_state.chosen_map_path[row_index])
+	var node_descriptions: Array[String] = []
+	for node_v: Variant in row_data:
+		var node_data: Dictionary = node_v as Dictionary
+		var node_index: int = int(node_data.get("index", 0))
+		var badge: String = _map_node_badge(node_data)
+		if node_index == chosen_idx:
+			badge = "[%s ★]" % badge
+		else:
+			badge = "[%s]" % badge
+		node_descriptions.append(badge)
+	var row_label: Label = Label.new()
+	row_label.text = "第 %d 層  %s" % [row_index + 1, "  ".join(node_descriptions)]
+	row_label.add_theme_font_size_override("font_size", 15)
+	row_label.add_theme_color_override("font_color", ThemeColors.TEXT_LIGHT if is_current else (ThemeColors.TEXT_MUTED if is_past else ThemeColors.TEXT_DIM))
+	row_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hb.add_child(row_label)
+	return entry
 
 func _retry_current_battle() -> void:
 	if battle == null or battle.enemy == null:
