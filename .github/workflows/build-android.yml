@@ -7,7 +7,7 @@ on:
 
 env:
   # 改這兩個變數來換 Godot 版本
-  GODOT_VERSION: "4.3"
+  GODOT_VERSION: "4.4"
   GODOT_RELEASE: "stable"
 
 jobs:
@@ -174,9 +174,21 @@ jobs:
       - name: Export Android APK (debug)
         run: |
           mkdir -p build/android
-          godot --headless --verbose --export-debug "Android" build/android/SwordCard.apk 2>&1 | tee export.log
-          echo "=== exit code: $? ==="
+          echo "=== editor_settings BEFORE export ==="
+          cat "$HOME/.config/godot/editor_settings-4.tres"
+          echo ""
+          godot --headless --verbose --export-debug "Android" build/android/SwordCard.apk 2>&1 | tee export.log || true
+          echo ""
+          echo "=== editor_settings AFTER export ==="
+          cat "$HOME/.config/godot/editor_settings-4.tres"
+          echo ""
+          echo "=== build/android dir ==="
           ls -la build/android/ || true
+          # If export succeeded, this step also succeeds. If not, fail explicitly.
+          if [ ! -f build/android/SwordCard.apk ]; then
+            echo "APK not generated, failing."
+            exit 1
+          fi
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
