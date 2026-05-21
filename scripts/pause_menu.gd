@@ -26,6 +26,15 @@ func close() -> void:
 	_is_settings_visible = false
 	get_tree().paused = false
 
+func handle_back() -> bool:
+	if not visible:
+		return false
+	if _is_settings_visible:
+		_show_main()
+		return true
+	resume_requested.emit()
+	return true
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
@@ -106,9 +115,11 @@ func _build_settings_panel() -> VBoxContainer:
 		SettingsManager.save_settings()))
 	box.add_child(_volume_row("音樂", SettingsManager.music_volume, func(v: float) -> void:
 		SettingsManager.music_volume = v
+		SettingsManager.apply_runtime()
 		SettingsManager.save_settings()))
 	box.add_child(_volume_row("音效", SettingsManager.sfx_volume, func(v: float) -> void:
 		SettingsManager.sfx_volume = v
+		SettingsManager.apply_runtime()
 		SettingsManager.save_settings()))
 	if not OS.has_feature("mobile"):
 		var fs_check: CheckButton = CheckButton.new()

@@ -4,6 +4,8 @@ extends RefCounted
 const SETTINGS_PATH: String = "user://settings.cfg"
 const SECTION_AUDIO: String = "audio"
 const SECTION_VIDEO: String = "video"
+const BUS_MUSIC: String = "Music"
+const BUS_SFX: String = "SFX"
 
 const DEFAULT_MASTER: float = 80.0
 const DEFAULT_MUSIC: float = 70.0
@@ -36,15 +38,35 @@ static func save_settings() -> void:
 	cfg.save(SETTINGS_PATH)
 
 static func apply_runtime() -> void:
+	_ensure_buses()
 	AudioServer.set_bus_volume_db(0, _to_db(master_volume))
 	AudioServer.set_bus_mute(0, master_volume <= 0.0)
-	# music / sfx buses 之後 D3 加進來時會用到。目前只有 master bus。
+	var music_idx: int = AudioServer.get_bus_index(BUS_MUSIC)
+	if music_idx != -1:
+		AudioServer.set_bus_volume_db(music_idx, _to_db(music_volume))
+		AudioServer.set_bus_mute(music_idx, music_volume <= 0.0)
+	var sfx_idx: int = AudioServer.get_bus_index(BUS_SFX)
+	if sfx_idx != -1:
+		AudioServer.set_bus_volume_db(sfx_idx, _to_db(sfx_volume))
+		AudioServer.set_bus_mute(sfx_idx, sfx_volume <= 0.0)
 	# 手機平台的全螢幕由 OS + 匯出 immersive_mode 控制，不要在執行階段覆蓋
 	# （否則會把 Android 的 immersive 狀態打回視窗模式，露出狀態列與手勢列）。
 	if OS.has_feature("mobile"):
 		return
 	var mode: int = DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
 	DisplayServer.window_set_mode(mode)
+
+static func _ensure_buses() -> void:
+	if AudioServer.get_bus_index(BUS_MUSIC) == -1:
+		AudioServer.add_bus()
+		var idx: int = AudioServer.bus_count - 1
+		AudioServer.set_bus_name(idx, BUS_MUSIC)
+		AudioServer.set_bus_send(idx, "Master")
+	if AudioServer.get_bus_index(BUS_SFX) == -1:
+		AudioServer.add_bus()
+		var idx: int = AudioServer.bus_count - 1
+		AudioServer.set_bus_name(idx, BUS_SFX)
+		AudioServer.set_bus_send(idx, "Master")
 
 static func _apply_defaults() -> void:
 	master_volume = DEFAULT_MASTER

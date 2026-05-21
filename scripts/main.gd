@@ -36,7 +36,12 @@ var deck_view_mode: String = "view"
 var card_buttons: Array[Button] = []
 var animating_cards: Array[Button] = []
 var pause_menu: PauseMenu
+var pause_button: Button
 var battle_end_pending: bool = false
+
+const BASE_MARGIN_H: int = 28
+const BASE_MARGIN_V: int = 20
+const PAUSE_BUTTON_SIZE: Vector2 = Vector2(96, 56)
 
 func _ready() -> void:
 	randomize()
@@ -47,7 +52,17 @@ func _ready() -> void:
 	get_tree().set_auto_accept_quit(false)
 	_build_root()
 	_build_pause_menu()
+	_build_pause_button()
+	_apply_safe_area_margins()
+	get_viewport().size_changed.connect(_apply_safe_area_margins)
 	show_main_menu()
+
+func _process(_delta: float) -> void:
+	if pause_button == null:
+		return
+	var should_show: bool = run_state != null and run_state.character != null
+	if pause_button.visible != should_show:
+		pause_button.visible = should_show
 
 func _build_pause_menu() -> void:
 	pause_menu = PauseMenu.new()
@@ -55,6 +70,62 @@ func _build_pause_menu() -> void:
 	pause_menu.resume_requested.connect(_on_resume_requested)
 	pause_menu.abandon_requested.connect(_on_abandon_requested)
 	pause_menu.quit_requested.connect(_on_quit_requested)
+
+func _build_pause_button() -> void:
+	pause_button = Button.new()
+	pause_button.text = "暫停"
+	pause_button.custom_minimum_size = PAUSE_BUTTON_SIZE
+	pause_button.size = PAUSE_BUTTON_SIZE
+	pause_button.set_anchors_preset(Control.PRESET_TOP_RIGHT, false)
+	pause_button.add_theme_font_size_override("font_size", 18)
+	pause_button.add_theme_color_override("font_color", Color("fff8dc"))
+	pause_button.add_theme_color_override("font_hover_color", Color("ffffff"))
+	pause_button.add_theme_stylebox_override("normal", _pause_button_style(Color("273449"), Color("c8b46f"), 2))
+	pause_button.add_theme_stylebox_override("hover", _pause_button_style(Color("324663"), Color("f7df9c"), 3))
+	pause_button.add_theme_stylebox_override("pressed", _pause_button_style(Color("1c2737"), Color("c8b46f"), 2))
+	pause_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	pause_button.visible = false
+	pause_button.pressed.connect(_toggle_pause_menu)
+	add_child(pause_button)
+
+func _pause_button_style(bg: Color, border: Color, width: int) -> StyleBoxFlat:
+	var s: StyleBoxFlat = StyleBoxFlat.new()
+	s.bg_color = bg
+	s.border_color = border
+	s.set_border_width_all(width)
+	s.set_corner_radius_all(8)
+	return s
+
+func _apply_safe_area_margins() -> void:
+	var left: int = BASE_MARGIN_H
+	var right: int = BASE_MARGIN_H
+	var top: int = BASE_MARGIN_V
+	var bottom: int = BASE_MARGIN_V
+	if OS.has_feature("mobile"):
+		var safe: Rect2i = DisplayServer.get_display_safe_area()
+		var window_size: Vector2i = DisplayServer.window_get_size()
+		var visible: Vector2 = get_viewport().get_visible_rect().size
+		if window_size.x > 0 and window_size.y > 0 and safe.size.x > 0 and safe.size.y > 0:
+			var sx: float = visible.x / float(window_size.x)
+			var sy: float = visible.y / float(window_size.y)
+			var inset_l: int = int(round(safe.position.x * sx))
+			var inset_t: int = int(round(safe.position.y * sy))
+			var inset_r: int = int(round((window_size.x - safe.position.x - safe.size.x) * sx))
+			var inset_b: int = int(round((window_size.y - safe.position.y - safe.size.y) * sy))
+			left = max(BASE_MARGIN_H, inset_l)
+			top = max(BASE_MARGIN_V, inset_t)
+			right = max(BASE_MARGIN_H, inset_r)
+			bottom = max(BASE_MARGIN_V, inset_b)
+	if root != null:
+		root.add_theme_constant_override("margin_left", left)
+		root.add_theme_constant_override("margin_right", right)
+		root.add_theme_constant_override("margin_top", top)
+		root.add_theme_constant_override("margin_bottom", bottom)
+	if pause_button != null:
+		pause_button.offset_top = top
+		pause_button.offset_bottom = top + PAUSE_BUTTON_SIZE.y
+		pause_button.offset_left = -PAUSE_BUTTON_SIZE.x - right
+		pause_button.offset_right = -right
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and (event as InputEventKey).pressed and not (event as InputEventKey).echo:
@@ -89,10 +160,21 @@ func _on_quit_requested() -> void:
 	get_tree().quit()
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_CLOSE_REQUEST:
-		if run_state != null and run_state.character != null:
-			SaveManager.save(run_state)
-		get_tree().quit()
+	match what:
+		NOTIFICATION_WM_CLOSE_REQUEST:
+			if run_state != null and run_state.character != null:
+				SaveManager.save(run_state)
+			get_tree().quit()
+		NOTIFICATION_WM_GO_BACK_REQUEST:
+			if pause_menu != null and pause_menu.handle_back():
+				return
+			if run_state != null and run_state.character != null:
+				_toggle_pause_menu()
+				return
+			get_tree().quit()
+		NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+			if run_state != null and run_state.character != null:
+				SaveManager.save(run_state)
 
 func _build_root() -> void:
 	background_rect = TextureRect.new()
@@ -139,7 +221,7 @@ func show_main_menu() -> void:
 	left_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	left_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	left_panel.custom_minimum_size = Vector2(560, 0)
-	left_panel.add_theme_stylebox_override("panel", _style_box(Color("101722", 0.80), Color("d7c89a", 0.38), 1, 16))
+	left_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("101722", 0.80), Color("d7c89a", 0.38), 1, 16))
 	shell.add_child(left_panel)
 
 	var left_margin: MarginContainer = MarginContainer.new()
@@ -154,7 +236,7 @@ func show_main_menu() -> void:
 	left_box.add_theme_constant_override("separation", 18)
 	left_margin.add_child(left_box)
 
-	left_box.add_child(_card_label("仙劍奇俠傳・卡牌冒險原型", 14, Color("f4d985"), HORIZONTAL_ALIGNMENT_LEFT))
+	left_box.add_child(UIFactory.card_label("仙劍奇俠傳・卡牌冒險原型", 14, Color("f4d985"), HORIZONTAL_ALIGNMENT_LEFT))
 	var title: Label = Label.new()
 	title.text = "SwordCard"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -172,9 +254,9 @@ func show_main_menu() -> void:
 	var feature_row: HBoxContainer = HBoxContainer.new()
 	feature_row.add_theme_constant_override("separation", 10)
 	left_box.add_child(feature_row)
-	feature_row.add_child(_menu_chip("牌組構築"))
-	feature_row.add_child(_menu_chip("路線選擇"))
-	feature_row.add_child(_menu_chip("角色流派"))
+	feature_row.add_child(UIFactory.menu_chip("牌組構築"))
+	feature_row.add_child(UIFactory.menu_chip("路線選擇"))
+	feature_row.add_child(UIFactory.menu_chip("角色流派"))
 
 	var spacer: Control = Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -184,26 +266,26 @@ func show_main_menu() -> void:
 	action_box.add_theme_constant_override("separation", 12)
 	left_box.add_child(action_box)
 	if SaveManager.has_save():
-		var continue_button: Button = _main_menu_button("繼續冒險", true)
+		var continue_button: Button = UIFactory.main_menu_button("繼續冒險", true)
 		continue_button.pressed.connect(continue_saved_run)
 		action_box.add_child(continue_button)
-	var start_button: Button = _main_menu_button("開始遊戲")
+	var start_button: Button = UIFactory.main_menu_button("開始遊戲")
 	start_button.pressed.connect(show_character_select)
 	action_box.add_child(start_button)
-	var quit_button: Button = _main_menu_button("離開遊戲")
+	var quit_button: Button = UIFactory.main_menu_button("離開遊戲")
 	quit_button.pressed.connect(get_tree().quit)
 	action_box.add_child(quit_button)
 
 	var footer: VBoxContainer = VBoxContainer.new()
 	footer.add_theme_constant_override("separation", 8)
 	left_box.add_child(footer)
-	footer.add_child(_paragraph("從四位角色中挑選起手流派，穿越地圖事件、商店與戰鬥節點，完成一輪小型冒險。"))
-	footer.add_child(_card_label("角色 %d 位  ・  一般敵人 %d 種" % [characters.size(), enemies.size()], 14, Color("9fb0c8"), HORIZONTAL_ALIGNMENT_LEFT))
+	footer.add_child(UIFactory.paragraph("從四位角色中挑選起手流派，穿越地圖事件、商店與戰鬥節點，完成一輪小型冒險。"))
+	footer.add_child(UIFactory.card_label("角色 %d 位  ・  一般敵人 %d 種" % [characters.size(), enemies.size()], 14, Color("9fb0c8"), HORIZONTAL_ALIGNMENT_LEFT))
 
 	var right_panel: PanelContainer = PanelContainer.new()
 	right_panel.custom_minimum_size = Vector2(420, 0)
 	right_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right_panel.add_theme_stylebox_override("panel", _style_box(Color("0d121b", 0.72), Color("8ea3c4", 0.28), 1, 16))
+	right_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0d121b", 0.72), Color("8ea3c4", 0.28), 1, 16))
 	shell.add_child(right_panel)
 
 	var right_margin: MarginContainer = MarginContainer.new()
@@ -224,7 +306,7 @@ func show_main_menu() -> void:
 
 	var preview_frame: PanelContainer = PanelContainer.new()
 	preview_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	preview_frame.add_theme_stylebox_override("panel", _style_box(Color("e8dcc0", 0.10), Color("f4d985", 0.44), 2, 18))
+	preview_frame.add_theme_stylebox_override("panel", UIFactory.style_box(Color("e8dcc0", 0.10), Color("f4d985", 0.44), 2, 18))
 	right_box.add_child(preview_frame)
 
 	var preview_wrap: MarginContainer = MarginContainer.new()
@@ -239,9 +321,9 @@ func show_main_menu() -> void:
 	preview_box.add_theme_constant_override("separation", 14)
 	preview_wrap.add_child(preview_box)
 
-	preview_box.add_child(_card_label("本次旅程推薦", 14, Color("f4d985"), HORIZONTAL_ALIGNMENT_LEFT))
+	preview_box.add_child(UIFactory.card_label("本次旅程推薦", 14, Color("f4d985"), HORIZONTAL_ALIGNMENT_LEFT))
 	if preview_character != null:
-		var portrait: TextureRect = _portrait_rect(preview_character.portrait_path, Vector2(340, 420), true)
+		var portrait: TextureRect = UIFactory.portrait_rect(preview_character.portrait_path, Vector2(340, 420), true)
 		portrait.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		preview_box.add_child(portrait)
 		var name_label: Label = Label.new()
@@ -250,14 +332,14 @@ func show_main_menu() -> void:
 		name_label.add_theme_font_size_override("font_size", 28)
 		name_label.add_theme_color_override("font_color", Color("fff6d6"))
 		preview_box.add_child(name_label)
-		preview_box.add_child(_paragraph(preview_character.battle_style))
+		preview_box.add_child(UIFactory.paragraph(preview_character.battle_style))
 
 	var quick_info: VBoxContainer = VBoxContainer.new()
 	quick_info.add_theme_constant_override("separation", 10)
 	right_box.add_child(quick_info)
-	quick_info.add_child(_menu_info_row("遊玩節奏", "地圖探索 + 戰鬥回合制"))
-	quick_info.add_child(_menu_info_row("目前內容", "角色選擇、事件、商店、戰鬥與遺物"))
-	quick_info.add_child(_menu_info_row("操作入口", "可從主選單直接開始或接續存檔"))
+	quick_info.add_child(UIFactory.menu_info_row("遊玩節奏", "地圖探索 + 戰鬥回合制"))
+	quick_info.add_child(UIFactory.menu_info_row("目前內容", "角色選擇、事件、商店、戰鬥與遺物"))
+	quick_info.add_child(UIFactory.menu_info_row("操作入口", "可從主選單直接開始或接續存檔"))
 
 func continue_saved_run() -> void:
 	var data: Dictionary = SaveManager.load_save()
@@ -307,9 +389,9 @@ func _character_select_stage(character: CharacterData) -> Control:
 	halo.custom_minimum_size = Vector2(470, 470)
 	halo.size = Vector2(470, 470)
 	halo.position = Vector2(-235, -228)
-	halo.add_theme_stylebox_override("panel", _style_box(Color("d8dec6", 0.18), Color("d7c06d", 0.72), 2, 235))
+	halo.add_theme_stylebox_override("panel", UIFactory.style_box(Color("d8dec6", 0.18), Color("d7c06d", 0.72), 2, 235))
 	stage.add_child(halo)
-	var portrait: TextureRect = _portrait_rect(character.portrait_path, Vector2(430, 455), true)
+	var portrait: TextureRect = UIFactory.portrait_rect(character.portrait_path, Vector2(430, 455), true)
 	portrait.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	portrait.size = Vector2(430, 455)
 	portrait.position = Vector2(-215, -232)
@@ -321,7 +403,7 @@ func _character_select_stage(character: CharacterData) -> Control:
 	name_label.size = Vector2(360, 42)
 	stage.add_child(name_label)
 	var poem_path: String = _character_poem_image_path(character.id)
-	var poem_texture: Texture2D = _load_texture(poem_path)
+	var poem_texture: Texture2D = UIFactory.load_texture(poem_path)
 	if poem_texture != null:
 		var poem_image: TextureRect = TextureRect.new()
 		poem_image.custom_minimum_size = Vector2(180, 420)
@@ -353,19 +435,19 @@ func _character_select_stage(character: CharacterData) -> Control:
 	info_panel.offset_right = -24
 	info_panel.offset_top = 84
 	info_panel.offset_bottom = 384
-	info_panel.add_theme_stylebox_override("panel", _style_box(Color("0d151f", 0.58), Color("8ea3c4", 0.48), 1, 8))
+	info_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0d151f", 0.58), Color("8ea3c4", 0.48), 1, 8))
 	stage.add_child(info_panel)
 	var info_box: VBoxContainer = VBoxContainer.new()
 	info_box.add_theme_constant_override("separation", 10)
 	info_panel.add_child(info_box)
 	info_box.add_child(_title("角色說明", 22))
-	info_box.add_child(_paragraph(character.battle_style))
-	info_box.add_child(_paragraph("生命值：%d" % character.max_hp))
+	info_box.add_child(UIFactory.paragraph(character.battle_style))
+	info_box.add_child(UIFactory.paragraph("生命值：%d" % character.max_hp))
 	var card_names: Array[String] = []
 	for card: CardData in character.starting_deck:
 		card_names.append(card.display_title())
 	var deck_text: String = "起始牌組：" + ", ".join(card_names)
-	info_box.add_child(_paragraph(deck_text))
+	info_box.add_child(UIFactory.paragraph(deck_text))
 	var choose: Button = _button("以 %s 出戰" % character.display_name)
 	choose.pressed.connect(func(): start_run(character))
 	info_box.add_child(choose)
@@ -378,22 +460,22 @@ func _character_thumb(character: CharacterData, selected: bool) -> Control:
 	button.text = ""
 	var base: Color = Color("18212f", 0.86) if not selected else Color("33435c", 0.92)
 	var border: Color = Color("536277", 0.75) if not selected else Color("f4d985")
-	button.add_theme_stylebox_override("normal", _style_box(base, border, 2 if selected else 1, 8))
-	button.add_theme_stylebox_override("hover", _style_box(base.lightened(0.12), Color("f7df9c"), 2, 8))
-	button.add_theme_stylebox_override("pressed", _style_box(base.darkened(0.1), Color("f4d985"), 2, 8))
+	button.add_theme_stylebox_override("normal", UIFactory.style_box(base, border, 2 if selected else 1, 8))
+	button.add_theme_stylebox_override("hover", UIFactory.style_box(base.lightened(0.12), Color("f7df9c"), 2, 8))
+	button.add_theme_stylebox_override("pressed", UIFactory.style_box(base.darkened(0.1), Color("f4d985"), 2, 8))
 	button.pressed.connect(func(): show_character_select(character.id))
-	var image: TextureRect = _portrait_rect(character.portrait_path, Vector2(96, 72), true)
+	var image: TextureRect = UIFactory.portrait_rect(character.portrait_path, Vector2(96, 72), true)
 	image.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	image.size = Vector2(96, 72)
 	image.position = Vector2(-48, 6)
 	button.add_child(image)
-	var label: Label = _card_label(character.display_name, 13, Color("fff8dc"), HORIZONTAL_ALIGNMENT_CENTER)
+	var label: Label = UIFactory.card_label(character.display_name, 13, Color("fff8dc"), HORIZONTAL_ALIGNMENT_CENTER)
 	label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
 	label.position = Vector2(-50, -22)
 	label.custom_minimum_size = Vector2(100, 20)
 	label.size = Vector2(100, 20)
 	button.add_child(label)
-	_ignore_child_mouse(button)
+	UIFactory.ignore_child_mouse(button)
 	return button
 
 func _character_poem(character_id: String) -> Array[String]:
@@ -425,7 +507,7 @@ func _vertical_poem_line(text: String) -> Control:
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
 	column.add_theme_constant_override("separation", 8)
 	for character: String in text:
-		var glyph: Label = _card_label(character, 24, Color("c98b42"), HORIZONTAL_ALIGNMENT_CENTER)
+		var glyph: Label = UIFactory.card_label(character, 24, Color("c98b42"), HORIZONTAL_ALIGNMENT_CENTER)
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		glyph.custom_minimum_size = Vector2(28, 34)
 		glyph.add_theme_color_override("font_outline_color", Color("f5dfb0", 0.32))
@@ -446,21 +528,21 @@ func show_progress_screen() -> void:
 	SaveManager.save(run_state)
 	_set_background("res://assets/art/map_bg.png")
 	_clear_root()
-	var panel: PanelContainer = _make_panel()
+	var panel: PanelContainer = UIFactory.make_panel()
 	root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_theme_constant_override("separation", 14)
 	panel.add_child(box)
 	box.add_child(_title("第 %d / %d 層" % [run_state.encounter_index + 1, run_state.encounter_choices.size()], 34))
-	box.add_child(_paragraph("%s  HP %d/%d  銅錢 %d  牌組 %d 張  本輪增傷 +%d" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, run_state.deck.size(), run_state.power_bonus]))
-	box.add_child(_paragraph("選擇亮起的節點前進；灰色節點代表目前路線無法抵達。"))
-	box.add_child(_paragraph(_passive_text()))
+	box.add_child(UIFactory.paragraph("%s  HP %d/%d  銅錢 %d  牌組 %d 張  本輪增傷 +%d" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, run_state.deck.size(), run_state.power_bonus]))
+	box.add_child(UIFactory.paragraph("選擇亮起的節點前進；灰色節點代表目前路線無法抵達。"))
+	box.add_child(UIFactory.paragraph(_passive_text()))
 	if not run_state.relics.is_empty():
 		var relic_names: Array[String] = []
 		for r: RelicData in run_state.relics:
 			relic_names.append(r.display_name)
-		box.add_child(_paragraph("裝備：%s" % "、".join(relic_names)))
+		box.add_child(UIFactory.paragraph("裝備：%s" % "、".join(relic_names)))
 	box.add_child(_map_view())
 	var deck_button: Button = _button("查看牌組")
 	deck_button.pressed.connect(show_deck_view)
@@ -473,7 +555,7 @@ func _map_view() -> Control:
 	return _map_view_sts()
 	var map_panel: PanelContainer = PanelContainer.new()
 	map_panel.custom_minimum_size = Vector2(1040, 540)
-	map_panel.add_theme_stylebox_override("panel", _style_box(Color("f4edd8", 0.08), Color("d7c89a", 0.3), 1, 8))
+	map_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("f4edd8", 0.08), Color("d7c89a", 0.3), 1, 8))
 	var map_area: Control = Control.new()
 	map_area.custom_minimum_size = Vector2(1040, 540)
 	map_area.clip_contents = false
@@ -484,7 +566,7 @@ func _map_view() -> Control:
 	map_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	map_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	map_bg.modulate = Color(1, 1, 1, 0.86)
-	map_bg.texture = _load_texture("res://assets/art/map_bg.png")
+	map_bg.texture = UIFactory.load_texture("res://assets/art/map_bg.png")
 	map_area.add_child(map_bg)
 	var line_layer: Control = preload("res://scripts/map_link_layer.gd").new()
 	line_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -499,7 +581,7 @@ func _map_view() -> Control:
 		var column: VBoxContainer = VBoxContainer.new()
 		column.add_theme_constant_override("separation", 8)
 		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var title: Label = _card_label("第 %d 層" % (row_index + 1), 15, Color("f7df9c"), HORIZONTAL_ALIGNMENT_CENTER)
+		var title: Label = UIFactory.card_label("第 %d 層" % (row_index + 1), 15, Color("f7df9c"), HORIZONTAL_ALIGNMENT_CENTER)
 		column.add_child(title)
 		var row: Array = run_state.encounter_choices[row_index]
 		for node_variant: Variant in row:
@@ -509,7 +591,7 @@ func _map_view() -> Control:
 			node_buttons.append({"button": node_button, "row": row_index, "index": int(node_data.get("index", 0))})
 		map_row.add_child(column)
 		if row_index < run_state.encounter_choices.size() - 1:
-			var path_hint: Label = _card_label("", 24, Color("c8b46f"), HORIZONTAL_ALIGNMENT_CENTER)
+			var path_hint: Label = UIFactory.card_label("", 24, Color("c8b46f"), HORIZONTAL_ALIGNMENT_CENTER)
 			path_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 			path_hint.custom_minimum_size = Vector2(22, 180)
 			map_row.add_child(path_hint)
@@ -520,7 +602,7 @@ func _map_view() -> Control:
 func _map_view_sts() -> Control:
 	var map_panel: PanelContainer = PanelContainer.new()
 	map_panel.custom_minimum_size = Vector2(1040, 580)
-	map_panel.add_theme_stylebox_override("panel", _style_box(Color("f4edd8", 0.04), Color("d7c89a", 0.18), 1, 8))
+	map_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("f4edd8", 0.04), Color("d7c89a", 0.18), 1, 8))
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(1040, 580)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -540,7 +622,7 @@ func _map_view_sts() -> Control:
 	map_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	map_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	map_bg.modulate = Color(1.06, 1.03, 0.98, 0.92)
-	map_bg.texture = _load_texture("res://assets/art/map_bg.png")
+	map_bg.texture = UIFactory.load_texture("res://assets/art/map_bg.png")
 	map_area.add_child(map_bg)
 	var line_layer: Control = preload("res://scripts/map_link_layer.gd").new()
 	line_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -659,13 +741,13 @@ func _map_node_button(node_data: Dictionary, row_index: int) -> Button:
 	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_style_map_node_button(button, node_data, selected, selectable)
 	if selected:
-		button.add_theme_stylebox_override("disabled", _style_box(Color("214130", 0.3), Color("f5f1d6"), 2, 28))
+		button.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("214130", 0.3), Color("f5f1d6"), 2, 28))
 		button.add_theme_color_override("font_disabled_color", Color("25313b"))
 	elif row_index < run_state.encounter_index:
-		button.add_theme_stylebox_override("disabled", _style_box(Color("5f6570", 0.16), Color("5f6570", 0.4), 1, 28))
+		button.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("5f6570", 0.16), Color("5f6570", 0.4), 1, 28))
 		button.add_theme_color_override("font_disabled_color", Color("51606d"))
 	elif not selectable:
-		button.add_theme_stylebox_override("disabled", _style_box(Color("5f6570", 0.1), Color("5f6570", 0.28), 1, 28))
+		button.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("5f6570", 0.1), Color("5f6570", 0.28), 1, 28))
 		button.add_theme_color_override("font_disabled_color", Color("697785"))
 	var node_type: String = String(node_data.get("type", "battle"))
 	if node_type == "boss":
@@ -674,9 +756,9 @@ func _map_node_button(node_data: Dictionary, row_index: int) -> Button:
 	return button
 
 func _style_map_node_button(button: Button, node_data: Dictionary, selected: bool, selectable: bool) -> void:
-	button.add_theme_stylebox_override("normal", _style_box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, 28))
-	button.add_theme_stylebox_override("hover", _style_box(Color("f4edd8", 0.08), Color("25313b", 0.24), 1, 28))
-	button.add_theme_stylebox_override("pressed", _style_box(Color("f4edd8", 0.12), Color("f5f1d6"), 1, 28))
+	button.add_theme_stylebox_override("normal", UIFactory.style_box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, 28))
+	button.add_theme_stylebox_override("hover", UIFactory.style_box(Color("f4edd8", 0.08), Color("25313b", 0.24), 1, 28))
+	button.add_theme_stylebox_override("pressed", UIFactory.style_box(Color("f4edd8", 0.12), Color("f5f1d6"), 1, 28))
 	button.add_theme_font_size_override("font_size", 12)
 	button.add_theme_constant_override("v_separation", 0)
 	button.add_theme_color_override("font_color", Color("25313b", 0.55))
@@ -841,16 +923,16 @@ func _build_player_widget(parent: HBoxContainer) -> void:
 	col.alignment = BoxContainer.ALIGNMENT_END
 	col.add_theme_constant_override("separation", 4)
 	parent.add_child(col)
-	player_feedback_label = _feedback_label()
+	player_feedback_label = UIFactory.feedback_label()
 	col.add_child(player_feedback_label)
 	col.add_child(_portrait_with_block_badge(selected_character.portrait_path, Vector2(220, 230), true, true))
-	player_name_label = _card_label(selected_character.display_name, 18, Color("fff8dc"), HORIZONTAL_ALIGNMENT_CENTER)
+	player_name_label = UIFactory.card_label(selected_character.display_name, 18, Color("fff8dc"), HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(player_name_label)
-	player_hp_bar = _hp_bar(Color("c84a3a"), Color("3a1a1a"))
+	player_hp_bar = UIFactory.hp_bar(Color("c84a3a"), Color("3a1a1a"))
 	col.add_child(player_hp_bar)
-	player_hp_value = _card_label("", 13, Color("fff8dc"), HORIZONTAL_ALIGNMENT_CENTER)
+	player_hp_value = UIFactory.card_label("", 13, Color("fff8dc"), HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(player_hp_value)
-	player_status_line = _card_label("", 13, Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
+	player_status_line = UIFactory.card_label("", 13, Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
 	player_status_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(player_status_line)
 
@@ -868,16 +950,16 @@ func _build_enemy_widget(parent: HBoxContainer) -> void:
 	enemy_label.add_theme_font_size_override("font_size", 16)
 	enemy_label.add_theme_color_override("font_color", Color("f7df9c"))
 	col.add_child(enemy_label)
-	enemy_feedback_label = _feedback_label()
+	enemy_feedback_label = UIFactory.feedback_label()
 	col.add_child(enemy_feedback_label)
 	col.add_child(_portrait_with_block_badge(battle.enemy.portrait_path, Vector2(230, 230), true, false, battle.enemy.portrait_tint))
-	enemy_name_label = _card_label(battle.enemy.display_name, 18, Color("ffd9a3"), HORIZONTAL_ALIGNMENT_CENTER)
+	enemy_name_label = UIFactory.card_label(battle.enemy.display_name, 18, Color("ffd9a3"), HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(enemy_name_label)
-	enemy_hp_bar = _hp_bar(Color("c84a3a"), Color("3a1a1a"))
+	enemy_hp_bar = UIFactory.hp_bar(Color("c84a3a"), Color("3a1a1a"))
 	col.add_child(enemy_hp_bar)
-	enemy_hp_value = _card_label("", 13, Color("fff8dc"), HORIZONTAL_ALIGNMENT_CENTER)
+	enemy_hp_value = UIFactory.card_label("", 13, Color("fff8dc"), HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(enemy_hp_value)
-	enemy_status_line = _card_label("", 13, Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
+	enemy_status_line = UIFactory.card_label("", 13, Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
 	enemy_status_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(enemy_status_line)
 
@@ -918,17 +1000,17 @@ func _build_right_dock(parent: HBoxContainer) -> void:
 	end_turn_button.add_theme_font_size_override("font_size", 20)
 	end_turn_button.add_theme_color_override("font_color", Color("fff5cf"))
 	end_turn_button.add_theme_color_override("font_hover_color", Color("ffffff"))
-	end_turn_button.add_theme_stylebox_override("normal", _style_box(Color("8a3a2e"), Color("f4d985"), 3, 12))
-	end_turn_button.add_theme_stylebox_override("hover", _style_box(Color("a44a36"), Color("ffeab0"), 4, 12))
-	end_turn_button.add_theme_stylebox_override("pressed", _style_box(Color("662a22"), Color("c8b46f"), 3, 12))
-	end_turn_button.add_theme_stylebox_override("disabled", _style_box(Color("4a3530"), Color("786258"), 2, 12))
+	end_turn_button.add_theme_stylebox_override("normal", UIFactory.style_box(Color("8a3a2e"), Color("f4d985"), 3, 12))
+	end_turn_button.add_theme_stylebox_override("hover", UIFactory.style_box(Color("a44a36"), Color("ffeab0"), 4, 12))
+	end_turn_button.add_theme_stylebox_override("pressed", UIFactory.style_box(Color("662a22"), Color("c8b46f"), 3, 12))
+	end_turn_button.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("4a3530"), Color("786258"), 2, 12))
 	end_turn_button.pressed.connect(end_player_turn)
 	dock.add_child(end_turn_button)
 
 func _portrait_with_block_badge(path: String, portrait_size: Vector2, show_full: bool, is_player: bool, tint: Color = Color.WHITE) -> Control:
 	var wrap: Control = Control.new()
 	wrap.custom_minimum_size = portrait_size
-	var portrait: TextureRect = _portrait_rect(path, portrait_size, show_full)
+	var portrait: TextureRect = UIFactory.portrait_rect(path, portrait_size, show_full)
 	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	portrait.modulate = tint
 	wrap.add_child(portrait)
@@ -976,19 +1058,6 @@ func _try_random_relic_drop(rarity_chance: float = 0.25) -> RelicData:
 		return null
 	return pool[randi() % pool.size()].clone()
 
-func _hp_bar(fill_color: Color, bg_color: Color) -> ProgressBar:
-	var bar: ProgressBar = ProgressBar.new()
-	bar.custom_minimum_size = Vector2(0, 18)
-	bar.show_percentage = false
-	bar.min_value = 0
-	bar.max_value = 1
-	bar.value = 1
-	var bg: StyleBoxFlat = _style_box(bg_color, Color("1a1a1f"), 1, 4)
-	var fill: StyleBoxFlat = _style_box(fill_color, fill_color.lightened(0.25), 0, 4)
-	bar.add_theme_stylebox_override("background", bg)
-	bar.add_theme_stylebox_override("fill", fill)
-	return bar
-
 func _start_player_turn() -> void:
 	var result: Dictionary = battle.start_turn()
 	_show_state_feedback(result["before_tick"])
@@ -1023,7 +1092,7 @@ func end_player_turn() -> void:
 	_refresh_battle()
 	await get_tree().create_timer(0.8).timeout
 	if _action_has_damage(action):
-		_dash_node(enemy_portrait_wrap, Vector2(-1, 0), 36.0, 0.22)
+		UIFactory.dash_node(enemy_portrait_wrap, Vector2(-1, 0), 36.0, 0.22)
 		await get_tree().create_timer(0.1).timeout
 	var result: Dictionary = battle.resolve_enemy_phase(action)
 	_show_state_feedback(result["before_enemy"])
@@ -1140,15 +1209,15 @@ func _complete_battle_victory() -> void:
 func show_card_reward() -> void:
 	_set_background("res://assets/art/event_bg.png")
 	_clear_root()
-	var panel: PanelContainer = _make_panel()
+	var panel: PanelContainer = UIFactory.make_panel()
 	root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_theme_constant_override("separation", 14)
 	panel.add_child(box)
 	box.add_child(_title("戰鬥勝利", 34))
-	box.add_child(_paragraph("%s 擊敗了 %s。選擇 1 張卡加入牌組。" % [selected_character.display_name, battle.enemy.display_name]))
-	box.add_child(_paragraph("目前 HP %d/%d，銅錢 %d，牌組 %d 張。" % [run_state.hp, selected_character.max_hp, run_state.gold, run_state.deck.size()]))
+	box.add_child(UIFactory.paragraph("%s 擊敗了 %s。選擇 1 張卡加入牌組。" % [selected_character.display_name, battle.enemy.display_name]))
+	box.add_child(UIFactory.paragraph("目前 HP %d/%d，銅錢 %d，牌組 %d 張。" % [run_state.hp, selected_character.max_hp, run_state.gold, run_state.deck.size()]))
 	var rewards: Array[CardData] = _make_reward_choices()
 	var reward_row: HBoxContainer = HBoxContainer.new()
 	reward_row.add_theme_constant_override("separation", 12)
@@ -1263,25 +1332,25 @@ func _route_enemy_button(enemy: EnemyData, is_boss: bool = false) -> Button:
 	var icon_color: Color = Color("f8d29c") if is_boss else Color("e2c486")
 	var button: Button = _build_route_button(text, icon_type, icon_color)
 	var bg_color: Color = Color("452a35") if is_boss else Color("273449")
-	button.add_theme_stylebox_override("normal", _style_box(bg_color, Color("c8b46f"), 2, 8))
-	button.add_theme_stylebox_override("hover", _style_box(bg_color.lightened(0.14), Color("f7df9c"), 3, 8))
-	button.add_theme_stylebox_override("pressed", _style_box(Color("1d2838"), Color("e4c66a"), 2, 8))
+	button.add_theme_stylebox_override("normal", UIFactory.style_box(bg_color, Color("c8b46f"), 2, 8))
+	button.add_theme_stylebox_override("hover", UIFactory.style_box(bg_color.lightened(0.14), Color("f7df9c"), 3, 8))
+	button.add_theme_stylebox_override("pressed", UIFactory.style_box(Color("1d2838"), Color("e4c66a"), 2, 8))
 	return button
 
 func _route_rest_button() -> Button:
 	var heal_amount: int = EventData.rest_heal_for(selected_character.max_hp)
 	var text: String = "休息\n回復 %d HP\n或升級 1 張牌" % heal_amount
 	var button: Button = _build_route_button(text, "rest", Color("f4a13a"), Color("f4ffe9"))
-	button.add_theme_stylebox_override("normal", _style_box(Color("2f5f4a"), Color("c8e6c9"), 2, 8))
-	button.add_theme_stylebox_override("hover", _style_box(Color("3d755d"), Color("eef9df"), 3, 8))
-	button.add_theme_stylebox_override("pressed", _style_box(Color("244736"), Color("d8f0c4"), 2, 8))
+	button.add_theme_stylebox_override("normal", UIFactory.style_box(Color("2f5f4a"), Color("c8e6c9"), 2, 8))
+	button.add_theme_stylebox_override("hover", UIFactory.style_box(Color("3d755d"), Color("eef9df"), 3, 8))
+	button.add_theme_stylebox_override("pressed", UIFactory.style_box(Color("244736"), Color("d8f0c4"), 2, 8))
 	return button
 
 func _route_event_button() -> Button:
 	var button: Button = _build_route_button("奇遇\n山路異光\n選擇一項機緣", "event", Color("e2cdff"))
-	button.add_theme_stylebox_override("normal", _style_box(Color("4f3f73"), Color("d9c2ff"), 2, 8))
-	button.add_theme_stylebox_override("hover", _style_box(Color("66508f"), Color("efe2ff"), 3, 8))
-	button.add_theme_stylebox_override("pressed", _style_box(Color("382d55"), Color("d9c2ff"), 2, 8))
+	button.add_theme_stylebox_override("normal", UIFactory.style_box(Color("4f3f73"), Color("d9c2ff"), 2, 8))
+	button.add_theme_stylebox_override("hover", UIFactory.style_box(Color("66508f"), Color("efe2ff"), 3, 8))
+	button.add_theme_stylebox_override("pressed", UIFactory.style_box(Color("382d55"), Color("d9c2ff"), 2, 8))
 	return button
 
 func _route_shop_button(is_black_shop: bool) -> Button:
@@ -1293,9 +1362,9 @@ func _route_shop_button(is_black_shop: bool) -> Button:
 	var button: Button = _build_route_button(text, icon_type, icon_color)
 	var bg_color: Color = Color("2d2036") if is_black_shop else Color("5b4a2f")
 	var border_color: Color = Color("e2a86b") if is_black_shop else Color("e4c66a")
-	button.add_theme_stylebox_override("normal", _style_box(bg_color, border_color, 2, 8))
-	button.add_theme_stylebox_override("hover", _style_box(bg_color.lightened(0.14), Color("f7df9c"), 3, 8))
-	button.add_theme_stylebox_override("pressed", _style_box(bg_color.darkened(0.12), Color("d2b96b"), 2, 8))
+	button.add_theme_stylebox_override("normal", UIFactory.style_box(bg_color, border_color, 2, 8))
+	button.add_theme_stylebox_override("hover", UIFactory.style_box(bg_color.lightened(0.14), Color("f7df9c"), 3, 8))
+	button.add_theme_stylebox_override("pressed", UIFactory.style_box(bg_color.darkened(0.12), Color("d2b96b"), 2, 8))
 	return button
 
 func _enemy_route_summary(enemy: EnemyData) -> String:
@@ -1314,15 +1383,15 @@ func resolve_rest_node() -> void:
 func show_rest_node() -> void:
 	_set_background("res://assets/art/event_bg.png")
 	_clear_root()
-	var panel: PanelContainer = _make_panel()
+	var panel: PanelContainer = UIFactory.make_panel()
 	root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_theme_constant_override("separation", 14)
 	panel.add_child(box)
 	box.add_child(_title("清修片刻", 34))
-	box.add_child(_paragraph("溪聲入耳，山風洗塵。你可以調息療傷，也可以靜心打磨一式招法。"))
-	box.add_child(_paragraph("%s  HP %d/%d  銅錢 %d  可升級 %d 張牌" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, _upgradeable_cards().size()]))
+	box.add_child(UIFactory.paragraph("溪聲入耳，山風洗塵。你可以調息療傷，也可以靜心打磨一式招法。"))
+	box.add_child(UIFactory.paragraph("%s  HP %d/%d  銅錢 %d  可升級 %d 張牌" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, _upgradeable_cards().size()]))
 	var heal_button: Button = _button("調息：回復 %d HP" % run_state.pending_rest_heal)
 	heal_button.pressed.connect(resolve_rest_heal)
 	box.add_child(heal_button)
@@ -1350,7 +1419,7 @@ func resolve_rest_heal() -> void:
 func show_event_node() -> void:
 	_set_background("res://assets/art/event_bg.png")
 	_clear_root()
-	var panel: PanelContainer = _make_panel()
+	var panel: PanelContainer = UIFactory.make_panel()
 	root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -1358,8 +1427,8 @@ func show_event_node() -> void:
 	panel.add_child(box)
 	var event_data: Dictionary = EventData.for_variant(run_state.current_event_variant)
 	box.add_child(_title(String(event_data["title"]), 34))
-	box.add_child(_paragraph(String(event_data["flavor"])))
-	box.add_child(_paragraph("%s  HP %d/%d  銅錢 %d  本輪增傷 +%d" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, run_state.power_bonus]))
+	box.add_child(UIFactory.paragraph(String(event_data["flavor"])))
+	box.add_child(UIFactory.paragraph("%s  HP %d/%d  銅錢 %d  本輪增傷 +%d" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, run_state.power_bonus]))
 	var heal_amount: int = int(event_data["heal"])
 	var gain_cost: int = int(event_data["gain_cost"])
 	var power_gain: int = int(event_data["power"])
@@ -1415,7 +1484,7 @@ func open_shop_node(is_black_shop: bool) -> void:
 func show_shop_node() -> void:
 	_set_background("res://assets/art/event_bg.png")
 	_clear_root()
-	var panel: PanelContainer = _make_panel()
+	var panel: PanelContainer = UIFactory.make_panel()
 	root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -1424,8 +1493,8 @@ func show_shop_node() -> void:
 	var title_text: String = "夜路黑店" if run_state.current_shop_is_black else "山道商店"
 	var flavor_text: String = "簾後藏著來路不明的珍品，價格狠，成色也狠。" if run_state.current_shop_is_black else "行商在山道旁支起小攤，貨色普通但價格公道。"
 	box.add_child(_title(title_text, 34))
-	box.add_child(_paragraph(flavor_text))
-	box.add_child(_paragraph("%s  HP %d/%d  銅錢 %d  牌組 %d 張" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, run_state.deck.size()]))
+	box.add_child(UIFactory.paragraph(flavor_text))
+	box.add_child(UIFactory.paragraph("%s  HP %d/%d  銅錢 %d  牌組 %d 張" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, run_state.deck.size()]))
 	var goods_row: HBoxContainer = HBoxContainer.new()
 	goods_row.add_theme_constant_override("separation", 12)
 	box.add_child(goods_row)
@@ -1467,7 +1536,7 @@ func _pick_shop_relic_id() -> String:
 
 func _shop_relic_view(relic: RelicData) -> Control:
 	var price: int = _shop_relic_price(relic)
-	var panel: PanelContainer = _make_panel()
+	var panel: PanelContainer = UIFactory.make_panel()
 	panel.custom_minimum_size = Vector2(230, 338)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
@@ -1478,9 +1547,9 @@ func _shop_relic_view(relic: RelicData) -> Control:
 	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	box.add_child(icon)
 	icon.set_relic(relic)
-	box.add_child(_card_label(relic.display_name, 17, Color("fff8dc"), HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(_card_label(relic.description, 12, Color("d8e0ec"), HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(_card_label("價格：%d 銅錢" % price, 14, Color("f7df9c"), HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(UIFactory.card_label(relic.display_name, 17, Color("fff8dc"), HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(UIFactory.card_label(relic.description, 12, Color("d8e0ec"), HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(UIFactory.card_label("價格：%d 銅錢" % price, 14, Color("f7df9c"), HORIZONTAL_ALIGNMENT_CENTER))
 	var can_buy: bool = run_state.gold >= price
 	var buy_button: Button = _button("買下裝備")
 	buy_button.disabled = not can_buy
@@ -1528,7 +1597,7 @@ func _shop_item_view(item: Dictionary) -> Control:
 			for e: Dictionary in (t.get("effects", []) as Array):
 				if String(e.get("kind", "")) == "shop_discount":
 					price = max(5, price - int(e.get("amount", 0)))
-	var panel: PanelContainer = _make_panel()
+	var panel: PanelContainer = UIFactory.make_panel()
 	panel.custom_minimum_size = Vector2(230, 338)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
@@ -1538,7 +1607,7 @@ func _shop_item_view(item: Dictionary) -> Control:
 	card_button.disabled = not can_buy
 	card_button.pressed.connect(func(): buy_shop_card(card, price))
 	box.add_child(card_button)
-	var price_label: Label = _card_label("價格：%d 銅錢" % price, 15, Color("f7df9c"), HORIZONTAL_ALIGNMENT_CENTER)
+	var price_label: Label = UIFactory.card_label("價格：%d 銅錢" % price, 15, Color("f7df9c"), HORIZONTAL_ALIGNMENT_CENTER)
 	box.add_child(price_label)
 	var buy_button: Button = _button("買下")
 	buy_button.disabled = not can_buy
@@ -1611,7 +1680,7 @@ func show_deck_view(mode: String = "view") -> void:
 	deck_view_mode = mode
 	deck_overlay = PanelContainer.new()
 	deck_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	deck_overlay.add_theme_stylebox_override("panel", _style_box(Color("0b111a", 0.94), Color("c8b46f"), 2, 8))
+	deck_overlay.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.94), Color("c8b46f"), 2, 8))
 	add_child(deck_overlay)
 	var outer: MarginContainer = MarginContainer.new()
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -1629,13 +1698,13 @@ func show_deck_view(mode: String = "view") -> void:
 	elif deck_view_mode == "upgrade":
 		title_text = "選擇要升級的牌"
 	box.add_child(_title(title_text, 32))
-	box.add_child(_paragraph("%s  HP %d/%d  銅錢 %d  共 %d 張牌" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, run_state.deck.size()]))
-	var summary: Label = _paragraph(_deck_summary_text())
+	box.add_child(UIFactory.paragraph("%s  HP %d/%d  銅錢 %d  共 %d 張牌" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, run_state.deck.size()]))
+	var summary: Label = UIFactory.paragraph(_deck_summary_text())
 	box.add_child(summary)
 	if deck_view_mode == "remove":
-		box.add_child(_paragraph("至少保留 5 張牌。點選一張牌後會移除並完成事件。"))
+		box.add_child(UIFactory.paragraph("至少保留 5 張牌。點選一張牌後會移除並完成事件。"))
 	elif deck_view_mode == "upgrade":
-		box.add_child(_paragraph("點選一張未升級的牌，升級後會完成此節點。"))
+		box.add_child(UIFactory.paragraph("點選一張未升級的牌，升級後會完成此節點。"))
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(scroll)
@@ -1696,7 +1765,7 @@ func _deck_view_card(card: CardData, mode: String = "view") -> Button:
 	elif mode == "upgrade" and not card.upgraded:
 		button.pressed.connect(func(): upgrade_card_in_deck(card))
 	else:
-		button.add_theme_stylebox_override("disabled", _style_box(_card_color(card.card_type, true), Color("e7d38a"), 2, 8))
+		button.add_theme_stylebox_override("disabled", UIFactory.style_box(_card_color(card.card_type, true), Color("e7d38a"), 2, 8))
 		button.add_theme_color_override("font_disabled_color", Color("fff8dc"))
 	return button
 
@@ -1704,7 +1773,7 @@ func show_result(victory: bool) -> void:
 	SaveManager.clear()
 	_set_background("res://assets/art/event_bg.png")
 	_clear_root()
-	var panel: PanelContainer = _make_panel()
+	var panel: PanelContainer = UIFactory.make_panel()
 	root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -1712,10 +1781,10 @@ func show_result(victory: bool) -> void:
 	panel.add_child(box)
 	if victory:
 		box.add_child(_title("小型冒險完成", 34))
-		box.add_child(_paragraph("%s 完成了 %d 層路線，最終 HP %d/%d，剩餘銅錢 %d。" % [selected_character.display_name, run_state.encounter_choices.size(), run_state.hp, selected_character.max_hp, run_state.gold]))
+		box.add_child(UIFactory.paragraph("%s 完成了 %d 層路線，最終 HP %d/%d，剩餘銅錢 %d。" % [selected_character.display_name, run_state.encounter_choices.size(), run_state.hp, selected_character.max_hp, run_state.gold]))
 	else:
 		box.add_child(_title("戰鬥失敗", 34))
-		box.add_child(_paragraph("%s 敗於 %s。調整出牌節奏再試一次。" % [selected_character.display_name, battle.enemy.display_name]))
+		box.add_child(UIFactory.paragraph("%s 敗於 %s。調整出牌節奏再試一次。" % [selected_character.display_name, battle.enemy.display_name]))
 	var retry: Button = _button("重新開始此角色")
 	retry.pressed.connect(func(): start_run(selected_character))
 	box.add_child(retry)
@@ -1735,10 +1804,10 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 	status_label.text = "    ".join(top_parts)
 	_refresh_combatant_hp(player_hp_bar, player_hp_value, int(battle.state["player_hp"]), int(battle.state["player_max_hp"]))
 	player_block_badge.set_amount(int(battle.state["player_block"]))
-	player_status_line.text = _status_summary(int(battle.state["player_poison"]), int(battle.state["player_weak"]), int(battle.state["player_vulnerable"]))
+	player_status_line.text = UIFactory.status_summary(int(battle.state["player_poison"]), int(battle.state["player_weak"]), int(battle.state["player_vulnerable"]))
 	_refresh_combatant_hp(enemy_hp_bar, enemy_hp_value, int(battle.state["enemy_hp"]), int(battle.state["enemy_max_hp"]))
 	enemy_block_badge.set_amount(int(battle.state["enemy_block"]))
-	enemy_status_line.text = _status_summary(int(battle.state["enemy_poison"]), int(battle.state["enemy_weak"]), int(battle.state["enemy_vulnerable"]))
+	enemy_status_line.text = UIFactory.status_summary(int(battle.state["enemy_poison"]), int(battle.state["enemy_weak"]), int(battle.state["enemy_vulnerable"]))
 	var next_action: Dictionary = battle.next_enemy_action()
 	enemy_label.text = "%s  下一步\n%s" % [_intent_badge(next_action), String(next_action["intent"])]
 	energy_orb.set_energy(int(battle.state["energy"]), BattleController.TURN_ENERGY)
@@ -1756,18 +1825,6 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 func _refresh_combatant_hp(bar: ProgressBar, value_label: Label, hp: int, max_hp: int) -> void:
 	bar.value = 0.0 if max_hp <= 0 else float(hp) / float(max_hp)
 	value_label.text = "%d / %d" % [hp, max_hp]
-
-func _status_summary(poison: int, weak: int, vulnerable: int) -> String:
-	var parts: Array[String] = []
-	if poison > 0:
-		parts.append("蠱毒 %d" % poison)
-	if weak > 0:
-		parts.append("虛弱 %d" % weak)
-	if vulnerable > 0:
-		parts.append("破綻 %d" % vulnerable)
-	if parts.is_empty():
-		return ""
-	return "   ".join(parts)
 
 func _card_button(card: CardData) -> Button:
 	var affordable: bool = int(battle.state["energy"]) >= battle.effective_card_cost(card)
@@ -1797,11 +1854,11 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	outer.add_child(box)
 	var type_bar: PanelContainer = PanelContainer.new()
 	type_bar.custom_minimum_size = Vector2(0, 5)
-	type_bar.add_theme_stylebox_override("panel", _strip_box(_card_color(card.card_type, true).lightened(0.16), 3))
+	type_bar.add_theme_stylebox_override("panel", UIFactory.strip_box(_card_color(card.card_type, true).lightened(0.16), 3))
 	box.add_child(type_bar)
 	var art_frame: PanelContainer = PanelContainer.new()
 	art_frame.custom_minimum_size = Vector2(size.x - 22, max(104.0, size.y * 0.5))
-	art_frame.add_theme_stylebox_override("panel", _style_box(Color("0b111a", 0.42), _card_rarity_color(card), 1, 6))
+	art_frame.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.42), _card_rarity_color(card), 1, 6))
 	box.add_child(art_frame)
 	var art_layer: Control = Control.new()
 	art_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -1812,7 +1869,7 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var texture: Texture2D = _load_texture(card.art_path)
+	var texture: Texture2D = UIFactory.load_texture(card.art_path)
 	if texture != null:
 		art.texture = texture
 	if not affordable or not selectable:
@@ -1825,17 +1882,17 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	title_back.offset_right = 0
 	title_back.offset_bottom = 0
 	title_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	title_back.add_theme_stylebox_override("panel", _style_box(Color(0.04, 0.06, 0.1, 0.78), Color(0, 0, 0, 0), 0, 6))
+	title_back.add_theme_stylebox_override("panel", UIFactory.style_box(Color(0.04, 0.06, 0.1, 0.78), Color(0, 0, 0, 0), 0, 6))
 	art_layer.add_child(title_back)
 	var title_row: HBoxContainer = HBoxContainer.new()
 	title_row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	title_row.add_theme_constant_override("separation", 4)
 	title_back.add_child(title_row)
-	var title: Label = _card_label(card.display_title(), 14, Color("fff8dc"), HORIZONTAL_ALIGNMENT_LEFT)
+	var title: Label = UIFactory.card_label(card.display_title(), 14, Color("fff8dc"), HORIZONTAL_ALIGNMENT_LEFT)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title_row.add_child(title)
-	var rarity_badge: Label = _card_label(_card_rarity_name(card), 11, _card_rarity_color(card), HORIZONTAL_ALIGNMENT_RIGHT)
+	var rarity_badge: Label = UIFactory.card_label(_card_rarity_name(card), 11, _card_rarity_color(card), HORIZONTAL_ALIGNMENT_RIGHT)
 	rarity_badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title_row.add_child(rarity_badge)
 	var cost_badge: PanelContainer = PanelContainer.new()
@@ -1845,35 +1902,20 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	cost_badge.offset_right = -2
 	cost_badge.offset_bottom = 38
 	cost_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	cost_badge.add_theme_stylebox_override("panel", _style_box(Color("161d2a", 0.94), Color("f4d985"), 1, 6))
+	cost_badge.add_theme_stylebox_override("panel", UIFactory.style_box(Color("161d2a", 0.94), Color("f4d985"), 1, 6))
 	art_layer.add_child(cost_badge)
-	var cost_label: Label = _card_label(str(cost), 15, Color("f7df9c"), HORIZONTAL_ALIGNMENT_CENTER)
+	var cost_label: Label = UIFactory.card_label(str(cost), 15, Color("f7df9c"), HORIZONTAL_ALIGNMENT_CENTER)
 	cost_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cost_badge.add_child(cost_label)
-	var type_line: Label = _card_label(_card_type_name(card.card_type), 12, Color("f7df9c"), HORIZONTAL_ALIGNMENT_CENTER)
+	var type_line: Label = UIFactory.card_label(_card_type_name(card.card_type), 12, Color("f7df9c"), HORIZONTAL_ALIGNMENT_CENTER)
 	box.add_child(type_line)
-	var desc: Label = _card_label(card.display_description(), 12, Color("e8edf3"), HORIZONTAL_ALIGNMENT_LEFT)
+	var desc: Label = UIFactory.card_label(card.display_description(), 12, Color("e8edf3"), HORIZONTAL_ALIGNMENT_LEFT)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(desc)
-	_ignore_child_mouse(button)
+	UIFactory.ignore_child_mouse(button)
 	return button
-
-func _card_label(text: String, size: int, color: Color, alignment: HorizontalAlignment) -> Label:
-	var label: Label = Label.new()
-	label.text = text
-	label.horizontal_alignment = alignment
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_font_size_override("font_size", size)
-	label.add_theme_color_override("font_color", color)
-	return label
-
-func _ignore_child_mouse(node: Node) -> void:
-	for child: Node in node.get_children():
-		if child is Control:
-			(child as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_ignore_child_mouse(child)
 
 func _detach_card_button(button: Button) -> void:
 	var global_pos: Vector2 = button.global_position
@@ -1888,7 +1930,7 @@ func _detach_card_button(button: Button) -> void:
 	button.scale = preserved_scale
 	button.disabled = true
 	button.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ignore_child_mouse(button)
+	UIFactory.ignore_child_mouse(button)
 	animating_cards.append(button)
 
 func _animate_played_card(button: Button, card: CardData) -> void:
@@ -1906,34 +1948,6 @@ func _animate_played_card(button: Button, card: CardData) -> void:
 		animating_cards.erase(button)
 		if is_instance_valid(button):
 			button.queue_free())
-
-func _shake_node(node: Control, intensity: float = 8.0, duration: float = 0.25) -> void:
-	if node == null:
-		return
-	var orig_pos: Vector2 = node.position
-	var steps: int = 5
-	var step_duration: float = duration / float(steps + 1)
-	var tween: Tween = create_tween()
-	for i: int in range(steps):
-		var offset: Vector2 = Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity))
-		tween.tween_property(node, "position", orig_pos + offset, step_duration).set_trans(Tween.TRANS_SINE)
-	tween.tween_property(node, "position", orig_pos, step_duration)
-
-func _dash_node(node: Control, direction: Vector2, distance: float = 36.0, duration: float = 0.24) -> void:
-	if node == null:
-		return
-	var orig_pos: Vector2 = node.position
-	var tween: Tween = create_tween()
-	tween.tween_property(node, "position", orig_pos + direction.normalized() * distance, duration * 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(node, "position", orig_pos, duration * 0.55).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-
-func _flash_node(node: Control, color: Color = Color(1.4, 1.4, 1.6), duration: float = 0.22) -> void:
-	if node == null:
-		return
-	var orig_mod: Color = node.modulate
-	var tween: Tween = create_tween()
-	tween.tween_property(node, "modulate", color, duration * 0.35)
-	tween.tween_property(node, "modulate", orig_mod, duration * 0.65)
 
 func _animate_hand_discard() -> void:
 	var snapshot: Array[Button] = []
@@ -1999,13 +2013,13 @@ func _show_state_feedback(before: Dictionary) -> void:
 	if not enemy_lines.is_empty():
 		_show_feedback(enemy_feedback_label, enemy_lines, Color("f7df9c"))
 	if player_hp_delta < 0:
-		_shake_node(player_portrait_wrap, 7.0, 0.28)
+		UIFactory.shake_node(player_portrait_wrap, 7.0, 0.28)
 	if enemy_hp_delta < 0:
-		_shake_node(enemy_portrait_wrap, 7.0, 0.28)
+		UIFactory.shake_node(enemy_portrait_wrap, 7.0, 0.28)
 	if player_block_delta > 0:
-		_flash_node(player_portrait_wrap, Color(1.2, 1.35, 1.55), 0.22)
+		UIFactory.flash_node(player_portrait_wrap, Color(1.2, 1.35, 1.55), 0.22)
 	if enemy_block_delta > 0:
-		_flash_node(enemy_portrait_wrap, Color(1.2, 1.35, 1.55), 0.22)
+		UIFactory.flash_node(enemy_portrait_wrap, Color(1.2, 1.35, 1.55), 0.22)
 
 func _show_feedback(label: Label, lines: Array[String], color: Color) -> void:
 	if label == null:
@@ -2095,10 +2109,10 @@ func _card_rarity_color(card: CardData) -> Color:
 func _style_card_button(button: Button, card: CardData, affordable: bool) -> void:
 	var base_color: Color = _card_color(card.card_type, affordable)
 	var border_color: Color = _card_rarity_color(card)
-	var normal: StyleBoxFlat = _style_box(base_color, border_color, 2, 8)
-	var hover: StyleBoxFlat = _style_box(base_color.lightened(0.12), border_color.lightened(0.18), 3, 8)
-	var pressed: StyleBoxFlat = _style_box(base_color.darkened(0.12), border_color, 2, 8)
-	var disabled: StyleBoxFlat = _style_box(Color("404753"), Color("7a8190"), 1, 8)
+	var normal: StyleBoxFlat = UIFactory.style_box(base_color, border_color, 2, 8)
+	var hover: StyleBoxFlat = UIFactory.style_box(base_color.lightened(0.12), border_color.lightened(0.18), 3, 8)
+	var pressed: StyleBoxFlat = UIFactory.style_box(base_color.darkened(0.12), border_color, 2, 8)
+	var disabled: StyleBoxFlat = UIFactory.style_box(Color("404753"), Color("7a8190"), 1, 8)
 	button.add_theme_stylebox_override("normal", normal)
 	button.add_theme_stylebox_override("hover", hover)
 	button.add_theme_stylebox_override("pressed", pressed)
@@ -2109,128 +2123,13 @@ func _style_card_button(button: Button, card: CardData, affordable: bool) -> voi
 	button.add_theme_color_override("font_disabled_color", Color("b8bec8"))
 	button.add_theme_font_size_override("font_size", 15)
 
-func _style_button(button: Button) -> void:
-	button.add_theme_stylebox_override("normal", _style_box(Color("273449"), Color("8ea3c4"), 1, 6))
-	button.add_theme_stylebox_override("hover", _style_box(Color("33435c"), Color("c3d3ee"), 2, 6))
-	button.add_theme_stylebox_override("pressed", _style_box(Color("1f2a3c"), Color("e4c66a"), 2, 6))
-	button.add_theme_color_override("font_color", Color("edf2f7"))
-	button.add_theme_color_override("font_hover_color", Color("ffffff"))
-	button.add_theme_color_override("font_pressed_color", Color("f7e7a2"))
-
-func _style_box(bg_color: Color, border_color: Color, border_width: int, radius: int) -> StyleBoxFlat:
-	var box: StyleBoxFlat = StyleBoxFlat.new()
-	box.bg_color = bg_color
-	box.border_color = border_color
-	box.set_border_width_all(border_width)
-	box.set_corner_radius_all(radius)
-	box.content_margin_left = 14
-	box.content_margin_right = 14
-	box.content_margin_top = 12
-	box.content_margin_bottom = 12
-	return box
-
-func _strip_box(bg_color: Color, radius: int) -> StyleBoxFlat:
-	var box: StyleBoxFlat = StyleBoxFlat.new()
-	box.bg_color = bg_color
-	box.set_corner_radius_all(radius)
-	return box
-
-func _make_panel() -> PanelContainer:
-	var panel: PanelContainer = PanelContainer.new()
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_theme_stylebox_override("panel", _style_box(Color("18212f", 0.86), Color("536277"), 1, 8))
-	panel.add_theme_constant_override("margin_left", 18)
-	panel.add_theme_constant_override("margin_top", 18)
-	panel.add_theme_constant_override("margin_right", 18)
-	panel.add_theme_constant_override("margin_bottom", 18)
-	return panel
-
 func _title(text: String, size: int) -> Label:
-	var label: Label = Label.new()
-	label.text = text
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_font_size_override("font_size", size)
-	label.add_theme_color_override("font_color", Color("f7df9c"))
-	return label
-
-func _paragraph(text: String) -> Label:
-	var label: Label = Label.new()
-	label.text = text
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_font_size_override("font_size", 17)
-	label.add_theme_color_override("font_color", Color("dbe4ef"))
-	return label
+	return UIFactory.title_label(text, size)
 
 func _button(text: String) -> Button:
 	var button: Button = Button.new()
 	button.text = text
 	button.custom_minimum_size = Vector2(220, 46)
 	button.add_theme_font_size_override("font_size", 18)
-	_style_button(button)
+	UIFactory.style_button(button)
 	return button
-
-func _main_menu_button(text: String, emphasized: bool = false) -> Button:
-	var button: Button = Button.new()
-	button.text = text
-	button.custom_minimum_size = Vector2(0, 58)
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.add_theme_font_size_override("font_size", 20)
-	var base: Color = Color("d3b15c") if emphasized else Color("243246")
-	var hover: Color = Color("ebca74") if emphasized else Color("33455e")
-	var pressed: Color = Color("b38f42") if emphasized else Color("192434")
-	var border: Color = Color("fff1bf") if emphasized else Color("9db4d8")
-	var font_color: Color = Color("1b160d") if emphasized else Color("edf2f7")
-	button.add_theme_stylebox_override("normal", _style_box(base, border, 2, 10))
-	button.add_theme_stylebox_override("hover", _style_box(hover, border.lightened(0.08), 2, 10))
-	button.add_theme_stylebox_override("pressed", _style_box(pressed, border, 2, 10))
-	button.add_theme_color_override("font_color", font_color)
-	button.add_theme_color_override("font_hover_color", font_color)
-	button.add_theme_color_override("font_pressed_color", font_color)
-	return button
-
-func _menu_chip(text: String) -> Control:
-	var chip: PanelContainer = PanelContainer.new()
-	chip.add_theme_stylebox_override("panel", _style_box(Color("f4d985", 0.10), Color("f4d985", 0.34), 1, 999))
-	chip.add_child(_card_label(text, 13, Color("f7e7a2"), HORIZONTAL_ALIGNMENT_CENTER))
-	return chip
-
-func _menu_info_row(label_text: String, value_text: String) -> Control:
-	var panel: PanelContainer = PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _style_box(Color("111926", 0.70), Color("61748f", 0.32), 1, 10))
-	var box: VBoxContainer = VBoxContainer.new()
-	box.add_theme_constant_override("separation", 4)
-	panel.add_child(box)
-	box.add_child(_card_label(label_text, 13, Color("9fb0c8"), HORIZONTAL_ALIGNMENT_LEFT))
-	box.add_child(_card_label(value_text, 16, Color("edf2f7"), HORIZONTAL_ALIGNMENT_LEFT))
-	return panel
-
-func _portrait_rect(path: String, size: Vector2, show_full_image: bool = false) -> TextureRect:
-	var rect: TextureRect = TextureRect.new()
-	rect.custom_minimum_size = size
-	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED if show_full_image else TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var texture: Texture2D = _load_texture(path)
-	if texture != null:
-		rect.texture = texture
-	return rect
-
-func _load_texture(path: String) -> Texture2D:
-	if path.is_empty():
-		return null
-	if not ResourceLoader.exists(path):
-		return null
-	return load(path) as Texture2D
-
-func _feedback_label() -> Label:
-	var label: Label = Label.new()
-	label.custom_minimum_size = Vector2(260, 58)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_font_size_override("font_size", 22)
-	label.add_theme_color_override("font_color", Color("f7df9c"))
-	label.modulate.a = 0.0
-	return label
