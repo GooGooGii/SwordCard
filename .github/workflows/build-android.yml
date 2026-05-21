@@ -60,6 +60,14 @@ jobs:
           echo "JDK=$JDK"
           test -d "$ANDROID_SDK" || { echo "Android SDK not found"; ls / /opt /usr/lib 2>/dev/null; exit 1; }
           test -f "$JDK/bin/javac" || { echo "JDK not found"; exit 1; }
+          yes | sdkmanager --sdk_root="$ANDROID_SDK" --licenses >/dev/null
+          sdkmanager --sdk_root="$ANDROID_SDK" \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.1" \
+            "cmdline-tools;latest" \
+            "cmake;3.10.2.4988404" \
+            "ndk;28.1.13356709"
           # Reuse existing debug.keystore if present, else generate fresh
           if [ ! -f $HOME/debug.keystore ]; then
             keytool -genkey -v \
