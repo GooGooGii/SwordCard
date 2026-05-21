@@ -16,10 +16,13 @@ Current generated backgrounds:
   Used by the battle scene.
 - `event_bg.png`  
   Used by route, rest, event, reward, and result screens.
+- `map_bg_ink.png`  
+  Used by the route map screen.
 
 Target size:
 
 - 1280 x 720
+- Route map: 1280 x 1800
 - PNG
 - No text, no logos, no watermarks
 - Keep central negative space for UI panels
@@ -47,6 +50,11 @@ Suggested paths:
 - `assets/art/enemies/beast.png`
 - `assets/art/enemies/gu_cultist.png`
 - `assets/art/enemies/moon_worshipper.png`
+- `assets/art/enemies/sword_spirit.png`
+- `assets/art/enemies/fox_spirit.png`
+- `assets/art/enemies/serpent_demon.png`
+- `assets/art/enemies/centipede_lord.png`
+- `assets/art/enemies/witch_queen.png`
 
 Target:
 
