@@ -39,6 +39,10 @@ static func apply_runtime() -> void:
 	AudioServer.set_bus_volume_db(0, _to_db(master_volume))
 	AudioServer.set_bus_mute(0, master_volume <= 0.0)
 	# music / sfx buses 之後 D3 加進來時會用到。目前只有 master bus。
+	# 手機平台的全螢幕由 OS + 匯出 immersive_mode 控制，不要在執行階段覆蓋
+	# （否則會把 Android 的 immersive 狀態打回視窗模式，露出狀態列與手勢列）。
+	if OS.has_feature("mobile"):
+		return
 	var mode: int = DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
 	DisplayServer.window_set_mode(mode)
 

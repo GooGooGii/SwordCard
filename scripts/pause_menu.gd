@@ -110,16 +110,17 @@ func _build_settings_panel() -> VBoxContainer:
 	box.add_child(_volume_row("音效", SettingsManager.sfx_volume, func(v: float) -> void:
 		SettingsManager.sfx_volume = v
 		SettingsManager.save_settings()))
-	var fs_check: CheckButton = CheckButton.new()
-	fs_check.text = "全螢幕"
-	fs_check.button_pressed = SettingsManager.fullscreen
-	fs_check.add_theme_font_size_override("font_size", 16)
-	fs_check.add_theme_color_override("font_color", Color("e8e2c8"))
-	fs_check.toggled.connect(func(toggled: bool) -> void:
-		SettingsManager.fullscreen = toggled
-		SettingsManager.apply_runtime()
-		SettingsManager.save_settings())
-	box.add_child(fs_check)
+	if not OS.has_feature("mobile"):
+		var fs_check: CheckButton = CheckButton.new()
+		fs_check.text = "全螢幕"
+		fs_check.button_pressed = SettingsManager.fullscreen
+		fs_check.add_theme_font_size_override("font_size", 16)
+		fs_check.add_theme_color_override("font_color", Color("e8e2c8"))
+		fs_check.toggled.connect(func(toggled: bool) -> void:
+			SettingsManager.fullscreen = toggled
+			SettingsManager.apply_runtime()
+			SettingsManager.save_settings())
+		box.add_child(fs_check)
 	var back: Button = _menu_button("返回")
 	back.pressed.connect(_show_main)
 	box.add_child(back)
