@@ -37,6 +37,7 @@ var card_buttons: Array[Button] = []
 var animating_cards: Array[Button] = []
 var pause_menu: PauseMenu
 var pause_button: Button
+var debug_menu: DebugMenu
 var battle_end_pending: bool = false
 
 const BASE_MARGIN_H: int = 28
@@ -53,6 +54,8 @@ func _ready() -> void:
 	_build_root()
 	_build_pause_menu()
 	_build_pause_button()
+	if not OS.has_feature("mobile"):
+		_build_debug_menu()
 	_apply_safe_area_margins()
 	get_viewport().size_changed.connect(_apply_safe_area_margins)
 	show_main_menu()
@@ -129,8 +132,12 @@ func _apply_safe_area_margins() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and (event as InputEventKey).pressed and not (event as InputEventKey).echo:
-		if (event as InputEventKey).keycode == KEY_ESCAPE:
+		var keycode: int = (event as InputEventKey).keycode
+		if keycode == KEY_ESCAPE:
 			_toggle_pause_menu()
+			get_viewport().set_input_as_handled()
+		elif keycode == KEY_F1:
+			_toggle_debug_menu()
 			get_viewport().set_input_as_handled()
 
 func _toggle_pause_menu() -> void:
@@ -143,6 +150,75 @@ func _toggle_pause_menu() -> void:
 	if run_state == null or run_state.character == null:
 		return
 	pause_menu.open()
+
+func _build_debug_menu() -> void:
+	debug_menu = DebugMenu.new()
+	add_child(debug_menu)
+	debug_menu.gold_bonus_requested.connect(_dbg_gold_bonus)
+	debug_menu.full_heal_requested.connect(_dbg_full_heal)
+	debug_menu.add_card_requested.connect(_dbg_add_card)
+	debug_menu.add_relic_requested.connect(_dbg_add_relic)
+	debug_menu.jump_to_boss_requested.connect(_dbg_jump_to_boss)
+	debug_menu.close_requested.connect(func() -> void: debug_menu.visible = false)
+
+func _toggle_debug_menu() -> void:
+	if debug_menu == null:
+		return
+	if run_state == null or run_state.character == null:
+		debug_menu.visible = false
+		return
+	debug_menu.toggle()
+
+func _dbg_gold_bonus() -> void:
+	if run_state == null:
+		return
+	run_state.gold += 100
+	print("[DEBUG] +100 gold (total %d)" % run_state.gold)
+
+func _dbg_full_heal() -> void:
+	if run_state == null:
+		return
+	run_state.hp = run_state.max_hp
+	if battle != null and not battle_end_pending:
+		battle.state["player_hp"] = run_state.max_hp
+		_refresh_battle()
+	print("[DEBUG] full heal: %d/%d" % [run_state.hp, run_state.max_hp])
+
+func _dbg_add_card() -> void:
+	if run_state == null or selected_character == null:
+		return
+	if selected_character.reward_pool.is_empty():
+		print("[DEBUG] reward_pool empty, nothing to add")
+		return
+	var card: CardData = selected_character.reward_pool[randi() % selected_character.reward_pool.size()]
+	run_state.deck.append(card.clone())
+	print("[DEBUG] added card: %s (deck size %d)" % [card.display_title(), run_state.deck.size()])
+
+func _dbg_add_relic() -> void:
+	if run_state == null:
+		return
+	var pool: Array[RelicData] = []
+	for r: RelicData in RelicCatalog.all():
+		if r.slot != "general":
+			continue
+		if run_state.has_relic(r.id):
+			continue
+		pool.append(r)
+	if pool.is_empty():
+		print("[DEBUG] no eligible relics left")
+		return
+	var chosen: RelicData = pool[randi() % pool.size()]
+	run_state.add_relic(chosen)
+	print("[DEBUG] added relic: %s" % chosen.display_name)
+
+func _dbg_jump_to_boss() -> void:
+	if run_state == null or run_state.encounter_choices.is_empty():
+		return
+	# 把 encounter_index 直接推到 boss 行（地圖最後一層）
+	run_state.encounter_index = run_state.encounter_choices.size() - 1
+	debug_menu.visible = false
+	show_progress_screen()
+	print("[DEBUG] jumped to boss row (index %d)" % run_state.encounter_index)
 
 func _on_resume_requested() -> void:
 	pause_menu.close()
@@ -1091,7 +1167,7 @@ func end_player_turn() -> void:
 	_show_enemy_action_preview(action)
 	_refresh_battle()
 	await get_tree().create_timer(0.8).timeout
-	if _action_has_damage(action):
+	if CardFormat.action_has_damage(action):
 		UIFactory.dash_node(enemy_portrait_wrap, Vector2(-1, 0), 36.0, 0.22)
 		await get_tree().create_timer(0.1).timeout
 	var result: Dictionary = battle.resolve_enemy_phase(action)
@@ -1102,45 +1178,13 @@ func end_player_turn() -> void:
 	await get_tree().create_timer(0.6).timeout
 	_start_player_turn()
 
-func _action_has_damage(action: Dictionary) -> bool:
-	for effect: Dictionary in (action.get("effects", []) as Array):
-		if String(effect.get("kind", "")) == "damage":
-			return true
-	return false
-
 func _show_enemy_action_preview(action: Dictionary) -> void:
 	var preview_lines: Array[String] = []
 	preview_lines.append(String(action["intent"]))
-	var effect_text: String = _enemy_action_effect_summary(action)
+	var effect_text: String = CardFormat.enemy_action_effect_summary(action)
 	if not effect_text.is_empty():
 		preview_lines.append(effect_text)
 	_show_feedback(enemy_feedback_label, preview_lines, ThemeColors.ACCENT_GOLD)
-
-func _enemy_action_effect_summary(action: Dictionary) -> String:
-	var effects: Array = action.get("effects", []) as Array
-	var parts: Array[String] = []
-	for effect: Dictionary in effects:
-		var kind: String = String(effect.get("kind", ""))
-		var amount: int = int(effect.get("amount", 0))
-		match kind:
-			"damage":
-				parts.append("傷害 %d" % amount)
-			"block":
-				parts.append("護體 +%d" % amount)
-			"poison":
-				parts.append("蠱毒 +%d" % amount)
-			"weak":
-				parts.append("虛弱 +%d" % amount)
-			"vulnerable":
-				parts.append("破綻 +%d" % amount)
-			"heal":
-				parts.append("治療 +%d" % amount)
-			_:
-				if amount > 0:
-					parts.append("%s %d" % [kind, amount])
-	if parts.is_empty():
-		return ""
-	return " / ".join(parts)
 
 func _check_battle_end() -> bool:
 	if battle.is_victory():
@@ -1370,7 +1414,7 @@ func _route_shop_button(is_black_shop: bool) -> Button:
 func _enemy_route_summary(enemy: EnemyData) -> String:
 	var badges: Array[String] = []
 	for action: Dictionary in enemy.actions:
-		var badge: String = _intent_badge(action)
+		var badge: String = CardFormat.intent_badge(action)
 		for part: String in badge.split(" "):
 			if not badges.has(part):
 				badges.append(part)
@@ -1765,7 +1809,7 @@ func _deck_view_card(card: CardData, mode: String = "view") -> Button:
 	elif mode == "upgrade" and not card.upgraded:
 		button.pressed.connect(func(): upgrade_card_in_deck(card))
 	else:
-		button.add_theme_stylebox_override("disabled", UIFactory.style_box(_card_color(card.card_type, true), Color("e7d38a"), 2, 8))
+		button.add_theme_stylebox_override("disabled", UIFactory.style_box(CardFormat.card_color(card.card_type, true), Color("e7d38a"), 2, 8))
 		button.add_theme_color_override("font_disabled_color", ThemeColors.TEXT_LIGHT)
 	return button
 
@@ -1809,7 +1853,7 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 	enemy_block_badge.set_amount(int(battle.state["enemy_block"]))
 	enemy_status_line.text = UIFactory.status_summary(int(battle.state["enemy_poison"]), int(battle.state["enemy_weak"]), int(battle.state["enemy_vulnerable"]))
 	var next_action: Dictionary = battle.next_enemy_action()
-	enemy_label.text = "%s  下一步\n%s" % [_intent_badge(next_action), String(next_action["intent"])]
+	enemy_label.text = "%s  下一步\n%s" % [CardFormat.intent_badge(next_action), String(next_action["intent"])]
 	energy_orb.set_energy(int(battle.state["energy"]), BattleController.TURN_ENERGY)
 	var buttons: Array[Button] = []
 	card_buttons.clear()
@@ -1854,11 +1898,11 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	outer.add_child(box)
 	var type_bar: PanelContainer = PanelContainer.new()
 	type_bar.custom_minimum_size = Vector2(0, 5)
-	type_bar.add_theme_stylebox_override("panel", UIFactory.strip_box(_card_color(card.card_type, true).lightened(0.16), 3))
+	type_bar.add_theme_stylebox_override("panel", UIFactory.strip_box(CardFormat.card_color(card.card_type, true).lightened(0.16), 3))
 	box.add_child(type_bar)
 	var art_frame: PanelContainer = PanelContainer.new()
 	art_frame.custom_minimum_size = Vector2(size.x - 22, max(104.0, size.y * 0.5))
-	art_frame.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.42), _card_rarity_color(card), 1, 6))
+	art_frame.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.42), CardFormat.card_rarity_color(card), 1, 6))
 	box.add_child(art_frame)
 	var art_layer: Control = Control.new()
 	art_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -1892,7 +1936,7 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title_row.add_child(title)
-	var rarity_badge: Label = UIFactory.card_label(_card_rarity_name(card), 11, _card_rarity_color(card), HORIZONTAL_ALIGNMENT_RIGHT)
+	var rarity_badge: Label = UIFactory.card_label(CardFormat.card_rarity_name(card), 11, CardFormat.card_rarity_color(card), HORIZONTAL_ALIGNMENT_RIGHT)
 	rarity_badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title_row.add_child(rarity_badge)
 	var cost_badge: PanelContainer = PanelContainer.new()
@@ -1908,7 +1952,7 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	cost_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cost_badge.add_child(cost_label)
-	var type_line: Label = UIFactory.card_label(_card_type_name(card.card_type), 12, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	var type_line: Label = UIFactory.card_label(CardFormat.card_type_name(card.card_type), 12, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	box.add_child(type_line)
 	var desc: Label = UIFactory.card_label(card.display_description(), 12, Color("e8edf3"), HORIZONTAL_ALIGNMENT_LEFT)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2032,30 +2076,6 @@ func _show_feedback(label: Label, lines: Array[String], color: Color) -> void:
 	tween.tween_interval(0.55)
 	tween.tween_property(label, "modulate:a", 0.0, 0.45)
 
-func _intent_badge(action: Dictionary) -> String:
-	var effects: Array = action.get("effects", []) as Array
-	var has_damage: bool = false
-	var has_block: bool = false
-	var has_status: bool = false
-	for effect: Dictionary in effects:
-		var kind: String = String(effect.get("kind", ""))
-		if kind == "damage":
-			has_damage = true
-		elif kind == "block":
-			has_block = true
-		elif kind == "poison" or kind == "weak" or kind == "vulnerable":
-			has_status = true
-	var badges: Array[String] = []
-	if has_damage:
-		badges.append("[攻擊]")
-	if has_block:
-		badges.append("[防守]")
-	if has_status:
-		badges.append("[異常]")
-	if badges.is_empty():
-		badges.append("[行動]")
-	return " ".join(badges)
-
 func _passive_text() -> String:
 	var labels: Array[String] = []
 	for passive: Dictionary in selected_character.passives:
@@ -2064,51 +2084,9 @@ func _passive_text() -> String:
 			labels.append("被動：%s。" % label)
 	return "\n".join(labels)
 
-func _card_type_name(card_type: String) -> String:
-	match card_type:
-		"attack":
-			return "攻擊"
-		"skill":
-			return "技能"
-		"power":
-			return "能力"
-	return card_type
-
-func _card_color(card_type: String, affordable: bool) -> Color:
-	if not affordable:
-		return Color("5f6673")
-	match card_type:
-		"attack":
-			return Color("8f3f35")
-		"skill":
-			return Color("2f6f61")
-		"power":
-			return Color("7756a8")
-	return Color("4f5f73")
-
-func _card_rarity_name(card: CardData) -> String:
-	if card.upgraded:
-		return "升"
-	match card.rarity:
-		"rare":
-			return "稀"
-		"uncommon":
-			return "良"
-	return "基"
-
-func _card_rarity_color(card: CardData) -> Color:
-	if card.upgraded:
-		return ThemeColors.ACCENT_GOLD
-	match card.rarity:
-		"rare":
-			return Color("d9c2ff")
-		"uncommon":
-			return Color("b9ead6")
-	return Color("c7d2e3")
-
 func _style_card_button(button: Button, card: CardData, affordable: bool) -> void:
-	var base_color: Color = _card_color(card.card_type, affordable)
-	var border_color: Color = _card_rarity_color(card)
+	var base_color: Color = CardFormat.card_color(card.card_type, affordable)
+	var border_color: Color = CardFormat.card_rarity_color(card)
 	var normal: StyleBoxFlat = UIFactory.style_box(base_color, border_color, 2, 8)
 	var hover: StyleBoxFlat = UIFactory.style_box(base_color.lightened(0.12), border_color.lightened(0.18), 3, 8)
 	var pressed: StyleBoxFlat = UIFactory.style_box(base_color.darkened(0.12), border_color, 2, 8)
