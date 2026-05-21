@@ -1,119 +1,130 @@
-# Android 本機匯出指南
+# Android APK 本地匯出紀錄
 
-GitHub Actions CI 嘗試了 13 種組合（不同 Godot 版本、不同 container、不同 keystore 格式、Gradle / 非 Gradle）仍卡在 Godot 4.x 的一個**不印訊息的內部 silent validation**。Linux container 內似乎有特定環境條件無法滿足。
+本文記錄 2026-05-21 在 Windows 本機成功用 Godot 4.6.2 匯出 Android debug APK 的要點。
 
-本機 Windows / macOS 桌面端**通常能正常匯出 Android APK**。以下是步驟。
+## 成功產物
 
----
+- APK: `build/android/SwordCard-local.apk`
+- Size: `61,138,496 bytes`
+- SHA256: `650F730F9DAB010BD9059D84A5906C35BDA89F2B48008AF7B13757D490C5F029`
+- Godot: `4.6.2.stable.official.71f334935`
+- Android ABI: `arm64-v8a`
+- 簽章: debug keystore, `androiddebugkey`
 
-## 1. 安裝 Godot 4.6
+驗證結果：
 
-下載與你開發中相同版本：[godotengine.org/download](https://godotengine.org/download)
-
-選 **Standard edition**（不需要 .NET 版）。
-
-## 2. 安裝 JDK 17
-
-[Eclipse Temurin JDK 17](https://adoptium.net/temurin/releases/?version=17) — Windows 選 .msi installer，會自動設 `JAVA_HOME`。
-
-安裝完打開 PowerShell 確認：
 ```powershell
-java -version
-# 顯示 openjdk version "17.0.x"
+apksigner.bat verify --verbose build/android/SwordCard-local.apk
 ```
 
-## 3. 安裝 Android Command Line Tools
+重點輸出：
 
-1. 到 [developer.android.com/studio](https://developer.android.com/studio) 拉到底「**Command line tools only**」
-2. 解壓到 `C:\Android\cmdline-tools\latest\`（路徑結構要正確：cmdline-tools 底下要叫 `latest` 資料夾）
-3. 加環境變數：
-   ```
-   ANDROID_HOME = C:\Android
-   PATH += C:\Android\cmdline-tools\latest\bin
-   ```
-4. PowerShell 跑：
-   ```powershell
-   sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-   ```
-5. 同意條款：
-   ```powershell
-   sdkmanager --licenses
-   # 全部按 y
-   ```
-
-## 4. 產生 Debug Keystore
-
-PowerShell：
-```powershell
-cd $env:USERPROFILE
-keytool -genkey -v `
-  -keystore debug.keystore `
-  -storetype JKS `
-  -alias androiddebugkey `
-  -storepass android -keypass android `
-  -keyalg RSA -keysize 2048 -validity 10000 `
-  -dname "CN=Android Debug,O=Android,C=US"
-```
-產生 `C:\Users\<你>\debug.keystore`。
-
-## 5. Godot 編輯器設定
-
-打開 Godot → **Editor → Editor Settings** → 搜尋「android」：
-
-| 欄位 | 值 |
-|------|------|
-| Android Sdk Path | `C:\Android` |
-| Java Sdk Path | `C:\Program Files\Eclipse Adoptium\jdk-17.x.x-hotspot` |
-| Debug Keystore | `C:\Users\<你>\debug.keystore` |
-| Debug Keystore User | `androiddebugkey` |
-| Debug Keystore Pass | `android` |
-
-## 6. 安裝 Android Build Template
-
-打開專案 → **Project → Install Android Build Template** → 確認。會在專案根目錄產生 `android/` 資料夾。
-
-## 7. 匯出設定
-
-**Project → Export** → 選 **Android** preset：
-
-- 勾選 **Use Gradle Build**
-- Architectures：只勾 arm64-v8a
-- Gradle Build → Min Sdk = **24**
-- Gradle Build → Target Sdk = **34**
-- Launcher Icons（可選）：如果用 SVG 會匯出失敗，請先用編輯器把 `icon.svg` 轉成 `icon_192.png` (192×192) 並指定為 main_192x192
-
-點 **Export Project** → 輸出 `SwordCard.apk`。
-
-## 8. 安裝到手機
-
-**USB 線**：
-```powershell
-adb install SwordCard.apk
+```text
+Verifies
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): true
+Number of signers: 1
 ```
 
-**手動**：把 apk 傳到手機 → 設定允許「未知來源安裝」→ 點 apk 安裝。
+## 本機工具鏈
 
----
+本次成功使用的工具與路徑：
 
-## CI 已知問題
+- Godot console: `C:\Users\sean.wu\Downloads\Godot_v4.6.2-stable_win64.exe\Godot_v4.6.2-stable_win64_console.exe`
+- JDK 17: `C:\Users\sean.wu\Tools\SwordCardBuild\jdk17\jdk-17.0.19+10`
+- Android SDK: `C:\Users\sean.wu\AppData\Local\Android\Sdk`
+- Debug keystore: `C:\Users\sean.wu\AppData\Roaming\Godot\keystores\debug.keystore`
 
-CI 環境下 Godot 印「Cannot export project with preset "Android" due to configuration errors:」**訊息體為空**。已嘗試：
+Android SDK 需要安裝的套件：
 
-- Godot 4.3 / 4.4 / 4.6 / 4.6.3
-- 自己下載 Godot vs `barichello/godot-ci` Docker image vs `firebelley/godot-export` action
-- `use_gradle_build` true 與 false
-- Min SDK 21 / 24 / 26
-- Target SDK 33 / 34
-- 自製 keystore vs 容器內預設 keystore (JKS 格式)
-- 寫 editor_settings 到 `editor_settings-4.tres`、`editor_settings-4.4.tres`、`editor_settings-4.6.tres`
-- 手動安裝 Android build template 到 `android/build/` + `.build_version` 4.x.stable
-- PNG 取代 SVG launcher icons
-- `package/signed=true/false`
-- Pre-import + ADB start-server
+```powershell
+sdkmanager.bat --sdk_root="$env:LOCALAPPDATA\Android\Sdk" `
+  "platform-tools" `
+  "platforms;android-35" `
+  "build-tools;35.0.1" `
+  "cmake;3.10.2.4988404" `
+  "ndk;28.1.13356709"
+```
 
-均無法繞過。可能的根因（未證實）：
-- Godot 4.x CLI export validation 的某個 check 不會把錯誤訊息加進 `err` string
-- 與 `headless` 模式 + Linux Container 環境的某個 native call 有關
-- Linux Container 缺少某個 X server / display 依賴
+Godot 4.6 Android export 需要 CMake 與 NDK；只裝 platform/build-tools 仍會出現：
 
-需在本機（有圖形界面）匯出。
+```text
+Cannot export project with preset "Android" due to configuration errors:
+```
+
+## 專案設定要點
+
+Android preset 使用非 Gradle legacy APK build：
+
+- `gradle_build/use_gradle_build=false`
+- `architectures/arm64-v8a=true`
+- `package/unique_name="com.local.swordcard"`
+- `package/signed=true`
+
+非 Gradle build 時不要填 `gradle_build/min_sdk` 與 `gradle_build/target_sdk`，否則 Godot 會回報：
+
+```text
+只有在啟用「使用 Gradle 建置」時，才能覆寫「最低 SDK 版本」。
+只有在啟用「使用 Gradle 建置」時，才能覆寫「Target SDK」。
+```
+
+Android launcher icons 改用 PNG，避免 Android export 對 SVG icon 的相容性問題：
+
+- `icon_192.png`
+- `icon_foreground_432.png`
+- `icon_background_432.png`
+
+`project.godot` 必須啟用 Android 需要的 ETC2/ASTC 匯入設定：
+
+```ini
+[rendering]
+
+renderer/rendering_method="mobile"
+textures/vram_compression/import_etc2_astc=true
+```
+
+少了這項時，Godot 4.6 headless export 可能只顯示空泛的 configuration errors。
+
+## 匯出指令
+
+```powershell
+$godot="$env:USERPROFILE\Downloads\Godot_v4.6.2-stable_win64.exe\Godot_v4.6.2-stable_win64_console.exe"
+$sdk="$env:LOCALAPPDATA\Android\Sdk"
+$jdk="$env:USERPROFILE\Tools\SwordCardBuild\jdk17\jdk-17.0.19+10"
+
+$env:JAVA_HOME=$jdk
+$env:ANDROID_HOME=$sdk
+$env:ANDROID_SDK_ROOT=$sdk
+$env:GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$env:APPDATA\Godot\keystores\debug.keystore"
+$env:GODOT_ANDROID_KEYSTORE_DEBUG_USER="androiddebugkey"
+$env:GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD="android"
+$env:PATH="$jdk\bin;$sdk\platform-tools;$sdk\cmdline-tools\latest\bin;$sdk\build-tools\35.0.1;$sdk\cmake\3.10.2.4988404\bin;$env:PATH"
+
+New-Item -ItemType Directory -Force "build\android" | Out-Null
+& $godot --headless --verbose --export-debug "Android" "build/android/SwordCard-local.apk"
+```
+
+成功時會看到：
+
+```text
+Starting legacy build system...
+正在對齊 APK…
+正在簽署除錯 APK…
+Successfully completed signing build.
+[ DONE ] export
+```
+
+## 驗證指令
+
+```powershell
+$apk="build/android/SwordCard-local.apk"
+$sdk="$env:LOCALAPPDATA\Android\Sdk"
+$jdk="$env:USERPROFILE\Tools\SwordCardBuild\jdk17\jdk-17.0.19+10"
+
+$env:JAVA_HOME=$jdk
+$env:PATH="$jdk\bin;$sdk\build-tools\35.0.1;$env:PATH"
+
+Get-Item $apk
+Get-FileHash $apk -Algorithm SHA256
+& "$sdk\build-tools\35.0.1\apksigner.bat" verify --verbose $apk
+```
