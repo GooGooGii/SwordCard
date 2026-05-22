@@ -1095,6 +1095,10 @@ func _character_select_stage(character: CharacterData) -> Control:
 		choose_title = "加入隊伍"
 		choose_subtitle = "排第 %d 位%s" % [next_pos, "（隊長）" if next_pos == 1 else ""]
 	info_box.add_child(_event_choice_button(choose_title, choose_subtitle, choose_disabled, func() -> void: _on_party_thumb_pressed(character)))
+	var confirm_depart_button: Button = _button("確認出戰")
+	confirm_depart_button.disabled = selected_party_ids.is_empty()
+	confirm_depart_button.pressed.connect(_on_party_depart_pressed)
+	info_box.add_child(confirm_depart_button)
 	return stage
 
 func _character_thumb(character: CharacterData, selected: bool) -> Control:
@@ -2398,9 +2402,11 @@ func _show_event_outcome(text: String, on_continue: Callable) -> void:
 	var lbl: Label = UIFactory.paragraph(text)
 	lbl.custom_minimum_size = Vector2(384, 0)
 	vbox.add_child(lbl)
-	vbox.add_child(_button("繼續", func() -> void:
+	var continue_button: Button = _button("繼續")
+	continue_button.pressed.connect(func() -> void:
 		overlay.queue_free()
-		on_continue.call()))
+		on_continue.call())
+	vbox.add_child(continue_button)
 
 func _resolve_yokai_pact() -> void:
 	var event_data: Dictionary = EventData.for_variant(run_state.current_event_variant)
