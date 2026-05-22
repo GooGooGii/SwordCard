@@ -2355,6 +2355,10 @@ func show_event_node() -> void:
 				var ld: int = int(event_data.get("gamble_lose_damage", 10))
 				grid.add_child(_event_choice_button(String(event_data["power_label"]),
 					"五成增傷 +%d，五成損血 %d" % [ww, ld], false, _resolve_ghost_gamble))
+			"tainted_power":
+				var td: int = int(event_data.get("taint_damage", 6))
+				grid.add_child(_event_choice_button(String(event_data["power_label"]),
+					"增傷 +%d，但損血 %d" % [power_gain, td], false, _resolve_tainted_power))
 
 func _get_event_outcome(event_data: Dictionary, key: String) -> String:
 	return String((event_data.get("outcomes", {}) as Dictionary).get(key, ""))
@@ -2398,6 +2402,16 @@ func _resolve_yokai_pact() -> void:
 		run_state.hp = run_state.max_hp
 	run_state.power_bonus += power
 	var outcome: String = _get_event_outcome(event_data, "pact")
+	if not outcome.is_empty():
+		_show_event_outcome(outcome, advance_non_battle_node)
+	else:
+		advance_non_battle_node()
+
+func _resolve_tainted_power() -> void:
+	var event_data: Dictionary = EventData.for_variant(run_state.current_event_variant)
+	run_state.power_bonus += int(event_data["power"])
+	run_state.take_damage(int(event_data.get("taint_damage", 6)))
+	var outcome: String = _get_event_outcome(event_data, "tainted_power")
 	if not outcome.is_empty():
 		_show_event_outcome(outcome, advance_non_battle_node)
 	else:
