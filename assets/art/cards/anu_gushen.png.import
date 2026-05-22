@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ccy1em1lr7idb"
-path="res://.godot/imported/anu_gushen.png-cdbf6fcb43071ca8bfca55948f27141e.ctex"
+path="res://.godot/imported/anu_gushen.png-30ae6ea08b0e9317fb697668b294e585.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/art/cards/anu_gushen.png"
-dest_files=["res://.godot/imported/anu_gushen.png-cdbf6fcb43071ca8bfca55948f27141e.ctex"]
+dest_files=["res://.godot/imported/anu_gushen.png-30ae6ea08b0e9317fb697668b294e585.ctex"]
 
 [params]
 

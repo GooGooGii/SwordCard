@@ -96,6 +96,7 @@ func _initialize() -> void:
 	_test_predict_enemy_damage_matches_resolver()
 	_test_requires_enemy_target()
 	_test_bestiary_persistence()
+	_test_artifact_boss_coverage()
 	_test_ascension_persistence_and_modifiers()
 	_test_boss_phase_transition(bosses)
 	_test_event_variety()
@@ -735,6 +736,13 @@ func _test_requires_enemy_target() -> void:
 	for character: CharacterData in characters:
 		for card: CardData in character.starting_deck:
 			var _ignored: bool = CardFormat.requires_enemy_target(card)
+
+func _test_artifact_boss_coverage() -> void:
+	var artifact_boss_ids: Array[String] = []
+	for r: RelicData in RelicCatalog.artifacts():
+		artifact_boss_ids.append(r.boss_id)
+	for boss_id: String in Ascension.BOSS_IDS:
+		assert(boss_id in artifact_boss_ids, "Boss '%s' 缺少對應神器" % boss_id)
 
 func _test_bestiary_persistence() -> void:
 	# 注意：此 test 會清掉真實 bestiary 檔案；smoke test 環境是測試專用 user:// 不用擔心

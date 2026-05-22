@@ -1256,6 +1256,8 @@ func show_progress_screen() -> void:
 	box.add_theme_constant_override("separation", 8 if compact_map else 14)
 	panel.add_child(box)
 	box.add_child(_title("第%s幕・%d/%d 層" % [_act_numeral(run_state.act), run_state.encounter_index + 1, run_state.encounter_choices.size()], 28 if compact_map else 34))
+	var act_location: Label = UIFactory.card_label(_act_title(run_state.act), 16 if compact_map else 20, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	box.add_child(act_location)
 	var map_summary: Label = UIFactory.paragraph("%s  HP %d/%d  銅錢 %d  牌組 %d 張  本輪增傷 +%d" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, run_state.deck.size(), run_state.power_bonus])
 	map_summary.add_theme_font_size_override("font_size", 14 if compact_map else 17)
 	box.add_child(map_summary)
@@ -2161,7 +2163,8 @@ func choose_reward_card(card: CardData) -> void:
 	show_progress_screen()
 
 func _battle_gold_reward(enemy: EnemyData) -> int:
-	var base: int = 65 if enemy.id == "moon_worshipper" else 28 + run_state.encounter_index * 8
+	var is_boss: bool = Ascension.is_boss_id(enemy.id)
+	var base: int = (40 + run_state.act * 20) if is_boss else (18 + run_state.act * 8 + run_state.encounter_index * 3)
 	return max(0, int(round(float(base) * Ascension.gold_multiplier(run_state.ascension_level))))
 
 func _route_node_button(node_data: Dictionary) -> Button:

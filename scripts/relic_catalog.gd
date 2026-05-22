@@ -198,4 +198,17 @@ static func _artifacts() -> Array[RelicData]:
 		"witch_queen",
 		[{"trigger": "passive_modifier", "effects": [{"kind": "poison_bonus", "amount": 2}]},
 		{"trigger": "turn_end", "effects": [{"kind": "poison_resonance", "amount": 50}]}], Color("e2a8ff")))
+	l.append(_make_artifact("chiyan_fuyin", "赤眼符印",
+		"戰鬥開始本局傷害 +3。每回合結束對敵人造成 3 點直接傷害。",
+		"red_eye_demon",
+		[{"trigger": "battle_start", "effects": [{"kind": "self_power", "amount": 3}]},
+		{"trigger": "turn_end", "effects": [{"kind": "enemy_damage", "amount": 3}]}], Color("ff6644")))
+	l.append(_make_artifact("guijiang_lingpai", "鬼將令牌",
+		"每回合結束對敵人施加 2 層蠱毒並回復 4 生命。",
+		"zombie_general",
+		[{"trigger": "turn_end", "effects": [{"kind": "enemy_poison", "amount": 2}, {"kind": "self_heal", "amount": 4}]}], Color("90c878")))
+	l.append(_make_artifact("baiyue_jiaozhi", "拜月教旨",
+		"每回合開始多抽 1 張牌並回復 1 靈力。",
+		"baiyue_lord",
+		[{"trigger": "turn_start", "effects": [{"kind": "self_draw", "amount": 1}, {"kind": "self_energy", "amount": 1}]}], Color("9966cc")))
 	return l
