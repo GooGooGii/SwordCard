@@ -2318,18 +2318,106 @@ func show_event_node() -> void:
 	var heal_amount: int = int(event_data["heal"])
 	var gain_cost: int = int(event_data["gain_cost"])
 	var power_gain: int = int(event_data["power"])
+	var choices_list: Array = event_data.get("choices", ["heal", "gain_card", "power", "upgrade", "remove", "view_deck"])
 	var grid: GridContainer = GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 16)
 	grid.add_theme_constant_override("v_separation", 14)
 	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	box.add_child(grid)
-	grid.add_child(_event_choice_button("調息", "回復 %d 點生命" % heal_amount, false, func() -> void: resolve_event_heal(heal_amount)))
-	grid.add_child(_event_choice_button("探取", "失去 %d HP，得 1 張招式" % gain_cost, false, func() -> void: resolve_event_gain_card(gain_cost)))
-	grid.add_child(_event_choice_button(String(event_data["power_label"]), "本輪增傷 +%d" % power_gain, false, func() -> void: resolve_event_power(power_gain)))
-	grid.add_child(_event_choice_button("悟法", "升級 1 張招式", _upgradeable_cards().is_empty(), show_upgrade_card_view))
-	grid.add_child(_event_choice_button("洗髓", "移除 1 張招式", run_state.deck.size() <= 5, show_remove_card_view))
-	grid.add_child(_event_choice_button("翻閱", "查看當前手札", false, show_deck_view))
+	for choice_key: Variant in choices_list:
+		match String(choice_key):
+			"heal":
+				grid.add_child(_event_choice_button("調息", "回復 %d 點生命" % heal_amount,
+					heal_amount <= 0, func() -> void: resolve_event_heal(heal_amount)))
+			"gain_card":
+				grid.add_child(_event_choice_button("探取", "失去 %d HP，得 1 張招式" % gain_cost,
+					false, func() -> void: resolve_event_gain_card(gain_cost)))
+			"power":
+				grid.add_child(_event_choice_button(String(event_data["power_label"]),
+					"本輪增傷 +%d" % power_gain,
+					false, func() -> void: resolve_event_power(power_gain)))
+			"upgrade":
+				grid.add_child(_event_choice_button("悟法", "升級 1 張招式",
+					_upgradeable_cards().is_empty(), show_upgrade_card_view))
+			"remove":
+				grid.add_child(_event_choice_button("洗髓", "移除 1 張招式",
+					run_state.deck.size() <= 5, show_remove_card_view))
+			"view_deck":
+				grid.add_child(_event_choice_button("翻閱", "查看當前手札", false, show_deck_view))
+			"pact":
+				var pc: int = int(event_data.get("pact_max_hp_cost", 8))
+				var pp: int = int(event_data.get("pact_power", 4))
+				grid.add_child(_event_choice_button(String(event_data["power_label"]),
+					"最大 HP -%d，永久增傷 +%d" % [pc, pp], false, _resolve_yokai_pact))
+			"gamble":
+				var ww: int = int(event_data.get("gamble_win_power", 5))
+				var ld: int = int(event_data.get("gamble_lose_damage", 10))
+				grid.add_child(_event_choice_button(String(event_data["power_label"]),
+					"五成增傷 +%d，五成損血 %d" % [ww, ld], false, _resolve_ghost_gamble))
+
+func _get_event_outcome(event_data: Dictionary, key: String) -> String:
+	return String((event_data.get("outcomes", {}) as Dictionary).get(key, ""))
+
+func _show_event_outcome(text: String, on_continue: Callable) -> void:
+	var overlay: PanelContainer = PanelContainer.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.z_index = 10
+	var bg: StyleBoxFlat = UIFactory.style_box(Color(0, 0, 0, 0.68), Color(0, 0, 0, 0), 0, 0)
+	overlay.add_theme_stylebox_override("panel", bg)
+	root.add_child(overlay)
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(center)
+	var card: PanelContainer = PanelContainer.new()
+	card.custom_minimum_size = Vector2(440, 0)
+	var card_style: StyleBoxFlat = UIFactory.style_box(ThemeColors.PANEL_NAVY, ThemeColors.BORDER_GOLD, 1, 8)
+	card_style.content_margin_left = 28
+	card_style.content_margin_right = 28
+	card_style.content_margin_top = 24
+	card_style.content_margin_bottom = 24
+	card.add_theme_stylebox_override("panel", card_style)
+	center.add_child(card)
+	var vbox: VBoxContainer = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 20)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	card.add_child(vbox)
+	var lbl: Label = UIFactory.paragraph(text)
+	lbl.custom_minimum_size = Vector2(384, 0)
+	vbox.add_child(lbl)
+	vbox.add_child(_button("繼續", func() -> void:
+		overlay.queue_free()
+		on_continue.call()))
+
+func _resolve_yokai_pact() -> void:
+	var event_data: Dictionary = EventData.for_variant(run_state.current_event_variant)
+	var cost: int = int(event_data.get("pact_max_hp_cost", 8))
+	var power: int = int(event_data.get("pact_power", 4))
+	run_state.max_hp = max(1, run_state.max_hp - cost)
+	if run_state.hp > run_state.max_hp:
+		run_state.hp = run_state.max_hp
+	run_state.power_bonus += power
+	var outcome: String = _get_event_outcome(event_data, "pact")
+	if not outcome.is_empty():
+		_show_event_outcome(outcome, advance_non_battle_node)
+	else:
+		advance_non_battle_node()
+
+func _resolve_ghost_gamble() -> void:
+	var event_data: Dictionary = EventData.for_variant(run_state.current_event_variant)
+	var win_power: int = int(event_data.get("gamble_win_power", 5))
+	var lose_damage: int = int(event_data.get("gamble_lose_damage", 10))
+	var won: bool = randf() < 0.5
+	var outcome_key: String = "gamble_win" if won else "gamble_lose"
+	if won:
+		run_state.power_bonus += win_power
+	else:
+		run_state.take_damage(lose_damage)
+	var outcome: String = _get_event_outcome(event_data, outcome_key)
+	if not outcome.is_empty():
+		_show_event_outcome(outcome, advance_non_battle_node)
+	else:
+		advance_non_battle_node()
 
 func _event_status_strip() -> PanelContainer:
 	# 奇遇頁狀態列：深色底板 + HP 條 + 金幣 + 牌組數 + 增傷（獨立於敘事文字）
@@ -2433,11 +2521,21 @@ func _event_card_style(bg: Color, border: Color, width: int) -> StyleBoxFlat:
 
 func resolve_event_heal(amount: int) -> void:
 	run_state.heal(amount)
-	advance_non_battle_node()
+	var ev: Dictionary = EventData.for_variant(run_state.current_event_variant)
+	var outcome: String = _get_event_outcome(ev, "heal")
+	if not outcome.is_empty():
+		_show_event_outcome(outcome, advance_non_battle_node)
+	else:
+		advance_non_battle_node()
 
 func resolve_event_gain_card(hp_cost: int = 6) -> void:
 	run_state.take_damage(hp_cost)
-	show_event_card_reward(hp_cost)
+	var ev: Dictionary = EventData.for_variant(run_state.current_event_variant)
+	var outcome: String = _get_event_outcome(ev, "gain_card")
+	if not outcome.is_empty():
+		_show_event_outcome(outcome, func() -> void: show_event_card_reward(hp_cost))
+	else:
+		show_event_card_reward(hp_cost)
 
 func show_event_card_reward(hp_cost_paid: int) -> void:
 	_set_background("res://assets/art/event_bg.png")
@@ -2477,7 +2575,12 @@ func resolve_event_power(amount: int = 1) -> void:
 				if String(e.get("kind", "")) == "event_power_bonus":
 					bonus += int(e.get("amount", 0))
 	run_state.power_bonus = run_state.power_bonus + amount + bonus
-	advance_non_battle_node()
+	var ev_p: Dictionary = EventData.for_variant(run_state.current_event_variant)
+	var outcome_p: String = _get_event_outcome(ev_p, "power")
+	if not outcome_p.is_empty():
+		_show_event_outcome(outcome_p, advance_non_battle_node)
+	else:
+		advance_non_battle_node()
 
 func open_shop_node(is_black_shop: bool) -> void:
 	run_state.current_shop_is_black = is_black_shop
