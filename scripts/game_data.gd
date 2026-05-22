@@ -19,10 +19,31 @@ static func characters() -> Array[CharacterData]:
 	return [_li_xiaoyao(), _zhao_linger(), _lin_yueru(), _anu()]
 
 static func enemies() -> Array[EnemyData]:
-	return [_bandit(), _beast(), _gu_cultist(), _sword_spirit(), _fox_spirit(), _serpent_demon()]
+	return [_bandit(), _beast(), _gu_cultist(), _sword_spirit(), _fox_spirit(), _serpent_demon(),
+		_zombie_soldier(), _toxic_centipede(), _tower_demon(), _tower_ghost_soldier(),
+		_baiyue_guard(), _ancient_evil_spirit()]
 
 static func bosses() -> Array[EnemyData]:
-	return [_moon_worshipper(), _centipede_lord(), _witch_queen()]
+	return [_moon_worshipper(), _centipede_lord(), _witch_queen(),
+		_red_eye_demon(), _zombie_general(), _baiyue_lord()]
+
+static func enemies_for_act(act: int) -> Array[EnemyData]:
+	match act:
+		1: return [_bandit(), _beast()]
+		2: return [_sword_spirit(), _fox_spirit(), _zombie_soldier()]
+		3: return [_gu_cultist(), _serpent_demon(), _toxic_centipede()]
+		4: return [_tower_demon(), _tower_ghost_soldier()]
+		5: return [_moon_worshipper(), _baiyue_guard(), _ancient_evil_spirit()]
+	return [_bandit(), _beast()]
+
+static func boss_for_act(act: int) -> EnemyData:
+	match act:
+		1: return _red_eye_demon()
+		2: return _zombie_general()
+		3: return _centipede_lord()
+		4: return _witch_queen()
+		5: return _baiyue_lord()
+	return _red_eye_demon()
 
 static func _li_xiaoyao() -> CharacterData:
 	var cards: Array[CardData] = [
@@ -314,5 +335,140 @@ static func _witch_queen() -> EnemyData:
 			{"kind": "damage", "amount": 12},
 			{"kind": "vulnerable", "amount": 3}
 		]}
+	]
+	return enemy
+
+static func _zombie_soldier() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "zombie_soldier"
+	enemy.display_name = "地底殭屍"
+	enemy.max_hp = 62
+	enemy.portrait_path = "res://assets/art/enemies/zombie_soldier.png"
+	enemy.actions = [
+		{"intent": "腐爛爪 9 + 虛弱 1", "effects": [{"kind": "damage", "amount": 9}, {"kind": "weak", "amount": 1}]},
+		{"intent": "殭步衝 13", "effects": [{"kind": "damage", "amount": 13}]},
+		{"intent": "死硬護 11", "effects": [{"kind": "block", "amount": 11}]}
+	]
+	return enemy
+
+static func _toxic_centipede() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "toxic_centipede"
+	enemy.display_name = "毒蜈蚣"
+	enemy.max_hp = 55
+	enemy.portrait_path = "res://assets/art/enemies/toxic_centipede.png"
+	enemy.actions = [
+		{"intent": "毒噬 8 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 8}, {"kind": "poison", "amount": 2}]},
+		{"intent": "多足撲 11", "effects": [{"kind": "damage", "amount": 11}]},
+		{"intent": "蛻甲 8", "effects": [{"kind": "block", "amount": 8}]}
+	]
+	return enemy
+
+static func _tower_demon() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "tower_demon"
+	enemy.display_name = "塔中封魔"
+	enemy.max_hp = 72
+	enemy.portrait_path = "res://assets/art/enemies/tower_demon.png"
+	enemy.actions = [
+		{"intent": "邪焰 10 + 破綻 1", "effects": [{"kind": "damage", "amount": 10}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "衝擊 15", "effects": [{"kind": "damage", "amount": 15}]},
+		{"intent": "封魔護 12", "effects": [{"kind": "block", "amount": 12}]}
+	]
+	return enemy
+
+static func _tower_ghost_soldier() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "tower_ghost_soldier"
+	enemy.display_name = "鎖妖塔鬼兵"
+	enemy.max_hp = 65
+	enemy.portrait_path = "res://assets/art/enemies/tower_ghost_soldier.png"
+	enemy.actions = [
+		{"intent": "魂刃 11 + 虛弱 1", "effects": [{"kind": "damage", "amount": 11}, {"kind": "weak", "amount": 1}]},
+		{"intent": "鬼卒衝 14", "effects": [{"kind": "damage", "amount": 14}]},
+		{"intent": "幻影遁 9", "effects": [{"kind": "block", "amount": 9}]}
+	]
+	return enemy
+
+static func _baiyue_guard() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "baiyue_guard"
+	enemy.display_name = "拜月教衛"
+	enemy.max_hp = 74
+	enemy.portrait_path = "res://assets/art/enemies/baiyue_guard.png"
+	enemy.actions = [
+		{"intent": "拜月斬 12", "effects": [{"kind": "damage", "amount": 12}]},
+		{"intent": "邪毒 蠱毒 3 + 破綻 1", "effects": [{"kind": "poison", "amount": 3}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "教衛盾 13", "effects": [{"kind": "block", "amount": 13}]}
+	]
+	return enemy
+
+static func _ancient_evil_spirit() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "ancient_evil_spirit"
+	enemy.display_name = "上古惡靈"
+	enemy.max_hp = 68
+	enemy.portrait_path = "res://assets/art/enemies/ancient_evil_spirit.png"
+	enemy.actions = [
+		{"intent": "噬魂 10 + 虛弱 1", "effects": [{"kind": "damage", "amount": 10}, {"kind": "weak", "amount": 1}]},
+		{"intent": "邪氣蝕 11 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 11}, {"kind": "poison", "amount": 2}]},
+		{"intent": "邪盾 10", "effects": [{"kind": "block", "amount": 10}]}
+	]
+	return enemy
+
+static func _red_eye_demon() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "red_eye_demon"
+	enemy.display_name = "赤眼山魈"
+	enemy.max_hp = 80
+	enemy.portrait_path = "res://assets/art/enemies/red_eye_demon.png"
+	enemy.actions = [
+		{"intent": "爪擊 10", "effects": [{"kind": "damage", "amount": 10}]},
+		{"intent": "怒吼 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]},
+		{"intent": "血眼撲擊 13 + 破綻 1", "effects": [{"kind": "damage", "amount": 13}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "山魈跳踏 8+8", "effects": [{"kind": "damage", "amount": 8}, {"kind": "damage", "amount": 8}]}
+	]
+	enemy.phase_2_actions = [
+		{"intent": "赤眼怒火 16 + 虛弱 1", "effects": [{"kind": "damage", "amount": 16}, {"kind": "weak", "amount": 1}]},
+		{"intent": "血月衝擊 20", "effects": [{"kind": "damage", "amount": 20}]},
+		{"intent": "群怪呼嘯 14 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 14}, {"kind": "poison", "amount": 2}]}
+	]
+	return enemy
+
+static func _zombie_general() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "zombie_general"
+	enemy.display_name = "殭屍大帥"
+	enemy.max_hp = 90
+	enemy.portrait_path = "res://assets/art/enemies/zombie_general.png"
+	enemy.actions = [
+		{"intent": "鬼將劈砍 12", "effects": [{"kind": "damage", "amount": 12}]},
+		{"intent": "腐臭毒氣 蠱毒 4", "effects": [{"kind": "poison", "amount": 4}]},
+		{"intent": "屍甲護衛 14", "effects": [{"kind": "block", "amount": 14}]},
+		{"intent": "千年寒氣 10 + 虛弱 2", "effects": [{"kind": "damage", "amount": 10}, {"kind": "weak", "amount": 2}]}
+	]
+	enemy.phase_2_actions = [
+		{"intent": "殭屍狂咒 18", "effects": [{"kind": "damage", "amount": 18}]},
+		{"intent": "毒屍爆炸 蠱毒 6 + 破綻 2", "effects": [{"kind": "poison", "amount": 6}, {"kind": "vulnerable", "amount": 2}]},
+		{"intent": "鬼將斬魂 22", "effects": [{"kind": "damage", "amount": 22}]}
+	]
+	return enemy
+
+static func _baiyue_lord() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "baiyue_lord"
+	enemy.display_name = "拜月教主"
+	enemy.max_hp = 115
+	enemy.portrait_path = "res://assets/art/enemies/baiyue_lord.png"
+	enemy.actions = [
+		{"intent": "拜月神力 14 + 破綻 1", "effects": [{"kind": "damage", "amount": 14}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "月蝕暗咒 蠱毒 5", "effects": [{"kind": "poison", "amount": 5}]},
+		{"intent": "黑暗護罩 16", "effects": [{"kind": "block", "amount": 16}]},
+		{"intent": "邪神降世 20", "effects": [{"kind": "damage", "amount": 20}]}
+	]
+	enemy.phase_2_actions = [
+		{"intent": "月神降臨 24 + 虛弱 2", "effects": [{"kind": "damage", "amount": 24}, {"kind": "weak", "amount": 2}]},
+		{"intent": "邪力爆發 蠱毒 8 + 破綻 2", "effects": [{"kind": "poison", "amount": 8}, {"kind": "vulnerable", "amount": 2}]},
+		{"intent": "黑暗洗禮 28", "effects": [{"kind": "damage", "amount": 28}]}
 	]
 	return enemy

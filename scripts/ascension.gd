@@ -13,7 +13,7 @@ const PATH: String = "user://progression.cfg"
 const SECTION: String = "ascension"
 const MAX_LEVEL: int = 4
 
-const BOSS_IDS: Array[String] = ["moon_worshipper", "centipede_lord", "witch_queen"]
+const BOSS_IDS: Array[String] = ["moon_worshipper", "centipede_lord", "witch_queen", "red_eye_demon", "zombie_general", "baiyue_lord"]
 
 static func get_unlocked_max() -> int:
 	var cfg: ConfigFile = ConfigFile.new()

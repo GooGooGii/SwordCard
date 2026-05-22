@@ -12,6 +12,7 @@ var character_decks: Array = []  # Array of Array[CardData] — GDScript 不易�
 var active_character_index: int = 0
 
 # 全隊共用的 run 狀態
+var act: int = 1
 var gold: int = 0
 var encounter_index: int = 0
 var encounter_choices: Array[Array] = []
@@ -104,6 +105,7 @@ func init_for(chars: Variant) -> void:
 		for card: CardData in c.starting_deck:
 			deck_copy.append(card.clone())
 		character_decks.append(deck_copy)
+	act = 1
 	gold = STARTING_GOLD
 	encounter_index = 0
 	encounter_choices = []
@@ -204,7 +206,8 @@ func to_dict() -> Dictionary:
 	for r: RelicData in relics:
 		relics_data.append(r.to_dict())
 	return {
-		"version": 2,
+		"version": 3,
+		"act": act,
 		"character_ids": character_ids,
 		"character_hps": character_hps.duplicate(),
 		"character_max_hps": character_max_hps.duplicate(),
@@ -287,6 +290,7 @@ func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> 
 			relics.append(RelicData.from_dict(relic_data as Dictionary))
 	ascension_level = int(data.get("ascension_level", 0))
 	map_seed = int(data.get("map_seed", 0))
+	act = int(data.get("act", 1))
 	return true
 
 func _serialize_choices() -> Array:

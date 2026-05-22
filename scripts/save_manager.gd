@@ -4,7 +4,7 @@ extends RefCounted
 const SAVE_PATH: String = "user://savegame.json"
 const SAVE_TMP_PATH: String = "user://savegame.json.tmp"
 const SAVE_CORRUPT_PATH: String = "user://savegame.corrupt.json"
-const SAVE_VERSION: int = 2
+const SAVE_VERSION: int = 3
 
 static func has_save() -> bool:
 	return FileAccess.file_exists(SAVE_PATH)
@@ -72,6 +72,9 @@ static func migrate(data: Dictionary) -> Dictionary:
 				data["character_decks"] = [legacy_deck]
 				data["active_character_index"] = 0
 				# 舊 keys 留著沒影響；from_dict 只讀新版欄位
+			2:
+				# v2 → v3: 新增五幕制 act 欄位，舊存檔視為第一幕
+				data["act"] = 1
 			_:
 				push_warning("缺少 save version %d → %d 的 migrator" % [version, version + 1])
 				return data

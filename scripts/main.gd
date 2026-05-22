@@ -72,6 +72,7 @@ const BASE_MARGIN_H: int = 28
 const BASE_MARGIN_V: int = 20
 const PAUSE_BUTTON_SIZE: Vector2 = Vector2(40, 40)
 const MAP_DRAG_THRESHOLD: float = 12.0
+const ACT_HEAL_AMOUNT: int = 20
 
 func _ready() -> void:
 	randomize()
@@ -1230,7 +1231,10 @@ func start_run(party_or_char: Variant) -> void:
 	show_progress_screen()
 
 func _make_encounter_choices() -> Array[Array]:
-	return MapGenerator.generate(enemies, bosses)
+	var act_enemies: Array[EnemyData] = GameData.enemies_for_act(run_state.act)
+	var act_boss: Array[EnemyData] = []
+	act_boss.append(GameData.boss_for_act(run_state.act))
+	return MapGenerator.generate(act_enemies, act_boss)
 
 func show_progress_screen() -> void:
 	SaveManager.save(run_state)
@@ -1247,7 +1251,7 @@ func show_progress_screen() -> void:
 	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_theme_constant_override("separation", 8 if compact_map else 14)
 	panel.add_child(box)
-	box.add_child(_title("第 %d / %d 層" % [run_state.encounter_index + 1, run_state.encounter_choices.size()], 28 if compact_map else 34))
+	box.add_child(_title("第%s幕・%d/%d 層" % [_act_numeral(run_state.act), run_state.encounter_index + 1, run_state.encounter_choices.size()], 28 if compact_map else 34))
 	var map_summary: Label = UIFactory.paragraph("%s  HP %d/%d  銅錢 %d  牌組 %d 張  本輪增傷 +%d" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, run_state.deck.size(), run_state.power_bonus])
 	map_summary.add_theme_font_size_override("font_size", 14 if compact_map else 17)
 	box.add_child(map_summary)
@@ -2078,12 +2082,14 @@ func _complete_battle_victory() -> void:
 	battle.add_log("獲得 %d 枚銅錢。" % gold_reward)
 	# Boss 必掉神器；一般戰鬥 25% 機率掉裝備
 	var dropped: RelicData = null
-	var was_boss: bool = battle.enemy.id == "moon_worshipper" or battle.enemy.id == "centipede_lord" or battle.enemy.id == "witch_queen"
+	var was_boss: bool = Ascension.is_boss_id(battle.enemy.id)
 	if was_boss:
 		for a: RelicData in RelicCatalog.artifacts():
 			if a.boss_id == battle.enemy.id and not run_state.has_relic(a.id):
 				dropped = a.clone()
 				break
+		if dropped == null:
+			dropped = _try_random_relic_drop(1.0)
 	else:
 		dropped = _try_random_relic_drop(0.25)
 	if dropped != null:
@@ -2091,7 +2097,10 @@ func _complete_battle_victory() -> void:
 		battle.add_log("獲得裝備：%s" % dropped.display_name)
 	run_state.encounter_index = run_state.encounter_index + 1
 	if run_state.encounter_index >= run_state.encounter_choices.size():
-		show_result(true)
+		if run_state.act < 5:
+			show_act_complete()
+		else:
+			show_result(true)
 	else:
 		show_card_reward()
 
@@ -2792,9 +2801,84 @@ func _upgradeable_cards() -> Array[CardData]:
 func advance_non_battle_node() -> void:
 	run_state.encounter_index = run_state.encounter_index + 1
 	if run_state.encounter_index >= run_state.encounter_choices.size():
-		show_result(true)
+		if run_state.act < 5:
+			show_act_complete()
+		else:
+			show_result(true)
 	else:
 		show_progress_screen()
+
+func show_act_complete() -> void:
+	var completed_act: int = run_state.act
+	for i: int in range(run_state.characters.size()):
+		run_state.character_hps[i] = min(run_state.character_max_hps[i], run_state.character_hps[i] + ACT_HEAL_AMOUNT)
+	run_state.act = completed_act + 1
+	run_state.encounter_index = 0
+	run_state.chosen_map_path.clear()
+	run_state.encounter_choices = _make_encounter_choices()
+	SaveManager.save(run_state)
+	_set_background("res://assets/art/event_bg.png")
+	_clear_root()
+	var panel: PanelContainer = UIFactory.make_panel()
+	root.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 16)
+	panel.add_child(box)
+	box.add_child(_title("第%s幕完成" % _act_numeral(completed_act), 38))
+	var sub: Label = _title(_act_title(completed_act), 22)
+	sub.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
+	box.add_child(sub)
+	box.add_child(UIFactory.paragraph(_act_complete_flavor(completed_act)))
+	box.add_child(UIFactory.paragraph("所有角色恢復 %d 點生命。" % ACT_HEAL_AMOUNT))
+	var hp_parts: Array[String] = []
+	for i: int in range(run_state.characters.size()):
+		var c: CharacterData = run_state.characters[i]
+		hp_parts.append("%s HP %d/%d" % [c.display_name, run_state.character_hps[i], run_state.character_max_hps[i]])
+	box.add_child(UIFactory.paragraph("  ".join(hp_parts)))
+	var next_name: String = _act_next_name(completed_act)
+	var continue_btn: Button = _button("前往%s →" % next_name)
+	continue_btn.pressed.connect(func() -> void: show_progress_screen())
+	box.add_child(continue_btn)
+	var menu_btn: Button = _button("返回主選單")
+	menu_btn.pressed.connect(func() -> void:
+		SaveManager.clear()
+		show_main_menu())
+	box.add_child(menu_btn)
+
+func _act_numeral(act: int) -> String:
+	match act:
+		1: return "一"
+		2: return "二"
+		3: return "三"
+		4: return "四"
+		5: return "五"
+	return str(act)
+
+func _act_title(act: int) -> String:
+	match act:
+		1: return "余杭山間"
+		2: return "蘇州地底"
+		3: return "苗疆蠱土"
+		4: return "鎖妖塔"
+		5: return "拜月決戰"
+	return ""
+
+func _act_complete_flavor(act: int) -> String:
+	match act:
+		1: return "余杭山間的惡徒已被驅散，一行人踏上了通往蘇州的路途——誰知更大的困境正在前方等待。"
+		2: return "離開蘇州地底的殭屍之地，穿越險峻山路，苗疆蠱土的神秘與危險已在眼前。"
+		3: return "苗疆的蠱毒危機雖已解除，但真正的威脅遠不止如此，眾人向鎖妖塔進發，決意斬草除根。"
+		4: return "鎖妖塔的封印被破，邪神即將甦醒！為阻止拜月教主完成邪法，必須立刻趕赴教壇，決一死戰。"
+	return ""
+
+func _act_next_name(act: int) -> String:
+	match act:
+		1: return "蘇州地底"
+		2: return "苗疆蠱土"
+		3: return "鎖妖塔"
+		4: return "拜月決戰"
+	return "下一幕"
 
 func show_deck_view(mode: String = "view") -> void:
 	close_deck_view()
@@ -2945,8 +3029,8 @@ func show_result(victory: bool) -> void:
 	box.add_theme_constant_override("separation", 14)
 	panel.add_child(box)
 	if victory:
-		box.add_child(_title("小型冒險完成", 34))
-		box.add_child(UIFactory.paragraph("%s 完成了 %d 層路線，最終 HP %d/%d，剩餘銅錢 %d。" % [selected_character.display_name, run_state.encounter_choices.size(), run_state.hp, selected_character.max_hp, run_state.gold]))
+		box.add_child(_title("通關！仙劍成道", 34))
+		box.add_child(UIFactory.paragraph("%s 歷經五幕征途，終於擊敗了拜月教主，守護了天下蒼生。\n最終 HP %d/%d，剩餘銅錢 %d。" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold]))
 	else:
 		box.add_child(_title("戰鬥失敗", 34))
 		box.add_child(UIFactory.paragraph("%s 敗於 %s。調整出牌節奏再試一次。" % [selected_character.display_name, battle.enemy.display_name]))
@@ -3218,7 +3302,7 @@ func _retry_current_battle() -> void:
 	start_next_battle(enemy_to_retry)
 
 func _refresh_battle(animate_draw: bool = false) -> void:
-	var top_parts: Array[String] = ["第 %d/%d 層" % [run_state.encounter_index + 1, run_state.encounter_choices.size()]]
+	var top_parts: Array[String] = ["第%s幕 %d/%d 層" % [_act_numeral(run_state.act), run_state.encounter_index + 1, run_state.encounter_choices.size()]]
 	top_parts.append("抽 %d / 棄 %d" % [battle.deck.draw_pile.size(), battle.deck.discard_pile.size()])
 	var passive_status: String = battle.passive_status_text()
 	if not passive_status.is_empty():
