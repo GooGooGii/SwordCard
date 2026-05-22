@@ -68,6 +68,7 @@ func _initialize() -> void:
 	_test_save_round_trip(characters)
 	_test_save_manager_cycle(characters)
 	_test_save_migration(characters)
+	_test_party_round_trip(characters)
 	_test_battle_status_stacking(characters[0], enemies[0])
 	_test_status_decay()
 	_test_poison_tick_and_decay()
@@ -112,19 +113,77 @@ func _test_save_round_trip(characters: Array[CharacterData]) -> void:
 	assert(restored.relics.size() == state.relics.size(), "relics size mismatch")
 
 func _test_save_migration(characters: Array[CharacterData]) -> void:
-	# 模擬「沒有 save_version 欄位的舊存檔」（v0 → v1 升級路徑）
-	var state: RunState = RunState.new()
-	state.init_for(characters[0])
-	state.gold = 222
-	var legacy: Dictionary = state.to_dict()
-	legacy.erase("save_version")
-	var migrated: Dictionary = SaveManager.migrate(legacy)
-	assert(int(migrated.get("save_version", 0)) == SaveManager.SAVE_VERSION,
-		"migrate should stamp save_version to current; got %d" % int(migrated.get("save_version", 0)))
-	# 驗證升級後的 dict 仍可被 RunState.from_dict 還原
+	# 模擬「v1 單角色存檔」（character_id / hp / max_hp / deck 等舊欄位）→ v2 一人隊伍
+	var v1_dict: Dictionary = {
+		"save_version": 1,
+		"character_id": characters[0].id,
+		"hp": 33,
+		"max_hp": characters[0].max_hp,
+		"power_bonus": 2,
+		"gold": 222,
+		"deck": [],
+		"encounter_index": 5,
+		"encounter_choices": [],
+		"chosen_map_path": [],
+		"pending_rest_heal": 0,
+		"current_shop_inventory": [],
+		"current_shop_is_black": false,
+		"current_event_variant": "shrine",
+		"relics": [],
+		"ascension_level": 1,
+		"map_seed": 0
+	}
+	# 給 v1 deck 一些卡 (model real save)
+	for card: CardData in characters[0].starting_deck:
+		(v1_dict["deck"] as Array).append(card.to_dict())
+	var migrated: Dictionary = SaveManager.migrate(v1_dict)
+	assert(int(migrated.get("save_version", 0)) == SaveManager.SAVE_VERSION, "migrate should stamp save_version to current")
+	assert(migrated.has("character_ids"), "v1->v2 migrate should add character_ids array")
+	assert((migrated["character_ids"] as Array).size() == 1, "v1->v2: party should have 1 character")
+	assert(int((migrated["character_hps"] as Array)[0]) == 33, "v1->v2: hp should migrate to character_hps[0]")
+	assert((migrated["character_decks"] as Array).size() == 1, "v1->v2: character_decks should have 1 entry")
+	assert(((migrated["character_decks"] as Array)[0] as Array).size() == characters[0].starting_deck.size(),
+		"v1->v2: deck cards should not be lost")
+	# from_dict 還原成 RunState 並驗證
 	var restored: RunState = RunState.new()
-	assert(restored.from_dict(migrated, characters), "migrated legacy save should from_dict cleanly")
-	assert(restored.gold == 222, "migration should preserve gold")
+	assert(restored.from_dict(migrated, characters), "migrated v1 save should from_dict cleanly")
+	assert(restored.gold == 222)
+	assert(restored.ascension_level == 1)
+	assert(restored.characters.size() == 1)
+	assert(restored.characters[0].id == characters[0].id)
+	assert(restored.character_hps[0] == 33)
+	assert(restored.character_max_hps[0] == characters[0].max_hp)
+	assert(restored.character_power_bonus[0] == 2)
+	assert(restored.active_character_index == 0)
+	# 別名也要對
+	assert(restored.character.id == characters[0].id, "character alias should resolve to active")
+	assert(restored.hp == 33, "hp alias should resolve to active")
+	assert(restored.deck.size() == characters[0].starting_deck.size(), "deck alias should resolve to active")
+
+func _test_party_round_trip(characters: Array[CharacterData]) -> void:
+	# 3 人隊伍 round-trip
+	if characters.size() < 3:
+		return
+	var state: RunState = RunState.new()
+	var party: Array[CharacterData] = [characters[0], characters[1], characters[2]]
+	state.init_for(party)
+	state.character_hps[1] = 10
+	state.character_power_bonus[2] = 4
+	state.active_character_index = 1
+	state.gold = 88
+	var dict: Dictionary = state.to_dict()
+	var parsed: Dictionary = JSON.parse_string(JSON.stringify(dict)) as Dictionary
+	var restored: RunState = RunState.new()
+	assert(restored.from_dict(parsed, characters), "3-character party round-trip from_dict failed")
+	assert(restored.characters.size() == 3, "party size mismatch")
+	assert(restored.character_hps[1] == 10, "per-character hp mismatch")
+	assert(restored.character_power_bonus[2] == 4, "per-character power_bonus mismatch")
+	assert(restored.active_character_index == 1, "active_character_index mismatch")
+	assert(restored.characters[1].id == characters[1].id, "characters[1] id mismatch")
+	assert(restored.character_decks.size() == 3, "character_decks should have 3 entries")
+	for i: int in range(3):
+		assert((restored.character_decks[i] as Array).size() == characters[i].starting_deck.size(),
+			"character %d deck size mismatch" % i)
 
 func _test_save_manager_cycle(characters: Array[CharacterData]) -> void:
 	SaveManager.clear()

@@ -3,17 +3,19 @@ extends RefCounted
 
 const STARTING_GOLD: int = 45
 
-var character: CharacterData
-var hp: int = 0
-var max_hp: int = 0
-var gold: int = 0
-var power_bonus: int = 0
-var deck: Array[CardData] = []
+# Party (1–3 角色) — characters[0] 是隊長、永久不變
+var characters: Array[CharacterData] = []
+var character_hps: Array[int] = []
+var character_max_hps: Array[int] = []
+var character_power_bonus: Array[int] = []
+var character_decks: Array = []  # Array of Array[CardData] — GDScript 不易宣告巢狀 typed
+var active_character_index: int = 0
 
+# 全隊共用的 run 狀態
+var gold: int = 0
 var encounter_index: int = 0
 var encounter_choices: Array[Array] = []
 var chosen_map_path: Array[int] = []
-
 var pending_rest_heal: int = 0
 var current_shop_inventory: Array[Dictionary] = []
 var current_shop_is_black: bool = false
@@ -22,15 +24,87 @@ var relics: Array[RelicData] = []
 var ascension_level: int = 0
 var map_seed: int = 0
 
-func init_for(chosen: CharacterData) -> void:
-	character = chosen
-	max_hp = chosen.max_hp
-	hp = chosen.max_hp
+# Convenience aliases — 對應 active character。讓單角色時期的 main.gd 程式碼幾乎不用改。
+var character: CharacterData:
+	get:
+		if characters.is_empty() or active_character_index >= characters.size():
+			return null
+		return characters[active_character_index]
+	set(value):
+		if value == null:
+			characters = []
+			return
+		if characters.is_empty():
+			characters.append(value)
+			active_character_index = 0
+		else:
+			characters[active_character_index] = value
+
+var hp: int:
+	get:
+		if character_hps.is_empty() or active_character_index >= character_hps.size():
+			return 0
+		return character_hps[active_character_index]
+	set(value):
+		if active_character_index < character_hps.size():
+			character_hps[active_character_index] = value
+
+var max_hp: int:
+	get:
+		if character_max_hps.is_empty() or active_character_index >= character_max_hps.size():
+			return 0
+		return character_max_hps[active_character_index]
+	set(value):
+		if active_character_index < character_max_hps.size():
+			character_max_hps[active_character_index] = value
+
+var power_bonus: int:
+	get:
+		if character_power_bonus.is_empty() or active_character_index >= character_power_bonus.size():
+			return 0
+		return character_power_bonus[active_character_index]
+	set(value):
+		if active_character_index < character_power_bonus.size():
+			character_power_bonus[active_character_index] = value
+
+var deck: Array[CardData]:
+	get:
+		if character_decks.is_empty() or active_character_index >= character_decks.size():
+			var empty: Array[CardData] = []
+			return empty
+		return character_decks[active_character_index] as Array[CardData]
+	set(value):
+		if active_character_index < character_decks.size():
+			character_decks[active_character_index] = value
+
+func init_for(chars: Variant) -> void:
+	# 接受單 CharacterData（沿用舊呼叫）或 Array[CharacterData]
+	var party: Array[CharacterData] = []
+	if chars is CharacterData:
+		party.append(chars as CharacterData)
+	elif chars is Array:
+		for c_v: Variant in (chars as Array):
+			if c_v is CharacterData:
+				party.append(c_v as CharacterData)
+	if party.is_empty():
+		push_warning("RunState.init_for: empty party")
+		return
+	characters.clear()
+	character_hps.clear()
+	character_max_hps.clear()
+	character_power_bonus.clear()
+	character_decks.clear()
+	active_character_index = 0
+	for c: CharacterData in party:
+		characters.append(c)
+		character_hps.append(c.max_hp)
+		character_max_hps.append(c.max_hp)
+		character_power_bonus.append(0)
+		var deck_copy: Array[CardData] = []
+		for card: CardData in c.starting_deck:
+			deck_copy.append(card.clone())
+		character_decks.append(deck_copy)
 	gold = STARTING_GOLD
-	power_bonus = 0
-	deck.clear()
-	for card: CardData in chosen.starting_deck:
-		deck.append(card.clone())
 	encounter_index = 0
 	encounter_choices = []
 	chosen_map_path = []
@@ -39,10 +113,11 @@ func init_for(chosen: CharacterData) -> void:
 	current_shop_is_black = false
 	current_event_variant = "shrine"
 	relics.clear()
-	# 角色起始專武：每個角色第一把 weapon
-	var starter_weapons: Array[RelicData] = RelicCatalog.weapons_for_character(chosen.id)
-	if not starter_weapons.is_empty():
-		add_relic(starter_weapons[0])
+	# 每人各拿自己的 starter weapon
+	for c: CharacterData in party:
+		var weapons: Array[RelicData] = RelicCatalog.weapons_for_character(c.id)
+		if not weapons.is_empty():
+			add_relic(weapons[0])
 
 func add_relic(relic: RelicData) -> void:
 	if relic == null:
@@ -81,33 +156,62 @@ func _apply_acquire_triggers(relic: RelicData) -> void:
 				"gold_bonus":
 					gold += amount
 				"max_hp_bonus":
-					max_hp += amount
-					hp += amount
+					# MVP: 只給隊長
+					if not character_max_hps.is_empty():
+						character_max_hps[0] += amount
+						character_hps[0] += amount
 
 func heal(amount: int) -> void:
-	hp = min(max_hp, hp + amount)
+	# 對 active 角色補血（rest_node / event 的原本語意：補當前玩家）
+	if active_character_index >= character_hps.size():
+		return
+	character_hps[active_character_index] = min(character_max_hps[active_character_index], character_hps[active_character_index] + amount)
 
 func take_damage(amount: int, minimum: int = 1) -> void:
-	hp = max(minimum, hp - amount)
+	if active_character_index >= character_hps.size():
+		return
+	character_hps[active_character_index] = max(minimum, character_hps[active_character_index] - amount)
 
 func sync_hp_from_battle(battle_hp: int) -> void:
-	hp = battle_hp
+	if active_character_index < character_hps.size():
+		character_hps[active_character_index] = battle_hp
+
+func is_all_dead() -> bool:
+	for h: int in character_hps:
+		if h > 0:
+			return false
+	return true
+
+func alive_character_indices() -> Array[int]:
+	var result: Array[int] = []
+	for i: int in range(character_hps.size()):
+		if character_hps[i] > 0:
+			result.append(i)
+	return result
 
 func to_dict() -> Dictionary:
-	var deck_data: Array[Dictionary] = []
-	for card: CardData in deck:
-		deck_data.append(card.to_dict())
+	var character_ids: Array[String] = []
+	for c: CharacterData in characters:
+		character_ids.append(c.id)
+	var character_decks_data: Array = []
+	for cdeck_v: Variant in character_decks:
+		var cdeck: Array = cdeck_v as Array
+		var deck_data: Array[Dictionary] = []
+		for card: CardData in cdeck:
+			deck_data.append(card.to_dict())
+		character_decks_data.append(deck_data)
 	var relics_data: Array[Dictionary] = []
 	for r: RelicData in relics:
 		relics_data.append(r.to_dict())
 	return {
 		"version": 2,
-		"character_id": character.id if character != null else "",
-		"hp": hp,
-		"max_hp": max_hp,
+		"character_ids": character_ids,
+		"character_hps": character_hps.duplicate(),
+		"character_max_hps": character_max_hps.duplicate(),
+		"character_power_bonus": character_power_bonus.duplicate(),
+		"character_decks": character_decks_data,
+		"active_character_index": active_character_index,
 		"gold": gold,
-		"power_bonus": power_bonus,
-		"deck": deck_data,
 		"encounter_index": encounter_index,
 		"encounter_choices": _serialize_choices(),
 		"chosen_map_path": chosen_map_path.duplicate(),
@@ -121,23 +225,53 @@ func to_dict() -> Dictionary:
 	}
 
 func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> bool:
-	var char_id: String = String(data.get("character_id", ""))
-	var found_character: CharacterData = null
-	for candidate: CharacterData in available_characters:
-		if candidate.id == char_id:
-			found_character = candidate.clone()
-			break
-	if found_character == null:
+	# SaveManager.migrate 之後 data 必有 character_ids
+	var character_ids_v: Variant = data.get("character_ids", null)
+	if character_ids_v == null:
+		push_warning("RunState.from_dict: missing character_ids — did SaveManager.migrate run?")
 		return false
-	character = found_character
-	max_hp = int(data.get("max_hp", found_character.max_hp))
-	hp = int(data.get("hp", max_hp))
+	var ids: Array = character_ids_v as Array
+	characters.clear()
+	for id_v: Variant in ids:
+		var char_id: String = String(id_v)
+		if char_id.is_empty():
+			return false
+		var found: CharacterData = null
+		for candidate: CharacterData in available_characters:
+			if candidate.id == char_id:
+				found = candidate.clone()
+				break
+		if found == null:
+			return false
+		characters.append(found)
+	character_hps.clear()
+	for h_v: Variant in (data.get("character_hps", []) as Array):
+		character_hps.append(int(h_v))
+	while character_hps.size() < characters.size():
+		character_hps.append(characters[character_hps.size()].max_hp)
+	character_max_hps.clear()
+	for h_v: Variant in (data.get("character_max_hps", []) as Array):
+		character_max_hps.append(int(h_v))
+	while character_max_hps.size() < characters.size():
+		character_max_hps.append(characters[character_max_hps.size()].max_hp)
+	character_power_bonus.clear()
+	for h_v: Variant in (data.get("character_power_bonus", []) as Array):
+		character_power_bonus.append(int(h_v))
+	while character_power_bonus.size() < characters.size():
+		character_power_bonus.append(0)
+	character_decks.clear()
+	for cdeck_v: Variant in (data.get("character_decks", []) as Array):
+		var cdeck_in: Array = cdeck_v as Array
+		var typed_deck: Array[CardData] = []
+		for card_v: Variant in cdeck_in:
+			if card_v is Dictionary:
+				typed_deck.append(CardData.from_dict(card_v as Dictionary))
+		character_decks.append(typed_deck)
+	while character_decks.size() < characters.size():
+		var empty_deck: Array[CardData] = []
+		character_decks.append(empty_deck)
+	active_character_index = clamp(int(data.get("active_character_index", 0)), 0, max(0, characters.size() - 1))
 	gold = int(data.get("gold", 0))
-	power_bonus = int(data.get("power_bonus", 0))
-	deck.clear()
-	for card_data: Variant in (data.get("deck", []) as Array):
-		if card_data is Dictionary:
-			deck.append(CardData.from_dict(card_data as Dictionary))
 	encounter_index = int(data.get("encounter_index", 0))
 	encounter_choices = _deserialize_choices(data.get("encounter_choices", []) as Array)
 	chosen_map_path.clear()
