@@ -9,7 +9,7 @@ func _initialize() -> void:
 		assert(character.display_name.length() > 0)
 		assert(character.max_hp > 0)
 		assert(character.starting_deck.size() >= 5)
-		assert(character.reward_pool.size() >= 5)
+		assert(character.reward_pool.size() >= 10)
 		for reward_card: CardData in character.reward_pool:
 			assert(ResourceLoader.exists(reward_card.art_path))
 		var deck: DeckManager = DeckManager.new()

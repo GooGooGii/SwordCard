@@ -83,6 +83,38 @@ const VARIANTS: Dictionary = {
 		"gain_cost": 6,
 		"power": 2,
 		"power_label": "焚香"
+	},
+	"ancient_battlefield": {
+		"title": "古戰場遺跡",
+		"flavor": "殘破的旌旗插在乾涸的血土上，風過時像是有人低鳴。踏入此地，眼前不自覺浮現金戈鐵馬。",
+		"heal": 3,
+		"gain_cost": 5,
+		"power": 3,
+		"power_label": "祭英靈"
+	},
+	"alchemy_furnace": {
+		"title": "煉丹爐火",
+		"flavor": "青石台上的爐子還燒著，藥香混著焦味。爐蓋壓著一張藥方，字跡模糊。",
+		"heal": 10,
+		"gain_cost": 8,
+		"power": 2,
+		"power_label": "服丹"
+	},
+	"ghost_forest": {
+		"title": "鬼林迷霧",
+		"flavor": "樹影在霧中晃動，有什麼在彼端注視著你。越深入，心跳卻越發清晰有力。",
+		"heal": 0,
+		"gain_cost": 3,
+		"power": 5,
+		"power_label": "借膽"
+	},
+	"immortal_ruins": {
+		"title": "仙人遺址",
+		"flavor": "地上的符紋已褪色，踩上去腳底仍有微微震動，像是某種呼吸尚未停止。",
+		"heal": 6,
+		"gain_cost": 6,
+		"power": 2,
+		"power_label": "感悟"
 	}
 }
 
