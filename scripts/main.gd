@@ -2314,7 +2314,7 @@ func show_event_node() -> void:
 	var event_data: Dictionary = EventData.for_variant(run_state.current_event_variant)
 	box.add_child(_title(String(event_data["title"]), 32))
 	box.add_child(UIFactory.paragraph(String(event_data["flavor"])))
-	box.add_child(UIFactory.paragraph("%s  HP %d/%d  銅錢 %d  本輪增傷 +%d" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, run_state.power_bonus]))
+	box.add_child(_event_status_strip())
 	var heal_amount: int = int(event_data["heal"])
 	var gain_cost: int = int(event_data["gain_cost"])
 	var power_gain: int = int(event_data["power"])
@@ -2330,6 +2330,41 @@ func show_event_node() -> void:
 	grid.add_child(_event_choice_button("悟法", "升級 1 張招式", _upgradeable_cards().is_empty(), show_upgrade_card_view))
 	grid.add_child(_event_choice_button("洗髓", "移除 1 張招式", run_state.deck.size() <= 5, show_remove_card_view))
 	grid.add_child(_event_choice_button("翻閱", "查看當前手札", false, show_deck_view))
+
+func _event_status_strip() -> PanelContainer:
+	# 奇遇頁狀態列：深色底板 + HP 條 + 金幣 + 牌組數 + 增傷（獨立於敘事文字）
+	var container: PanelContainer = PanelContainer.new()
+	var style: StyleBoxFlat = UIFactory.style_box(ThemeColors.PANEL_NAVY, Color("1a1a1f"), 1, 6)
+	container.add_theme_stylebox_override("panel", style)
+	container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	container.custom_minimum_size = Vector2(0, 36)
+	var hbox: HBoxContainer = HBoxContainer.new()
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.add_theme_constant_override("separation", 14)
+	container.add_child(hbox)
+	# HP bar + text
+	var bar: ProgressBar = UIFactory.hp_bar(ThemeColors.HP_FILL, ThemeColors.HP_BG_DARK)
+	bar.custom_minimum_size = Vector2(72, 12)
+	bar.max_value = run_state.max_hp
+	bar.value = run_state.hp
+	hbox.add_child(bar)
+	var hp_lbl: Label = UIFactory.card_label(
+		"HP %d / %d" % [run_state.hp, run_state.max_hp],
+		13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_LEFT)
+	hbox.add_child(hp_lbl)
+	# dot separator
+	hbox.add_child(UIFactory.card_label("·", 13, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	# gold
+	hbox.add_child(UIFactory.card_label("銅錢 %d" % run_state.gold, 13, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_LEFT))
+	# dot separator
+	hbox.add_child(UIFactory.card_label("·", 13, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	# deck count
+	hbox.add_child(UIFactory.card_label("牌組 %d" % run_state.deck.size(), 13, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_LEFT))
+	# power bonus – only show when non-zero
+	if run_state.power_bonus > 0:
+		hbox.add_child(UIFactory.card_label("·", 13, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+		hbox.add_child(UIFactory.card_label("增傷 +%d" % run_state.power_bonus, 13, Color("88c8ff"), HORIZONTAL_ALIGNMENT_LEFT))
+	return container
 
 func _event_choice_button(title: String, subtitle: String, disabled: bool, on_press: Callable) -> Button:
 	# 文青卡片式按鈕：水墨紙底色 + 細金邊 + 標題下細分隔線 + 副標小字
