@@ -1121,51 +1121,6 @@ func show_progress_screen() -> void:
 
 func _map_view() -> Control:
 	return _map_view_sts()
-	var map_panel: PanelContainer = PanelContainer.new()
-	map_panel.custom_minimum_size = Vector2(1040, 540)
-	map_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("f4edd8", 0.08), Color("d7c89a", 0.3), 1, 8))
-	var map_area: Control = Control.new()
-	map_area.custom_minimum_size = Vector2(1040, 540)
-	map_area.clip_contents = false
-	map_panel.add_child(map_area)
-	var map_bg: TextureRect = TextureRect.new()
-	map_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	map_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	map_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	map_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	map_bg.modulate = Color(1, 1, 1, 0.86)
-	map_bg.texture = UIFactory.load_texture("res://assets/art/map_bg_ink.png")
-	map_area.add_child(map_bg)
-	var line_layer: Control = preload("res://scripts/map_link_layer.gd").new()
-	line_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	line_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	map_area.add_child(line_layer)
-	var map_row: HBoxContainer = HBoxContainer.new()
-	map_row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	map_row.add_theme_constant_override("separation", 12)
-	map_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var node_buttons: Array[Dictionary] = []
-	for row_index: int in range(run_state.encounter_choices.size()):
-		var column: VBoxContainer = VBoxContainer.new()
-		column.add_theme_constant_override("separation", 8)
-		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var title: Label = UIFactory.card_label("第 %d 層" % (row_index + 1), 15, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-		column.add_child(title)
-		var row: Array = run_state.encounter_choices[row_index]
-		for node_variant: Variant in row:
-			var node_data: Dictionary = node_variant as Dictionary
-			var node_button: Button = _map_node_button(node_data, row_index)
-			column.add_child(node_button)
-			node_buttons.append({"button": node_button, "row": row_index, "index": int(node_data.get("index", 0))})
-		map_row.add_child(column)
-		if row_index < run_state.encounter_choices.size() - 1:
-			var path_hint: Label = UIFactory.card_label("", 24, ThemeColors.BORDER_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-			path_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			path_hint.custom_minimum_size = Vector2(22, 180)
-			map_row.add_child(path_hint)
-	map_area.add_child(map_row)
-	call_deferred("_refresh_map_link_layer", line_layer, node_buttons)
-	return map_panel
 
 func _build_streamlined_progress_screen(compact_map: bool) -> void:
 	root.add_theme_constant_override("margin_left", 14 if compact_map else 18)
@@ -1233,14 +1188,8 @@ func _map_view_sts() -> Control:
 	map_area.size = content_size
 	map_area.clip_contents = false
 	scroll.add_child(map_area)
-	var map_bg: TextureRect = TextureRect.new()
-	map_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	map_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	map_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	map_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	map_bg.modulate = Color(1.06, 1.03, 0.98, 0.92)
-	map_bg.texture = UIFactory.load_texture("res://assets/art/map_bg_ink.png")
-	map_area.add_child(map_bg)
+	# 地圖底紙由 show_progress_screen() 的全域 background_rect 提供
+	# （透過半透明的 panel 透出來），不在這裡再疊一張同樣的圖，避免捲動時前後兩張錯位
 	var line_layer: Control = preload("res://scripts/map_link_layer.gd").new()
 	line_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	line_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
