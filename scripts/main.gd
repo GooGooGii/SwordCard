@@ -36,6 +36,9 @@ var energy_orb: EnergyOrb
 var relic_strip: HBoxContainer
 var deck_overlay: Control
 var deck_view_mode: String = "view"
+var draw_pile_button: Button
+var discard_pile_button: Button
+var exhausted_pile_button: Button
 var card_buttons: Array[Button] = []
 var animating_cards: Array[Button] = []
 var pause_menu: PauseMenu
@@ -1898,6 +1901,11 @@ func _build_left_dock(parent: HBoxContainer) -> void:
 	deck_button.custom_minimum_size = Vector2(0, 32)
 	deck_button.pressed.connect(show_deck_view)
 	dock.add_child(deck_button)
+	draw_pile_button = _button("抽牌堆 (0)")
+	draw_pile_button.add_theme_font_size_override("font_size", 13)
+	draw_pile_button.custom_minimum_size = Vector2(0, 32)
+	draw_pile_button.pressed.connect(show_draw_pile_view)
+	dock.add_child(draw_pile_button)
 	var relics_button: Button = _button("遺物 (%d)" % run_state.relics.size())
 	relics_button.add_theme_font_size_override("font_size", 13)
 	relics_button.custom_minimum_size = Vector2(0, 32)
@@ -1909,6 +1917,7 @@ func _build_right_dock(parent: HBoxContainer) -> void:
 	dock.custom_minimum_size = Vector2(140, 0)
 	dock.size_flags_horizontal = 0
 	dock.alignment = BoxContainer.ALIGNMENT_CENTER
+	dock.add_theme_constant_override("separation", 8)
 	parent.add_child(dock)
 	end_turn_button = Button.new()
 	end_turn_button.text = "結束回合"
@@ -1922,6 +1931,18 @@ func _build_right_dock(parent: HBoxContainer) -> void:
 	end_turn_button.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("4a3530"), Color("786258"), 2, 12))
 	end_turn_button.pressed.connect(end_player_turn)
 	dock.add_child(end_turn_button)
+	
+	discard_pile_button = _button("棄牌堆 (0)")
+	discard_pile_button.add_theme_font_size_override("font_size", 13)
+	discard_pile_button.custom_minimum_size = Vector2(0, 32)
+	discard_pile_button.pressed.connect(show_discard_pile_view)
+	dock.add_child(discard_pile_button)
+	
+	exhausted_pile_button = _button("消耗堆 (0)")
+	exhausted_pile_button.add_theme_font_size_override("font_size", 13)
+	exhausted_pile_button.custom_minimum_size = Vector2(0, 32)
+	exhausted_pile_button.pressed.connect(show_exhaust_pile_view)
+	dock.add_child(exhausted_pile_button)
 
 func _portrait_with_block_badge(path: String, portrait_size: Vector2, show_full: bool, is_player: bool, tint: Color = Color.WHITE) -> Control:
 	var wrap: Control = Control.new()
@@ -2933,7 +2954,7 @@ func _act_next_name(act: int) -> String:
 		4: return "拜月決戰"
 	return "下一幕"
 
-func show_deck_view(mode: String = "view") -> void:
+func show_deck_view(mode: String = "view", custom_cards = null, custom_title: String = "") -> void:
 	close_deck_view()
 	deck_view_mode = mode
 	deck_overlay = PanelContainer.new()
@@ -2950,19 +2971,37 @@ func show_deck_view(mode: String = "view") -> void:
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 12)
 	outer.add_child(box)
+	
 	var title_text: String = "目前牌組"
-	if deck_view_mode == "remove":
+	if not custom_title.is_empty():
+		title_text = custom_title
+	elif deck_view_mode == "remove":
 		title_text = "選擇要移除的牌"
 	elif deck_view_mode == "upgrade":
 		title_text = "選擇要升級的牌"
 	box.add_child(_title(title_text, 32))
-	box.add_child(UIFactory.paragraph("%s  HP %d/%d  銅錢 %d  共 %d 張牌" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, run_state.deck.size()]))
-	var summary: Label = UIFactory.paragraph(_deck_summary_text())
+	
+	var target_cards: Array
+	if custom_cards == null:
+		target_cards = run_state.deck
+	else:
+		target_cards = custom_cards
+		
+	var count_text: String = "%s  HP %d/%d  銅錢 %d" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold]
+	if custom_cards == null:
+		count_text += "  共 %d 張牌" % run_state.deck.size()
+	else:
+		count_text += "  共 %d 張牌" % target_cards.size()
+	box.add_child(UIFactory.paragraph(count_text))
+	
+	var summary: Label = UIFactory.paragraph(_deck_summary_text(target_cards, custom_cards == null))
 	box.add_child(summary)
+	
 	if deck_view_mode == "remove":
 		box.add_child(UIFactory.paragraph("至少保留 5 張牌。點選一張牌後會移除並完成事件。"))
 	elif deck_view_mode == "upgrade":
 		box.add_child(UIFactory.paragraph("點選一張未升級的牌，升級後會完成此節點。每張卡下方標註升級後的數值。"))
+		
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(scroll)
@@ -2971,8 +3010,13 @@ func show_deck_view(mode: String = "view") -> void:
 	grid.add_theme_constant_override("h_separation", 10)
 	grid.add_theme_constant_override("v_separation", 10)
 	scroll.add_child(grid)
-	for card: CardData in run_state.deck:
-		grid.add_child(_deck_view_card(card, deck_view_mode))
+	
+	var grouped: Array[Dictionary] = _group_and_sort_cards(target_cards)
+	for item in grouped:
+		var card: CardData = item["card"] as CardData
+		var count: int = item["count"]
+		grid.add_child(_deck_view_card(card, deck_view_mode, count))
+		
 	var close_button: Button = _button("關閉")
 	close_button.pressed.connect(close_deck_view)
 	box.add_child(close_button)
@@ -2983,11 +3027,72 @@ func close_deck_view() -> void:
 		deck_overlay = null
 	deck_view_mode = "view"
 
-func _deck_summary_text() -> String:
+func show_draw_pile_view() -> void:
+	if battle == null or battle.deck == null:
+		return
+	show_deck_view("view", battle.deck.draw_pile, "抽牌堆")
+
+func show_discard_pile_view() -> void:
+	if battle == null or battle.deck == null:
+		return
+	show_deck_view("view", battle.deck.discard_pile, "棄牌堆")
+
+func show_exhaust_pile_view() -> void:
+	if battle == null or battle.deck == null:
+		return
+	show_deck_view("view", battle.deck.exhausted_pile, "消耗堆")
+
+func _group_and_sort_cards(cards: Array) -> Array[Dictionary]:
+	var groups: Dictionary = {}
+	var order: Array[String] = []
+	for card: CardData in cards:
+		var key: String = card.id + "_upgraded_" + str(card.upgraded)
+		if not groups.has(key):
+			groups[key] = {
+				"card": card,
+				"count": 0
+			}
+			order.append(key)
+		groups[key]["count"] += 1
+	
+	var sorted_groups: Array[Dictionary] = []
+	for key in order:
+		sorted_groups.append(groups[key])
+	
+	sorted_groups.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var ca: CardData = a["card"] as CardData
+		var cb: CardData = b["card"] as CardData
+		
+		var type_score = func(t: String) -> int:
+			match t:
+				"power": return 1
+				"skill": return 2
+				"attack": return 3
+			return 4
+		
+		var score_a: int = type_score.call(ca.card_type)
+		var score_b: int = type_score.call(cb.card_type)
+		if score_a != score_b:
+			return score_a < score_b
+			
+		var title_a: String = ca.display_title()
+		var title_b: String = cb.display_title()
+		if title_a != title_b:
+			return title_a < title_b
+			
+		if ca.upgraded != cb.upgraded:
+			return not ca.upgraded
+			
+		return false
+	)
+	
+	return sorted_groups
+
+func _deck_summary_text(target_cards: Array, is_main_deck: bool) -> String:
 	var attack_count: int = 0
 	var skill_count: int = 0
 	var power_count: int = 0
-	for card: CardData in run_state.deck:
+	for card: CardData in target_cards:
 		match card.card_type:
 			"attack":
 				attack_count = attack_count + 1
@@ -2995,12 +3100,16 @@ func _deck_summary_text() -> String:
 				skill_count = skill_count + 1
 			"power":
 				power_count = power_count + 1
-	return "攻擊 %d    技能 %d    能力 %d    可升級 %d\n%s" % [attack_count, skill_count, power_count, _upgradeable_cards().size(), _duplicate_summary_text()]
+	var dup_summary: String = _duplicate_summary_text(target_cards)
+	if is_main_deck:
+		return "攻擊 %d    技能 %d    能力 %d    可升級 %d\n%s" % [attack_count, skill_count, power_count, _upgradeable_cards().size(), dup_summary]
+	else:
+		return "攻擊 %d    技能 %d    能力 %d\n%s" % [attack_count, skill_count, power_count, dup_summary]
 
-func _duplicate_summary_text() -> String:
+func _duplicate_summary_text(target_cards: Array) -> String:
 	var counts: Dictionary = {}
 	var names: Dictionary = {}
-	for card: CardData in run_state.deck:
+	for card: CardData in target_cards:
 		counts[card.id] = int(counts.get(card.id, 0)) + 1
 		names[card.id] = card.display_title()
 	var parts: Array[String] = []
@@ -3013,7 +3122,7 @@ func _duplicate_summary_text() -> String:
 		return "重複：無"
 	return "重複：" + "，".join(parts)
 
-func _deck_view_card(card: CardData, mode: String = "view") -> Control:
+func _deck_view_card(card: CardData, mode: String = "view", count: int = 1) -> Control:
 	var selectable: bool = mode == "remove" or (mode == "upgrade" and not card.upgraded)
 	var visually_enabled: bool = mode != "upgrade" or not card.upgraded
 	var button: Button = _make_card_button(card, card.cost, Vector2(190, 260), true, visually_enabled)
@@ -3025,7 +3134,24 @@ func _deck_view_card(card: CardData, mode: String = "view") -> Control:
 	else:
 		button.add_theme_stylebox_override("disabled", UIFactory.style_box(CardFormat.card_color(card.card_type, true), Color("e7d38a"), 2, 8))
 		button.add_theme_color_override("font_disabled_color", ThemeColors.TEXT_LIGHT)
-	# 升級模式下，在卡片下方標註升級後的標題 + 描述，讓玩家點之前看得到差異
+	
+	if count > 1:
+		var badge: PanelContainer = PanelContainer.new()
+		badge.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a"), ThemeColors.BORDER_GOLD, 2, 6))
+		badge.custom_minimum_size = Vector2(32, 32)
+		badge.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		badge.offset_left = -28
+		badge.offset_top = -6
+		badge.offset_right = 4
+		badge.offset_bottom = 26
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		
+		var badge_label: Label = UIFactory.card_label("x%d" % count, 12, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+		badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		badge_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		badge.add_child(badge_label)
+		button.add_child(badge)
+		
 	if mode == "upgrade" and not card.upgraded:
 		var wrap: VBoxContainer = VBoxContainer.new()
 		wrap.add_theme_constant_override("separation", 4)
@@ -3365,6 +3491,12 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 		var switched: bool = bool(battle.state.get("switched_this_turn", false))
 		top_parts.append("切換：%s" % ("已用" if switched else "本回合免費"))
 	status_label.text = "    ".join(top_parts)
+	if draw_pile_button != null and is_instance_valid(draw_pile_button):
+		draw_pile_button.text = "抽牌堆 (%d)" % battle.deck.draw_pile.size()
+	if discard_pile_button != null and is_instance_valid(discard_pile_button):
+		discard_pile_button.text = "棄牌堆 (%d)" % battle.deck.discard_pile.size()
+	if exhausted_pile_button != null and is_instance_valid(exhausted_pile_button):
+		exhausted_pile_button.text = "消耗堆 (%d)" % battle.deck.exhausted_pile.size()
 	# 玩家欄位反映 ACTIVE 角色（battle.character 為 active 的 alias）
 	if battle.character != null:
 		if player_name_label != null:

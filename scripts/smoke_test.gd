@@ -104,6 +104,7 @@ func _initialize() -> void:
 	_test_balance_regression(characters, enemies)
 	_test_balance_regression_mid(characters, bosses)
 	_test_balance_regression_upgraded(characters, enemies, bosses)
+	_test_deck_pile_views(characters)
 	print("SwordCard smoke test passed.")
 	quit(0)
 
@@ -930,3 +931,35 @@ func _simulate_random_battle(character: CharacterData, enemy_template: EnemyData
 		var action: Dictionary = bc.begin_enemy_phase()
 		bc.resolve_enemy_phase(action)
 	return bc.is_victory()
+
+func _test_deck_pile_views(characters: Array[CharacterData]) -> void:
+	var main_script = load("res://scripts/main.gd")
+	var main = main_script.new()
+	var card_a = GameData.make_card("test_attack", "普通攻擊", "李逍遙", 1, "attack", "造成 5 傷害", [])
+	var card_b = GameData.make_card("test_skill", "仙風雲體術", "李逍遙", 2, "skill", "獲得 8 護體", [])
+	var card_c = GameData.make_card("test_power", "天師符法", "李逍遙", 3, "power", "每回合造成傷害", [])
+	var card_a_up = card_a.upgraded_copy()
+	
+	var list = [card_a.clone(), card_b.clone(), card_a.clone(), card_c.clone(), card_a_up.clone()]
+	var grouped = main._group_and_sort_cards(list)
+	
+	assert(grouped.size() == 4, "Grouped size should be 4")
+	assert(grouped[0]["card"].card_type == "power", "First should be power")
+	assert(grouped[0]["card"].id == "test_power", "First ID mismatch")
+	assert(grouped[0]["count"] == 1, "First count mismatch")
+	
+	assert(grouped[1]["card"].card_type == "skill", "Second should be skill")
+	assert(grouped[1]["card"].id == "test_skill", "Second ID mismatch")
+	assert(grouped[1]["count"] == 1, "Second count mismatch")
+	
+	assert(grouped[2]["card"].card_type == "attack", "Third should be attack")
+	assert(grouped[2]["card"].id == "test_attack", "Third ID mismatch")
+	assert(not grouped[2]["card"].upgraded, "Third should be unupgraded")
+	assert(grouped[2]["count"] == 2, "Third count mismatch")
+	
+	assert(grouped[3]["card"].card_type == "attack", "Fourth should be attack")
+	assert(grouped[3]["card"].id == "test_attack", "Fourth ID mismatch")
+	assert(grouped[3]["card"].upgraded, "Fourth should be upgraded")
+	assert(grouped[3]["count"] == 1, "Fourth count mismatch")
+	
+	main.free()
