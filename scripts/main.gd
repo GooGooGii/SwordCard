@@ -2402,9 +2402,34 @@ func resolve_event_heal(amount: int) -> void:
 
 func resolve_event_gain_card(hp_cost: int = 6) -> void:
 	run_state.take_damage(hp_cost)
+	show_event_card_reward(hp_cost)
+
+func show_event_card_reward(hp_cost_paid: int) -> void:
+	_set_background("res://assets/art/event_bg.png")
+	_clear_root()
+	var panel: PanelContainer = UIFactory.make_panel()
+	root.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 14)
+	panel.add_child(box)
+	box.add_child(_title("探取", 34))
+	box.add_child(UIFactory.paragraph("已失去 %d 點生命。選擇 1 張招式加入牌組。" % hp_cost_paid))
+	box.add_child(UIFactory.paragraph("目前 HP %d/%d，牌組 %d 張。" % [run_state.hp, selected_character.max_hp, run_state.deck.size()]))
 	var rewards: Array[CardData] = _make_reward_choices()
-	if not rewards.is_empty():
-		run_state.deck.append(rewards[0].clone())
+	var reward_row: HBoxContainer = HBoxContainer.new()
+	reward_row.add_theme_constant_override("separation", 12)
+	box.add_child(reward_row)
+	for reward: CardData in rewards:
+		var reward_button: Button = _reward_card_button(reward)
+		reward_button.pressed.connect(func(card: CardData = reward): _choose_event_card(card))
+		reward_row.add_child(reward_button)
+	var deck_button: Button = _button("查看目前牌組")
+	deck_button.pressed.connect(show_deck_view)
+	box.add_child(deck_button)
+
+func _choose_event_card(card: CardData) -> void:
+	run_state.deck.append(card.clone())
 	advance_non_battle_node()
 
 func resolve_event_power(amount: int = 1) -> void:
