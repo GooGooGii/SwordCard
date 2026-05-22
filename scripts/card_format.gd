@@ -99,6 +99,17 @@ static func action_has_damage(action: Dictionary) -> bool:
 			return true
 	return false
 
+# 玩家手牌：哪些 effect kind 是「打到敵人身上」（drag 時需要丟到敵人附近才算）。
+# 其餘的（block / heal / draw / energy / power / self_damage）視為非單體，丟到手牌以外
+# 任何地方都算打出。
+const ENEMY_TARGETED_KINDS: Array[String] = ["damage", "poison", "weak", "vulnerable", "consume_energy_damage", "poison_burst"]
+
+static func requires_enemy_target(card: CardData) -> bool:
+	for effect: Dictionary in card.effects:
+		if String(effect.get("kind", "")) in ENEMY_TARGETED_KINDS:
+			return true
+	return false
+
 # 預測敵人 action 結算後玩家會受到的實際傷害。
 # 與 EffectResolver._resolve_effect 的「from_enemy=true、damage」分支保持同步。
 # 回傳: {raw, blocked, dealt} 三個 int。

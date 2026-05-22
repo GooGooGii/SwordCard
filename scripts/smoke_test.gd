@@ -77,6 +77,7 @@ func _initialize() -> void:
 	_test_multi_turn_battle(characters[0], enemies[0])
 	_test_map_generator_reachability(enemies, bosses)
 	_test_predict_enemy_damage_matches_resolver()
+	_test_requires_enemy_target()
 	_test_bestiary_persistence()
 	_test_ascension_persistence_and_modifiers()
 	_test_boss_phase_transition(bosses)
@@ -472,6 +473,46 @@ func _test_map_seed_determinism(enemies: Array[EnemyData], bosses: Array[EnemyDa
 			var b: Dictionary = row_b[node_index] as Dictionary
 			assert(String(a.get("type", "")) == String(b.get("type", "")),
 				"row %d node %d type differs: %s vs %s" % [row_index, node_index, a.get("type"), b.get("type")])
+
+func _test_requires_enemy_target() -> void:
+	# 純傷害
+	var c_damage: Array[Dictionary] = [{"kind": "damage", "amount": 5}]
+	assert(CardFormat.requires_enemy_target(GameData.make_card("t1", "test", "P", 1, "skill", "x", c_damage)))
+	# 純自療
+	var c_heal: Array[Dictionary] = [{"kind": "heal", "amount": 5}]
+	assert(not CardFormat.requires_enemy_target(GameData.make_card("t2", "test", "P", 1, "skill", "x", c_heal)))
+	# 純護體
+	var c_block: Array[Dictionary] = [{"kind": "block", "amount": 5}]
+	assert(not CardFormat.requires_enemy_target(GameData.make_card("t3", "test", "P", 1, "skill", "x", c_block)))
+	# 純抽牌
+	var c_draw: Array[Dictionary] = [{"kind": "draw", "amount": 1}]
+	assert(not CardFormat.requires_enemy_target(GameData.make_card("t4", "test", "P", 1, "skill", "x", c_draw)))
+	# 純 power
+	var c_power: Array[Dictionary] = [{"kind": "power", "amount": 1}]
+	assert(not CardFormat.requires_enemy_target(GameData.make_card("t5", "test", "P", 1, "power", "x", c_power)))
+	# weak / vulnerable / poison 都是丟去敵人
+	var c_weak: Array[Dictionary] = [{"kind": "weak", "amount": 1}]
+	var c_vuln: Array[Dictionary] = [{"kind": "vulnerable", "amount": 1}]
+	var c_poison: Array[Dictionary] = [{"kind": "poison", "amount": 1}]
+	assert(CardFormat.requires_enemy_target(GameData.make_card("t6", "test", "P", 1, "skill", "x", c_weak)))
+	assert(CardFormat.requires_enemy_target(GameData.make_card("t7", "test", "P", 1, "skill", "x", c_vuln)))
+	assert(CardFormat.requires_enemy_target(GameData.make_card("t8", "test", "P", 1, "skill", "x", c_poison)))
+	# consume_energy_damage / poison_burst 都對敵
+	var c_ced: Array[Dictionary] = [{"kind": "consume_energy_damage", "amount": 3}]
+	var c_pb: Array[Dictionary] = [{"kind": "poison_burst", "amount": 2}]
+	assert(CardFormat.requires_enemy_target(GameData.make_card("t9", "test", "P", 1, "skill", "x", c_ced)))
+	assert(CardFormat.requires_enemy_target(GameData.make_card("t10", "test", "P", 1, "skill", "x", c_pb)))
+	# 混合：block + weak → 還是要丟敵人（因 weak）
+	var c_mix1: Array[Dictionary] = [{"kind": "block", "amount": 5}, {"kind": "weak", "amount": 1}]
+	assert(CardFormat.requires_enemy_target(GameData.make_card("t11", "test", "P", 1, "skill", "x", c_mix1)))
+	# 混合：damage + draw → 要丟敵人
+	var c_mix2: Array[Dictionary] = [{"kind": "damage", "amount": 5}, {"kind": "draw", "amount": 1}]
+	assert(CardFormat.requires_enemy_target(GameData.make_card("t12", "test", "P", 1, "attack", "x", c_mix2)))
+	# 拿實際遊戲卡片做煙霧驗證（至少不會 crash）
+	var characters: Array[CharacterData] = GameData.characters()
+	for character: CharacterData in characters:
+		for card: CardData in character.starting_deck:
+			var _ignored: bool = CardFormat.requires_enemy_target(card)
 
 func _test_bestiary_persistence() -> void:
 	# 注意：此 test 會清掉真實 bestiary 檔案；smoke test 環境是測試專用 user:// 不用擔心

@@ -68,6 +68,10 @@ func clear_selected_button() -> void:
 	_selected_index = -1
 	_apply_layout(false, Vector2.ZERO)
 
+# 強制重新套用 layout（drag-to-play 沒打成功時用來 snap back）
+func relayout() -> void:
+	_apply_layout(false, Vector2.ZERO)
+
 func _start_draw_animation(animate_from: Vector2, animation_id: int) -> void:
 	await get_tree().process_frame
 	if not is_inside_tree():

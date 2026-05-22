@@ -52,6 +52,14 @@ var _suppress_next_card_play: bool = false
 var _selected_hand_card: CardData = null
 var _selected_hand_button: Button = null
 
+# 卡片 drag-to-play 狀態
+var _card_drag_button: Button = null
+var _card_drag_card: CardData = null
+var _card_drag_start_global: Vector2 = Vector2.ZERO
+var _card_drag_active: bool = false
+const CARD_DRAG_THRESHOLD: float = 14.0
+const CARD_DRAG_TARGET_PADDING: float = 80.0  # 拖到敵人附近 N px 都算命中
+
 var selected_ascension: int = 0
 var pending_seed: int = 0  # 0 = 隨機；非 0 = 下次 start_run 用此 seed 生地圖
 
@@ -2750,9 +2758,91 @@ func _card_button(card: CardData) -> Button:
 	var button: Button = _make_card_button(card, card.cost, Vector2(172, 238), affordable, true)
 	button.disabled = not affordable
 	button.pressed.connect(func() -> void: _on_card_button_pressed(card, button))
-	button.button_down.connect(func() -> void: _start_card_long_press(card, button))
-	button.button_up.connect(_cancel_card_long_press)
+	button.button_down.connect(func() -> void: _on_card_button_down(card, button))
+	button.button_up.connect(func() -> void: _on_card_button_up(card, button))
+	button.gui_input.connect(func(event: InputEvent) -> void: _on_card_button_gui_input(card, button, event))
 	return button
+
+func _on_card_button_down(card: CardData, button: Button) -> void:
+	if button.disabled:
+		return
+	_card_drag_button = button
+	_card_drag_card = card
+	_card_drag_start_global = button.get_global_mouse_position()
+	_card_drag_active = false
+	_start_card_long_press(card, button)
+
+func _on_card_button_up(card: CardData, button: Button) -> void:
+	if _card_drag_button == button and _card_drag_active:
+		_evaluate_card_drop(card, button)
+		_suppress_next_card_play = true
+	_card_drag_button = null
+	_card_drag_card = null
+	_card_drag_active = false
+	_cancel_card_long_press()
+
+func _on_card_button_gui_input(card: CardData, button: Button, event: InputEvent) -> void:
+	if _card_drag_button != button:
+		return
+	if _card_preview_overlay != null:
+		return  # 長按預覽優先；不啟動拖拉
+	if not (event is InputEventMouseMotion or event is InputEventScreenDrag):
+		return
+	var current_global: Vector2 = button.get_global_mouse_position()
+	if not _card_drag_active:
+		if current_global.distance_to(_card_drag_start_global) >= CARD_DRAG_THRESHOLD:
+			_card_drag_active = true
+			_cancel_card_long_press()  # 拖拉開始就取消長按預覽 timer
+	if _card_drag_active:
+		var parent: Node = button.get_parent()
+		if parent is Control:
+			var local_mouse: Vector2 = (parent as Control).get_local_mouse_position()
+			button.position = local_mouse - button.size * 0.5
+			button.rotation = 0.0
+			button.scale = Vector2(1.05, 1.05)
+			button.z_index = 1200  # 高於 set_selected_button 的 1100
+			_update_drag_target_highlight(card, current_global)
+
+func _evaluate_card_drop(card: CardData, button: Button) -> void:
+	var drop_global: Vector2 = button.get_global_mouse_position()
+	_clear_drag_target_highlight()
+	if _is_valid_card_drop(card, drop_global):
+		play_card(card, button)
+	else:
+		if hand_row != null and is_instance_valid(hand_row):
+			hand_row.relayout()
+
+func _is_valid_card_drop(card: CardData, global_pos: Vector2) -> bool:
+	if CardFormat.requires_enemy_target(card):
+		return _is_position_near_enemy(global_pos)
+	return _is_position_outside_hand(global_pos)
+
+func _is_position_near_enemy(global_pos: Vector2) -> bool:
+	if enemy_portrait_wrap == null or not is_instance_valid(enemy_portrait_wrap):
+		return false
+	var rect: Rect2 = Rect2(enemy_portrait_wrap.global_position, enemy_portrait_wrap.size)
+	return rect.grow(CARD_DRAG_TARGET_PADDING).has_point(global_pos)
+
+func _is_position_outside_hand(global_pos: Vector2) -> bool:
+	if hand_row == null or not is_instance_valid(hand_row):
+		return false
+	return global_pos.y < hand_row.global_position.y
+
+func _update_drag_target_highlight(card: CardData, global_pos: Vector2) -> void:
+	# 簡單回饋：拖到有效位置時 enemy_portrait_wrap 微亮 / 拖到手牌外（self 卡）時 player 微亮
+	var valid: bool = _is_valid_card_drop(card, global_pos)
+	if CardFormat.requires_enemy_target(card):
+		if enemy_portrait_wrap != null:
+			enemy_portrait_wrap.modulate = Color(1.25, 1.15, 1.0) if valid else Color.WHITE
+	else:
+		if player_portrait_wrap != null:
+			player_portrait_wrap.modulate = Color(1.0, 1.25, 1.15) if valid else Color.WHITE
+
+func _clear_drag_target_highlight() -> void:
+	if enemy_portrait_wrap != null and is_instance_valid(enemy_portrait_wrap):
+		enemy_portrait_wrap.modulate = Color.WHITE
+	if player_portrait_wrap != null and is_instance_valid(player_portrait_wrap):
+		player_portrait_wrap.modulate = Color.WHITE
 
 func _on_card_button_pressed(card: CardData, button: Button) -> void:
 	if _suppress_next_card_play:
