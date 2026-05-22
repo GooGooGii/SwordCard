@@ -354,6 +354,18 @@ func _test_map_generator_reachability(enemies: Array[EnemyData], bosses: Array[E
 				boss_reachable = true
 				break
 		assert(boss_reachable, "trial %d: boss row unreachable from row 0" % trial)
+		# 3. 不交叉檢查：i1 < i2 的兩個節點，邊 j1 不能 > j2（樹狀規則）
+		for row_index2: int in range(choices.size() - 1):
+			var src_row: Array = choices[row_index2]
+			for i1: int in range(src_row.size()):
+				for i2: int in range(i1 + 1, src_row.size()):
+					var edges_1: Array = ((src_row[i1] as Dictionary).get("connects", []) as Array)
+					var edges_2: Array = ((src_row[i2] as Dictionary).get("connects", []) as Array)
+					for j1_v: Variant in edges_1:
+						for j2_v: Variant in edges_2:
+							assert(int(j1_v) <= int(j2_v),
+								"trial %d row %d: edges cross — i=%d→j=%d vs i=%d→j=%d" %
+								[trial, row_index2, i1, int(j1_v), i2, int(j2_v)])
 
 func _test_predict_enemy_damage_matches_resolver() -> void:
 	# 對多組 (block, vuln, weak, attack_amount) 組合，驗證 CardFormat.predict_enemy_damage 跟
