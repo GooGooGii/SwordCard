@@ -89,6 +89,7 @@ var border = CardFormat.card_rarity_color(card)                  # 升級金 / r
 var badge_text = CardFormat.intent_badge(enemy_action)           # "[攻擊] [防守]"
 var summary = CardFormat.enemy_action_effect_summary(action)     # "傷害 9 / 蠱毒 +2"
 var pred = CardFormat.predict_enemy_damage(action, battle.state) # {raw, blocked, dealt}
+var needs_enemy = CardFormat.requires_enemy_target(card)         # drag-to-play 用
 
 # DamagePopup（戰鬥內浮動數字）
 DamagePopup.spawn(self, target.global_position, 15, "damage")    # 紅 -15 飄升
@@ -160,6 +161,15 @@ smoke test 用 9 組 (block, vuln, weak, attack) 組合驗證兩者一致。改 
   期間若打了任一張卡 → 警告自動取消（`_cancel_end_turn_warning`，由 `play_card` 觸發）
 - **長按卡片預覽**：在手牌卡片上按住 0.5 秒，跳出滿版 overlay 並排展示「當前卡（260×360）」與「升級後預覽」。
   按住期間鬆開即關閉、且**不會觸發出牌**（`_suppress_next_card_play` 旗標在 `_on_card_button_pressed` 攔截）
+- **卡片三種打出方式**：
+  - **點兩下打出**：第一下選取（`set_selected_button` 抬起、`_selected_hand_card` 記下），第二下確認 `play_card`
+  - **拖拉打出**：按下後移動超過 `CARD_DRAG_THRESHOLD = 14 px` 進入 drag mode，卡片跟著手指/游標跑。
+    `CardFormat.requires_enemy_target(card)` 為 `true`（damage / poison / weak / vulnerable / consume_energy / poison_burst）
+    要拖到敵人 portrait 附近（grow 80 px 的 hit box）才算命中；其他自身卡（block / heal / draw / energy / power）
+    只要拖出手牌區（`global_pos.y < hand_row.global_position.y`）就算打出。drop 期間 enemy/player portrait 會 modulate
+    高亮提示。drop 無效 → `hand_row.relayout()` snap back。drop 後 `_suppress_next_card_play` 攔截後續 `pressed` 訊號
+    避免雙重觸發
+  - **長按預覽**（見上）：純檢視，鬆開不出牌
 - **戰敗 retry**：`show_result(false)` 不再立刻 `SaveManager.clear()`，而是多一顆「重打這一場（滿血，扣 1 件遺物）」按鈕。
   其他三顆按鈕（重新角色 / 重選角色 / 主選單）的 callback 才各自 clear save
 - **戰鬥中遺物清單**：left_dock 多一顆「遺物 (N)」按鈕，點開 PopupPanel 顯示所有遺物名稱 + 描述（按稀有度上色）。
@@ -220,7 +230,7 @@ main.gd
 
 ## 測試
 
-`scripts/smoke_test.gd` 是 SceneTree-based，跑 25 個獨立測試：
+`scripts/smoke_test.gd` 是 SceneTree-based，跑 26 個獨立測試：
 
 - 資料完整性（角色 / 敵人 / 卡片）
 - 戰鬥機制（虛弱/破綻/格擋/中毒/能量耗盡/power 疊加/poison_burst）
@@ -230,6 +240,7 @@ main.gd
 - Save migration framework（v0 → 當前版本，欄位保留）
 - 地圖生成：30 次 random seed 都無孤兒節點、boss 可達
 - 傷害預測一致性：CardFormat.predict_enemy_damage vs EffectResolver 跨 9 組組合
+- 卡片目標分類（CardFormat.requires_enemy_target 對 12 種 effect 組合）
 - Bestiary persistence：clear → mark → kill_count 累加 → load_all round-trip
 - Ascension persistence + modifier 計算（A0-A4 解鎖、HP / gold 倍數）
 - Boss phase transition（3 boss 都有 phase_2_actions、HP <50% 觸發切換、next_enemy_action 用新招式）
