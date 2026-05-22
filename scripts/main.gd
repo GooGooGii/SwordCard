@@ -2095,35 +2095,92 @@ func show_event_node() -> void:
 	root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 14)
+	box.add_theme_constant_override("separation", 16)
 	panel.add_child(box)
 	var event_data: Dictionary = EventData.for_variant(run_state.current_event_variant)
-	box.add_child(_title(String(event_data["title"]), 34))
+	box.add_child(_title(String(event_data["title"]), 32))
 	box.add_child(UIFactory.paragraph(String(event_data["flavor"])))
 	box.add_child(UIFactory.paragraph("%s  HP %d/%d  銅錢 %d  本輪增傷 +%d" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, run_state.power_bonus]))
 	var heal_amount: int = int(event_data["heal"])
 	var gain_cost: int = int(event_data["gain_cost"])
 	var power_gain: int = int(event_data["power"])
-	var heal_button: Button = _button("調息：回復 %d HP" % heal_amount)
-	heal_button.pressed.connect(func(): resolve_event_heal(heal_amount))
-	box.add_child(heal_button)
-	var card_button: Button = _button("探取：失去 %d HP，獲得 1 張卡" % gain_cost)
-	card_button.pressed.connect(func(): resolve_event_gain_card(gain_cost))
-	box.add_child(card_button)
-	var power_button: Button = _button("%s：本輪增傷 +%d" % [String(event_data["power_label"]), power_gain])
-	power_button.pressed.connect(func(): resolve_event_power(power_gain))
-	box.add_child(power_button)
-	var upgrade_button: Button = _button("悟法：升級 1 張牌")
-	upgrade_button.disabled = _upgradeable_cards().is_empty()
-	upgrade_button.pressed.connect(show_upgrade_card_view)
-	box.add_child(upgrade_button)
-	var remove_button: Button = _button("洗髓：移除 1 張牌")
-	remove_button.disabled = run_state.deck.size() <= 5
-	remove_button.pressed.connect(show_remove_card_view)
-	box.add_child(remove_button)
-	var deck_button: Button = _button("查看牌組")
-	deck_button.pressed.connect(show_deck_view)
-	box.add_child(deck_button)
+	var grid: GridContainer = GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 16)
+	grid.add_theme_constant_override("v_separation", 14)
+	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(grid)
+	grid.add_child(_event_choice_button("調息", "回復 %d 點生命" % heal_amount, false, func() -> void: resolve_event_heal(heal_amount)))
+	grid.add_child(_event_choice_button("探取", "失去 %d HP，得 1 張招式" % gain_cost, false, func() -> void: resolve_event_gain_card(gain_cost)))
+	grid.add_child(_event_choice_button(String(event_data["power_label"]), "本輪增傷 +%d" % power_gain, false, func() -> void: resolve_event_power(power_gain)))
+	grid.add_child(_event_choice_button("悟法", "升級 1 張招式", _upgradeable_cards().is_empty(), show_upgrade_card_view))
+	grid.add_child(_event_choice_button("洗髓", "移除 1 張招式", run_state.deck.size() <= 5, show_remove_card_view))
+	grid.add_child(_event_choice_button("翻閱", "查看當前手札", false, show_deck_view))
+
+func _event_choice_button(title: String, subtitle: String, disabled: bool, on_press: Callable) -> Button:
+	# 文青卡片式按鈕：水墨紙底色 + 細金邊 + 標題下細分隔線 + 副標小字
+	# 兩兩排列在 GridContainer 裡，hover 時邊框轉暖、bg 微亮
+	var btn: Button = Button.new()
+	btn.custom_minimum_size = Vector2(260, 84)
+	btn.disabled = disabled
+	btn.focus_mode = Control.FOCUS_NONE
+	btn.text = ""
+	var bg_normal: Color = Color("f3ede2", 0.88)
+	var bg_hover: Color = Color("faf5ec", 0.96)
+	var bg_pressed: Color = Color("e7dece", 0.95)
+	var bg_disabled: Color = Color("a89e88", 0.30)
+	var border_normal: Color = Color("c8b46f", 0.65)
+	var border_hover: Color = Color("e4c66a", 0.95)
+	var border_pressed: Color = Color("c8b46f", 0.95)
+	var border_disabled: Color = Color("8a8576", 0.35)
+	btn.add_theme_stylebox_override("normal", _event_card_style(bg_normal, border_normal, 1))
+	btn.add_theme_stylebox_override("hover", _event_card_style(bg_hover, border_hover, 2))
+	btn.add_theme_stylebox_override("pressed", _event_card_style(bg_pressed, border_pressed, 2))
+	btn.add_theme_stylebox_override("disabled", _event_card_style(bg_disabled, border_disabled, 1))
+	var stack: VBoxContainer = VBoxContainer.new()
+	stack.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	stack.add_theme_constant_override("separation", 4)
+	stack.alignment = BoxContainer.ALIGNMENT_CENTER
+	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(stack)
+	var title_label: Label = Label.new()
+	title_label.text = title
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label.add_theme_font_size_override("font_size", 20)
+	title_label.add_theme_color_override("font_color", Color("3a2f1c") if not disabled else Color("6f6a5d"))
+	title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.add_child(title_label)
+	var divider: PanelContainer = PanelContainer.new()
+	divider.custom_minimum_size = Vector2(48, 1)
+	divider.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var divider_style: StyleBoxFlat = StyleBoxFlat.new()
+	divider_style.bg_color = Color("c8b46f", 0.55) if not disabled else Color("8a8576", 0.3)
+	divider.add_theme_stylebox_override("panel", divider_style)
+	stack.add_child(divider)
+	var subtitle_label: Label = Label.new()
+	subtitle_label.text = subtitle
+	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	subtitle_label.add_theme_font_size_override("font_size", 12)
+	subtitle_label.add_theme_color_override("font_color", Color("574b34") if not disabled else Color("7c7768"))
+	subtitle_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.add_child(subtitle_label)
+	if not disabled:
+		btn.pressed.connect(on_press)
+	return btn
+
+func _event_card_style(bg: Color, border: Color, width: int) -> StyleBoxFlat:
+	var s: StyleBoxFlat = StyleBoxFlat.new()
+	s.bg_color = bg
+	s.border_color = border
+	s.set_border_width_all(width)
+	s.set_corner_radius_all(2)  # 接近直角的薄圓角，文青風
+	s.content_margin_left = 16
+	s.content_margin_right = 16
+	s.content_margin_top = 12
+	s.content_margin_bottom = 12
+	return s
 
 func resolve_event_heal(amount: int) -> void:
 	run_state.heal(amount)
