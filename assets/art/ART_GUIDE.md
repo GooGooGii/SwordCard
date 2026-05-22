@@ -5,6 +5,16 @@
 - Style: 2D painted xianxia fantasy, ink-wash atmosphere with readable game UI contrast.
 - Palette: ink blue, charcoal, muted teal, jade green, antique gold, restrained red/purple accents.
 - Use: private fan prototype, not public or commercial release.
+- **戰鬥角色肖像設計 (Battle Character Design)**:
+  - **風格簡化 (Simplified Style)**: 戰鬥中角色肖像改為 **正常比例、手繪插畫國風水墨風格**（比例同 Slay the Spire 角色，特徵鮮明、線條簡潔、色彩飽和度適度降低），而非 Q 版。與選角時的寫實水墨全身肖像區隔。
+  - **左右對立構圖 (StS Layout)**: 角色居左面向右，敵人在右面向左。
+  - **動態姿勢 (Dynamic Poses)**: 每個主角需要 6 種戰鬥動作姿勢，均為**強制去背/透明背景**：
+    1. `idle` (待命): 基礎防守或準備架勢。
+    2. `attack` (攻擊): 物理攻擊，武器揮斬或前傾出招。
+    3. `cast` (施法): 單手施法指引、仙術掐指訣或引導能量。
+    4. `block` (擋格): 側身護體，伴隨八卦或盾牌架勢。
+    5. `low_hp` (命危): 半蹲、捂傷口喘息。
+    6. `downed` (倒地): 閉眼昏迷倒下。
 
 ## Background Assets
 
@@ -39,8 +49,7 @@ Suggested paths:
 Target:
 
 - 768 x 1024 portrait PNG
-- Transparent background preferred later
-- For now, opaque painted portraits are acceptable
+- **強制去背 (Transparent background is REQUIRED)**: 必須是去背透明背景，以便與遊戲戰鬥及主選單背景完美融合。
 
 ## Planned Enemy Portraits
 
@@ -59,8 +68,23 @@ Suggested paths:
 Target:
 
 - 768 x 768 PNG
+- **強制去背 (Transparent background is REQUIRED)**: 必須是去背透明背景，便於在戰鬥場景中渲染。
 - Clear silhouette
 - Readable at small in-game size
+
+## Planned Battle Character Portraits
+
+Suggested paths:
+
+- `assets/art/battle_characters/[character_id]_[pose].png`
+  - Poses: `idle`, `attack`, `cast`, `block`, `low_hp`, `downed`
+  - Character IDs: `li_xiaoyao`, `zhao_linger`, `lin_yueru`, `anu`
+
+Target:
+
+- 768 x 768 PNG
+- **強制去背 (Transparent background is REQUIRED)**: 必須是去背透明背景。
+- 角色朝向：面朝右方（StS 戰鬥左側玩家向）。
 
 ## Planned UI Assets
 

@@ -55,6 +55,9 @@ var _suppress_next_card_play: bool = false
 var _selected_hand_card: CardData = null
 var _selected_hand_button: Button = null
 
+var _temporary_player_pose: String = ""
+var _pose_timer: SceneTreeTimer = null
+
 # 卡片 drag-to-play 狀態
 var _card_drag_button: Button = null
 var _card_drag_card: CardData = null
@@ -1973,6 +1976,20 @@ func play_card(card: CardData, source_button: Button = null) -> void:
 	if not bool(result["affordable"]):
 		_refresh_battle()
 		return
+	
+	# Set temporary pose for action feedback
+	if card.card_type == "attack":
+		_temporary_player_pose = "attack"
+	else:
+		_temporary_player_pose = "cast"
+	
+	_pose_timer = get_tree().create_timer(0.4)
+	var current_timer := _pose_timer
+	current_timer.timeout.connect(func() -> void:
+		if _pose_timer == current_timer:
+			_temporary_player_pose = ""
+			_refresh_battle()
+	)
 	if source_button != null and is_instance_valid(source_button):
 		_detach_card_button(source_button)
 		_refresh_battle()
@@ -3326,7 +3343,9 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 		if player_name_label != null:
 			player_name_label.text = battle.character.display_name
 		if player_portrait_image != null and is_instance_valid(player_portrait_image):
-			var tex: Texture2D = UIFactory.load_texture(battle.character.portrait_path)
+			var pose: String = _get_active_player_pose()
+			var path: String = _get_battle_portrait_path(battle.character, pose)
+			var tex: Texture2D = UIFactory.load_texture(path)
 			if tex != null:
 				player_portrait_image.texture = tex
 	_refresh_combatant_hp(player_hp_bar, player_hp_value, int(battle.state["player_hp"]), int(battle.state["player_max_hp"]))
@@ -3824,3 +3843,27 @@ func _button(text: String) -> Button:
 	button.add_theme_font_size_override("font_size", 18)
 	UIFactory.style_button(button)
 	return button
+
+func _get_active_player_pose() -> String:
+	if _temporary_player_pose != "":
+		return _temporary_player_pose
+	if battle == null or battle.state == null:
+		return "idle"
+	var hp: int = int(battle.state.get("player_hp", 10))
+	var max_hp: int = int(battle.state.get("player_max_hp", 10))
+	var block: int = int(battle.state.get("player_block", 0))
+	if hp <= 0:
+		return "downed"
+	if hp <= max_hp * 0.25:
+		return "low_hp"
+	if block > 0:
+		return "block"
+	return "idle"
+
+func _get_battle_portrait_path(char_data: CharacterData, pose: String) -> String:
+	if char_data == null:
+		return ""
+	var path: String = "res://assets/art/battle_characters/%s_%s.png" % [char_data.id, pose]
+	if FileAccess.file_exists(path):
+		return path
+	return char_data.portrait_path
