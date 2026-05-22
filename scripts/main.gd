@@ -2427,7 +2427,7 @@ func show_deck_view(mode: String = "view") -> void:
 	if deck_view_mode == "remove":
 		box.add_child(UIFactory.paragraph("至少保留 5 張牌。點選一張牌後會移除並完成事件。"))
 	elif deck_view_mode == "upgrade":
-		box.add_child(UIFactory.paragraph("點選一張未升級的牌，升級後會完成此節點。"))
+		box.add_child(UIFactory.paragraph("點選一張未升級的牌，升級後會完成此節點。每張卡下方標註升級後的數值。"))
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(scroll)
@@ -2478,7 +2478,7 @@ func _duplicate_summary_text() -> String:
 		return "重複：無"
 	return "重複：" + "，".join(parts)
 
-func _deck_view_card(card: CardData, mode: String = "view") -> Button:
+func _deck_view_card(card: CardData, mode: String = "view") -> Control:
 	var selectable: bool = mode == "remove" or (mode == "upgrade" and not card.upgraded)
 	var visually_enabled: bool = mode != "upgrade" or not card.upgraded
 	var button: Button = _make_card_button(card, card.cost, Vector2(190, 260), true, visually_enabled)
@@ -2490,7 +2490,48 @@ func _deck_view_card(card: CardData, mode: String = "view") -> Button:
 	else:
 		button.add_theme_stylebox_override("disabled", UIFactory.style_box(CardFormat.card_color(card.card_type, true), Color("e7d38a"), 2, 8))
 		button.add_theme_color_override("font_disabled_color", ThemeColors.TEXT_LIGHT)
+	# 升級模式下，在卡片下方標註升級後的標題 + 描述，讓玩家點之前看得到差異
+	if mode == "upgrade" and not card.upgraded:
+		var wrap: VBoxContainer = VBoxContainer.new()
+		wrap.add_theme_constant_override("separation", 4)
+		wrap.alignment = BoxContainer.ALIGNMENT_CENTER
+		wrap.add_child(button)
+		wrap.add_child(_upgrade_preview_panel(card))
+		return wrap
 	return button
+
+func _upgrade_preview_panel(card: CardData) -> Control:
+	var upgraded: CardData = card.upgraded_copy()
+	var panel: PanelContainer = PanelContainer.new()
+	panel.custom_minimum_size = Vector2(190, 0)
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	style.bg_color = Color("f3ede2", 0.16)
+	style.border_color = Color("c8b46f", 0.55)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(4)
+	style.content_margin_left = 8
+	style.content_margin_right = 8
+	style.content_margin_top = 5
+	style.content_margin_bottom = 5
+	panel.add_theme_stylebox_override("panel", style)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 2)
+	panel.add_child(box)
+	var title: Label = Label.new()
+	title.text = "升級後 → %s" % upgraded.display_title()
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 11)
+	title.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
+	box.add_child(title)
+	var desc: Label = Label.new()
+	desc.text = upgraded.description
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc.custom_minimum_size = Vector2(174, 0)
+	desc.add_theme_font_size_override("font_size", 11)
+	desc.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
+	box.add_child(desc)
+	return panel
 
 func show_result(victory: bool) -> void:
 	if victory:
