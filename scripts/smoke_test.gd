@@ -504,6 +504,12 @@ func _test_revive_effect(characters: Array[CharacterData], enemy_template: Enemy
 	bc._sync_state_to_active()
 	bc.play_card(revive_card)
 	assert(int(bc.state["player_hp"]) == 40, "no dead -> revive should heal active by amount; got %d" % int(bc.state["player_hp"]))
+	# 升級後 revive amount 應提升（30 → 38），說明文字也要跟著換
+	var revive_upg: CardData = revive_card.upgraded_copy()
+	assert(int(revive_upg.effects[0]["amount"]) == 38, \
+		"upgraded revive amount should be 38; got %d" % int(revive_upg.effects[0]["amount"]))
+	assert(revive_upg.description.contains("38"), \
+		"upgraded revive description should contain 38")
 
 func _test_map_generator_reachability(enemies: Array[EnemyData], bosses: Array[EnemyData]) -> void:
 	# 跑 30 次隨機產生的地圖，驗證每張都沒有孤兒節點、且 boss 可達

@@ -95,7 +95,8 @@ func _should_upgrade_amount(kind: String) -> bool:
 		"energy",
 		"power",
 		"consume_energy_damage",
-		"poison_burst"
+		"poison_burst",
+		"revive"
 	]
 
 func to_dict() -> Dictionary:
