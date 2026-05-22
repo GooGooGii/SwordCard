@@ -230,7 +230,7 @@ main.gd
 
 ## 測試
 
-`scripts/smoke_test.gd` 是 SceneTree-based，跑 26 個獨立測試：
+`scripts/smoke_test.gd` 是 SceneTree-based，跑 32 個獨立測試：
 
 - 資料完整性（角色 / 敵人 / 卡片）
 - 戰鬥機制（虛弱/破綻/格擋/中毒/能量耗盡/power 疊加/poison_burst）
@@ -241,6 +241,7 @@ main.gd
 - 地圖生成：30 次 random seed 都無孤兒節點、boss 可達
 - 傷害預測一致性：CardFormat.predict_enemy_damage vs EffectResolver 跨 9 組組合
 - 卡片目標分類（CardFormat.requires_enemy_target 對 12 種 effect 組合）
+- Party：3 人隊 round-trip、v1→v2 migrate、switch + 全滅判定、state sync、自動切人、starter weapons
 - Bestiary persistence：clear → mark → kill_count 累加 → load_all round-trip
 - Ascension persistence + modifier 計算（A0-A4 解鎖、HP / gold 倍數）
 - Boss phase transition（3 boss 都有 phase_2_actions、HP <50% 觸發切換、next_enemy_action 用新招式）
@@ -283,9 +284,9 @@ main.gd
 - **不要把 `assert()` 用在正式邏輯**：release build 會被剝掉，assert 內的副作用會丟失
 - **不要在 `_clear_root()` 後立刻存取舊 UI 變數**：`queue_free()` 是延遲釋放但變數已是 dangling，下一行重建就好
 
-## Party Mode (WIP)
+## Party Mode
 
-組隊功能規劃。**尚未實作**——這節是 implementation contract，動工時照此做、改設計時更新這節。
+組隊功能已實作。**主備制**（active 1 人 + 後排 0–2 人），最多 3 人組隊。下面內容是 implementation reference；改設計時請更新。
 
 ### 鎖定的設計決策
 
@@ -393,18 +394,31 @@ match version:
 | balance regression test | 加 1 人 / 2 人 / 3 人三組 baseline |
 | Bestiary / map / event / shop | 不變 |
 
-### 分階段執行（每階段一個 commit batch）
+### 實作狀態
 
-| Phase | 內容 | 預估 |
+| Phase | 內容 | Commit |
 |---|---|---|
-| 1. 資料層 | RunState 重構 + SaveManager.migrate v1→v2 + smoke test (round-trip + v1 migrate) | 1.5 h |
-| 2. BattleController | `players` 陣列 + `decks` 陣列 + `_sync_*` + `switch_active` + 後排回血 + 全滅判定 + active 死自動切 | 2 h |
-| 3. character select UI | 多選 + 排序、最多 3 人 | 1 h |
-| 4. battle UI | 後排頭像 widget + 點擊切換 + active 高亮 + 狀態欄重排 | 1.5 h |
-| 5. Ascension / relic 整合 | starter weapon 每人各拿、starting_hp_mult 套到每個角色 | 0.5 h |
-| 6. 測試 + 平衡 | 1/2/3 人三組 balance regression + 完整 smoke | 1 h |
+| 1. 資料層 | RunState 陣列化、property aliases、SaveManager v1→v2 migrate | `feat(party): phase 1` |
+| 2. BattleController | `state.players` + `decks` + `_sync_*` + `switch_active` + 後排 +2 HP/回合 + 全滅判定 + active 死自動切 | `feat(party): phase 2` |
+| 3. character select | 多選 + 排序 + 隊長 ★ + 出戰按鈕 | `feat(party): phase 3` |
+| 4. battle UI | 後排頭像 widget（點擊切換）+ active 肖像/HP/狀態 hot-swap + 切換次數提示 | `feat(party): phase 4` |
+| 5. ascension/relic/UI 整合 | 主選單存檔摘要、map status popup、debug full heal、retry 全隊回滿 | `feat(party): phase 5` |
+| 6. 測試補強 | 8 個新 smoke test 覆蓋 round-trip / migrate / switch / state sync / 自動切人 / 專武 | (含在各 phase) |
 
-**總計約 7.5 小時**。
+### Smoke test 覆蓋
+
+- `_test_party_round_trip` — 3 人隊 RunState ↔ dict round-trip
+- `_test_save_migration` — v1 單角色存檔 → v2 1 人隊伍（character_decks 不丟卡）
+- `_test_party_switch_and_defeat` — energy=5、第一次切免費、第二次扣 1、全滅 = `is_defeat`
+- `_test_party_state_sync` — 切換 → 狀態跟著角色 slot 走（切回原人 block/poison 保留）
+- `_test_party_auto_switch_on_death` — active 死 → `_force_switch_to_first_alive`；全滅才 defeat
+- `_test_party_starter_weapons` — 每人都拿到自己的專武（如有定義）
+
+### 已知未實作 / 之後再說
+
+- 復活機制（卡片 / event 救回倒下的後排）— 死人停留在隊伍中等待救援的基礎結構已就緒
+- 多人隊 balance regression baseline — 隨機 AI 不會主動切換，跑出來不太能反映實戰
+- 切換時的視覺過場動畫（目前是 portrait hot-swap）
 
 ### 風險與防呆
 

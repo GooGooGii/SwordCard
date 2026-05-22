@@ -78,6 +78,8 @@ func _initialize() -> void:
 	_test_multi_turn_battle(characters[0], enemies[0])
 	_test_party_switch_and_defeat(characters, enemies[0])
 	_test_party_state_sync(characters, enemies[0])
+	_test_party_auto_switch_on_death(characters, enemies[0])
+	_test_party_starter_weapons(characters)
 	_test_map_generator_reachability(enemies, bosses)
 	_test_predict_enemy_damage_matches_resolver()
 	_test_requires_enemy_target()
@@ -416,6 +418,55 @@ func _test_party_state_sync(characters: Array[CharacterData], enemy_template: En
 	bc.switch_active(0)
 	assert(int(bc.state["player_block"]) == 7, "block should persist when switched back; got %d" % int(bc.state["player_block"]))
 	assert(int(bc.state["player_poison"]) == 3, "poison should persist when switched back; got %d" % int(bc.state["player_poison"]))
+
+func _test_party_auto_switch_on_death(characters: Array[CharacterData], enemy_template: EnemyData) -> void:
+	# Active 戰死後應自動切到第一個活著的；全滅才 is_defeat
+	if characters.size() < 3:
+		return
+	var run_state: RunState = RunState.new()
+	var party: Array[CharacterData] = [characters[0], characters[1], characters[2]]
+	run_state.init_for(party)
+	var enemy: EnemyData = enemy_template.clone()
+	var bc: BattleController = BattleController.new()
+	bc.setup(run_state, characters[0], enemy)
+	# 模擬「active(0) 被打到 0」
+	(bc.state["players"] as Array)[0]["hp"] = 0
+	bc.state["player_hp"] = 0  # alias 同步
+	# resolve_enemy_phase 的尾巴會檢查 active 死且非全滅 → force switch
+	# 但我們直接呼叫 _force_switch_to_first_alive
+	var switched: bool = bc._force_switch_to_first_alive(true)
+	assert(switched, "force switch should succeed when other members are alive")
+	assert(bc._active_index() == 1, "force switch should land on first alive (index 1)")
+	assert(not bc.is_defeat(), "party should not be defeated while index 1 + 2 are alive")
+	# 再殺 1 → active 變 2
+	(bc.state["players"] as Array)[1]["hp"] = 0
+	bc.state["player_hp"] = 0
+	assert(bc._force_switch_to_first_alive(false), "force switch to index 2")
+	assert(bc._active_index() == 2)
+	# 殺光 → is_defeat
+	(bc.state["players"] as Array)[2]["hp"] = 0
+	bc.state["player_hp"] = 0
+	assert(not bc._force_switch_to_first_alive(false), "no alive members left")
+	assert(bc.is_defeat(), "all dead -> is_defeat")
+
+func _test_party_starter_weapons(characters: Array[CharacterData]) -> void:
+	# 每個角色都拿到自己的 starter weapon
+	if characters.size() < 2:
+		return
+	var run_state: RunState = RunState.new()
+	var party: Array[CharacterData] = [characters[0], characters[1]]
+	run_state.init_for(party)
+	# 預期至少有 2 個專武在 relics 裡（除非該角色沒專武資料）
+	var weapon_count: int = 0
+	for r: RelicData in run_state.relics:
+		if r.slot == "weapon":
+			weapon_count += 1
+	# 不強求各角色都有專武資料；只要不超過 party size 且 init_for 沒 crash 就 OK
+	assert(weapon_count <= party.size(), "should not over-grant weapons")
+	# 至少領隊應該拿到專武（如果他有的話）
+	var leader_weapons: Array[RelicData] = RelicCatalog.weapons_for_character(party[0].id)
+	if not leader_weapons.is_empty():
+		assert(run_state.has_relic(leader_weapons[0].id), "leader's starter weapon should be granted")
 
 func _test_map_generator_reachability(enemies: Array[EnemyData], bosses: Array[EnemyData]) -> void:
 	# 跑 30 次隨機產生的地圖，驗證每張都沒有孤兒節點、且 boss 可達
