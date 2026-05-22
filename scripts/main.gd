@@ -3054,11 +3054,20 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	var cost_badge: PanelContainer = PanelContainer.new()
 	cost_badge.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	cost_badge.offset_left = -34
-	cost_badge.offset_top = 8
+	cost_badge.offset_top = 6
 	cost_badge.offset_right = -6
 	cost_badge.offset_bottom = 34
 	cost_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	cost_badge.add_theme_stylebox_override("panel", UIFactory.style_box(Color(0.10, 0.08, 0.05, 0.42), Color("f2d48a", 0.45), 1, 8))
+	var cost_style: StyleBoxFlat = StyleBoxFlat.new()
+	cost_style.bg_color = Color(0.10, 0.08, 0.05, 0.42)
+	cost_style.border_color = Color("f2d48a", 0.45)
+	cost_style.set_border_width_all(1)
+	cost_style.set_corner_radius_all(6)
+	cost_style.content_margin_left = 2
+	cost_style.content_margin_right = 2
+	cost_style.content_margin_top = 2
+	cost_style.content_margin_bottom = 2
+	cost_badge.add_theme_stylebox_override("panel", cost_style)
 	art_layer.add_child(cost_badge)
 	var cost_label: Label = UIFactory.card_label(str(cost), 14, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	cost_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
