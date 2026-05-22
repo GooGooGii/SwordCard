@@ -3013,7 +3013,9 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	type_bar.add_theme_stylebox_override("panel", UIFactory.strip_box(CardFormat.card_color(card.card_type, true).lightened(0.16), 999))
 	box.add_child(type_bar)
 	var art_frame: PanelContainer = PanelContainer.new()
-	art_frame.custom_minimum_size = Vector2(size.x - 22, max(92.0, size.y * 0.41))
+	# 只指定最小高度；寬度跟著 outer margin 計算過的 box 內寬走，避免硬寫 (size.x - 22)
+	# 超過 outer margin 真正留下的空間（2 * 11% = 22% > 22 像素）導致 art_frame 溢出右側
+	art_frame.custom_minimum_size = Vector2(0, max(92.0, size.y * 0.41))
 	art_frame.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.14), Color(1, 1, 1, 0), 0, 6))
 	box.add_child(art_frame)
 	var art_layer: Control = Control.new()
