@@ -1303,7 +1303,23 @@ func _build_streamlined_progress_screen(compact_map: bool) -> void:
 	var map_panel: Control = _map_view_sts()
 	map_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(map_panel)
+	
+	# 在地圖上方顯示當前幕名稱，例如「第一幕 余杭山間」
+	var act_label: Label = Label.new()
+	act_label.text = "第%s幕 %s" % [_act_numeral(run_state.act), _act_title(run_state.act)]
+	act_label.set_anchors_preset(Control.PRESET_TOP_LEFT, false)
+	act_label.offset_left = 12
+	act_label.offset_top = 8
+	act_label.offset_right = 500
+	act_label.offset_bottom = 48
+	act_label.add_theme_font_size_override("font_size", 20 if compact_map else 24)
+	act_label.add_theme_color_override("font_color", ThemeColors.HIGHLIGHT_GOLD)
+	act_label.add_theme_color_override("font_outline_color", Color("000000", 0.72))
+	act_label.add_theme_constant_override("outline_size", 4)
+	layer.add_child(act_label)
+	
 	layer.add_child(_build_map_toolbar())
+
 
 func _build_map_toolbar() -> Control:
 	var toolbar: HBoxContainer = HBoxContainer.new()
@@ -2181,8 +2197,19 @@ func choose_reward_card(card: CardData) -> void:
 
 func _battle_gold_reward(enemy: EnemyData) -> int:
 	var is_boss: bool = Ascension.is_boss_id(enemy.id)
-	var base: int = (40 + run_state.act * 20) if is_boss else (18 + run_state.act * 8 + run_state.encounter_index * 3)
+	var base: int = 0
+	if is_boss:
+		match run_state.act:
+			1: base = 80
+			2: base = 120
+			3: base = 160
+			4: base = 200
+			5: base = 250
+			_: base = 80 + run_state.act * 40
+	else:
+		base = 18 + run_state.act * 8 + run_state.encounter_index * 3
 	return max(0, int(round(float(base) * Ascension.gold_multiplier(run_state.ascension_level))))
+
 
 func _route_node_button(node_data: Dictionary) -> Button:
 	var node_type: String = String(node_data.get("type", "battle"))
