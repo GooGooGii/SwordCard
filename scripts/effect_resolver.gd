@@ -108,4 +108,26 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			state["enemy_hp"] = max(0, int(state["enemy_hp"]) - burst)
 			state["enemy_poison"] = 0
 			log_lines.append("引爆蠱毒，造成 %d 點傷害。" % burst)
+		"revive":
+			# 救回第一個倒下的後排同伴；amount = 復活後的 HP（封頂於 max_hp）
+			# 若沒有倒下同伴 → 改回復 active 同等量 HP（不至於完全廢卡）
+			var players: Array = state.get("players", []) as Array
+			var active_idx: int = int(state.get("active_player_index", 0))
+			var revived_idx: int = -1
+			for i: int in range(players.size()):
+				if i == active_idx:
+					continue
+				var p: Dictionary = players[i] as Dictionary
+				if int(p["hp"]) <= 0:
+					p["hp"] = min(int(p["max_hp"]), amount)
+					revived_idx = i
+					break
+			if revived_idx >= 0:
+				var name: String = String((players[revived_idx] as Dictionary)["name"])
+				log_lines.append("救回 %s（+%d HP）。" % [name, amount])
+			else:
+				# 沒人倒下 → fallback：當 heal 用
+				var actual_heal: int = amount + int(state.get("heal_bonus", 0))
+				state["player_hp"] = min(int(state["player_max_hp"]), int(state["player_hp"]) + actual_heal)
+				log_lines.append("無人需救，改回復 %d 點生命。" % actual_heal)
 	return log_lines

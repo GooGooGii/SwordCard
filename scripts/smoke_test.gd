@@ -55,6 +55,17 @@ func _initialize() -> void:
 		assert(upgraded_card.upgraded)
 		assert(upgraded_card.display_title().ends_with("+"))
 		assert(upgraded_card.effects.size() == first_card.effects.size())
+		# Description must reflect the upgraded amounts (not the original text).
+		assert(upgraded_card.description != first_card.description, \
+			"upgraded description unchanged for %s" % first_card.display_name)
+		# Spot-check: every upgraded effect amount that changed should appear in description.
+		for idx: int in range(first_card.effects.size()):
+			var old_eff: Dictionary = first_card.effects[idx]
+			var new_eff: Dictionary = upgraded_card.effects[idx]
+			if old_eff.get("amount") != new_eff.get("amount"):
+				var new_amount_str: String = str(int(new_eff["amount"]))
+				assert(upgraded_card.description.contains(new_amount_str), \
+					"upgraded description missing new amount %s for %s" % [new_amount_str, first_card.display_name])
 	var bosses: Array[EnemyData] = GameData.bosses()
 	assert(enemies.size() >= 6)
 	assert(bosses.size() >= 1)
@@ -80,6 +91,7 @@ func _initialize() -> void:
 	_test_party_state_sync(characters, enemies[0])
 	_test_party_auto_switch_on_death(characters, enemies[0])
 	_test_party_starter_weapons(characters)
+	_test_revive_effect(characters, enemies[0])
 	_test_map_generator_reachability(enemies, bosses)
 	_test_predict_enemy_damage_matches_resolver()
 	_test_requires_enemy_target()
@@ -467,6 +479,30 @@ func _test_party_starter_weapons(characters: Array[CharacterData]) -> void:
 	var leader_weapons: Array[RelicData] = RelicCatalog.weapons_for_character(party[0].id)
 	if not leader_weapons.is_empty():
 		assert(run_state.has_relic(leader_weapons[0].id), "leader's starter weapon should be granted")
+
+func _test_revive_effect(characters: Array[CharacterData], enemy_template: EnemyData) -> void:
+	# 三人隊伍 → 後排 idx 1 倒下 → 復活卡 → 該角色 HP 變 amount
+	if characters.size() < 3:
+		return
+	var run_state: RunState = RunState.new()
+	var party: Array[CharacterData] = [characters[0], characters[1], characters[2]]
+	run_state.init_for(party)
+	var enemy: EnemyData = enemy_template.clone()
+	var bc: BattleController = BattleController.new()
+	bc.setup(run_state, characters[0], enemy)
+	# 殺死 idx 1
+	(bc.state["players"] as Array)[1]["hp"] = 0
+	# Active 還是 0；玩家打復活卡
+	var revive_card: CardData = GameData.make_card("revive_test", "復活", "P", 1, "skill", "救回", ([{"kind": "revive", "amount": 30}] as Array[Dictionary]))
+	bc.state["energy"] = 99
+	bc.play_card(revive_card)
+	var revived_hp: int = int((bc.state["players"] as Array)[1]["hp"])
+	assert(revived_hp == 30, "revive should restore idx 1 to amount=30; got %d" % revived_hp)
+	# 第二次打復活卡（沒人倒下）→ fallback heal active
+	bc.state["player_hp"] = 10  # active 受傷
+	bc._sync_state_to_active()
+	bc.play_card(revive_card)
+	assert(int(bc.state["player_hp"]) == 40, "no dead -> revive should heal active by amount; got %d" % int(bc.state["player_hp"]))
 
 func _test_map_generator_reachability(enemies: Array[EnemyData], bosses: Array[EnemyData]) -> void:
 	# 跑 30 次隨機產生的地圖，驗證每張都沒有孤兒節點、且 boss 可達

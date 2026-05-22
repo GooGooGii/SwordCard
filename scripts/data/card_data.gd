@@ -32,21 +32,56 @@ func display_title() -> String:
 	return display_name
 
 func display_description() -> String:
-	if upgraded:
-		return "%s\n已升級：數值效果強化。" % description
 	return description
 
 func upgraded_copy() -> CardData:
 	var copy: CardData = clone()
 	copy.upgraded = true
 	copy.effects.clear()
+	var replacements: Dictionary = {}  # old_amount -> new_amount
 	for effect: Dictionary in effects:
 		var upgraded_effect: Dictionary = effect.duplicate(true)
 		var kind: String = String(upgraded_effect.get("kind", ""))
 		if upgraded_effect.has("amount") and _should_upgrade_amount(kind):
-			upgraded_effect["amount"] = _upgraded_amount(kind, int(upgraded_effect["amount"]))
+			var old_amount: int = int(upgraded_effect["amount"])
+			upgraded_effect["amount"] = _upgraded_amount(kind, old_amount)
+			var new_amount: int = int(upgraded_effect["amount"])
+			if old_amount != new_amount:
+				replacements[old_amount] = new_amount
 		copy.effects.append(upgraded_effect)
+	# Update description text to match upgraded effect amounts.
+	# Sort descending so e.g. "14" is replaced before "4", avoiding partial substitutions.
+	var desc: String = description
+	var sorted_keys: Array = replacements.keys()
+	sorted_keys.sort()
+	sorted_keys.reverse()
+	for old_amount: int in sorted_keys:
+		desc = _replace_number_in_desc(desc, old_amount, replacements[old_amount])
+	copy.description = desc
 	return copy
+
+# Replace every standalone occurrence of old_val with new_val in text.
+# "Standalone" means not adjacent to another digit (word-boundary for numbers).
+static func _replace_number_in_desc(text: String, old_val: int, new_val: int) -> String:
+	var old_str: String = str(old_val)
+	var new_str: String = str(new_val)
+	var result: String = ""
+	var i: int = 0
+	while i < text.length():
+		if i + old_str.length() <= text.length() and text.substr(i, old_str.length()) == old_str:
+			var before_ok: bool = i == 0 or not _is_ascii_digit(text.unicode_at(i - 1))
+			var after_ok: bool = (i + old_str.length() >= text.length()) \
+				or not _is_ascii_digit(text.unicode_at(i + old_str.length()))
+			if before_ok and after_ok:
+				result += new_str
+				i += old_str.length()
+				continue
+		result += text[i]
+		i += 1
+	return result
+
+static func _is_ascii_digit(char_code: int) -> bool:
+	return char_code >= 48 and char_code <= 57  # '0'..'9'
 
 func _should_upgrade_amount(kind: String) -> bool:
 	return kind in [
