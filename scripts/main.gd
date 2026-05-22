@@ -23,6 +23,8 @@ var player_status_line: Label
 var player_name_label: Label
 var player_block_badge: BlockBadge
 var player_portrait_wrap: Control
+var player_portrait_image: TextureRect  # 戰鬥中切換 active 時動態換肖像
+var bench_strip: VBoxContainer  # 後排頭像容器（戰鬥中可點切換上場）
 var enemy_hp_bar: ProgressBar
 var enemy_hp_value: Label
 var enemy_status_line: Label
@@ -1641,6 +1643,7 @@ func _build_battle_scene() -> void:
 	arena.alignment = BoxContainer.ALIGNMENT_CENTER
 	arena.add_theme_constant_override("separation", 24)
 	screen.add_child(arena)
+	_build_bench_widget(arena)
 	_build_player_widget(arena)
 	var spacer: Control = Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1655,6 +1658,85 @@ func _build_battle_scene() -> void:
 	hand_row.custom_minimum_size = Vector2(0, 290)
 	bottom.add_child(hand_row)
 	_build_right_dock(bottom)
+
+func _build_bench_widget(parent: HBoxContainer) -> void:
+	var col: VBoxContainer = VBoxContainer.new()
+	col.custom_minimum_size = Vector2(110, 0)
+	col.size_flags_horizontal = 0
+	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.add_theme_constant_override("separation", 10)
+	parent.add_child(col)
+	bench_strip = col
+	_refresh_bench_strip()  # 後排內容會在 _refresh_battle 持續刷新
+
+func _refresh_bench_strip() -> void:
+	if bench_strip == null or not is_instance_valid(bench_strip):
+		return
+	for child: Node in bench_strip.get_children():
+		child.queue_free()
+	if battle == null or run_state == null or run_state.characters.size() <= 1:
+		return  # 單人隊不顯示 bench
+	var players: Array = battle.state.get("players", []) as Array
+	var active: int = int(battle.state.get("active_player_index", 0))
+	for i: int in range(players.size()):
+		if i == active:
+			continue
+		bench_strip.add_child(_bench_portrait(i, players[i] as Dictionary))
+
+func _bench_portrait(index: int, player_data: Dictionary) -> Control:
+	var character: CharacterData = run_state.characters[index] if index < run_state.characters.size() else null
+	if character == null:
+		return Control.new()
+	var hp: int = int(player_data.get("hp", 0))
+	var max_hp_v: int = int(player_data.get("max_hp", 1))
+	var alive: bool = hp > 0
+	var wrap: VBoxContainer = VBoxContainer.new()
+	wrap.add_theme_constant_override("separation", 2)
+	wrap.alignment = BoxContainer.ALIGNMENT_CENTER
+	var btn: Button = Button.new()
+	btn.custom_minimum_size = Vector2(96, 96)
+	btn.focus_mode = Control.FOCUS_NONE
+	btn.text = ""
+	btn.disabled = not alive
+	var border: Color = ThemeColors.BORDER_GOLD if alive else Color("5f6570", 0.5)
+	var bg: Color = Color("18212f", 0.85) if alive else Color("0d121b", 0.85)
+	btn.add_theme_stylebox_override("normal", UIFactory.style_box(bg, border, 1, 8))
+	btn.add_theme_stylebox_override("hover", UIFactory.style_box(bg.lightened(0.1), ThemeColors.ACCENT_GOLD, 2, 8))
+	btn.add_theme_stylebox_override("pressed", UIFactory.style_box(bg.darkened(0.1), ThemeColors.HIGHLIGHT_GOLD, 2, 8))
+	btn.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("0d121b", 0.6), Color("5f6570", 0.4), 1, 8))
+	if alive:
+		btn.pressed.connect(func() -> void: _on_bench_pressed(index))
+	var portrait: TextureRect = UIFactory.portrait_rect(character.portrait_path, Vector2(84, 84), true)
+	portrait.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	portrait.size = Vector2(84, 84)
+	portrait.position = Vector2(-42, -42)
+	if not alive:
+		portrait.modulate = Color(0.0, 0.0, 0.0, 0.7)
+	btn.add_child(portrait)
+	UIFactory.ignore_child_mouse(btn)
+	wrap.add_child(btn)
+	var name_label: Label = UIFactory.card_label(character.display_name, 12, ThemeColors.TEXT_LIGHT if alive else ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_CENTER)
+	wrap.add_child(name_label)
+	if alive:
+		var hp_label: Label = UIFactory.card_label("HP %d/%d" % [hp, max_hp_v], 11, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_CENTER)
+		wrap.add_child(hp_label)
+	else:
+		var ko_label: Label = UIFactory.card_label("倒下", 11, Color("c84a3a"), HORIZONTAL_ALIGNMENT_CENTER)
+		wrap.add_child(ko_label)
+	return wrap
+
+func _on_bench_pressed(index: int) -> void:
+	if battle == null:
+		return
+	var result: Dictionary = battle.switch_active(index)
+	if not bool(result.get("changed", false)):
+		var reason: String = String(result.get("reason", ""))
+		if reason == "no_energy":
+			battle.add_log("靈力不足，無法再換人。")
+		elif reason == "dead":
+			battle.add_log("該角色已倒下。")
+	_refresh_battle()
 
 func _build_player_widget(parent: HBoxContainer) -> void:
 	var col: VBoxContainer = VBoxContainer.new()
@@ -1769,6 +1851,7 @@ func _portrait_with_block_badge(path: String, portrait_size: Vector2, show_full:
 	if is_player:
 		player_block_badge = badge
 		player_portrait_wrap = wrap
+		player_portrait_image = portrait  # 保留 ref 給切換時動態換圖
 	else:
 		enemy_block_badge = badge
 		enemy_portrait_wrap = wrap
@@ -2885,10 +2968,23 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 	var passive_status: String = battle.passive_status_text()
 	if not passive_status.is_empty():
 		top_parts.append(passive_status)
+	# 隊伍 >1 人時，提示切換次數
+	if run_state.characters.size() > 1:
+		var switched: bool = bool(battle.state.get("switched_this_turn", false))
+		top_parts.append("切換：%s" % ("已用" if switched else "本回合免費"))
 	status_label.text = "    ".join(top_parts)
+	# 玩家欄位反映 ACTIVE 角色（battle.character 為 active 的 alias）
+	if battle.character != null:
+		if player_name_label != null:
+			player_name_label.text = battle.character.display_name
+		if player_portrait_image != null and is_instance_valid(player_portrait_image):
+			var tex: Texture2D = UIFactory.load_texture(battle.character.portrait_path)
+			if tex != null:
+				player_portrait_image.texture = tex
 	_refresh_combatant_hp(player_hp_bar, player_hp_value, int(battle.state["player_hp"]), int(battle.state["player_max_hp"]))
 	player_block_badge.set_amount(int(battle.state["player_block"]))
 	player_status_line.text = UIFactory.status_summary(int(battle.state["player_poison"]), int(battle.state["player_weak"]), int(battle.state["player_vulnerable"]))
+	_refresh_bench_strip()
 	_refresh_combatant_hp(enemy_hp_bar, enemy_hp_value, int(battle.state["enemy_hp"]), int(battle.state["enemy_max_hp"]))
 	enemy_block_badge.set_amount(int(battle.state["enemy_block"]))
 	enemy_status_line.text = UIFactory.status_summary(int(battle.state["enemy_poison"]), int(battle.state["enemy_weak"]), int(battle.state["enemy_vulnerable"]))
@@ -2903,7 +2999,7 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 		elif dealt < int(pred["raw"]):
 			intent_lines.append("實受 %d" % dealt)
 	enemy_label.text = "\n".join(intent_lines)
-	energy_orb.set_energy(int(battle.state["energy"]), BattleController.TURN_ENERGY)
+	energy_orb.set_energy(int(battle.state["energy"]), int(battle.state.get("per_turn_energy", BattleController.BASE_TURN_ENERGY)))
 	var buttons: Array[Button] = []
 	card_buttons.clear()
 	_selected_hand_button = null
