@@ -283,6 +283,139 @@ main.gd
 - **不要把 `assert()` 用在正式邏輯**：release build 會被剝掉，assert 內的副作用會丟失
 - **不要在 `_clear_root()` 後立刻存取舊 UI 變數**：`queue_free()` 是延遲釋放但變數已是 dangling，下一行重建就好
 
+## Party Mode (WIP)
+
+組隊功能規劃。**尚未實作**——這節是 implementation contract，動工時照此做、改設計時更新這節。
+
+### 鎖定的設計決策
+
+| 維度 | 決定 |
+|---|---|
+| 戰鬥模型 | **主備制（Pokemon 風）**：1 人 active 上場、最多 2 人後排，只有 active 被打 / 出牌 |
+| 隊伍大小 | **1–3 人自由**。1 人 = 現在的單機體驗，組隊是 opt-in |
+| Deck | **每角色獨立** draw / discard / hand（per-character `DeckManager`）|
+| 死亡角色 | **保留在備位**（HP=0 不可上場、不會被踢出隊伍）；未來可被「復活卡 / event」救回 |
+| 專武 | **每人各拿自己的** starter weapon（`add_relic(weapons_for_character(char.id)[0])` for each）|
+| 重複角色 | **不允許**，同 character ID 唯一 |
+| 隊長 | `characters[0]` 永遠是隊長；character select 時可改順序，run 開始後鎖死 |
+| 存檔 | SAVE_VERSION **1 → 2**，要寫 migration |
+
+### 預設數值（實作時可調）
+
+- **Energy**：`3 + (party_size - 1)` → 1 人 3、2 人 4、3 人 5
+- **後排回血**：每回合 turn-end，活著的後排（HP > 0）+ 2 HP（封頂 max_hp）
+- **切換成本**：每回合可免費切 1 次；同回合再切要花 1 energy
+- **Active 戰死**：強制免費 switch 到第一個活著的後排；全滅才 `is_defeat`
+
+### 資料模型
+
+`RunState` 從單角色改成陣列形式：
+
+```gdscript
+# 之前
+var character: CharacterData
+var hp / max_hp / power_bonus: int
+var deck: Array[CardData]
+
+# 之後
+var characters: Array[CharacterData] = []           # 1–3 人，characters[0] 是隊長
+var character_hps: Array[int] = []
+var character_max_hps: Array[int] = []              # 已套 ascension starting_hp_multiplier
+var character_power_bonus: Array[int] = []          # power 是 per-char buff
+var character_decks: Array[Array[CardData]] = []    # 每人獨立 deck
+var active_character_index: int = 0
+# relics / gold / encounter_index / pending_rest_heal / ascension_level / map_seed 維持全隊共用
+```
+
+### BattleController 改動策略
+
+**最低破壞性原則**：保留 `state["player_*"]` 作為「指向當前 active player 的 alias」，每次 switch 時 `_sync_state_to_active()` 寫回陣列、再 `_sync_active_to_state()` 把新 active 拷貝到 alias。**EffectResolver 內部邏輯幾乎不用改**。
+
+```gdscript
+state = {
+    "energy": ...,
+    "enemy_*": ...,
+    "players": [
+        {"name": ..., "hp": ..., "max_hp": ..., "block": 0, "poison": 0, "weak": 0, "vulnerable": 0, "power": ...},
+        ...,
+    ],
+    "active_player_index": 0,
+    "switched_this_turn": false,
+    "player_hp": ..., "player_block": ...,  # alias，自動同步
+}
+var decks: Array[DeckManager] = []
+func active_deck() -> DeckManager: return decks[state["active_player_index"]]
+```
+
+Sync 呼叫時機：
+- `start_turn` / `play_card` / `resolve_enemy_phase` 結束 → `_sync_state_to_active()`
+- `switch_active` 之後 → `_sync_active_to_state()`
+- `start_turn` 開頭 → 後排回血 + reset `switched_this_turn`
+
+`is_defeat` 改成「全員 HP <= 0」；active 戰死時 `_check_battle_end` 先試 `_force_switch_to_first_alive`。
+
+### Save migration v1 → v2
+
+```gdscript
+match version:
+    0: pass  # legacy v0 視為 v1
+    1:
+        data["character_ids"] = [data.get("character_id", "")]
+        data["character_hps"] = [int(data.get("hp", 0))]
+        data["character_max_hps"] = [int(data.get("max_hp", 0))]
+        data["character_power_bonus"] = [int(data.get("power_bonus", 0))]
+        data["character_decks"] = [data.get("deck", [])]
+        data["active_character_index"] = 0
+        # 舊 keys 留著不刪，from_dict 不會讀它們
+```
+
+`SaveManager.SAVE_VERSION += 1`，`RunState.from_dict` 只看新版 keys。
+
+### UI 變動範圍
+
+- **character_select**：多選 + 排序（先選的自動成為隊長，可上下移）。最多 3 人勾選才能「出戰」
+- **battle 畫面**：active portrait 維持原大小；左側豎排 1–2 個後排小頭像（90×90）+ 小 HP 條；點後排頭像 = `switch_active(該 index)`，死亡 / 同人灰掉
+- **left_dock**：加「切換 1/1 免費」狀態文字
+- **show_progress_screen 狀態列**：改顯示「李 30/40 · 趙 25/35 · 林 0/40」三人 HP
+- **手牌**：只顯示 active 的（其他角色 deck 在他們各自的 draw pile）
+
+### 影響面 checklist
+
+| 系統 | 怎麼處理 |
+|---|---|
+| `Ascension.starting_hp_multiplier` | 對每個 `character_max_hps[i]` 各乘一次 |
+| `Ascension.enemy_hp_multiplier` | 不變（敵人血量不依隊伍 size scale）|
+| Relic `acquire_triggers` 的 `max_hp_bonus` | MVP：給隊長；之後可改全隊 |
+| `_battle_gold_reward` | 不變（全隊共享 gold）|
+| `_dbg_full_heal` | 滿血所有角色 |
+| `_dbg_add_card` | 加到 active 角色的 deck |
+| `show_result` | victory = 走完最後一層即可（不要求全員活）；defeat = 全員 HP <= 0 |
+| balance regression test | 加 1 人 / 2 人 / 3 人三組 baseline |
+| Bestiary / map / event / shop | 不變 |
+
+### 分階段執行（每階段一個 commit batch）
+
+| Phase | 內容 | 預估 |
+|---|---|---|
+| 1. 資料層 | RunState 重構 + SaveManager.migrate v1→v2 + smoke test (round-trip + v1 migrate) | 1.5 h |
+| 2. BattleController | `players` 陣列 + `decks` 陣列 + `_sync_*` + `switch_active` + 後排回血 + 全滅判定 + active 死自動切 | 2 h |
+| 3. character select UI | 多選 + 排序、最多 3 人 | 1 h |
+| 4. battle UI | 後排頭像 widget + 點擊切換 + active 高亮 + 狀態欄重排 | 1.5 h |
+| 5. Ascension / relic 整合 | starter weapon 每人各拿、starting_hp_mult 套到每個角色 | 0.5 h |
+| 6. 測試 + 平衡 | 1/2/3 人三組 balance regression + 完整 smoke | 1 h |
+
+**總計約 7.5 小時**。
+
+### 風險與防呆
+
+1. **EffectResolver 同步 bug**：`_sync_*` 漏欄位 → 狀態錯亂。
+   **對策**：smoke test 寫「切換 → 打卡 → 切回 → 確認原 player 狀態被保留」測試。
+2. **存檔遷移漏欄位**：v1 → v2 漏 `character_decks` → 老存檔載入後 deck 空。
+   **對策**：migration test assert `restored.character_decks[0].size() > 0`。
+3. **平衡崩盤**：3 人隊預期戰力 1.5×–2× 單人。
+   **對策**：先不改 enemy HP，跑 balance regression 看實際勝率變化、再決定要不要 scale。
+4. **死亡角色卡塞滿手牌**：因為每人獨立 deck，**死人的 deck/hand 不會被別人抽到**，無此問題。
+
 ## Git Workflow
 
 - main branch 直接 push，沒有 PR review 流程（個人專案）
