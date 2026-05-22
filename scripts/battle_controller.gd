@@ -2,37 +2,74 @@ class_name BattleController
 extends RefCounted
 
 const HAND_SIZE: int = 5
-const TURN_ENERGY: int = 3
+const BASE_TURN_ENERGY: int = 3
+const BENCH_HEAL_PER_TURN: int = 2
 
 var run_state: RunState
-var character: CharacterData
 var enemy: EnemyData
-var deck: DeckManager
+var decks: Array[DeckManager] = []  # 每個角色一份；舊 `deck` 屬性指向 active
 var resolver: EffectResolver
 var state: Dictionary = {}
 var action_index: int = 0
 var battle_log: Array[String] = []
 var phased: bool = false  # Boss HP 跌破 50% 後切換到 phase_2_actions
 
-func setup(rs: RunState, chosen_character: CharacterData, chosen_enemy: EnemyData) -> void:
+# 向後相容：character / deck 永遠對應到目前 active player
+var character: CharacterData:
+	get:
+		if run_state == null or run_state.characters.is_empty():
+			return null
+		var idx: int = _active_index()
+		if idx >= run_state.characters.size():
+			return null
+		return run_state.characters[idx]
+
+var deck: DeckManager:
+	get:
+		var idx: int = _active_index()
+		if idx >= decks.size():
+			return null
+		return decks[idx]
+	set(_value):
+		pass  # 內部管理；外部不要直接寫
+
+func _active_index() -> int:
+	return int(state.get("active_player_index", 0))
+
+func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: EnemyData) -> void:
 	run_state = rs
-	character = chosen_character
 	enemy = chosen_enemy.clone()
-	deck = DeckManager.new()
 	resolver = EffectResolver.new()
-	deck.setup(run_state.deck)
 	action_index = 0
 	phased = false
 	battle_log.clear()
+	var party_size: int = run_state.characters.size()
+	var per_turn_energy: int = BASE_TURN_ENERGY + max(0, party_size - 1)
+	# 每個角色獨立 DeckManager
+	decks.clear()
+	for i: int in range(party_size):
+		var dm: DeckManager = DeckManager.new()
+		dm.setup(run_state.character_decks[i] as Array[CardData])
+		decks.append(dm)
+	# 每個角色的 state slot
+	var players: Array[Dictionary] = []
+	for i: int in range(party_size):
+		var c: CharacterData = run_state.characters[i]
+		players.append({
+			"name": c.display_name,
+			"max_hp": run_state.character_max_hps[i],
+			"hp": run_state.character_hps[i],
+			"block": 0,
+			"poison": 0,
+			"weak": 0,
+			"vulnerable": 0,
+			"power": run_state.character_power_bonus[i],
+		})
 	state = {
-		"player_name": character.display_name,
-		"player_max_hp": character.max_hp,
-		"player_hp": run_state.hp,
-		"player_block": 0,
-		"player_poison": 0,
-		"player_weak": 0,
-		"player_vulnerable": 0,
-		"player_power": run_state.power_bonus,
+		"players": players,
+		"active_player_index": clamp(run_state.active_character_index, 0, max(0, party_size - 1)),
+		"switched_this_turn": false,
+		"per_turn_energy": per_turn_energy,
 		"enemy_name": enemy.display_name,
 		"enemy_max_hp": enemy.max_hp,
 		"enemy_hp": enemy.max_hp,
@@ -40,7 +77,7 @@ func setup(rs: RunState, chosen_character: CharacterData, chosen_enemy: EnemyDat
 		"enemy_poison": 0,
 		"enemy_weak": 0,
 		"enemy_vulnerable": 0,
-		"energy": TURN_ENERGY,
+		"energy": per_turn_energy,
 		"pending_draw": 0,
 		"turn": 0,
 		"li_discount_used": false,
@@ -53,9 +90,107 @@ func setup(rs: RunState, chosen_character: CharacterData, chosen_enemy: EnemyDat
 		"draw_next_turn_bonus": 0,
 		"card_played_counts": {}
 	}
+	# 若 active 死了（舊存檔載入後可能發生），自動跳到第一個活的
+	if not _is_active_alive():
+		_force_switch_to_first_alive(false)
+	_sync_active_to_state()
 	_apply_relic_modifiers()
-	_apply_battle_start_passive()
+	_apply_party_battle_start_passives()
 	_fire_relic_triggers("battle_start")
+
+# 把 active player slot 的欄位投影到 state["player_*"]，
+# 讓 EffectResolver 的舊 key 路徑繼續適用
+func _sync_active_to_state() -> void:
+	var idx: int = _active_index()
+	var players: Array = state.get("players", []) as Array
+	if idx >= players.size():
+		return
+	var p: Dictionary = players[idx] as Dictionary
+	state["player_name"] = p["name"]
+	state["player_max_hp"] = p["max_hp"]
+	state["player_hp"] = p["hp"]
+	state["player_block"] = p["block"]
+	state["player_poison"] = p["poison"]
+	state["player_weak"] = p["weak"]
+	state["player_vulnerable"] = p["vulnerable"]
+	state["player_power"] = p["power"]
+
+# 把 state["player_*"] 寫回 active player slot
+func _sync_state_to_active() -> void:
+	var idx: int = _active_index()
+	var players: Array = state.get("players", []) as Array
+	if idx >= players.size():
+		return
+	var p: Dictionary = players[idx] as Dictionary
+	p["max_hp"] = int(state.get("player_max_hp", p["max_hp"]))
+	p["hp"] = int(state.get("player_hp", p["hp"]))
+	p["block"] = int(state.get("player_block", 0))
+	p["poison"] = int(state.get("player_poison", 0))
+	p["weak"] = int(state.get("player_weak", 0))
+	p["vulnerable"] = int(state.get("player_vulnerable", 0))
+	p["power"] = int(state.get("player_power", 0))
+
+func _is_active_alive() -> bool:
+	var idx: int = _active_index()
+	var players: Array = state.get("players", []) as Array
+	if idx >= players.size():
+		return false
+	return int((players[idx] as Dictionary)["hp"]) > 0
+
+# 強制換到第一個活著的（active 戰死、battle_start 時 active 已死等）
+# free=true 不收 energy
+func _force_switch_to_first_alive(announce: bool = true) -> bool:
+	var players: Array = state.get("players", []) as Array
+	for i: int in range(players.size()):
+		if i == _active_index():
+			continue
+		if int((players[i] as Dictionary)["hp"]) > 0:
+			# 不要從 state 寫回（active 已經死，不再代表 player_* 為他的狀態）
+			# 但要清掉舊 active 的 block / poison etc. 應該留在他自己的 slot
+			_sync_state_to_active()
+			state["active_player_index"] = i
+			_sync_active_to_state()
+			if i < decks.size():
+				decks[i].draw(HAND_SIZE)
+			if announce:
+				add_log("%s 倒下，%s 上場！" % [String((players[_previous_active_index()] as Dictionary)["name"]) if false else "前一名角色", state["player_name"]])
+				# 簡化 log：只說新人上場
+				battle_log[-1] = "%s 上場接戰！" % state["player_name"]
+			return true
+	return false
+
+# 沒被使用 (helper)
+func _previous_active_index() -> int:
+	return _active_index()
+
+# 玩家主動切人
+# 回傳 {changed: bool, free: bool, reason: String}
+func switch_active(new_index: int) -> Dictionary:
+	var current: int = _active_index()
+	if new_index == current:
+		return {"changed": false, "reason": "same"}
+	var players: Array = state.get("players", []) as Array
+	if new_index < 0 or new_index >= players.size():
+		return {"changed": false, "reason": "invalid_index"}
+	if int((players[new_index] as Dictionary)["hp"]) <= 0:
+		return {"changed": false, "reason": "dead"}
+	var was_free: bool = not bool(state.get("switched_this_turn", false))
+	var cost: int = 0 if was_free else 1
+	if int(state["energy"]) < cost:
+		return {"changed": false, "reason": "no_energy"}
+	state["energy"] = int(state["energy"]) - cost
+	# 寫回當前 active 並棄手牌
+	_sync_state_to_active()
+	if current < decks.size():
+		decks[current].discard_hand()
+	state["active_player_index"] = new_index
+	_sync_active_to_state()
+	if new_index < decks.size():
+		decks[new_index].draw(HAND_SIZE)
+	state["switched_this_turn"] = true
+	var cost_label: String = "" if was_free else "（耗 1 靈力）"
+	add_log("換 %s 上場%s" % [String(state["player_name"]), cost_label])
+	return {"changed": true, "free": was_free}
 
 func add_log(line: String) -> void:
 	battle_log.append(line)
@@ -81,13 +216,26 @@ func is_victory() -> bool:
 	return int(state["enemy_hp"]) <= 0
 
 func is_defeat() -> bool:
-	return int(state["player_hp"]) <= 0
+	var players: Array = state.get("players", []) as Array
+	if players.is_empty():
+		return int(state.get("player_hp", 0)) <= 0
+	for p_v: Variant in players:
+		if int((p_v as Dictionary)["hp"]) > 0:
+			return false
+	return true
 
 func is_battle_over() -> bool:
 	return is_victory() or is_defeat()
 
 func complete_victory() -> void:
-	run_state.sync_hp_from_battle(int(state["player_hp"]))
+	# 同步所有角色 HP 回 run_state，包括 active 切換結果
+	_sync_state_to_active()
+	var players: Array = state.get("players", []) as Array
+	for i: int in range(players.size()):
+		if i >= run_state.character_hps.size():
+			break
+		run_state.character_hps[i] = int((players[i] as Dictionary)["hp"])
+	run_state.active_character_index = _active_index()
 
 func next_enemy_action() -> Dictionary:
 	var active: Array[Dictionary] = enemy.phase_2_actions if (phased and not enemy.phase_2_actions.is_empty()) else enemy.actions
@@ -102,6 +250,8 @@ func _check_phase_transition() -> void:
 		add_log("%s 怒色暴漲，招式變換！" % enemy.display_name)
 
 func effective_card_cost(card: CardData) -> int:
+	if character == null:
+		return card.cost
 	var passive: Dictionary = character.passive_by_trigger("first_attack_cost")
 	if not passive.is_empty() and card.card_type == "attack" and not bool(state.get("li_discount_used", false)):
 		return max(0, card.cost - int(passive.get("amount", 0)))
@@ -109,27 +259,43 @@ func effective_card_cost(card: CardData) -> int:
 
 func start_turn() -> Dictionary:
 	state["turn"] = int(state["turn"]) + 1
-	state["energy"] = TURN_ENERGY
-	# Block carry-over (玄武魂)
+	state["energy"] = int(state.get("per_turn_energy", BASE_TURN_ENERGY))
+	# Block carry-over (玄武魂) — 套到 active player
 	state["player_block"] = int(state.get("next_turn_block", 0))
 	state["next_turn_block"] = 0
 	state["enemy_block"] = 0
 	state["pending_draw"] = 0
 	state["lin_block_used"] = false
+	state["switched_this_turn"] = false
 	if int(state["enemy_vulnerable"]) > 0:
 		state["enemy_vulnerable"] = int(state["enemy_vulnerable"]) - 1
 	if int(state["enemy_weak"]) > 0:
 		state["enemy_weak"] = int(state["enemy_weak"]) - 1
+	_apply_bench_heal()
 	var before_tick: Dictionary = snapshot_state()
 	add_logs(resolver.tick_statuses(state))
+	_sync_state_to_active()
 	if is_battle_over():
 		return {"before_tick": before_tick, "ended": true}
 	_fire_relic_triggers("turn_start")
 	var draw_count: int = HAND_SIZE + int(state.get("draw_next_turn_bonus", 0))
 	state["draw_next_turn_bonus"] = 0
-	deck.draw(draw_count)
+	if deck != null:
+		deck.draw(draw_count)
 	add_log("第 %d 回合開始，抽 %d 張牌。" % [int(state["turn"]), draw_count])
 	return {"before_tick": before_tick, "ended": false}
+
+func _apply_bench_heal() -> void:
+	var players: Array = state.get("players", []) as Array
+	var active: int = _active_index()
+	for i: int in range(players.size()):
+		if i == active:
+			continue
+		var p: Dictionary = players[i] as Dictionary
+		var hp: int = int(p["hp"])
+		var max_hp_v: int = int(p["max_hp"])
+		if hp > 0 and hp < max_hp_v:
+			p["hp"] = min(max_hp_v, hp + BENCH_HEAL_PER_TURN)
 
 func play_card(card: CardData) -> Dictionary:
 	var cost: int = effective_card_cost(card)
@@ -137,7 +303,7 @@ func play_card(card: CardData) -> Dictionary:
 		add_log("靈力不足，無法施放 %s。" % card.display_title())
 		return {"affordable": false}
 	state["energy"] = int(state["energy"]) - cost
-	if not character.passive_by_trigger("first_attack_cost").is_empty() and card.card_type == "attack" and not bool(state["li_discount_used"]):
+	if character != null and not character.passive_by_trigger("first_attack_cost").is_empty() and card.card_type == "attack" and not bool(state["li_discount_used"]):
 		state["li_discount_used"] = true
 	add_log("施放 %s。" % card.display_title())
 	var before_card: Dictionary = snapshot_state()
@@ -149,19 +315,24 @@ func play_card(card: CardData) -> Dictionary:
 		"card_cost": card.cost,
 		"card_effects": card.effects
 	})
-	deck.discard_card(card)
+	if deck != null:
+		deck.discard_card(card)
 	if int(state["pending_draw"]) > 0:
-		deck.draw(int(state["pending_draw"]))
+		if deck != null:
+			deck.draw(int(state["pending_draw"]))
 		state["pending_draw"] = 0
+	_sync_state_to_active()
 	return {"affordable": true, "before_card": before_card, "ended": is_battle_over()}
 
 func begin_enemy_phase() -> Dictionary:
 	_fire_relic_triggers("turn_end")
-	deck.discard_hand()
+	if deck != null:
+		deck.discard_hand()
 	if int(state["player_weak"]) > 0:
 		state["player_weak"] = int(state["player_weak"]) - 1
 	if int(state["player_vulnerable"]) > 0:
 		state["player_vulnerable"] = int(state["player_vulnerable"]) - 1
+	_sync_state_to_active()
 	var action: Dictionary = next_enemy_action()
 	action_index = action_index + 1
 	add_log("%s 準備施放：%s。" % [enemy.display_name, String(action["intent"])])
@@ -171,10 +342,14 @@ func resolve_enemy_phase(action: Dictionary) -> Dictionary:
 	add_log("%s：%s。" % [enemy.display_name, String(action["intent"])])
 	var before_enemy: Dictionary = snapshot_state()
 	add_logs(resolver.resolve_enemy_action(action, state))
+	_sync_state_to_active()
+	# active 死了？嘗試強制換人
+	if not _is_active_alive() and not is_defeat():
+		_force_switch_to_first_alive(true)
 	return {"before_enemy": before_enemy, "ended": is_battle_over()}
 
 func passive_status_text() -> String:
-	if state.is_empty():
+	if state.is_empty() or character == null:
 		return ""
 	for passive: Dictionary in character.passives:
 		var status_label: String = String(passive.get("status_label", ""))
@@ -190,20 +365,29 @@ func passive_status_text() -> String:
 					return "被動：%s" % status_label
 	return ""
 
-func _apply_battle_start_passive() -> void:
-	var passive: Dictionary = character.passive_by_trigger("battle_start")
-	if passive.is_empty():
-		return
-	var kind: String = String(passive.get("kind", ""))
-	var amount: int = int(passive.get("amount", 0))
-	match kind:
-		"self_heal":
-			state["player_hp"] = min(character.max_hp, int(state["player_hp"]) + amount)
-			run_state.sync_hp_from_battle(int(state["player_hp"]))
-			add_log("%s被動：戰鬥開始回復 %d 點生命。" % [character.display_name, amount])
-		"enemy_poison":
-			state["enemy_poison"] = int(state["enemy_poison"]) + amount
-			add_log("%s被動：敵人開場受到 %d 層蠱毒。" % [character.display_name, amount])
+# MVP：套用所有隊員的 battle_start 被動。self_heal 套在該角色 slot 上，
+# enemy_poison / 其他針對敵人的效果直接套 state
+func _apply_party_battle_start_passives() -> void:
+	var players: Array = state.get("players", []) as Array
+	for i: int in range(players.size()):
+		var c: CharacterData = run_state.characters[i] if i < run_state.characters.size() else null
+		if c == null:
+			continue
+		var passive: Dictionary = c.passive_by_trigger("battle_start")
+		if passive.is_empty():
+			continue
+		var kind: String = String(passive.get("kind", ""))
+		var amount: int = int(passive.get("amount", 0))
+		match kind:
+			"self_heal":
+				var p: Dictionary = players[i] as Dictionary
+				p["hp"] = min(int(p["max_hp"]), int(p["hp"]) + amount)
+				if i == _active_index():
+					state["player_hp"] = p["hp"]
+				add_log("%s被動：戰鬥開始回復 %d 點生命。" % [c.display_name, amount])
+			"enemy_poison":
+				state["enemy_poison"] = int(state["enemy_poison"]) + amount
+				add_log("%s被動：敵人開場受到 %d 層蠱毒。" % [c.display_name, amount])
 
 func _apply_relic_modifiers() -> void:
 	if run_state == null:
@@ -264,7 +448,7 @@ func _apply_trigger_effects(effects: Array, relic_name: String) -> void:
 			"self_heal":
 				var actual: int = amount + int(state.get("heal_bonus", 0))
 				state["player_hp"] = min(int(state["player_max_hp"]), int(state["player_hp"]) + actual)
-				run_state.sync_hp_from_battle(int(state["player_hp"]))
+				_sync_state_to_active()
 				add_log("【%s】回復 %d 生命。" % [relic_name, actual])
 			"self_block":
 				var actual_block: int = amount + int(state.get("block_bonus", 0))
@@ -310,6 +494,8 @@ func _apply_trigger_effects(effects: Array, relic_name: String) -> void:
 					add_log("【%s】蠱毒共鳴造成 %d 傷害。" % [relic_name, bonus_dmg])
 
 func _apply_card_play_passive(card: CardData) -> void:
+	if character == null:
+		return
 	var passive: Dictionary = character.passive_by_trigger("first_block_counter")
 	if passive.is_empty():
 		return

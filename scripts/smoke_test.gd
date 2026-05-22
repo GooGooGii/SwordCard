@@ -76,6 +76,8 @@ func _initialize() -> void:
 	_test_consume_energy_damage()
 	_test_power_stacks_with_damage()
 	_test_multi_turn_battle(characters[0], enemies[0])
+	_test_party_switch_and_defeat(characters, enemies[0])
+	_test_party_state_sync(characters, enemies[0])
 	_test_map_generator_reachability(enemies, bosses)
 	_test_predict_enemy_damage_matches_resolver()
 	_test_requires_enemy_target()
@@ -359,6 +361,61 @@ func _test_multi_turn_battle(character: CharacterData, enemy_template: EnemyData
 	assert(int(bc.state["enemy_hp"]) <= 0, "enemy hp should be 0 on victory")
 	bc.complete_victory()
 	assert(run_state.hp == int(bc.state["player_hp"]), "complete_victory should sync hp to run_state")
+
+func _test_party_switch_and_defeat(characters: Array[CharacterData], enemy_template: EnemyData) -> void:
+	# 三人隊伍 → 切換 → 全滅判定
+	if characters.size() < 3:
+		return
+	var run_state: RunState = RunState.new()
+	var party: Array[CharacterData] = [characters[0], characters[1], characters[2]]
+	run_state.init_for(party)
+	var enemy: EnemyData = enemy_template.clone()
+	var bc: BattleController = BattleController.new()
+	bc.setup(run_state, characters[0], enemy)
+	# 起始 energy 應為 3 + (3-1) = 5
+	assert(int(bc.state["per_turn_energy"]) == 5, "3-party energy should be 5; got %d" % int(bc.state["per_turn_energy"]))
+	# 切換到 index 1 (應免費)
+	var switch1: Dictionary = bc.switch_active(1)
+	assert(bool(switch1.get("changed", false)), "first switch should succeed")
+	assert(bool(switch1.get("free", false)), "first switch in turn should be free")
+	assert(bc._active_index() == 1, "active should now be 1")
+	assert(String(bc.state["player_name"]) == characters[1].display_name, "player_name alias should follow active")
+	# 第二次切換要 1 energy
+	var prev_energy: int = int(bc.state["energy"])
+	var switch2: Dictionary = bc.switch_active(2)
+	assert(bool(switch2.get("changed", false)), "second switch should succeed (we have energy)")
+	assert(not bool(switch2.get("free", true)), "second switch in turn should NOT be free")
+	assert(int(bc.state["energy"]) == prev_energy - 1, "second switch should cost 1 energy")
+	# 殺死全部 → is_defeat
+	for i: int in range(3):
+		(bc.state["players"] as Array)[i]["hp"] = 0
+	# active 也死，sync 一下
+	bc._sync_active_to_state()
+	assert(bc.is_defeat(), "all-zero hp party should is_defeat=true")
+
+func _test_party_state_sync(characters: Array[CharacterData], enemy_template: EnemyData) -> void:
+	# 切換 → 各自的 block/poison/weak/vulnerable 應跟著角色走
+	if characters.size() < 2:
+		return
+	var run_state: RunState = RunState.new()
+	var party: Array[CharacterData] = [characters[0], characters[1]]
+	run_state.init_for(party)
+	var enemy: EnemyData = enemy_template.clone()
+	var bc: BattleController = BattleController.new()
+	bc.setup(run_state, characters[0], enemy)
+	# 給 active (0) 一些 block，切換後切回應該保留
+	bc.state["player_block"] = 7
+	bc.state["player_poison"] = 3
+	bc._sync_state_to_active()
+	# 切到 1
+	bc.switch_active(1)
+	# active 是 1，他應該沒有 block / poison
+	assert(int(bc.state["player_block"]) == 0, "new active should start with 0 block")
+	assert(int(bc.state["player_poison"]) == 0, "new active should start with 0 poison")
+	# 切回 0
+	bc.switch_active(0)
+	assert(int(bc.state["player_block"]) == 7, "block should persist when switched back; got %d" % int(bc.state["player_block"]))
+	assert(int(bc.state["player_poison"]) == 3, "poison should persist when switched back; got %d" % int(bc.state["player_poison"]))
 
 func _test_map_generator_reachability(enemies: Array[EnemyData], bosses: Array[EnemyData]) -> void:
 	# 跑 30 次隨機產生的地圖，驗證每張都沒有孤兒節點、且 boss 可達
