@@ -102,6 +102,7 @@ func _initialize() -> void:
 	_test_map_seed_determinism(enemies, bosses)
 	_test_balance_regression(characters, enemies)
 	_test_balance_regression_mid(characters, bosses)
+	_test_balance_regression_upgraded(characters, enemies, bosses)
 	print("SwordCard smoke test passed.")
 	quit(0)
 
@@ -764,6 +765,22 @@ const BALANCE_BASELINES_MID: Dictionary = {
 	"lin_yueru": 100,
 	"anu": 100
 }
+# 全升級起始牌組 vs 山賊頭目。升級應嚴格 >= 基礎勝率，預期全 100%。
+# null = 第一次跑後填入觀測值。
+const BALANCE_BASELINES_UPGRADED: Dictionary = {
+	"li_xiaoyao": null,
+	"zhao_linger": null,
+	"lin_yueru": null,
+	"anu": null
+}
+# 全升級起始牌組 vs 蜈蚣大王（10 回合）。升級後快攻角色應仍 100%；
+# 趙靈兒治療型預期比基礎 20% 有所提升。null = 初次跑後填入。
+const BALANCE_BASELINES_MID_UPGRADED: Dictionary = {
+	"li_xiaoyao": null,
+	"zhao_linger": null,
+	"lin_yueru": null,
+	"anu": null
+}
 
 func _test_balance_regression(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
 	if enemies.is_empty():
@@ -814,9 +831,66 @@ func _test_balance_regression_mid(characters: Array[CharacterData], bosses: Arra
 			"mid balance regression: %s win rate %d%% drifted %d pp from baseline %d%% (tolerance %d pp)" %
 			[character.id, win_rate, delta, baseline, BALANCE_TOLERANCE_PP])
 
-func _simulate_random_battle(character: CharacterData, enemy_template: EnemyData, max_turns: int = 20) -> bool:
+func _test_balance_regression_upgraded(characters: Array[CharacterData], enemies: Array[EnemyData], bosses: Array[EnemyData]) -> void:
+	# 把每個角色的起始牌組全部升級，分別對「基礎敵人」和「中段 boss（10 回合）」跑 30 場。
+	# 升級後的牌組應嚴格 >= 未升級勝率；
+	# 爆炸蠱 +67% / 天師符法 +33% 等高漲幅卡片有沒有把勝率推到不合理範圍，
+	# 一旦填入 baseline 之後就能偵測往後改動造成的 drift。
+	if enemies.is_empty() or bosses.size() < 2:
+		return
+	# --- vs 山賊頭目（應全 100%）---
+	var easy_enemy: EnemyData = enemies[0]
+	print("Balance regression (upgraded deck) vs %s, %d trials/character:" % [easy_enemy.display_name, BALANCE_TRIALS])
+	for character: CharacterData in characters:
+		var upgraded_deck: Array[CardData] = []
+		for card: CardData in character.starting_deck:
+			upgraded_deck.append(card.upgraded_copy())
+		var wins: int = 0
+		for trial: int in range(BALANCE_TRIALS):
+			seed(trial * 7919 + hash(character.id) * 17 + 3)  # +3 offset 與基礎測試用不同 seed
+			if _simulate_random_battle(character, easy_enemy, 20, upgraded_deck):
+				wins += 1
+		var win_rate: int = int(round(100.0 * float(wins) / float(BALANCE_TRIALS)))
+		var baseline_v: Variant = BALANCE_BASELINES_UPGRADED.get(character.id, null)
+		if baseline_v == null:
+			print("  %s: %d%% (no baseline yet — add to BALANCE_BASELINES_UPGRADED)" % [character.id, win_rate])
+			continue
+		var baseline: int = int(baseline_v)
+		var delta: int = abs(win_rate - baseline)
+		print("  %s: %d%% (baseline %d%%, delta %d pp)" % [character.id, win_rate, baseline, delta])
+		assert(delta <= BALANCE_TOLERANCE_PP,
+			"upgraded balance regression: %s win rate %d%% drifted %d pp from baseline %d%% (tolerance %d pp)" %
+			[character.id, win_rate, delta, baseline, BALANCE_TOLERANCE_PP])
+	# --- vs 蜈蚣大王 10 回合（速贏率）---
+	var mid_enemy: EnemyData = bosses[1]
+	var turn_limit: int = 10
+	print("Balance regression (upgraded deck) vs %s (%d-turn limit), %d trials/character:" % [mid_enemy.display_name, turn_limit, BALANCE_TRIALS])
+	for character: CharacterData in characters:
+		var upgraded_deck: Array[CardData] = []
+		for card: CardData in character.starting_deck:
+			upgraded_deck.append(card.upgraded_copy())
+		var wins: int = 0
+		for trial: int in range(BALANCE_TRIALS):
+			seed(trial * 7919 + hash(character.id) * 17 + 8)  # +8 offset
+			if _simulate_random_battle(character, mid_enemy, turn_limit, upgraded_deck):
+				wins += 1
+		var win_rate: int = int(round(100.0 * float(wins) / float(BALANCE_TRIALS)))
+		var baseline_v: Variant = BALANCE_BASELINES_MID_UPGRADED.get(character.id, null)
+		if baseline_v == null:
+			print("  %s: %d%% (no mid baseline yet — add to BALANCE_BASELINES_MID_UPGRADED)" % [character.id, win_rate])
+			continue
+		var baseline: int = int(baseline_v)
+		var delta: int = abs(win_rate - baseline)
+		print("  %s: %d%% (mid baseline %d%%, delta %d pp)" % [character.id, win_rate, baseline, delta])
+		assert(delta <= BALANCE_TOLERANCE_PP,
+			"upgraded mid balance regression: %s win rate %d%% drifted %d pp from baseline %d%% (tolerance %d pp)" %
+			[character.id, win_rate, delta, baseline, BALANCE_TOLERANCE_PP])
+
+func _simulate_random_battle(character: CharacterData, enemy_template: EnemyData, max_turns: int = 20, deck_override: Array[CardData] = []) -> bool:
 	var run_state: RunState = RunState.new()
 	run_state.init_for(character)
+	if not deck_override.is_empty():
+		run_state.deck = deck_override
 	var enemy: EnemyData = enemy_template.clone()
 	var bc: BattleController = BattleController.new()
 	bc.setup(run_state, character, enemy)
