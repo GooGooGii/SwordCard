@@ -286,11 +286,17 @@ func _dbg_gold_bonus() -> void:
 func _dbg_full_heal() -> void:
 	if run_state == null:
 		return
-	run_state.hp = run_state.max_hp
+	# 全隊回滿 HP
+	for i: int in range(run_state.character_hps.size()):
+		run_state.character_hps[i] = run_state.character_max_hps[i]
 	if battle != null and not battle_end_pending:
-		battle.state["player_hp"] = run_state.max_hp
+		var players: Array = battle.state.get("players", []) as Array
+		for i: int in range(players.size()):
+			var p: Dictionary = players[i] as Dictionary
+			p["hp"] = int(p["max_hp"])
+		battle._sync_active_to_state()
 		_refresh_battle()
-	print("[DEBUG] full heal: %d/%d" % [run_state.hp, run_state.max_hp])
+	print("[DEBUG] full heal applied to all %d character(s)" % run_state.characters.size())
 
 func _dbg_add_card() -> void:
 	if run_state == null or selected_character == null:
@@ -666,21 +672,39 @@ func _saved_run_summary() -> String:
 	var data: Dictionary = SaveManager.load_save()
 	if data.is_empty():
 		return ""
-	var char_id: String = String(data.get("character_id", ""))
-	var char_name: String = char_id
-	for c: CharacterData in characters:
-		if c.id == char_id:
-			char_name = c.display_name
-			break
-	var hp: int = int(data.get("hp", 0))
-	var max_hp: int = int(data.get("max_hp", 0))
+	# load_save 已經 migrate 到當前版本（v2），所以可以直接讀新欄位
+	var char_ids: Array = data.get("character_ids", []) as Array
+	if char_ids.is_empty():
+		return ""
+	var char_names: Array[String] = []
+	for id_v: Variant in char_ids:
+		var nm: String = String(id_v)
+		for c: CharacterData in characters:
+			if c.id == nm:
+				nm = c.display_name
+				break
+		char_names.append(nm)
+	var hps: Array = data.get("character_hps", []) as Array
+	var max_hps: Array = data.get("character_max_hps", []) as Array
 	var gold: int = int(data.get("gold", 0))
 	var encounter_index: int = int(data.get("encounter_index", 0))
 	var total_rows: int = (data.get("encounter_choices", []) as Array).size()
-	var deck_size: int = (data.get("deck", []) as Array).size()
+	var total_deck: int = 0
+	for cdeck_v: Variant in (data.get("character_decks", []) as Array):
+		total_deck += (cdeck_v as Array).size()
 	var relic_count: int = (data.get("relics", []) as Array).size()
-	return "%s  ·  第 %d/%d 層\nHP %d/%d  ·  銅錢 %d  ·  牌組 %d 張  ·  遺物 %d 件" % [
-		char_name, encounter_index + 1, total_rows, hp, max_hp, gold, deck_size, relic_count
+	# HP 行：每個角色一段「李 30/40」
+	var hp_parts: Array[String] = []
+	for i: int in range(char_names.size()):
+		var hp_i: int = int(hps[i]) if i < hps.size() else 0
+		var max_i: int = int(max_hps[i]) if i < max_hps.size() else 0
+		var status: String = "倒下" if hp_i <= 0 else "%d/%d" % [hp_i, max_i]
+		hp_parts.append("%s %s" % [char_names[i], status])
+	var party_str: String = "  /  ".join(char_names) if char_names.size() > 1 else char_names[0]
+	return "%s  ·  第 %d/%d 層\n%s\n銅錢 %d  ·  牌組共 %d 張  ·  遺物 %d 件" % [
+		party_str, encounter_index + 1, total_rows,
+		"  ·  ".join(hp_parts),
+		gold, total_deck, relic_count
 	]
 
 func _on_start_random_pressed() -> void:
@@ -2799,14 +2823,30 @@ func _show_map_status_popup() -> void:
 	title.add_theme_font_size_override("font_size", 20)
 	title.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
 	box.add_child(title)
-	box.add_child(UIFactory.paragraph("%s  HP %d/%d  銅錢 %d  牌組 %d 張  本輪增傷 +%d" % [
-		selected_character.display_name,
-		run_state.hp,
-		selected_character.max_hp,
-		run_state.gold,
-		run_state.deck.size(),
-		run_state.power_bonus
-	]))
+	# 多角色隊伍：每人各一行 HP；單人沿用舊格式
+	if run_state.characters.size() > 1:
+		var total_deck: int = 0
+		for cdeck_v: Variant in run_state.character_decks:
+			total_deck += (cdeck_v as Array).size()
+		box.add_child(UIFactory.paragraph("銅錢 %d  ·  牌組共 %d 張" % [run_state.gold, total_deck]))
+		for i: int in range(run_state.characters.size()):
+			var c: CharacterData = run_state.characters[i]
+			var hp_i: int = run_state.character_hps[i]
+			var max_hp_i: int = run_state.character_max_hps[i]
+			var deck_i: int = (run_state.character_decks[i] as Array).size()
+			var pb_i: int = run_state.character_power_bonus[i]
+			var prefix: String = "★ " if i == 0 else "   "
+			var status: String = "倒下" if hp_i <= 0 else "HP %d/%d" % [hp_i, max_hp_i]
+			box.add_child(UIFactory.paragraph("%s%s  %s  牌組 %d  增傷 +%d" % [prefix, c.display_name, status, deck_i, pb_i]))
+	else:
+		box.add_child(UIFactory.paragraph("%s  HP %d/%d  銅錢 %d  牌組 %d 張  本輪增傷 +%d" % [
+			selected_character.display_name,
+			run_state.hp,
+			selected_character.max_hp,
+			run_state.gold,
+			run_state.deck.size(),
+			run_state.power_bonus
+		]))
 	if run_state.map_seed != 0:
 		box.add_child(UIFactory.paragraph("種子 %d  ·  難度 A%d" % [run_state.map_seed, run_state.ascension_level]))
 	var passive_text: String = _passive_text()
@@ -2958,7 +2998,10 @@ func _retry_current_battle() -> void:
 	if not general_indices.is_empty():
 		var idx: int = general_indices[randi() % general_indices.size()]
 		run_state.relics.remove_at(idx)
-	run_state.hp = run_state.max_hp
+	# 全隊回滿（包含被擊倒的後排）— 重打一場 = 從健康狀態出發
+	for i: int in range(run_state.character_hps.size()):
+		run_state.character_hps[i] = run_state.character_max_hps[i]
+	run_state.active_character_index = 0  # 重打 = 隊長重上場
 	SaveManager.save(run_state)
 	start_next_battle(enemy_to_retry)
 
