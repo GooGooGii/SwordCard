@@ -1112,17 +1112,12 @@ func show_progress_screen() -> void:
 	box.add_child(_map_view())
 	var button_row: HBoxContainer = HBoxContainer.new()
 	button_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	button_row.add_theme_constant_override("separation", 12)
+	button_row.add_theme_constant_override("separation", 16)
+	button_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	box.add_child(button_row)
-	var overview_button: Button = _button("路線總覽")
-	overview_button.pressed.connect(_show_map_overview_popup)
-	button_row.add_child(overview_button)
-	var deck_button: Button = _button("查看牌組")
-	deck_button.pressed.connect(show_deck_view)
-	button_row.add_child(deck_button)
-	var menu: Button = _button("放棄並返回主選單")
-	menu.pressed.connect(show_main_menu)
-	box.add_child(menu)
+	button_row.add_child(_event_choice_button("路線", "總覽全部層數", false, _show_map_overview_popup))
+	button_row.add_child(_event_choice_button("翻閱", "查看當前手札", false, show_deck_view))
+	button_row.add_child(_event_choice_button("放棄", "返回主選單", false, show_main_menu))
 
 func _map_view() -> Control:
 	return _map_view_sts()
@@ -2059,21 +2054,19 @@ func show_rest_node() -> void:
 	root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 14)
+	box.add_theme_constant_override("separation", 16)
 	panel.add_child(box)
-	box.add_child(_title("清修片刻", 34))
+	box.add_child(_title("清修片刻", 32))
 	box.add_child(UIFactory.paragraph("溪聲入耳，山風洗塵。你可以調息療傷，也可以靜心打磨一式招法。"))
 	box.add_child(UIFactory.paragraph("%s  HP %d/%d  銅錢 %d  可升級 %d 張牌" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, _upgradeable_cards().size()]))
-	var heal_button: Button = _button("調息：回復 %d HP" % run_state.pending_rest_heal)
-	heal_button.pressed.connect(resolve_rest_heal)
-	box.add_child(heal_button)
-	var upgrade_button: Button = _button("打磨招式：升級 1 張牌")
-	upgrade_button.disabled = _upgradeable_cards().is_empty()
-	upgrade_button.pressed.connect(show_upgrade_card_view)
-	box.add_child(upgrade_button)
-	var deck_button: Button = _button("查看牌組")
-	deck_button.pressed.connect(show_deck_view)
-	box.add_child(deck_button)
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(row)
+	row.add_child(_event_choice_button("調息", "回復 %d 點生命" % run_state.pending_rest_heal, false, resolve_rest_heal))
+	row.add_child(_event_choice_button("打磨", "升級 1 張招式", _upgradeable_cards().is_empty(), show_upgrade_card_view))
+	row.add_child(_event_choice_button("翻閱", "查看當前手札", false, show_deck_view))
 
 func resolve_rest_heal() -> void:
 	var bonus: int = 0
@@ -2238,12 +2231,13 @@ func show_shop_node() -> void:
 		var relic: RelicData = RelicCatalog.by_id(shop_relic_id)
 		if relic != null:
 			goods_row.add_child(_shop_relic_view(relic))
-	var deck_button: Button = _button("查看牌組")
-	deck_button.pressed.connect(show_deck_view)
-	box.add_child(deck_button)
-	var leave: Button = _button("離開商店")
-	leave.pressed.connect(advance_non_battle_node)
-	box.add_child(leave)
+	var bottom_row: HBoxContainer = HBoxContainer.new()
+	bottom_row.add_theme_constant_override("separation", 16)
+	bottom_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	bottom_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(bottom_row)
+	bottom_row.add_child(_event_choice_button("翻閱", "查看當前手札", false, show_deck_view))
+	bottom_row.add_child(_event_choice_button("離店", "收手回程", false, advance_non_battle_node))
 
 func _pick_shop_relic_id() -> String:
 	var pool: Array[RelicData] = []
