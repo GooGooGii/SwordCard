@@ -37,7 +37,21 @@ Target size:
 - No text, no logos, no watermarks
 - Keep central negative space for UI panels
 
+## Planned Event Story Illustrations
+
+Suggested paths:
+
+- `assets/art/events/[event_id].png`
+  - Event IDs correspond to the types in `EventData.gd` (e.g., `shrine`, `spring`, `talisman_cache`, `treasure_chest`, `tavern_acquaintance`, `sword_tomb`, `miao_healer`, etc.)
+
+Target:
+
+- 1280 x 720 PNG (to fit the game resolution)
+- Style: 2D painted xianxia fantasy, classic PAL1 scene-oriented story illustrations (e.g., encountering a wandering sage, the mystical moonlit pool, an ancient furnace, or the mysterious Baiyue Altar).
+- Composition: Restrained detail in the center/sides where event options and dialogue text boxes are overlaid, ensuring text remains highly legible.
+
 ## Planned Character Portraits
+
 
 Suggested paths:
 
