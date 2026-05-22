@@ -25,6 +25,7 @@ var player_block_badge: BlockBadge
 var player_portrait_wrap: Control
 var player_portrait_image: TextureRect  # 戰鬥中切換 active 時動態換肖像
 var bench_strip: VBoxContainer  # 後排頭像容器（戰鬥中可點切換上場）
+var _switch_tween: Tween = null  # 切換角色的淡出/淡入動畫，防止重疊
 var enemy_hp_bar: ProgressBar
 var enemy_hp_value: Label
 var enemy_status_line: Label
@@ -1760,7 +1761,41 @@ func _on_bench_pressed(index: int) -> void:
 			battle.add_log("靈力不足，無法再換人。")
 		elif reason == "dead":
 			battle.add_log("該角色已倒下。")
-	_refresh_battle()
+		_refresh_battle()
+		return
+	# 切換成功 → 淡出舊肖像、換圖、淡入新肖像
+	_animate_portrait_switch()
+
+func _animate_portrait_switch() -> void:
+	# 若前一個切換動畫還沒跑完，先中止並重設 alpha
+	if _switch_tween != null and _switch_tween.is_valid():
+		_switch_tween.kill()
+		if player_portrait_image != null and is_instance_valid(player_portrait_image):
+			player_portrait_image.modulate.a = 1.0
+		if player_name_label != null and is_instance_valid(player_name_label):
+			player_name_label.modulate.a = 1.0
+	if player_portrait_image == null or not is_instance_valid(player_portrait_image):
+		_refresh_battle()
+		return
+	_switch_tween = create_tween()
+	_switch_tween.set_parallel(false)
+	# Phase 1：淡出舊角色（0.13 s）
+	_switch_tween.tween_property(player_portrait_image, "modulate:a", 0.0, 0.13) \
+		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	if player_name_label != null and is_instance_valid(player_name_label):
+		_switch_tween.parallel().tween_property(player_name_label, "modulate:a", 0.0, 0.10)
+	# 中點：更新所有戰鬥數值（texture、HP、手牌等）；此時 alpha = 0 看不到 pop
+	_switch_tween.tween_callback(_refresh_battle)
+	# Phase 2：淡入新角色（0.18 s）
+	_switch_tween.tween_property(player_portrait_image, "modulate:a", 1.0, 0.18) \
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	if player_name_label != null and is_instance_valid(player_name_label):
+		_switch_tween.parallel().tween_property(player_name_label, "modulate:a", 1.0, 0.15)
+	# 動畫結束：金色 flash 提示「新角色上場」
+	_switch_tween.tween_callback(func() -> void:
+		if player_portrait_wrap != null and is_instance_valid(player_portrait_wrap):
+			UIFactory.flash_node(player_portrait_wrap, Color(1.3, 1.2, 0.85), 0.35)
+	)
 
 func _build_player_widget(parent: HBoxContainer) -> void:
 	var col: VBoxContainer = VBoxContainer.new()
