@@ -59,6 +59,7 @@ var _card_preview_overlay: Control = null
 var _suppress_next_card_play: bool = false
 var _selected_hand_card: CardData = null
 var _potion_buttons: Array[Button] = []
+var _battle_potion_strip: HBoxContainer = null
 var _potion_overlay: HBoxContainer = null
 var _potion_overlay_buttons: Array[Button] = []
 var _selected_hand_button: Button = null
@@ -1721,6 +1722,7 @@ func _build_battle_scene() -> void:
 	relic_strip.mouse_filter = Control.MOUSE_FILTER_PASS
 	screen.add_child(relic_strip)
 	_refresh_relic_strip()
+	_build_battle_potion_strip(screen)
 	var arena: HBoxContainer = HBoxContainer.new()
 	arena.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	arena.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -1914,18 +1916,14 @@ func _build_enemy_widget(parent: HBoxContainer) -> void:
 	enemy_status_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(enemy_status_line)
 
-func _build_left_dock(parent: HBoxContainer) -> void:
-	var dock: VBoxContainer = VBoxContainer.new()
-	dock.custom_minimum_size = Vector2(110 if _battle_compact else 140, 0)
-	dock.size_flags_horizontal = 0
-	dock.alignment = BoxContainer.ALIGNMENT_CENTER
-	dock.add_theme_constant_override("separation", 4 if _battle_compact else 8)
-	parent.add_child(dock)
-	var slot_size: int = 36 if _battle_compact else 44
-	var potion_row: HBoxContainer = HBoxContainer.new()
-	potion_row.add_theme_constant_override("separation", 4)
-	potion_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	dock.add_child(potion_row)
+func _build_battle_potion_strip(parent: VBoxContainer) -> void:
+	var slot_size: int = 28 if _battle_compact else 34
+	var strip: HBoxContainer = HBoxContainer.new()
+	strip.alignment = BoxContainer.ALIGNMENT_CENTER
+	strip.add_theme_constant_override("separation", 6)
+	strip.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	parent.add_child(strip)
+	_battle_potion_strip = strip
 	_potion_buttons.clear()
 	for i: int in range(RunState.MAX_POTION_SLOTS):
 		var btn: Button = Button.new()
@@ -1934,8 +1932,16 @@ func _build_left_dock(parent: HBoxContainer) -> void:
 		var idx: int = i
 		btn.pressed.connect(func(): _use_potion(idx))
 		_potion_buttons.append(btn)
-		potion_row.add_child(btn)
+		strip.add_child(btn)
 	_refresh_potion_buttons()
+
+func _build_left_dock(parent: HBoxContainer) -> void:
+	var dock: VBoxContainer = VBoxContainer.new()
+	dock.custom_minimum_size = Vector2(110 if _battle_compact else 140, 0)
+	dock.size_flags_horizontal = 0
+	dock.alignment = BoxContainer.ALIGNMENT_CENTER
+	dock.add_theme_constant_override("separation", 4 if _battle_compact else 8)
+	parent.add_child(dock)
 	energy_orb = EnergyOrb.new()
 	var orb_sz: float = 68.0 if _battle_compact else 96.0
 	energy_orb.custom_minimum_size = Vector2(orb_sz, orb_sz)
