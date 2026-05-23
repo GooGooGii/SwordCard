@@ -4,8 +4,8 @@ extends Control
 const ARC_RADIUS: float = 600.0
 const MAX_TOTAL_ANGLE_DEG: float = 36.0
 const ANGLE_PER_CARD_DEG: float = 7.0
-const HAND_BASE_LIFT: float = 72.0
 const HOVER_LIFT: float = 56.0
+var hand_base_lift: float = 72.0
 const HOVER_SCALE: float = 1.06
 const ANIM_DURATION: float = 0.12
 const DRAW_ANIM_DURATION: float = 0.18
@@ -100,7 +100,7 @@ func _compute_base_layout() -> void:
 		var t: float = 0.5 if n == 1 else float(i) / float(n - 1)
 		var angle_deg: float = -total_angle_deg / 2.0 + total_angle_deg * t
 		var angle_rad: float = deg_to_rad(angle_deg)
-		var base_pos: Vector2 = Vector2(w / 2.0 - card_size.x / 2.0, h - card_size.y - HAND_BASE_LIFT)
+		var base_pos: Vector2 = Vector2(w / 2.0 - card_size.x / 2.0, h - card_size.y - hand_base_lift)
 		_base_positions.append(base_pos)
 		_base_rotations.append(angle_rad)
 

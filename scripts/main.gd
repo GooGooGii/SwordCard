@@ -11,6 +11,7 @@ var battle: BattleController
 var root: MarginContainer
 var background_rect: TextureRect
 var hand_row: HandFan
+var _battle_compact: bool = false
 var log_label: RichTextLabel
 var status_label: Label
 var enemy_label: Label
@@ -1681,8 +1682,10 @@ func start_next_battle(enemy: EnemyData) -> void:
 func _build_battle_scene() -> void:
 	_set_background("res://assets/art/battle_bg.png")
 	_clear_root()
+	var viewport_size: Vector2 = get_viewport_rect().size
+	_battle_compact = OS.has_feature("mobile") or viewport_size.y <= 500.0
 	var screen: VBoxContainer = VBoxContainer.new()
-	screen.add_theme_constant_override("separation", 6)
+	screen.add_theme_constant_override("separation", 4 if _battle_compact else 6)
 	root.add_child(screen)
 	status_label = Label.new()
 	status_label.add_theme_font_size_override("font_size", 16)
@@ -1712,7 +1715,8 @@ func _build_battle_scene() -> void:
 	_build_left_dock(bottom)
 	hand_row = HandFan.new()
 	hand_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hand_row.custom_minimum_size = Vector2(0, 290)
+	hand_row.custom_minimum_size = Vector2(0, 220 if _battle_compact else 290)
+	hand_row.hand_base_lift = 88.0 if _battle_compact else 72.0
 	bottom.add_child(hand_row)
 	_build_right_dock(bottom)
 
@@ -3548,7 +3552,8 @@ func _refresh_combatant_hp(bar: ProgressBar, value_label: Label, hp: int, max_hp
 
 func _card_button(card: CardData) -> Button:
 	var affordable: bool = int(battle.state["energy"]) >= battle.effective_card_cost(card)
-	var button: Button = _make_card_button(card, card.cost, Vector2(172, 238), affordable, true)
+	var card_size: Vector2 = Vector2(156, 212) if _battle_compact else Vector2(172, 238)
+	var button: Button = _make_card_button(card, card.cost, card_size, affordable, true)
 	button.disabled = not affordable
 	button.pressed.connect(func() -> void: _on_card_button_pressed(card, button))
 	button.button_down.connect(func() -> void: _on_card_button_down(card, button))
