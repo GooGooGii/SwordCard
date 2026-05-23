@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-22.04
     container:
       image: barichello/godot-ci:4.6
+    env:
+      ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
 
     steps:
       - name: Checkout
@@ -92,7 +94,13 @@ jobs:
 
           KEYSTORE="$HOME/debug.keystore"
 
-          if [ ! -f "$KEYSTORE" ]; then
+          # Use the persistent keystore stored in secrets (same key every build = APK updates work).
+          # If the secret is missing, fall back to generating a temporary key (breaks OTA updates).
+          if [ -n "${ANDROID_KEYSTORE_B64:-}" ]; then
+            echo "$ANDROID_KEYSTORE_B64" | base64 -d > "$KEYSTORE"
+            echo "Using persistent keystore from secret."
+          else
+            echo "::warning::ANDROID_KEYSTORE_BASE64 secret not set — generating a temporary key. APK updates will require uninstall."
             keytool -genkeypair -v \
               -keystore "$KEYSTORE" \
               -storetype JKS \
