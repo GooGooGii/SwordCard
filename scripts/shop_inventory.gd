@@ -1,7 +1,7 @@
 class_name ShopInventory
 extends RefCounted
 
-const NORMAL_LIMIT: int = 3
+const NORMAL_LIMIT: int = 5
 const BLACK_LIMIT: int = 4
 const BASE_PRICE: int = 26
 const UNCOMMON_PRICE: int = 38
@@ -9,6 +9,8 @@ const RARE_PRICE: int = 56
 const UPGRADE_PRICE_BONUS: int = 16
 const BLACK_PRICE_MULTIPLIER: float = 1.25
 const BLACK_PRICE_FLAT_BONUS: int = 12
+const SALE_CHANCE: float = 0.35
+const SALE_DISCOUNT: float = 0.5
 
 static func build(character: CharacterData, is_black_shop: bool) -> Array[Dictionary]:
 	var pool: Array[CardData] = _black_pool(character) if is_black_shop else _normal_pool(character)
@@ -18,7 +20,11 @@ static func build(character: CharacterData, is_black_shop: bool) -> Array[Dictio
 		var card: CardData = pool[i].clone()
 		if is_black_shop and not card.upgraded:
 			card = card.upgraded_copy()
-		inventory.append({"card": card, "price": price_of(card, is_black_shop)})
+		inventory.append({"card": card, "price": price_of(card, is_black_shop), "on_sale": false})
+	if not is_black_shop and inventory.size() > 0 and randf() < SALE_CHANCE:
+		var sale_idx: int = randi() % inventory.size()
+		inventory[sale_idx]["price"] = max(5, int(inventory[sale_idx]["price"] * (1.0 - SALE_DISCOUNT)))
+		inventory[sale_idx]["on_sale"] = true
 	return inventory
 
 static func price_of(card: CardData, is_black_shop: bool) -> int:

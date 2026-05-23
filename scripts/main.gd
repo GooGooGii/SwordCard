@@ -37,6 +37,7 @@ var energy_orb: EnergyOrb
 var relic_strip: HBoxContainer
 var deck_overlay: Control
 var deck_view_mode: String = "view"
+var _deck_view_service_price: int = 0
 var draw_pile_button: Button
 var discard_pile_button: Button
 var exhausted_pile_button: Button
@@ -2686,6 +2687,8 @@ func resolve_event_power(amount: int = 1) -> void:
 func open_shop_node(is_black_shop: bool) -> void:
 	run_state.current_shop_is_black = is_black_shop
 	run_state.current_shop_inventory = _make_shop_inventory(is_black_shop)
+	run_state.set_meta("shop_remove_used", false)
+	run_state.set_meta("shop_upgrade_used", false)
 	show_shop_node()
 
 func show_shop_node() -> void:
@@ -2716,6 +2719,22 @@ func show_shop_node() -> void:
 		var relic: RelicData = RelicCatalog.by_id(shop_relic_id)
 		if relic != null:
 			goods_row.add_child(_shop_relic_view(relic))
+	var services_row: HBoxContainer = HBoxContainer.new()
+	services_row.add_theme_constant_override("separation", 12)
+	services_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_child(services_row)
+	var remove_price: int = _shop_apply_discount(75)
+	var upgrade_price: int = _shop_apply_discount(100)
+	var remove_used: bool = bool(run_state.get_meta("shop_remove_used", false))
+	var upgrade_used: bool = bool(run_state.get_meta("shop_upgrade_used", false))
+	services_row.add_child(_shop_service_panel(
+		"削牌服務", "從牌組中移除一張牌", remove_price,
+		remove_used, run_state.deck.size() > 5,
+		func(): _open_shop_remove_service(remove_price)))
+	services_row.add_child(_shop_service_panel(
+		"強化服務", "升級牌組中的一張牌", upgrade_price,
+		upgrade_used, not _upgradeable_cards().is_empty(),
+		func(): _open_shop_upgrade_service(upgrade_price)))
 	var bottom_row: HBoxContainer = HBoxContainer.new()
 	bottom_row.add_theme_constant_override("separation", 16)
 	bottom_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -2794,6 +2813,72 @@ func _buy_shop_relic(relic: RelicData, price: int) -> void:
 	run_state.set_meta("shop_relic_id", "")  # 清掉這次的商店裝備
 	show_shop_node()
 
+func _shop_apply_discount(base_price: int) -> int:
+	var price: int = base_price
+	for r: RelicData in run_state.relics:
+		for t: Dictionary in r.triggers:
+			if String(t.get("trigger", "")) != "permanent":
+				continue
+			for e: Dictionary in (t.get("effects", []) as Array):
+				if String(e.get("kind", "")) == "shop_discount":
+					price -= int(e.get("amount", 0))
+	return max(10, price)
+
+func _shop_service_panel(title: String, description: String, price: int, used: bool, available: bool, on_press: Callable) -> Control:
+	var panel: PanelContainer = UIFactory.make_panel()
+	panel.custom_minimum_size = Vector2(180, 130)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_child(box)
+	box.add_child(UIFactory.card_label(title, 15, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(UIFactory.card_label(description, 11, Color("d8e0ec"), HORIZONTAL_ALIGNMENT_CENTER))
+	if used:
+		box.add_child(UIFactory.card_label("（已使用）", 12, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_CENTER))
+	else:
+		box.add_child(UIFactory.card_label("價格：%d 銅錢" % price, 12, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER))
+		var can_use: bool = available and run_state.gold >= price
+		var btn: Button = _button("使用服務")
+		btn.disabled = not can_use
+		if can_use:
+			btn.pressed.connect(on_press)
+		box.add_child(btn)
+	return panel
+
+func _open_shop_remove_service(price: int) -> void:
+	_deck_view_service_price = price
+	show_deck_view("shop_remove")
+
+func _open_shop_upgrade_service(price: int) -> void:
+	_deck_view_service_price = price
+	show_deck_view("shop_upgrade")
+
+func _shop_deck_remove(card: CardData) -> void:
+	if run_state.gold < _deck_view_service_price or run_state.deck.size() <= 5:
+		close_deck_view()
+		return
+	run_state.gold -= _deck_view_service_price
+	run_state.set_meta("shop_remove_used", true)
+	for i: int in range(run_state.deck.size()):
+		if run_state.deck[i] == card:
+			run_state.deck.remove_at(i)
+			break
+	close_deck_view()
+	show_shop_node()
+
+func _shop_deck_upgrade(card: CardData) -> void:
+	if run_state.gold < _deck_view_service_price or card.upgraded:
+		close_deck_view()
+		return
+	run_state.gold -= _deck_view_service_price
+	run_state.set_meta("shop_upgrade_used", true)
+	for i: int in range(run_state.deck.size()):
+		if run_state.deck[i] == card:
+			run_state.deck[i] = card.upgraded_copy()
+			break
+	close_deck_view()
+	show_shop_node()
+
 func _shop_item_view(item: Dictionary) -> Control:
 	var card: CardData = item["card"] as CardData
 	var price: int = int(item["price"])
@@ -2810,6 +2895,8 @@ func _shop_item_view(item: Dictionary) -> Control:
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
 	panel.add_child(box)
+	if item.get("on_sale", false):
+		box.add_child(UIFactory.card_label("★ 特賣！五折優惠", 12, Color("ff5555"), HORIZONTAL_ALIGNMENT_CENTER))
 	var can_buy: bool = run_state.gold >= price
 	var card_button: Button = _make_card_button(card, card.cost, Vector2(210, 270), can_buy, true)
 	card_button.disabled = not can_buy
@@ -2979,9 +3066,9 @@ func show_deck_view(mode: String = "view", custom_cards = null, custom_title: St
 	var title_text: String = "目前牌組"
 	if not custom_title.is_empty():
 		title_text = custom_title
-	elif deck_view_mode == "remove":
+	elif deck_view_mode == "remove" or deck_view_mode == "shop_remove":
 		title_text = "選擇要移除的牌"
-	elif deck_view_mode == "upgrade":
+	elif deck_view_mode == "upgrade" or deck_view_mode == "shop_upgrade":
 		title_text = "選擇要升級的牌"
 	box.add_child(_title(title_text, 32))
 	
@@ -3003,8 +3090,12 @@ func show_deck_view(mode: String = "view", custom_cards = null, custom_title: St
 	
 	if deck_view_mode == "remove":
 		box.add_child(UIFactory.paragraph("至少保留 5 張牌。點選一張牌後會移除並完成事件。"))
+	elif deck_view_mode == "shop_remove":
+		box.add_child(UIFactory.paragraph("至少保留 5 張牌。點選一張牌後花費 %d 銅錢並移除。" % _deck_view_service_price))
 	elif deck_view_mode == "upgrade":
 		box.add_child(UIFactory.paragraph("點選一張未升級的牌，升級後會完成此節點。每張卡下方標註升級後的數值。"))
+	elif deck_view_mode == "shop_upgrade":
+		box.add_child(UIFactory.paragraph("點選一張未升級的牌，花費 %d 銅錢後升級。每張卡下方標註升級後的數值。" % _deck_view_service_price))
 		
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -3127,14 +3218,18 @@ func _duplicate_summary_text(target_cards: Array) -> String:
 	return "重複：" + "，".join(parts)
 
 func _deck_view_card(card: CardData, mode: String = "view", count: int = 1) -> Control:
-	var selectable: bool = mode == "remove" or (mode == "upgrade" and not card.upgraded)
-	var visually_enabled: bool = mode != "upgrade" or not card.upgraded
+	var selectable: bool = mode == "remove" or mode == "shop_remove" or ((mode == "upgrade" or mode == "shop_upgrade") and not card.upgraded)
+	var visually_enabled: bool = (mode != "upgrade" and mode != "shop_upgrade") or not card.upgraded
 	var button: Button = _make_card_button(card, card.cost, Vector2(190, 260), true, visually_enabled)
 	button.disabled = not selectable
 	if mode == "remove":
 		button.pressed.connect(func(): remove_card_from_deck(card))
+	elif mode == "shop_remove":
+		button.pressed.connect(func(): _shop_deck_remove(card))
 	elif mode == "upgrade" and not card.upgraded:
 		button.pressed.connect(func(): upgrade_card_in_deck(card))
+	elif mode == "shop_upgrade" and not card.upgraded:
+		button.pressed.connect(func(): _shop_deck_upgrade(card))
 	else:
 		button.add_theme_stylebox_override("disabled", UIFactory.style_box(CardFormat.card_color(card.card_type, true), Color("e7d38a"), 2, 8))
 		button.add_theme_color_override("font_disabled_color", ThemeColors.TEXT_LIGHT)
@@ -3156,7 +3251,7 @@ func _deck_view_card(card: CardData, mode: String = "view", count: int = 1) -> C
 		badge.add_child(badge_label)
 		button.add_child(badge)
 		
-	if mode == "upgrade" and not card.upgraded:
+	if (mode == "upgrade" or mode == "shop_upgrade") and not card.upgraded:
 		var wrap: VBoxContainer = VBoxContainer.new()
 		wrap.add_theme_constant_override("separation", 4)
 		wrap.alignment = BoxContainer.ALIGNMENT_CENTER
