@@ -5,6 +5,7 @@ signal gold_bonus_requested
 signal full_heal_requested
 signal add_card_requested
 signal add_relic_requested
+signal add_potion_requested
 signal jump_to_boss_requested
 signal close_requested
 
@@ -48,6 +49,7 @@ func _build() -> void:
 	_add_action(box, "Full Heal", func() -> void: full_heal_requested.emit())
 	_add_action(box, "Add Random Card", func() -> void: add_card_requested.emit())
 	_add_action(box, "Add Random Relic", func() -> void: add_relic_requested.emit())
+	_add_action(box, "Add Random Potion", func() -> void: add_potion_requested.emit())
 	_add_action(box, "Jump to Boss", func() -> void: jump_to_boss_requested.emit())
 	_add_action(box, "Close (F1)", func() -> void: close_requested.emit())
 

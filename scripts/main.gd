@@ -37,6 +37,7 @@ var energy_orb: EnergyOrb
 var relic_strip: HBoxContainer
 var deck_overlay: Control
 var deck_view_mode: String = "view"
+var _deck_view_service_price: int = 0
 var draw_pile_button: Button
 var discard_pile_button: Button
 var exhausted_pile_button: Button
@@ -57,6 +58,9 @@ var _card_preview_id: int = 0
 var _card_preview_overlay: Control = null
 var _suppress_next_card_play: bool = false
 var _selected_hand_card: CardData = null
+var _potion_buttons: Array[Button] = []
+var _potion_overlay: HBoxContainer = null
+var _potion_overlay_buttons: Array[Button] = []
 var _selected_hand_button: Button = null
 
 var _temporary_player_pose: String = ""
@@ -95,6 +99,7 @@ func _ready() -> void:
 		_build_debug_menu()
 	_apply_safe_area_margins()
 	get_viewport().size_changed.connect(_apply_safe_area_margins)
+	_build_potion_overlay()
 	show_main_menu()
 
 func _process(_delta: float) -> void:
@@ -275,6 +280,7 @@ func _build_debug_menu() -> void:
 	debug_menu.full_heal_requested.connect(_dbg_full_heal)
 	debug_menu.add_card_requested.connect(_dbg_add_card)
 	debug_menu.add_relic_requested.connect(_dbg_add_relic)
+	debug_menu.add_potion_requested.connect(_dbg_add_potion)
 	debug_menu.jump_to_boss_requested.connect(_dbg_jump_to_boss)
 	debug_menu.close_requested.connect(func() -> void: debug_menu.visible = false)
 
@@ -333,6 +339,18 @@ func _dbg_add_relic() -> void:
 	var chosen: RelicData = pool[randi() % pool.size()]
 	run_state.add_relic(chosen)
 	print("[DEBUG] added relic: %s" % chosen.display_name)
+
+func _dbg_add_potion() -> void:
+	if run_state == null:
+		return
+	if run_state.potions.size() >= RunState.MAX_POTION_SLOTS:
+		print("[DEBUG] potion slots full (%d/%d)" % [run_state.potions.size(), RunState.MAX_POTION_SLOTS])
+		return
+	var all_potions: Array[Dictionary] = PotionCatalog.all()
+	var chosen: Dictionary = all_potions[randi() % all_potions.size()]
+	run_state.potions.append(chosen.duplicate())
+	print("[DEBUG] added potion: %s (slots %d/%d)" % [String(chosen.get("display_name", "")), run_state.potions.size(), RunState.MAX_POTION_SLOTS])
+	_refresh_potion_overlay_buttons()
 
 func _dbg_jump_to_boss() -> void:
 	if run_state == null or run_state.encounter_choices.is_empty():
@@ -403,6 +421,9 @@ func _clear_root() -> void:
 	animating_cards.clear()
 	for child: Node in root.get_children():
 		child.queue_free()
+	if _potion_overlay != null:
+		_potion_overlay.visible = true
+		_refresh_potion_overlay_buttons()
 
 func _set_background(path: String) -> void:
 	if background_rect == null:
@@ -1682,6 +1703,8 @@ func start_next_battle(enemy: EnemyData) -> void:
 func _build_battle_scene() -> void:
 	_set_background("res://assets/art/battle_bg.png")
 	_clear_root()
+	if _potion_overlay != null:
+		_potion_overlay.visible = false
 	var viewport_size: Vector2 = get_viewport_rect().size
 	_battle_compact = OS.has_feature("mobile") or viewport_size.y <= 500.0
 	var screen: VBoxContainer = VBoxContainer.new()
@@ -1898,6 +1921,21 @@ func _build_left_dock(parent: HBoxContainer) -> void:
 	dock.alignment = BoxContainer.ALIGNMENT_CENTER
 	dock.add_theme_constant_override("separation", 4 if _battle_compact else 8)
 	parent.add_child(dock)
+	var slot_size: int = 36 if _battle_compact else 44
+	var potion_row: HBoxContainer = HBoxContainer.new()
+	potion_row.add_theme_constant_override("separation", 4)
+	potion_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	dock.add_child(potion_row)
+	_potion_buttons.clear()
+	for i: int in range(RunState.MAX_POTION_SLOTS):
+		var btn: Button = Button.new()
+		btn.custom_minimum_size = Vector2(slot_size, slot_size)
+		btn.add_theme_font_size_override("font_size", 9 if _battle_compact else 10)
+		var idx: int = i
+		btn.pressed.connect(func(): _use_potion(idx))
+		_potion_buttons.append(btn)
+		potion_row.add_child(btn)
+	_refresh_potion_buttons()
 	energy_orb = EnergyOrb.new()
 	var orb_sz: float = 68.0 if _battle_compact else 96.0
 	energy_orb.custom_minimum_size = Vector2(orb_sz, orb_sz)
@@ -1963,6 +2001,109 @@ func _build_right_dock(parent: HBoxContainer) -> void:
 	exhausted_pile_button.custom_minimum_size = Vector2(0, btn_h)
 	exhausted_pile_button.pressed.connect(show_exhaust_pile_view)
 	dock.add_child(exhausted_pile_button)
+
+func _build_potion_overlay() -> void:
+	_potion_overlay = HBoxContainer.new()
+	_potion_overlay.add_theme_constant_override("separation", 4)
+	_potion_overlay.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	_potion_overlay.offset_left = 12
+	_potion_overlay.offset_bottom = -12
+	_potion_overlay.offset_top = -64
+	_potion_overlay.offset_right = 176
+	_potion_overlay.visible = false
+	add_child(_potion_overlay)
+	_potion_overlay_buttons.clear()
+	for i: int in range(RunState.MAX_POTION_SLOTS):
+		var btn: Button = Button.new()
+		btn.custom_minimum_size = Vector2(52, 52)
+		btn.add_theme_font_size_override("font_size", 10)
+		var idx: int = i
+		btn.pressed.connect(func(): _discard_potion_prompt(idx))
+		_potion_overlay_buttons.append(btn)
+		_potion_overlay.add_child(btn)
+
+func _update_potion_button(btn: Button, slot: int, in_battle: bool = true) -> void:
+	if slot >= run_state.potions.size():
+		btn.text = "—"
+		btn.disabled = true
+		btn.tooltip_text = "（空槽）"
+		btn.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("131a26"), Color("3a4460"), 1, 6))
+		btn.add_theme_color_override("font_disabled_color", Color("505870"))
+		return
+	var potion: Dictionary = run_state.potions[slot]
+	var name: String = String(potion.get("display_name", "?"))
+	btn.text = name.substr(0, 4) if name.length() > 4 else name
+	var tip_action: String = "（點擊使用）" if in_battle else "（點擊丟棄）"
+	btn.tooltip_text = "%s\n%s\n%s" % [name, String(potion.get("description", "")), tip_action]
+	btn.disabled = false
+	var rarity_col: Color = PotionCatalog.rarity_color(potion)
+	btn.add_theme_stylebox_override("normal", UIFactory.style_box(Color("1a2230"), rarity_col, 1, 6))
+	btn.add_theme_stylebox_override("hover", UIFactory.style_box(Color("2a3040"), rarity_col, 2, 6))
+	btn.add_theme_stylebox_override("pressed", UIFactory.style_box(Color("0e141e"), rarity_col, 2, 6))
+	btn.add_theme_color_override("font_color", ThemeColors.TEXT_LIGHT)
+	btn.remove_theme_color_override("font_disabled_color")
+
+func _refresh_potion_buttons() -> void:
+	for i: int in range(_potion_buttons.size()):
+		if is_instance_valid(_potion_buttons[i]):
+			_update_potion_button(_potion_buttons[i], i, true)
+
+func _refresh_potion_overlay_buttons() -> void:
+	for i: int in range(_potion_overlay_buttons.size()):
+		_update_potion_button(_potion_overlay_buttons[i], i, false)
+
+func _use_potion(slot: int) -> void:
+	if battle == null or slot >= run_state.potions.size():
+		return
+	var potion: Dictionary = run_state.potions[slot]
+	var effects: Array = potion.get("effects", []) as Array
+	var before_hp: int = int(battle.state["player_hp"])
+	var before_block: int = int(battle.state["player_block"])
+	var log_lines: Array[String] = battle.resolver.resolve_effects_list(effects, battle.state)
+	var drew: int = int(battle.state.get("pending_draw", 0))
+	if drew > 0:
+		battle.state["pending_draw"] = 0
+		if battle.deck != null:
+			battle.deck.draw(drew)
+	run_state.potions.remove_at(slot)
+	battle.battle_log.append_array(log_lines)
+	_refresh_battle(drew > 0)
+	var hp_delta: int = int(battle.state["player_hp"]) - before_hp
+	var block_delta: int = int(battle.state["player_block"]) - before_block
+	if hp_delta > 0:
+		_spawn_damage_popup(player_portrait_wrap, hp_delta, "heal")
+	if block_delta > 0:
+		_spawn_damage_popup(player_portrait_wrap, block_delta, "block")
+
+func _discard_potion_prompt(slot: int) -> void:
+	if slot >= run_state.potions.size():
+		return
+	var potion: Dictionary = run_state.potions[slot]
+	var popup: PanelContainer = PanelContainer.new()
+	popup.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	popup.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.96), ThemeColors.BORDER_GOLD, 2, 10))
+	add_child(popup)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 12)
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	popup.add_child(box)
+	box.add_child(UIFactory.card_label(String(potion.get("display_name", "?")), 20, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(UIFactory.card_label(String(potion.get("description", "")), 13, Color("d8e0ec"), HORIZONTAL_ALIGNMENT_CENTER))
+	var btn_row: HBoxContainer = HBoxContainer.new()
+	btn_row.add_theme_constant_override("separation", 16)
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_child(btn_row)
+	var discard_btn: Button = _button("丟棄")
+	var captured_slot: int = slot
+	discard_btn.pressed.connect(func() -> void:
+		if captured_slot < run_state.potions.size():
+			run_state.potions.remove_at(captured_slot)
+		popup.queue_free()
+		_refresh_potion_overlay_buttons())
+	btn_row.add_child(discard_btn)
+	var cancel_btn: Button = _button("取消")
+	cancel_btn.pressed.connect(func() -> void: popup.queue_free())
+	btn_row.add_child(cancel_btn)
 
 func _portrait_with_block_badge(path: String, portrait_size: Vector2, show_full: bool, is_player: bool, tint: Color = Color.WHITE) -> Control:
 	var wrap: Control = Control.new()
@@ -2175,6 +2316,14 @@ func _complete_battle_victory() -> void:
 	if dropped != null:
 		run_state.add_relic(dropped)
 		battle.add_log("獲得裝備：%s" % dropped.display_name)
+	# 藥品掉落：一般 20%，boss 60%（揹包未滿時）
+	if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
+		var drop_chance: float = 0.6 if was_boss else 0.2
+		if randf() < drop_chance:
+			var all_potions: Array[Dictionary] = PotionCatalog.all()
+			var dropped_potion: Dictionary = all_potions[randi() % all_potions.size()]
+			run_state.potions.append(dropped_potion.duplicate())
+			battle.add_log("獲得藥品：%s" % String(dropped_potion.get("display_name", "")))
 	run_state.encounter_index = run_state.encounter_index + 1
 	if run_state.encounter_index >= run_state.encounter_choices.size():
 		if run_state.act < 5:
@@ -2702,6 +2851,9 @@ func resolve_event_power(amount: int = 1) -> void:
 func open_shop_node(is_black_shop: bool) -> void:
 	run_state.current_shop_is_black = is_black_shop
 	run_state.current_shop_inventory = _make_shop_inventory(is_black_shop)
+	run_state.current_shop_potions = ShopInventory.build_potions(is_black_shop)
+	run_state.set_meta("shop_remove_used", false)
+	run_state.set_meta("shop_upgrade_used", false)
 	show_shop_node()
 
 func show_shop_node() -> void:
@@ -2732,6 +2884,29 @@ func show_shop_node() -> void:
 		var relic: RelicData = RelicCatalog.by_id(shop_relic_id)
 		if relic != null:
 			goods_row.add_child(_shop_relic_view(relic))
+	if not run_state.current_shop_potions.is_empty():
+		var potion_row: HBoxContainer = HBoxContainer.new()
+		potion_row.add_theme_constant_override("separation", 12)
+		potion_row.alignment = BoxContainer.ALIGNMENT_CENTER
+		box.add_child(potion_row)
+		for potion_item: Dictionary in run_state.current_shop_potions:
+			potion_row.add_child(_shop_potion_view(potion_item))
+	var services_row: HBoxContainer = HBoxContainer.new()
+	services_row.add_theme_constant_override("separation", 12)
+	services_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_child(services_row)
+	var remove_price: int = _shop_apply_discount(75)
+	var upgrade_price: int = _shop_apply_discount(100)
+	var remove_used: bool = bool(run_state.get_meta("shop_remove_used", false))
+	var upgrade_used: bool = bool(run_state.get_meta("shop_upgrade_used", false))
+	services_row.add_child(_shop_service_panel(
+		"削牌服務", "從牌組中移除一張牌", remove_price,
+		remove_used, run_state.deck.size() > 5,
+		func(): _open_shop_remove_service(remove_price)))
+	services_row.add_child(_shop_service_panel(
+		"強化服務", "升級牌組中的一張牌", upgrade_price,
+		upgrade_used, not _upgradeable_cards().is_empty(),
+		func(): _open_shop_upgrade_service(upgrade_price)))
 	var bottom_row: HBoxContainer = HBoxContainer.new()
 	bottom_row.add_theme_constant_override("separation", 16)
 	bottom_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -2810,6 +2985,103 @@ func _buy_shop_relic(relic: RelicData, price: int) -> void:
 	run_state.set_meta("shop_relic_id", "")  # 清掉這次的商店裝備
 	show_shop_node()
 
+func _shop_potion_view(item: Dictionary) -> Control:
+	var potion: Dictionary = item["potion"] as Dictionary
+	var price: int = _shop_apply_discount(int(item["price"]))
+	var panel: PanelContainer = UIFactory.make_panel()
+	panel.custom_minimum_size = Vector2(180, 160)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_child(box)
+	var rarity_col: Color = PotionCatalog.rarity_color(potion)
+	box.add_child(UIFactory.card_label(String(potion.get("display_name", "?")), 17, rarity_col, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(UIFactory.card_label(String(potion.get("description", "")), 11, Color("d8e0ec"), HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(UIFactory.card_label("價格：%d 銅錢" % price, 13, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER))
+	var full: bool = run_state.potions.size() >= RunState.MAX_POTION_SLOTS
+	var can_buy: bool = run_state.gold >= price and not full
+	var btn: Button = _button("買下藥品")
+	btn.disabled = not can_buy
+	if full:
+		btn.tooltip_text = "藥格已滿（%d/%d）" % [run_state.potions.size(), RunState.MAX_POTION_SLOTS]
+	btn.pressed.connect(func(): _buy_shop_potion(potion, item, price))
+	box.add_child(btn)
+	return panel
+
+func _buy_shop_potion(potion: Dictionary, item: Dictionary, price: int) -> void:
+	if run_state.gold < price or run_state.potions.size() >= RunState.MAX_POTION_SLOTS:
+		return
+	run_state.gold -= price
+	run_state.potions.append(potion.duplicate())
+	run_state.current_shop_potions.erase(item)
+	show_shop_node()
+
+func _shop_apply_discount(base_price: int) -> int:
+	var price: int = base_price
+	for r: RelicData in run_state.relics:
+		for t: Dictionary in r.triggers:
+			if String(t.get("trigger", "")) != "permanent":
+				continue
+			for e: Dictionary in (t.get("effects", []) as Array):
+				if String(e.get("kind", "")) == "shop_discount":
+					price -= int(e.get("amount", 0))
+	return max(10, price)
+
+func _shop_service_panel(title: String, description: String, price: int, used: bool, available: bool, on_press: Callable) -> Control:
+	var panel: PanelContainer = UIFactory.make_panel()
+	panel.custom_minimum_size = Vector2(180, 130)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_child(box)
+	box.add_child(UIFactory.card_label(title, 15, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(UIFactory.card_label(description, 11, Color("d8e0ec"), HORIZONTAL_ALIGNMENT_CENTER))
+	if used:
+		box.add_child(UIFactory.card_label("（已使用）", 12, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_CENTER))
+	else:
+		box.add_child(UIFactory.card_label("價格：%d 銅錢" % price, 12, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER))
+		var can_use: bool = available and run_state.gold >= price
+		var btn: Button = _button("使用服務")
+		btn.disabled = not can_use
+		if can_use:
+			btn.pressed.connect(on_press)
+		box.add_child(btn)
+	return panel
+
+func _open_shop_remove_service(price: int) -> void:
+	_deck_view_service_price = price
+	show_deck_view("shop_remove")
+
+func _open_shop_upgrade_service(price: int) -> void:
+	_deck_view_service_price = price
+	show_deck_view("shop_upgrade")
+
+func _shop_deck_remove(card: CardData) -> void:
+	if run_state.gold < _deck_view_service_price or run_state.deck.size() <= 5:
+		close_deck_view()
+		return
+	run_state.gold -= _deck_view_service_price
+	run_state.set_meta("shop_remove_used", true)
+	for i: int in range(run_state.deck.size()):
+		if run_state.deck[i] == card:
+			run_state.deck.remove_at(i)
+			break
+	close_deck_view()
+	show_shop_node()
+
+func _shop_deck_upgrade(card: CardData) -> void:
+	if run_state.gold < _deck_view_service_price or card.upgraded:
+		close_deck_view()
+		return
+	run_state.gold -= _deck_view_service_price
+	run_state.set_meta("shop_upgrade_used", true)
+	for i: int in range(run_state.deck.size()):
+		if run_state.deck[i] == card:
+			run_state.deck[i] = card.upgraded_copy()
+			break
+	close_deck_view()
+	show_shop_node()
+
 func _shop_item_view(item: Dictionary) -> Control:
 	var card: CardData = item["card"] as CardData
 	var price: int = int(item["price"])
@@ -2826,6 +3098,8 @@ func _shop_item_view(item: Dictionary) -> Control:
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
 	panel.add_child(box)
+	if item.get("on_sale", false):
+		box.add_child(UIFactory.card_label("★ 特賣！五折優惠", 12, Color("ff5555"), HORIZONTAL_ALIGNMENT_CENTER))
 	var can_buy: bool = run_state.gold >= price
 	var card_button: Button = _make_card_button(card, card.cost, Vector2(210, 270), can_buy, true)
 	card_button.disabled = not can_buy
@@ -2995,9 +3269,9 @@ func show_deck_view(mode: String = "view", custom_cards = null, custom_title: St
 	var title_text: String = "目前牌組"
 	if not custom_title.is_empty():
 		title_text = custom_title
-	elif deck_view_mode == "remove":
+	elif deck_view_mode == "remove" or deck_view_mode == "shop_remove":
 		title_text = "選擇要移除的牌"
-	elif deck_view_mode == "upgrade":
+	elif deck_view_mode == "upgrade" or deck_view_mode == "shop_upgrade":
 		title_text = "選擇要升級的牌"
 	box.add_child(_title(title_text, 32))
 	
@@ -3019,8 +3293,12 @@ func show_deck_view(mode: String = "view", custom_cards = null, custom_title: St
 	
 	if deck_view_mode == "remove":
 		box.add_child(UIFactory.paragraph("至少保留 5 張牌。點選一張牌後會移除並完成事件。"))
+	elif deck_view_mode == "shop_remove":
+		box.add_child(UIFactory.paragraph("至少保留 5 張牌。點選一張牌後花費 %d 銅錢並移除。" % _deck_view_service_price))
 	elif deck_view_mode == "upgrade":
 		box.add_child(UIFactory.paragraph("點選一張未升級的牌，升級後會完成此節點。每張卡下方標註升級後的數值。"))
+	elif deck_view_mode == "shop_upgrade":
+		box.add_child(UIFactory.paragraph("點選一張未升級的牌，花費 %d 銅錢後升級。每張卡下方標註升級後的數值。" % _deck_view_service_price))
 		
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -3143,14 +3421,18 @@ func _duplicate_summary_text(target_cards: Array) -> String:
 	return "重複：" + "，".join(parts)
 
 func _deck_view_card(card: CardData, mode: String = "view", count: int = 1) -> Control:
-	var selectable: bool = mode == "remove" or (mode == "upgrade" and not card.upgraded)
-	var visually_enabled: bool = mode != "upgrade" or not card.upgraded
+	var selectable: bool = mode == "remove" or mode == "shop_remove" or ((mode == "upgrade" or mode == "shop_upgrade") and not card.upgraded)
+	var visually_enabled: bool = (mode != "upgrade" and mode != "shop_upgrade") or not card.upgraded
 	var button: Button = _make_card_button(card, card.cost, Vector2(190, 260), true, visually_enabled)
 	button.disabled = not selectable
 	if mode == "remove":
 		button.pressed.connect(func(): remove_card_from_deck(card))
+	elif mode == "shop_remove":
+		button.pressed.connect(func(): _shop_deck_remove(card))
 	elif mode == "upgrade" and not card.upgraded:
 		button.pressed.connect(func(): upgrade_card_in_deck(card))
+	elif mode == "shop_upgrade" and not card.upgraded:
+		button.pressed.connect(func(): _shop_deck_upgrade(card))
 	else:
 		button.add_theme_stylebox_override("disabled", UIFactory.style_box(CardFormat.card_color(card.card_type, true), Color("e7d38a"), 2, 8))
 		button.add_theme_color_override("font_disabled_color", ThemeColors.TEXT_LIGHT)
@@ -3172,7 +3454,7 @@ func _deck_view_card(card: CardData, mode: String = "view", count: int = 1) -> C
 		badge.add_child(badge_label)
 		button.add_child(badge)
 		
-	if mode == "upgrade" and not card.upgraded:
+	if (mode == "upgrade" or mode == "shop_upgrade") and not card.upgraded:
 		var wrap: VBoxContainer = VBoxContainer.new()
 		wrap.add_theme_constant_override("separation", 4)
 		wrap.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -3560,6 +3842,7 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 	if _selected_hand_button != null:
 		hand_row.set_selected_button(_selected_hand_button)
 	log_label.text = "\n".join(battle.battle_log.slice(max(0, battle.battle_log.size() - 4)))
+	_refresh_potion_buttons()
 	end_turn_button.disabled = false
 
 func _refresh_combatant_hp(bar: ProgressBar, value_label: Label, hp: int, max_hp: int) -> void:

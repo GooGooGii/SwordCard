@@ -7,6 +7,12 @@ func resolve_card(card: CardData, state: Dictionary) -> Array[String]:
 		log_lines.append_array(_resolve_effect(effect, state))
 	return log_lines
 
+func resolve_effects_list(effects: Array, state: Dictionary) -> Array[String]:
+	var log_lines: Array[String] = []
+	for effect: Dictionary in effects:
+		log_lines.append_array(_resolve_effect(effect, state))
+	return log_lines
+
 func resolve_enemy_action(action: Dictionary, state: Dictionary) -> Array[String]:
 	var log_lines: Array[String] = []
 	var effects: Array = action.get("effects", []) as Array
@@ -130,4 +136,7 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				var actual_heal: int = amount + int(state.get("heal_bonus", 0))
 				state["player_hp"] = min(int(state["player_max_hp"]), int(state["player_hp"]) + actual_heal)
 				log_lines.append("無人需救，改回復 %d 點生命。" % actual_heal)
+		"cure_poison":
+			state["player_poison"] = 0
+			log_lines.append("蠱毒已全數清除。")
 	return log_lines
