@@ -3,11 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b4vr0d75pxhtx"
-valid=false
+path="res://.godot/imported/red_eye_demon.png-223e36c5811375cf3e7def4f531d9472.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/enemies/red_eye_demon.png"
+dest_files=["res://.godot/imported/red_eye_demon.png-223e36c5811375cf3e7def4f531d9472.ctex"]
 
 [params]
 
