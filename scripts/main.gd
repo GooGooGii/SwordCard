@@ -1710,13 +1710,13 @@ func _build_battle_scene() -> void:
 	arena.add_child(spacer)
 	_build_enemy_widget(arena)
 	var bottom: HBoxContainer = HBoxContainer.new()
-	bottom.add_theme_constant_override("separation", 14)
+	bottom.add_theme_constant_override("separation", 6 if _battle_compact else 14)
 	screen.add_child(bottom)
 	_build_left_dock(bottom)
 	hand_row = HandFan.new()
 	hand_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hand_row.custom_minimum_size = Vector2(0, 220 if _battle_compact else 290)
-	hand_row.hand_base_lift = 88.0 if _battle_compact else 72.0
+	hand_row.custom_minimum_size = Vector2(0, 180 if _battle_compact else 290)
+	hand_row.hand_base_lift = 80.0 if _battle_compact else 72.0
 	bottom.add_child(hand_row)
 	_build_right_dock(bottom)
 
@@ -1835,98 +1835,114 @@ func _animate_portrait_switch() -> void:
 
 func _build_player_widget(parent: HBoxContainer) -> void:
 	var col: VBoxContainer = VBoxContainer.new()
-	col.custom_minimum_size = Vector2(250, 0)
+	col.custom_minimum_size = Vector2(160 if _battle_compact else 250, 0)
 	col.size_flags_horizontal = 0
 	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.alignment = BoxContainer.ALIGNMENT_END
-	col.add_theme_constant_override("separation", 4)
+	col.add_theme_constant_override("separation", 2 if _battle_compact else 4)
 	parent.add_child(col)
 	player_feedback_label = UIFactory.feedback_label()
+	if _battle_compact:
+		player_feedback_label.custom_minimum_size = Vector2(0, 0)
 	col.add_child(player_feedback_label)
-	col.add_child(_portrait_with_block_badge(selected_character.portrait_path, Vector2(220, 230), true, true))
+	var portrait_size: Vector2 = Vector2(120, 130) if _battle_compact else Vector2(220, 230)
+	col.add_child(_portrait_with_block_badge(selected_character.portrait_path, portrait_size, true, true))
 	player_name_label = UIFactory.card_label(selected_character.display_name, 18, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
-	col.add_child(player_name_label)
+	if not _battle_compact:
+		col.add_child(player_name_label)
 	player_hp_bar = UIFactory.hp_bar(ThemeColors.HP_FILL, ThemeColors.HP_BG_DARK)
+	player_hp_bar.custom_minimum_size = Vector2(0, 12 if _battle_compact else 18)
 	col.add_child(player_hp_bar)
-	player_hp_value = UIFactory.card_label("", 13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
+	player_hp_value = UIFactory.card_label("", 11 if _battle_compact else 13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(player_hp_value)
-	player_status_line = UIFactory.card_label("", 13, Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
+	player_status_line = UIFactory.card_label("", 11 if _battle_compact else 13, Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
 	player_status_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(player_status_line)
 
 func _build_enemy_widget(parent: HBoxContainer) -> void:
 	var col: VBoxContainer = VBoxContainer.new()
-	col.custom_minimum_size = Vector2(260, 0)
+	col.custom_minimum_size = Vector2(170 if _battle_compact else 260, 0)
 	col.size_flags_horizontal = 0
 	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.alignment = BoxContainer.ALIGNMENT_END
-	col.add_theme_constant_override("separation", 4)
+	col.add_theme_constant_override("separation", 2 if _battle_compact else 4)
 	parent.add_child(col)
 	enemy_label = Label.new()
 	enemy_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	enemy_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	enemy_label.add_theme_font_size_override("font_size", 16)
+	enemy_label.add_theme_font_size_override("font_size", 11 if _battle_compact else 16)
 	enemy_label.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
 	col.add_child(enemy_label)
 	enemy_feedback_label = UIFactory.feedback_label()
+	if _battle_compact:
+		enemy_feedback_label.custom_minimum_size = Vector2(0, 0)
 	col.add_child(enemy_feedback_label)
-	col.add_child(_portrait_with_block_badge(battle.enemy.portrait_path, Vector2(230, 230), true, false, battle.enemy.portrait_tint))
+	var portrait_size: Vector2 = Vector2(120, 130) if _battle_compact else Vector2(230, 230)
+	col.add_child(_portrait_with_block_badge(battle.enemy.portrait_path, portrait_size, true, false, battle.enemy.portrait_tint))
 	enemy_name_label = UIFactory.card_label(battle.enemy.display_name, 18, Color("ffd9a3"), HORIZONTAL_ALIGNMENT_CENTER)
-	col.add_child(enemy_name_label)
+	if not _battle_compact:
+		col.add_child(enemy_name_label)
 	enemy_hp_bar = UIFactory.hp_bar(ThemeColors.HP_FILL, ThemeColors.HP_BG_DARK)
+	enemy_hp_bar.custom_minimum_size = Vector2(0, 12 if _battle_compact else 18)
 	col.add_child(enemy_hp_bar)
-	enemy_hp_value = UIFactory.card_label("", 13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
+	enemy_hp_value = UIFactory.card_label("", 11 if _battle_compact else 13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(enemy_hp_value)
-	enemy_status_line = UIFactory.card_label("", 13, Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
+	enemy_status_line = UIFactory.card_label("", 11 if _battle_compact else 13, Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
 	enemy_status_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(enemy_status_line)
 
 func _build_left_dock(parent: HBoxContainer) -> void:
 	var dock: VBoxContainer = VBoxContainer.new()
-	dock.custom_minimum_size = Vector2(140, 0)
+	dock.custom_minimum_size = Vector2(110 if _battle_compact else 140, 0)
 	dock.size_flags_horizontal = 0
 	dock.alignment = BoxContainer.ALIGNMENT_CENTER
-	dock.add_theme_constant_override("separation", 8)
+	dock.add_theme_constant_override("separation", 4 if _battle_compact else 8)
 	parent.add_child(dock)
 	energy_orb = EnergyOrb.new()
-	energy_orb.custom_minimum_size = Vector2(96, 96)
+	var orb_sz: float = 68.0 if _battle_compact else 96.0
+	energy_orb.custom_minimum_size = Vector2(orb_sz, orb_sz)
 	energy_orb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	dock.add_child(energy_orb)
 	log_label = RichTextLabel.new()
-	log_label.custom_minimum_size = Vector2(140, 96)
-	log_label.fit_content = true
+	log_label.custom_minimum_size = Vector2(110 if _battle_compact else 140, 36 if _battle_compact else 96)
+	log_label.fit_content = not _battle_compact
 	log_label.scroll_following = true
 	log_label.bbcode_enabled = false
 	log_label.add_theme_color_override("default_color", ThemeColors.TEXT_MUTED)
-	log_label.add_theme_font_size_override("normal_font_size", 12)
+	log_label.add_theme_font_size_override("normal_font_size", 10 if _battle_compact else 12)
 	dock.add_child(log_label)
+	var btn_h: float = 26.0 if _battle_compact else 32.0
+	var btn_f: int = 11 if _battle_compact else 13
 	var deck_button: Button = _button("查看牌組")
-	deck_button.add_theme_font_size_override("font_size", 13)
-	deck_button.custom_minimum_size = Vector2(0, 32)
+	deck_button.add_theme_font_size_override("font_size", btn_f)
+	deck_button.custom_minimum_size = Vector2(0, btn_h)
 	deck_button.pressed.connect(show_deck_view)
 	dock.add_child(deck_button)
 	draw_pile_button = _button("抽牌堆 (0)")
-	draw_pile_button.add_theme_font_size_override("font_size", 13)
-	draw_pile_button.custom_minimum_size = Vector2(0, 32)
+	draw_pile_button.add_theme_font_size_override("font_size", btn_f)
+	draw_pile_button.custom_minimum_size = Vector2(0, btn_h)
 	draw_pile_button.pressed.connect(show_draw_pile_view)
 	dock.add_child(draw_pile_button)
 	var relics_button: Button = _button("遺物 (%d)" % run_state.relics.size())
-	relics_button.add_theme_font_size_override("font_size", 13)
-	relics_button.custom_minimum_size = Vector2(0, 32)
+	relics_button.add_theme_font_size_override("font_size", btn_f)
+	relics_button.custom_minimum_size = Vector2(0, btn_h)
 	relics_button.pressed.connect(_show_battle_relics_popup)
 	dock.add_child(relics_button)
 
 func _build_right_dock(parent: HBoxContainer) -> void:
 	var dock: VBoxContainer = VBoxContainer.new()
-	dock.custom_minimum_size = Vector2(140, 0)
+	dock.custom_minimum_size = Vector2(110 if _battle_compact else 140, 0)
 	dock.size_flags_horizontal = 0
 	dock.alignment = BoxContainer.ALIGNMENT_CENTER
-	dock.add_theme_constant_override("separation", 8)
+	dock.add_theme_constant_override("separation", 4 if _battle_compact else 8)
 	parent.add_child(dock)
 	end_turn_button = Button.new()
 	end_turn_button.text = "結束回合"
-	end_turn_button.custom_minimum_size = Vector2(128, 76)
-	end_turn_button.add_theme_font_size_override("font_size", 20)
+	var et_w: float = 108.0 if _battle_compact else 128.0
+	var et_h: float = 52.0 if _battle_compact else 76.0
+	var et_f: int = 15 if _battle_compact else 20
+	end_turn_button.custom_minimum_size = Vector2(et_w, et_h)
+	end_turn_button.add_theme_font_size_override("font_size", et_f)
 	end_turn_button.add_theme_color_override("font_color", Color("fff5cf"))
 	end_turn_button.add_theme_color_override("font_hover_color", Color("ffffff"))
 	end_turn_button.add_theme_stylebox_override("normal", UIFactory.style_box(Color("8a3a2e"), ThemeColors.HIGHLIGHT_GOLD, 3, 12))
@@ -1935,16 +1951,16 @@ func _build_right_dock(parent: HBoxContainer) -> void:
 	end_turn_button.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("4a3530"), Color("786258"), 2, 12))
 	end_turn_button.pressed.connect(end_player_turn)
 	dock.add_child(end_turn_button)
-	
+	var btn_h: float = 26.0 if _battle_compact else 32.0
+	var btn_f: int = 11 if _battle_compact else 13
 	discard_pile_button = _button("棄牌堆 (0)")
-	discard_pile_button.add_theme_font_size_override("font_size", 13)
-	discard_pile_button.custom_minimum_size = Vector2(0, 32)
+	discard_pile_button.add_theme_font_size_override("font_size", btn_f)
+	discard_pile_button.custom_minimum_size = Vector2(0, btn_h)
 	discard_pile_button.pressed.connect(show_discard_pile_view)
 	dock.add_child(discard_pile_button)
-	
 	exhausted_pile_button = _button("消耗堆 (0)")
-	exhausted_pile_button.add_theme_font_size_override("font_size", 13)
-	exhausted_pile_button.custom_minimum_size = Vector2(0, 32)
+	exhausted_pile_button.add_theme_font_size_override("font_size", btn_f)
+	exhausted_pile_button.custom_minimum_size = Vector2(0, btn_h)
 	exhausted_pile_button.pressed.connect(show_exhaust_pile_view)
 	dock.add_child(exhausted_pile_button)
 
@@ -3552,7 +3568,7 @@ func _refresh_combatant_hp(bar: ProgressBar, value_label: Label, hp: int, max_hp
 
 func _card_button(card: CardData) -> Button:
 	var affordable: bool = int(battle.state["energy"]) >= battle.effective_card_cost(card)
-	var card_size: Vector2 = Vector2(156, 212) if _battle_compact else Vector2(172, 238)
+	var card_size: Vector2 = Vector2(148, 200) if _battle_compact else Vector2(172, 238)
 	var button: Button = _make_card_button(card, card.cost, card_size, affordable, true)
 	button.disabled = not affordable
 	button.pressed.connect(func() -> void: _on_card_button_pressed(card, button))
