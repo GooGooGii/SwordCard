@@ -3,11 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cqhbbnldg8vkg"
-valid=false
+path="res://.godot/imported/tower_ghost_soldier.png-0077352fe465550e439e0646731f143b.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/enemies/tower_ghost_soldier.png"
+dest_files=["res://.godot/imported/tower_ghost_soldier.png-0077352fe465550e439e0646731f143b.ctex"]
 
 [params]
 
