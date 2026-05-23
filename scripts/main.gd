@@ -4036,10 +4036,23 @@ func _card_frame_texture_path(card_type: String) -> String:
 			return "res://assets/ui/card_frame_attack.png"
 
 func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: bool, selectable: bool) -> Button:
+	var is_small: bool = size.y < 220.0
+	var title_font_size: int = 11 if is_small else 13
+	var cost_font_size: int = 12 if is_small else 14
+	var type_font_size: int = 9 if is_small else 11
+	var desc_font_size: int = 10 if is_small else 12
+	
+	var rules_margin_left: int = 6 if is_small else 10
+	var rules_margin_right: int = 6 if is_small else 10
+	var rules_margin_top: int = 4 if is_small else 8
+	var rules_margin_bottom: int = 4 if is_small else 12
+	var rules_separation: int = 2 if is_small else 4
+
 	var button: Button = Button.new()
 	button.text = ""
 	button.custom_minimum_size = size
 	button.focus_mode = Control.FOCUS_NONE
+	button.clip_contents = true
 	_style_card_button(button, card, affordable)
 	var frame: TextureRect = TextureRect.new()
 	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -4067,7 +4080,7 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	var art_frame: PanelContainer = PanelContainer.new()
 	# 只指定最小高度；寬度跟著 outer margin 計算過的 box 內寬走，避免硬寫 (size.x - 22)
 	# 超過 outer margin 真正留下的空間（2 * 11% = 22% > 22 像素）導致 art_frame 溢出右側
-	art_frame.custom_minimum_size = Vector2(0, max(92.0, size.y * 0.41))
+	art_frame.custom_minimum_size = Vector2(0, 72.0 if is_small else max(92.0, size.y * 0.41))
 	art_frame.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.14), Color(1, 1, 1, 0), 0, 6))
 	box.add_child(art_frame)
 	var art_layer: Control = Control.new()
@@ -4088,7 +4101,7 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	var title_back: PanelContainer = PanelContainer.new()
 	title_back.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	title_back.offset_left = 0
-	title_back.offset_top = -28
+	title_back.offset_top = -22 if is_small else -28
 	title_back.offset_right = 0
 	title_back.offset_bottom = 0
 	title_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -4098,19 +4111,20 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	title_row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	title_row.add_theme_constant_override("separation", 4)
 	title_back.add_child(title_row)
-	var title: Label = UIFactory.card_label(card.display_title(), 13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_LEFT)
+	var title: Label = UIFactory.card_label(card.display_title(), title_font_size, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_LEFT)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title_row.add_child(title)
-	var rarity_badge: Label = UIFactory.card_label(CardFormat.card_rarity_name(card), 10, CardFormat.card_rarity_color(card), HORIZONTAL_ALIGNMENT_RIGHT)
+	var rarity_badge: Label = UIFactory.card_label(CardFormat.card_rarity_name(card), 10 if is_small else 10, CardFormat.card_rarity_color(card), HORIZONTAL_ALIGNMENT_RIGHT)
 	rarity_badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title_row.add_child(rarity_badge)
 	var cost_badge: PanelContainer = PanelContainer.new()
 	cost_badge.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	cost_badge.offset_left = -34
-	cost_badge.offset_top = 6
-	cost_badge.offset_right = -6
-	cost_badge.offset_bottom = 34
+	var badge_size: float = 24.0 if is_small else 28.0
+	cost_badge.offset_left = -badge_size - (4.0 if is_small else 6.0)
+	cost_badge.offset_top = 4.0 if is_small else 6.0
+	cost_badge.offset_right = - (4.0 if is_small else 6.0)
+	cost_badge.offset_bottom = badge_size + (4.0 if is_small else 6.0)
 	cost_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var cost_style: StyleBoxFlat = StyleBoxFlat.new()
 	cost_style.bg_color = Color(0.10, 0.08, 0.05, 0.42)
@@ -4123,7 +4137,7 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	cost_style.content_margin_bottom = 2
 	cost_badge.add_theme_stylebox_override("panel", cost_style)
 	art_layer.add_child(cost_badge)
-	var cost_label: Label = UIFactory.card_label(str(cost), 14, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	var cost_label: Label = UIFactory.card_label(str(cost), cost_font_size, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	cost_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cost_badge.add_child(cost_label)
@@ -4132,18 +4146,18 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	rules_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color(0.90, 0.87, 0.76, 0.78), Color(0, 0, 0, 0), 0, 10))
 	box.add_child(rules_panel)
 	var rules_margin: MarginContainer = MarginContainer.new()
-	rules_margin.add_theme_constant_override("margin_left", 10)
-	rules_margin.add_theme_constant_override("margin_top", 8)
-	rules_margin.add_theme_constant_override("margin_right", 10)
-	rules_margin.add_theme_constant_override("margin_bottom", 12)
+	rules_margin.add_theme_constant_override("margin_left", rules_margin_left)
+	rules_margin.add_theme_constant_override("margin_top", rules_margin_top)
+	rules_margin.add_theme_constant_override("margin_right", rules_margin_right)
+	rules_margin.add_theme_constant_override("margin_bottom", rules_margin_bottom)
 	rules_panel.add_child(rules_margin)
 	var rules_box: VBoxContainer = VBoxContainer.new()
 	rules_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	rules_box.add_theme_constant_override("separation", 4)
+	rules_box.add_theme_constant_override("separation", rules_separation)
 	rules_margin.add_child(rules_box)
-	var type_line: Label = UIFactory.card_label(CardFormat.card_type_name(card.card_type), 11, CardFormat.card_color(card.card_type, true).darkened(0.05), HORIZONTAL_ALIGNMENT_CENTER)
+	var type_line: Label = UIFactory.card_label(CardFormat.card_type_name(card.card_type), type_font_size, CardFormat.card_color(card.card_type, true).darkened(0.05), HORIZONTAL_ALIGNMENT_CENTER)
 	rules_box.add_child(type_line)
-	var desc: Label = UIFactory.card_label(card.display_description(), 12, Color("2d2418"), HORIZONTAL_ALIGNMENT_LEFT)
+	var desc: Label = UIFactory.card_label(card.display_description(), desc_font_size, Color("2d2418"), HORIZONTAL_ALIGNMENT_LEFT)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	rules_box.add_child(desc)

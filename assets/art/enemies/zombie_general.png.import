@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://1rynnifchwpf"
-path="res://.godot/imported/zombie_general.png-ff4bf55fa5abd916a839a3d5b29f117b.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://assets/art/enemies/zombie_general.png"
-dest_files=["res://.godot/imported/zombie_general.png-ff4bf55fa5abd916a839a3d5b29f117b.ctex"]
 
 [params]
 
