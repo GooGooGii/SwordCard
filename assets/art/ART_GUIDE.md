@@ -107,12 +107,17 @@ Suggested paths:
 - `assets/ui/card_frame_attack.png`
 - `assets/ui/card_frame_skill.png`
 - `assets/ui/card_frame_power.png`
-- `assets/ui/node_battle.png`
-- `assets/ui/node_rest.png`
-- `assets/ui/node_event.png`
-- `assets/ui/node_boss.png`
+- `assets/ui/node_battle.png` ( Crossed Chinese Swords - 水墨雙劍 )
+- `assets/ui/node_shop.png` ( Copper Coin - 水墨金銅錢 )
+- `assets/ui/node_black_shop.png` ( Dark Copper Coin - 暗黑紫煙銅錢 )
+- `assets/ui/node_event.png` ( Mysterious Scroll - 國風水墨古卷 )
+- `assets/ui/node_rest.png` ( Campfire - 篝火營地 )
+- `assets/ui/node_boss.png` ( Yaoguai Demon Mask - 猙獰山魈魔臉 )
 
 Target:
 
 - Prefer PNG for painterly frames and icons
-- Keep icon silhouettes simple enough for Android screen sizes
+- Keep icon silhouettes simple enough for Android screen sizes (high contrast, readable at 48x48 px, transparent background)
+- Style: 2D Chinese ink-wash brush stroke illustration, clean black lineart with subtle watercolor texture.
+
+---
