@@ -1707,7 +1707,7 @@ func _build_battle_scene() -> void:
 	if _potion_overlay != null:
 		_potion_overlay.visible = false
 	var viewport_size: Vector2 = get_viewport_rect().size
-	_battle_compact = OS.has_feature("mobile") or viewport_size.y <= 500.0
+	_battle_compact = OS.has_feature("mobile") or viewport_size.y < 870.0
 	var screen: VBoxContainer = VBoxContainer.new()
 	screen.add_theme_constant_override("separation", 4 if _battle_compact else 6)
 	root.add_child(screen)
