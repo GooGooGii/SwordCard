@@ -105,6 +105,11 @@ func _initialize() -> void:
 	_test_balance_regression_mid(characters, bosses)
 	_test_balance_regression_upgraded(characters, enemies, bosses)
 	_test_deck_pile_views(characters)
+	_test_potion_catalog()
+	_test_potion_save_roundtrip(characters)
+	_test_potion_use_heal(characters[0], enemies[0])
+	_test_potion_cure_poison(characters[0], enemies[0])
+	_test_potion_old_save_compat(characters)
 	print("SwordCard smoke test passed.")
 	quit(0)
 
@@ -961,5 +966,94 @@ func _test_deck_pile_views(characters: Array[CharacterData]) -> void:
 	assert(grouped[3]["card"].id == "test_attack", "Fourth ID mismatch")
 	assert(grouped[3]["card"].upgraded, "Fourth should be upgraded")
 	assert(grouped[3]["count"] == 1, "Fourth count mismatch")
-	
+
 	main.free()
+
+func _test_potion_catalog() -> void:
+	var all_potions: Array[Dictionary] = PotionCatalog.all()
+	assert(all_potions.size() == 10, "PotionCatalog should have 10 potions, got %d" % all_potions.size())
+	var ids: Array[String] = []
+	for p: Dictionary in all_potions:
+		assert(p.has("id") and String(p["id"]).length() > 0, "potion missing id")
+		assert(p.has("display_name") and String(p["display_name"]).length() > 0, "potion missing display_name")
+		assert(p.has("effects") and (p["effects"] as Array).size() > 0, "potion missing effects: %s" % p.get("id", "?"))
+		assert(not ids.has(String(p["id"])), "duplicate potion id: %s" % p["id"])
+		ids.append(String(p["id"]))
+		var by_id: Dictionary = PotionCatalog.by_id(String(p["id"]))
+		assert(not by_id.is_empty(), "PotionCatalog.by_id failed for %s" % p["id"])
+	assert(PotionCatalog.by_id("nonexistent").is_empty(), "by_id should return empty dict for unknown id")
+
+func _test_potion_save_roundtrip(characters: Array[CharacterData]) -> void:
+	var state: RunState = RunState.new()
+	state.init_for(characters[0])
+	var all_potions: Array[Dictionary] = PotionCatalog.all()
+	state.potions.append(all_potions[0].duplicate())
+	state.potions.append(all_potions[5].duplicate())
+	assert(state.potions.size() == 2, "setup: expected 2 potions")
+	var dict: Dictionary = state.to_dict()
+	var text: String = JSON.stringify(dict)
+	var parsed: Variant = JSON.parse_string(text)
+	assert(parsed is Dictionary, "round-trip JSON parse failed")
+	var restored: RunState = RunState.new()
+	assert(restored.from_dict(parsed as Dictionary, characters), "from_dict failed")
+	assert(restored.potions.size() == 2, "potions lost in round-trip: got %d" % restored.potions.size())
+	assert(String((restored.potions[0] as Dictionary).get("id", "")) == String(all_potions[0]["id"]), "first potion id mismatch")
+	assert(String((restored.potions[1] as Dictionary).get("id", "")) == String(all_potions[5]["id"]), "second potion id mismatch")
+
+func _test_potion_use_heal(character: CharacterData, enemy: EnemyData) -> void:
+	var bc: BattleController = BattleController.new()
+	var rs: RunState = RunState.new()
+	rs.init_for(character)
+	rs.character_hps[0] = 10
+	bc.setup(rs, character, enemy.clone())
+	bc.start_turn()
+	var heal_potion: Dictionary = PotionCatalog.by_id("huichun_dan")
+	assert(not heal_potion.is_empty(), "huichun_dan not found in catalog")
+	var before_hp: int = int(bc.state["player_hp"])
+	var effects: Array = heal_potion.get("effects", []) as Array
+	bc.resolver.resolve_effects_list(effects, bc.state)
+	var after_hp: int = int(bc.state["player_hp"])
+	assert(after_hp == min(before_hp + 15, int(bc.state["player_max_hp"])),
+		"heal potion: expected %d HP, got %d" % [min(before_hp + 15, int(bc.state["player_max_hp"])), after_hp])
+	bc.free()
+
+func _test_potion_cure_poison(character: CharacterData, enemy: EnemyData) -> void:
+	var bc: BattleController = BattleController.new()
+	var rs: RunState = RunState.new()
+	rs.init_for(character)
+	bc.setup(rs, character, enemy.clone())
+	bc.start_turn()
+	bc.state["player_poison"] = 3
+	assert(int(bc.state["player_poison"]) == 3, "setup: player_poison should be 3")
+	var cure_potion: Dictionary = PotionCatalog.by_id("jiedu_san")
+	assert(not cure_potion.is_empty(), "jiedu_san not found in catalog")
+	var effects: Array = cure_potion.get("effects", []) as Array
+	bc.resolver.resolve_effects_list(effects, bc.state)
+	assert(int(bc.state["player_poison"]) == 0, "cure_poison: player_poison should be 0, got %d" % int(bc.state["player_poison"]))
+	bc.free()
+
+func _test_potion_old_save_compat(characters: Array[CharacterData]) -> void:
+	var old_save: Dictionary = {
+		"version": 2,
+		"character_ids": [characters[0].id],
+		"character_hps": [characters[0].max_hp],
+		"character_max_hps": [characters[0].max_hp],
+		"character_power_bonus": [0],
+		"character_decks": [[]],
+		"active_character_index": 0,
+		"gold": 50,
+		"encounter_index": 0,
+		"encounter_choices": [],
+		"chosen_map_path": [],
+		"pending_rest_heal": 0,
+		"current_shop_inventory": [],
+		"current_shop_is_black": false,
+		"current_event_variant": "shrine",
+		"relics": [],
+		"ascension_level": 0,
+		"map_seed": 0,
+		"act": 1
+	}
+	var rs: RunState = RunState.new()
+	assert(rs.from_dict(old_save, characters), "old save without potions field should load successfully")
+	assert(rs.potions.is_empty(), "old save should produce empty potions array, got %d" % rs.potions.size())

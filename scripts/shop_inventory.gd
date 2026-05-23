@@ -71,6 +71,15 @@ static func _black_pool(character: CharacterData) -> Array[CardData]:
 	pool.append_array(basic_cards)
 	return pool
 
+static func build_potions(is_black_shop: bool) -> Array[Dictionary]:
+	var pool: Array[Dictionary] = PotionCatalog.all().duplicate()
+	pool.shuffle()
+	var result: Array[Dictionary] = []
+	for i: int in range(min(2, pool.size())):
+		var p: Dictionary = pool[i]
+		result.append({"potion": p, "price": PotionCatalog.price_of(p, is_black_shop)})
+	return result
+
 static func _character_card_pool(character: CharacterData) -> Array[CardData]:
 	var pool: Array[CardData] = []
 	var used_ids: Array[String] = []

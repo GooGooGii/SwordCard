@@ -19,11 +19,15 @@ var encounter_choices: Array[Array] = []
 var chosen_map_path: Array[int] = []
 var pending_rest_heal: int = 0
 var current_shop_inventory: Array[Dictionary] = []
+var current_shop_potions: Array[Dictionary] = []
 var current_shop_is_black: bool = false
 var current_event_variant: String = "shrine"
 var relics: Array[RelicData] = []
+var potions: Array[Dictionary] = []   # max MAX_POTION_SLOTS 元素，每個是 PotionCatalog 的一筆
 var ascension_level: int = 0
 var map_seed: int = 0
+
+const MAX_POTION_SLOTS: int = 3
 
 # Convenience aliases — 對應 active character。讓單角色時期的 main.gd 程式碼幾乎不用改。
 var character: CharacterData:
@@ -112,9 +116,11 @@ func init_for(chars: Variant) -> void:
 	chosen_map_path = []
 	pending_rest_heal = 0
 	current_shop_inventory = []
+	current_shop_potions = []
 	current_shop_is_black = false
 	current_event_variant = "shrine"
 	relics.clear()
+	potions.clear()
 	# 每人各拿自己的 starter weapon
 	for c: CharacterData in party:
 		var weapons: Array[RelicData] = RelicCatalog.weapons_for_character(c.id)
@@ -223,6 +229,7 @@ func to_dict() -> Dictionary:
 		"current_shop_is_black": current_shop_is_black,
 		"current_event_variant": current_event_variant,
 		"relics": relics_data,
+		"potions": potions.duplicate(),
 		"ascension_level": ascension_level,
 		"map_seed": map_seed
 	}
@@ -288,6 +295,10 @@ func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> 
 	for relic_data: Variant in (data.get("relics", []) as Array):
 		if relic_data is Dictionary:
 			relics.append(RelicData.from_dict(relic_data as Dictionary))
+	potions.clear()
+	for p_v: Variant in (data.get("potions", []) as Array):
+		if p_v is Dictionary:
+			potions.append(p_v as Dictionary)
 	ascension_level = int(data.get("ascension_level", 0))
 	map_seed = int(data.get("map_seed", 0))
 	act = int(data.get("act", 1))
