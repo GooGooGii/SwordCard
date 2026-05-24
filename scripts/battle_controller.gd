@@ -410,7 +410,13 @@ func play_card(card: CardData) -> Dictionary:
 	if int(state["energy"]) < cost:
 		add_log("靈力不足，無法施放 %s。" % card.display_title())
 		return {"affordable": false}
+	if card.gold_cost > 0 and run_state.gold < card.gold_cost:
+		add_log("銅錢不足，無法施放 %s（需 %d 枚）。" % [card.display_title(), card.gold_cost])
+		return {"affordable": false}
 	state["energy"] = int(state["energy"]) - cost
+	if card.gold_cost > 0:
+		run_state.gold -= card.gold_cost
+		add_log("花費 %d 枚銅錢。" % card.gold_cost)
 	if character != null and not character.passive_by_trigger("first_attack_cost").is_empty() and card.card_type == "attack" and not bool(state["li_discount_used"]):
 		state["li_discount_used"] = true
 	add_log("施放 %s。" % card.display_title())

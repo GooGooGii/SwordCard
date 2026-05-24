@@ -11,6 +11,7 @@ extends Resource
 @export var effects: Array[Dictionary] = []
 @export var upgraded: bool = false
 @export var art_path: String = ""
+@export var gold_cost: int = 0
 
 func clone() -> CardData:
 	var copy: CardData = CardData.new()
@@ -24,6 +25,7 @@ func clone() -> CardData:
 	copy.effects = effects.duplicate(true)
 	copy.upgraded = upgraded
 	copy.art_path = art_path
+	copy.gold_cost = gold_cost
 	return copy
 
 func display_title() -> String:
@@ -110,7 +112,8 @@ func to_dict() -> Dictionary:
 		"rarity": rarity,
 		"effects": effects.duplicate(true),
 		"upgraded": upgraded,
-		"art_path": art_path
+		"art_path": art_path,
+		"gold_cost": gold_cost
 	}
 
 static func from_dict(data: Dictionary) -> CardData:
@@ -124,6 +127,7 @@ static func from_dict(data: Dictionary) -> CardData:
 	card.rarity = String(data.get("rarity", "basic"))
 	card.upgraded = bool(data.get("upgraded", false))
 	card.art_path = String(data.get("art_path", ""))
+	card.gold_cost = int(data.get("gold_cost", 0))
 	var raw_effects: Array = data.get("effects", []) as Array
 	var typed_effects: Array[Dictionary] = []
 	for entry: Variant in raw_effects:

@@ -2320,7 +2320,8 @@ func end_player_turn() -> void:
 func _has_affordable_card_in_hand() -> bool:
 	for card: CardData in battle.deck.hand:
 		if battle.effective_card_cost(card) <= int(battle.state["energy"]):
-			return true
+			if card.gold_cost == 0 or run_state.gold >= card.gold_cost:
+				return true
 	return false
 
 func _show_end_turn_warning() -> void:
@@ -4080,7 +4081,8 @@ func _refresh_combatant_hp(bar: ProgressBar, value_label: Label, hp: int, max_hp
 	value_label.text = "%d / %d" % [hp, max_hp]
 
 func _card_button(card: CardData) -> Button:
-	var affordable: bool = int(battle.state["energy"]) >= battle.effective_card_cost(card)
+	var affordable: bool = int(battle.state["energy"]) >= battle.effective_card_cost(card) \
+		and (card.gold_cost == 0 or run_state.gold >= card.gold_cost)
 	var card_size: Vector2 = Vector2(156, 212) if _battle_compact else Vector2(172, 238)
 	var button: Button = _make_card_button(card, card.cost, card_size, affordable, true)
 	button.disabled = not affordable
@@ -4361,6 +4363,15 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	cost_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cost_badge.add_child(cost_label)
+	if card.gold_cost > 0:
+		var gold_badge: Label = UIFactory.card_label("◈%d" % card.gold_cost, 9, Color("f0c060"), HORIZONTAL_ALIGNMENT_CENTER)
+		gold_badge.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		gold_badge.offset_left = -36
+		gold_badge.offset_top = 36
+		gold_badge.offset_right = -4
+		gold_badge.offset_bottom = 50
+		gold_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		art_layer.add_child(gold_badge)
 	var rules_panel: PanelContainer = PanelContainer.new()
 	rules_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	rules_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color(0.90, 0.87, 0.76, 0.78), Color(0, 0, 0, 0), 0, 10))
