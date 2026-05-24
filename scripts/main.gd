@@ -4585,6 +4585,6 @@ func _get_battle_portrait_path(char_data: CharacterData, pose: String) -> String
 	if char_data == null:
 		return ""
 	var path: String = "res://assets/art/battle_characters/%s_%s.png" % [char_data.id, pose]
-	if FileAccess.file_exists(path):
+	if ResourceLoader.exists(path):
 		return path
 	return char_data.portrait_path
