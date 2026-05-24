@@ -4074,6 +4074,8 @@ func _on_card_button_pressed(card: CardData, button: Button) -> void:
 	if _suppress_next_card_play:
 		_suppress_next_card_play = false
 		return
+	if OS.has_feature("mobile"):
+		return  # Mobile: play cards only by dragging out of the hand area
 	if _selected_hand_card == card and _selected_hand_button == button:
 		play_card(card, button)
 		return

@@ -177,14 +177,14 @@ smoke test 用 9 組 (block, vuln, weak, attack) 組合驗證兩者一致。改 
   期間若打了任一張卡 → 警告自動取消（`_cancel_end_turn_warning`，由 `play_card` 觸發）
 - **長按卡片預覽**：在手牌卡片上按住 0.5 秒，跳出滿版 overlay 並排展示「當前卡（260×360）」與「升級後預覽」。
   按住期間鬆開即關閉、且**不會觸發出牌**（`_suppress_next_card_play` 旗標在 `_on_card_button_pressed` 攔截）
-- **卡片三種打出方式**：
-  - **點兩下打出**：第一下選取（`set_selected_button` 抬起、`_selected_hand_card` 記下），第二下確認 `play_card`
-  - **拖拉打出**：按下後移動超過 `CARD_DRAG_THRESHOLD = 14 px` 進入 drag mode，卡片跟著手指/游標跑。
+- **卡片打出方式**：
+  - **點兩下打出（僅桌面）**：第一下選取（`set_selected_button` 抬起、`_selected_hand_card` 記下），第二下確認 `play_card`。
+    行動裝置（`OS.has_feature("mobile")`）`_on_card_button_pressed` 直接 return，不允許點擊出牌。
+  - **拖拉打出（桌面 + 手機皆支援）**：按下後移動超過 `CARD_DRAG_THRESHOLD = 14 px` 進入 drag mode，卡片跟著手指/游標跑。
     `CardFormat.requires_enemy_target(card)` 為 `true`（damage / poison / weak / vulnerable / consume_energy / poison_burst）
     要拖到敵人 portrait 附近（grow 80 px 的 hit box）才算命中；其他自身卡（block / heal / draw / energy / power）
-    只要拖出手牌區（`global_pos.y < hand_row.global_position.y`）就算打出。drop 期間 enemy/player portrait 會 modulate
-    高亮提示。drop 無效 → `hand_row.relayout()` snap back。drop 後 `_suppress_next_card_play` 攔截後續 `pressed` 訊號
-    避免雙重觸發
+    只要拖出手牌區才算打出。drop 期間 enemy/player portrait 會 modulate 高亮提示。
+    drop 無效 → `hand_row.relayout()` snap back。drop 後 `_suppress_next_card_play` 攔截後續 `pressed` 訊號避免雙重觸發
   - **長按預覽**（見上）：純檢視，鬆開不出牌
 - **戰敗 retry**：`show_result(false)` 不再立刻 `SaveManager.clear()`，而是多一顆「重打這一場（滿血，扣 1 件遺物）」按鈕。
   其他三顆按鈕（重新角色 / 重選角色 / 主選單）的 callback 才各自 clear save
