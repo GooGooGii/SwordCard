@@ -65,6 +65,7 @@ var _selected_hand_button: Button = null
 
 var _temporary_player_pose: String = ""
 var _pose_timer: SceneTreeTimer = null
+var _pending_revive_indices: Array[int] = []
 
 # 卡片 drag-to-play 狀態
 var _card_drag_button: Button = null
@@ -1766,7 +1767,11 @@ func _refresh_bench_strip() -> void:
 	for i: int in range(players.size()):
 		if i == active:
 			continue
-		bench_strip.add_child(_bench_portrait(i, players[i] as Dictionary))
+		var portrait_node: Control = _bench_portrait(i, players[i] as Dictionary)
+		bench_strip.add_child(portrait_node)
+		if _pending_revive_indices.has(i):
+			UIFactory.flash_node(portrait_node, Color(1.6, 1.5, 0.7), 0.7)
+	_pending_revive_indices.clear()
 
 func _bench_portrait(index: int, player_data: Dictionary) -> Control:
 	var character: CharacterData = run_state.characters[index] if index < run_state.characters.size() else null
@@ -2043,7 +2048,9 @@ func _use_potion(slot: int) -> void:
 	var effects: Array = potion.get("effects", []) as Array
 	var before_hp: int = int(battle.state["player_hp"])
 	var before_block: int = int(battle.state["player_block"])
+	var _dead_before_pot: Array[int] = _snapshot_dead_bench()
 	var log_lines: Array[String] = battle.resolver.resolve_effects_list(effects, battle.state)
+	_pending_revive_indices = _detect_revived(_dead_before_pot)
 	var drew: int = int(battle.state.get("pending_draw", 0))
 	if drew > 0:
 		battle.state["pending_draw"] = 0
@@ -2149,12 +2156,35 @@ func _start_player_turn() -> void:
 		return
 	_refresh_battle(true)
 
+func _snapshot_dead_bench() -> Array[int]:
+	if battle == null:
+		return []
+	var dead: Array[int] = []
+	var players: Array = battle.state.get("players", []) as Array
+	var active: int = int(battle.state.get("active_player_index", 0))
+	for i: int in range(players.size()):
+		if i != active and int((players[i] as Dictionary).get("hp", 1)) <= 0:
+			dead.append(i)
+	return dead
+
+func _detect_revived(was_dead: Array[int]) -> Array[int]:
+	if battle == null or was_dead.is_empty():
+		return []
+	var revived: Array[int] = []
+	var players: Array = battle.state.get("players", []) as Array
+	for i: int in was_dead:
+		if i < players.size() and int((players[i] as Dictionary).get("hp", 0)) > 0:
+			revived.append(i)
+	return revived
+
 func play_card(card: CardData, source_button: Button = null) -> void:
 	if battle_end_pending:
 		return
 	_clear_selected_hand_card()
 	_cancel_end_turn_warning()
+	var _dead_before: Array[int] = _snapshot_dead_bench()
 	var result: Dictionary = battle.play_card(card)
+	_pending_revive_indices = _detect_revived(_dead_before)
 	if not bool(result["affordable"]):
 		_refresh_battle()
 		return
@@ -2579,6 +2609,15 @@ func show_event_node() -> void:
 					run_state.deck.size() <= 5, show_remove_card_view))
 			"view_deck":
 				grid.add_child(_event_choice_button("翻閱", "查看當前手札", false, show_deck_view))
+			"revive":
+				var ra: int = int(event_data.get("revive_amount", 30))
+				var has_downed: bool = false
+				for h: int in run_state.character_hps:
+					if h <= 0:
+						has_downed = true
+						break
+				grid.add_child(_event_choice_button("救援", "救回 1 名倒下的同伴（%d HP）" % ra,
+					not has_downed, func() -> void: resolve_event_revive(ra)))
 			"pact":
 				var pc: int = int(event_data.get("pact_max_hp_cost", 8))
 				var pp: int = int(event_data.get("pact_power", 4))
@@ -2773,6 +2812,18 @@ func resolve_event_heal(amount: int) -> void:
 	run_state.heal(amount)
 	var ev: Dictionary = EventData.for_variant(run_state.current_event_variant)
 	var outcome: String = _get_event_outcome(ev, "heal")
+	if not outcome.is_empty():
+		_show_event_outcome(outcome, advance_non_battle_node)
+	else:
+		advance_non_battle_node()
+
+func resolve_event_revive(amount: int) -> void:
+	for i: int in range(run_state.character_hps.size()):
+		if run_state.character_hps[i] <= 0:
+			run_state.character_hps[i] = min(run_state.character_max_hps[i], amount)
+			break
+	var ev: Dictionary = EventData.for_variant(run_state.current_event_variant)
+	var outcome: String = _get_event_outcome(ev, "revive")
 	if not outcome.is_empty():
 		_show_event_outcome(outcome, advance_non_battle_node)
 	else:
