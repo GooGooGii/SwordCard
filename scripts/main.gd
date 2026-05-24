@@ -1354,6 +1354,7 @@ func _build_streamlined_progress_screen(compact_map: bool) -> void:
 	layer.add_child(act_label)
 	
 	layer.add_child(_build_map_toolbar())
+	layer.add_child(_build_map_legend())
 
 
 func _build_map_toolbar() -> Control:
@@ -1368,6 +1369,51 @@ func _build_map_toolbar() -> Control:
 	toolbar.add_child(_map_icon_button("人", "角色狀態", _show_map_status_popup))
 	toolbar.add_child(_map_icon_button("牌", "查看牌組", func() -> void: show_deck_view()))
 	return toolbar
+
+func _build_map_legend() -> Control:
+	var panel: PanelContainer = PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT, false)
+	panel.offset_left = -132
+	panel.offset_top = -168
+	panel.offset_right = -10
+	panel.offset_bottom = -10
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bg: StyleBoxFlat = UIFactory.style_box(Color("1a1510", 0.72), Color("c8a96e", 0.50), 1, 6)
+	bg.content_margin_left = 10
+	bg.content_margin_right = 10
+	bg.content_margin_top = 8
+	bg.content_margin_bottom = 8
+	panel.add_theme_stylebox_override("panel", bg)
+	var vbox: VBoxContainer = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	panel.add_child(vbox)
+	var title_lbl: Label = UIFactory.card_label("圖例", 12, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	vbox.add_child(title_lbl)
+	var sep: HSeparator = HSeparator.new()
+	sep.add_theme_color_override("color", Color("c8a96e", 0.35))
+	vbox.add_child(sep)
+	var entries: Array[Array] = [
+		["戰", "戰鬥"],
+		["遇", "奇遇"],
+		["休", "休息"],
+		["店", "商店"],
+		["黑", "黑市"],
+		["王", "頭目"],
+	]
+	for entry: Array in entries:
+		var row: HBoxContainer = HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(row)
+		var badge: Label = UIFactory.card_label(String(entry[0]), 13, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+		badge.custom_minimum_size = Vector2(20, 0)
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(badge)
+		var name_lbl: Label = UIFactory.card_label(String(entry[1]), 12, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_LEFT)
+		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(name_lbl)
+	return panel
 
 func _map_icon_button(symbol: String, tooltip: String, action: Callable) -> Button:
 	var button: Button = Button.new()
