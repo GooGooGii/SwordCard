@@ -1351,7 +1351,7 @@ func _build_streamlined_progress_screen(compact_map: bool) -> void:
 	map_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(map_panel)
 	
-	# 在地圖上方顯示當前幕名稱，例如「第一幕 余杭山間」
+	# 在地圖上方顯示當前幕名稱，例如「第一幕 餘杭山間」
 	var act_label: Label = Label.new()
 	act_label.text = "第%s幕 %s" % [_act_numeral(run_state.act), _act_title(run_state.act)]
 	act_label.set_anchors_preset(Control.PRESET_TOP_LEFT, false)
@@ -3368,7 +3368,7 @@ func _act_numeral(act: int) -> String:
 
 func _act_title(act: int) -> String:
 	match act:
-		1: return "余杭山間"
+		1: return "餘杭山間"
 		2: return "蘇州地底"
 		3: return "苗疆蠱土"
 		4: return "鎖妖塔"
@@ -3377,7 +3377,7 @@ func _act_title(act: int) -> String:
 
 func _act_complete_flavor(act: int) -> String:
 	match act:
-		1: return "余杭山間的惡徒已被驅散，一行人踏上了通往蘇州的路途——誰知更大的困境正在前方等待。"
+		1: return "餘杭山間的惡徒已被驅散，一行人踏上了通往蘇州的路途——誰知更大的困境正在前方等待。"
 		2: return "離開蘇州地底的殭屍之地，穿越險峻山路，苗疆蠱土的神秘與危險已在眼前。"
 		3: return "苗疆的蠱毒危機雖已解除，但真正的威脅遠不止如此，眾人向鎖妖塔進發，決意斬草除根。"
 		4: return "鎖妖塔的封印被破，邪神即將甦醒！為阻止拜月教主完成邪法，必須立刻趕赴教壇，決一死戰。"
