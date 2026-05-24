@@ -248,6 +248,12 @@ static func loot_table_for(enemy_id: String) -> Array[Dictionary]:
 				{"type": "potion", "potion_id": "lingshe_dan",  "display_name": "靈蛇膽"},
 				{"type": "potion", "potion_id": "tianling_dan",  "display_name": "天靈丹"},
 			]
+		"flower_spirit":
+			return [
+				{"type": "potion", "potion_id": "yuehun_cao",   "display_name": "月魂草"},
+				{"type": "potion", "potion_id": "lingli_dan",   "display_name": "靈力丹"},
+				{"type": "gold",   "amount": 30,                "display_name": "30 銅錢"},
+			]
 		"red_eye_demon":
 			return [
 				{"type": "potion", "potion_id": "tianling_dan",  "display_name": "天靈丹"},
@@ -329,6 +335,22 @@ static func _fox_spirit() -> EnemyData:
 		{"intent": "遁形 12", "effects": [{"kind": "block", "amount": 12}]}
 	]
 	return enemy
+
+static func _flower_spirit_enemy() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "flower_spirit"
+	enemy.display_name = "花妖"
+	enemy.max_hp = 46
+	enemy.portrait_path = "res://assets/art/enemies/fox_spirit.png"
+	enemy.actions = [
+		{"intent": "迷香 2", "effects": [{"kind": "weak", "amount": 2}]},
+		{"intent": "花瓣刺 9", "effects": [{"kind": "damage", "amount": 9}]},
+		{"intent": "魅惑破綻", "effects": [{"kind": "vulnerable", "amount": 1}, {"kind": "block", "amount": 8}]},
+	]
+	return enemy
+
+static func flower_spirit_enemy() -> EnemyData:
+	return _flower_spirit_enemy()
 
 static func _serpent_demon() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()

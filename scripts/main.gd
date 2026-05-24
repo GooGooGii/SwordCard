@@ -88,6 +88,7 @@ var _hand_buttons_map: Dictionary = {}  # Button → CardData，每次 _refresh_
 var selected_ascension: int = 0
 var pending_seed: int = 0  # 0 = 隨機；非 0 = 下次 start_run 用此 seed 生地圖
 var selected_party_ids: Array[String] = []  # character_select 多選 buffer，1–3 人
+var _event_battle_on_win: Callable  # 非空時表示從事件觸發的戰鬥，勝利後執行 callback 而非正常流程
 const PARTY_MAX_SIZE: int = 3
 
 const BASE_MARGIN_H: int = 28
@@ -2353,6 +2354,16 @@ func _set_battle_input_enabled(enabled: bool) -> void:
 			button.disabled = not enabled
 
 func _complete_battle_victory() -> void:
+	if _event_battle_on_win.is_valid():
+		var cb: Callable = _event_battle_on_win
+		_event_battle_on_win = Callable()
+		battle.complete_victory()
+		Bestiary.mark_defeated(battle.enemy.id)
+		var gold: int = _battle_gold_reward(battle.enemy)
+		run_state.gold += gold
+		battle.add_log("獲得 %d 枚銅錢。" % gold)
+		cb.call()
+		return
 	battle.complete_victory()
 	Bestiary.mark_defeated(battle.enemy.id)
 	_grant_battle_exp()
@@ -2727,6 +2738,16 @@ func show_event_node() -> void:
 				var td: int = int(event_data.get("taint_damage", 6))
 				grid.add_child(_event_choice_button(String(event_data["power_label"]),
 					"增傷 +%d，但損血 %d" % [power_gain, td], false, _resolve_tainted_power))
+			"fight":
+				grid.add_child(_event_choice_button("出手", "與花妖一戰，奪取寶物",
+					false, _start_event_fight))
+
+func _start_event_fight() -> void:
+	var outcome_text: String = _get_event_outcome(
+		EventData.for_variant(run_state.current_event_variant), "fight_win")
+	_event_battle_on_win = func() -> void:
+		_show_event_outcome(outcome_text, advance_non_battle_node)
+	start_next_battle(GameData.flower_spirit_enemy())
 
 func _get_event_outcome(event_data: Dictionary, key: String) -> String:
 	return String((event_data.get("outcomes", {}) as Dictionary).get(key, ""))
