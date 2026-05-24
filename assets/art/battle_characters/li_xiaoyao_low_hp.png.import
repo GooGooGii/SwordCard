@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bkroxc5rfsd0o"
-valid=false
+uid="uid://5wkkfwj8sw8c"
+path="res://.godot/imported/li_xiaoyao_low_hp.png-ceb3ff35ac23e247e6709b7b64daffc0.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/battle_characters/li_xiaoyao_low_hp.png"
+dest_files=["res://.godot/imported/li_xiaoyao_low_hp.png-ceb3ff35ac23e247e6709b7b64daffc0.ctex"]
 
 [params]
 

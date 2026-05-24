@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cxcrtpnx6lfgi"
-valid=false
+uid="uid://b1jfgsnyml5af"
+path="res://.godot/imported/anu_attack.png-575c46323b4656d0a4df78b49b39694e.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/battle_characters/anu_attack.png"
+dest_files=["res://.godot/imported/anu_attack.png-575c46323b4656d0a4df78b49b39694e.ctex"]
 
 [params]
 

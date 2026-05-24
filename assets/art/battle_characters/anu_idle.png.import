@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://xbw5btpjwq5"
-valid=false
+uid="uid://b50yb2xxmguo"
+path="res://.godot/imported/anu_idle.png-670d2f151aeef9ab526135de26951f44.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/battle_characters/anu_idle.png"
+dest_files=["res://.godot/imported/anu_idle.png-670d2f151aeef9ab526135de26951f44.ctex"]
 
 [params]
 

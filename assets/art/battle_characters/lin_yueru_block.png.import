@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://da73v1wkk6t0f"
-valid=false
+uid="uid://bynsj7jokqc4a"
+path="res://.godot/imported/lin_yueru_block.png-52584d7392c31604e5547148fd3b51e9.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/battle_characters/lin_yueru_block.png"
+dest_files=["res://.godot/imported/lin_yueru_block.png-52584d7392c31604e5547148fd3b51e9.ctex"]
 
 [params]
 

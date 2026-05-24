@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c7nx1e081db18"
-valid=false
+uid="uid://chptlma5snxhx"
+path="res://.godot/imported/li_xiaoyao_downed.png-47b4ed9ea7a715749c0800c082ca55fe.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/battle_characters/li_xiaoyao_downed.png"
+dest_files=["res://.godot/imported/li_xiaoyao_downed.png-47b4ed9ea7a715749c0800c082ca55fe.ctex"]
 
 [params]
 

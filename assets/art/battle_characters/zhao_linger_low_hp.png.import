@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://kei8abh5ghbh"
-valid=false
+uid="uid://bpyjqnmxc0bkr"
+path="res://.godot/imported/zhao_linger_low_hp.png-80c8de5565b3e8e69206155a47d025a3.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/battle_characters/zhao_linger_low_hp.png"
+dest_files=["res://.godot/imported/zhao_linger_low_hp.png-80c8de5565b3e8e69206155a47d025a3.ctex"]
 
 [params]
 

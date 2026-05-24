@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dssc42guhai7b"
-valid=false
+uid="uid://b4tr71ji0jv8b"
+path="res://.godot/imported/zhao_linger_idle.png-52f2a8d14e9dd240546554ccd6a69a04.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/battle_characters/zhao_linger_idle.png"
+dest_files=["res://.godot/imported/zhao_linger_idle.png-52f2a8d14e9dd240546554ccd6a69a04.ctex"]
 
 [params]
 

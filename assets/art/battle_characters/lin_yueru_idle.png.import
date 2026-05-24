@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://7sgm7wd1252p"
-valid=false
+uid="uid://v36jd6b8fxwb"
+path="res://.godot/imported/lin_yueru_idle.png-5b38249f4b5d2633df4de2b8b1453846.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/battle_characters/lin_yueru_idle.png"
+dest_files=["res://.godot/imported/lin_yueru_idle.png-5b38249f4b5d2633df4de2b8b1453846.ctex"]
 
 [params]
 

@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ikyk22wjnuxe"
-valid=false
+uid="uid://gw3p4g4ox850"
+path="res://.godot/imported/anu_cast.png-a057be57ab461f5071c17bc363f03c88.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/battle_characters/anu_cast.png"
+dest_files=["res://.godot/imported/anu_cast.png-a057be57ab461f5071c17bc363f03c88.ctex"]
 
 [params]
 

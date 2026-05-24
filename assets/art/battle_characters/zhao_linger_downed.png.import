@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bxjit3rlkqs2x"
-valid=false
+uid="uid://ci708y2ue7wwx"
+path="res://.godot/imported/zhao_linger_downed.png-a899dbe1d2ab979c09d89c4b24a995ed.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/battle_characters/zhao_linger_downed.png"
+dest_files=["res://.godot/imported/zhao_linger_downed.png-a899dbe1d2ab979c09d89c4b24a995ed.ctex"]
 
 [params]
 

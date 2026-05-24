@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://0msegoak72lc"
-valid=false
+uid="uid://d0y365fkh6la1"
+path="res://.godot/imported/lin_yueru_downed.png-6b7fb640ad686903367d5ee18de56497.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/battle_characters/lin_yueru_downed.png"
+dest_files=["res://.godot/imported/lin_yueru_downed.png-6b7fb640ad686903367d5ee18de56497.ctex"]
 
 [params]
 
