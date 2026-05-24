@@ -33,7 +33,11 @@ var enemy_hp_value: Label
 var enemy_status_line: Label
 var enemy_name_label: Label
 var enemy_block_badge: BlockBadge
-var enemy_portrait_wrap: Control
+var enemy_portrait_wrap: Control  # 指向目前 targeted 敵人的 portrait 容器
+var _enemy_portrait_widgets: Array[Control] = []  # 每個敵人的 portrait 容器
+var _enemy_hp_bars: Array[ProgressBar] = []
+var _enemy_hp_values: Array[Label] = []
+var _enemy_status_lines: Array[Label] = []
 var energy_orb: EnergyOrb
 var relic_strip: HBoxContainer
 var deck_overlay: Control
@@ -1686,19 +1690,28 @@ func choose_route_node(node_data: Dictionary) -> void:
 	elif node_type == "shop":
 		open_shop_node(bool(node_data.get("black_market", false)))
 	else:
-		assert(node_data.has("enemy"), "戰鬥節點缺少 enemy 資料：%s" % node_data)
-		var enemy: EnemyData = node_data["enemy"] as EnemyData
-		start_next_battle(enemy)
+		var enemies_array: Array[EnemyData] = []
+		if node_data.has("enemies"):
+			for e_v: Variant in (node_data["enemies"] as Array):
+				enemies_array.append(e_v as EnemyData)
+		else:
+			assert(node_data.has("enemy"), "戰鬥節點缺少 enemy 資料：%s" % node_data)
+			enemies_array.append(node_data["enemy"] as EnemyData)
+		start_next_battle(enemies_array)
 
-func start_next_battle(enemy: EnemyData) -> void:
+func start_next_battle(enemies: Array[EnemyData]) -> void:
 	battle = BattleController.new()
-	battle.setup(run_state, selected_character, enemy)
-	var mult: float = Ascension.enemy_hp_multiplier(run_state.ascension_level, Ascension.is_boss_id(enemy.id))
+	battle.setup(run_state, selected_character, enemies)
+	var mult: float = Ascension.enemy_hp_multiplier(run_state.ascension_level, Ascension.is_boss_id(enemies[0].id))
 	if mult != 1.0:
-		var scaled_max: int = max(1, int(round(float(battle.state["enemy_max_hp"]) * mult)))
-		battle.state["enemy_max_hp"] = scaled_max
-		battle.state["enemy_hp"] = scaled_max
-		battle.enemy.max_hp = scaled_max
+		var group: Array = battle.state.get("enemy_group", []) as Array
+		for eg_v: Variant in group:
+			var eg: Dictionary = eg_v as Dictionary
+			var scaled_max: int = max(1, int(round(float(eg["max_hp"]) * mult)))
+			eg["max_hp"] = scaled_max
+			eg["hp"] = scaled_max
+		battle._sync_target_to_aliases()
+		battle.enemy.max_hp = max(1, int(round(float(battle.enemy.max_hp) * mult)))
 	battle_end_pending = false
 	_build_battle_scene()
 	_start_player_turn()
@@ -1891,31 +1904,82 @@ func _build_player_widget(parent: HBoxContainer) -> void:
 	col.add_child(player_status_line)
 
 func _build_enemy_widget(parent: HBoxContainer) -> void:
-	var col: VBoxContainer = VBoxContainer.new()
-	col.custom_minimum_size = Vector2(260, 0)
-	col.size_flags_horizontal = 0
-	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	col.alignment = BoxContainer.ALIGNMENT_END
-	col.add_theme_constant_override("separation", 4)
-	parent.add_child(col)
+	_enemy_portrait_widgets.clear()
+	_enemy_hp_bars.clear()
+	_enemy_hp_values.clear()
+	_enemy_status_lines.clear()
+	var group: Array = battle.state.get("enemy_group", []) as Array
+	var portrait_size: Vector2 = Vector2(120, 130) if _battle_compact else Vector2(230, 230)
+	if group.size() > 1:
+		portrait_size = Vector2(90, 100) if _battle_compact else Vector2(160, 170)
+	var row: HBoxContainer = HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_END
+	row.add_theme_constant_override("separation", 8 if _battle_compact else 12)
+	row.size_flags_horizontal = 0
+	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var outer: VBoxContainer = VBoxContainer.new()
+	outer.size_flags_horizontal = 0
+	outer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	outer.alignment = BoxContainer.ALIGNMENT_END
+	outer.add_theme_constant_override("separation", 2 if _battle_compact else 4)
+	parent.add_child(outer)
 	enemy_label = Label.new()
 	enemy_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	enemy_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	enemy_label.add_theme_font_size_override("font_size", 16)
 	enemy_label.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
-	col.add_child(enemy_label)
+	outer.add_child(enemy_label)
 	enemy_feedback_label = UIFactory.feedback_label()
-	col.add_child(enemy_feedback_label)
-	col.add_child(_portrait_with_block_badge(battle.enemy.portrait_path, Vector2(230, 230), true, false, battle.enemy.portrait_tint))
-	enemy_name_label = UIFactory.card_label(battle.enemy.display_name, 18, Color("ffd9a3"), HORIZONTAL_ALIGNMENT_CENTER)
-	col.add_child(enemy_name_label)
-	enemy_hp_bar = UIFactory.hp_bar(ThemeColors.HP_FILL, ThemeColors.HP_BG_DARK)
-	col.add_child(enemy_hp_bar)
-	enemy_hp_value = UIFactory.card_label("", 13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
-	col.add_child(enemy_hp_value)
-	enemy_status_line = UIFactory.card_label("", 13, Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
-	enemy_status_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	col.add_child(enemy_status_line)
+	if _battle_compact:
+		enemy_feedback_label.custom_minimum_size = Vector2(0, 0)
+	outer.add_child(enemy_feedback_label)
+	outer.add_child(row)
+	for i: int in range(group.size()):
+		var eg: Dictionary = group[i] as Dictionary
+		var col: VBoxContainer = VBoxContainer.new()
+		col.size_flags_horizontal = 0
+		col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		col.alignment = BoxContainer.ALIGNMENT_END
+		col.add_theme_constant_override("separation", 2)
+		col.custom_minimum_size = Vector2(portrait_size.x + 10, 0)
+		row.add_child(col)
+		var e_idx: int = i
+		var portrait_wrap: Control = _portrait_with_block_badge(String(eg["portrait_path"]), portrait_size, true, false, eg["portrait_tint"] as Color)
+		portrait_wrap.gui_input.connect(func(ev: InputEvent) -> void:
+			if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed:
+				_on_enemy_portrait_pressed(e_idx))
+		col.add_child(portrait_wrap)
+		_enemy_portrait_widgets.append(portrait_wrap)
+		var name_lbl: Label = UIFactory.card_label(String(eg["name"]), 12 if _battle_compact else 16, Color("ffd9a3"), HORIZONTAL_ALIGNMENT_CENTER)
+		col.add_child(name_lbl)
+		var hp_bar: ProgressBar = UIFactory.hp_bar(ThemeColors.HP_FILL, ThemeColors.HP_BG_DARK)
+		hp_bar.custom_minimum_size = Vector2(0, 10 if _battle_compact else 15)
+		col.add_child(hp_bar)
+		_enemy_hp_bars.append(hp_bar)
+		var hp_val: Label = UIFactory.card_label("", 10 if _battle_compact else 12, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
+		col.add_child(hp_val)
+		_enemy_hp_values.append(hp_val)
+		var st_line: Label = UIFactory.card_label("", 10 if _battle_compact else 11, Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
+		st_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		col.add_child(st_line)
+		_enemy_status_lines.append(st_line)
+	var targeted: int = int(battle.state.get("targeted_enemy_index", 0))
+	enemy_portrait_wrap = _enemy_portrait_widgets[targeted] if not _enemy_portrait_widgets.is_empty() else Control.new()
+	enemy_name_label = Label.new()
+	enemy_hp_bar = _enemy_hp_bars[targeted] if not _enemy_hp_bars.is_empty() else ProgressBar.new()
+	enemy_hp_value = _enemy_hp_values[targeted] if not _enemy_hp_values.is_empty() else Label.new()
+	enemy_status_line = _enemy_status_lines[targeted] if not _enemy_status_lines.is_empty() else Label.new()
+
+func _on_enemy_portrait_pressed(idx: int) -> void:
+	if battle == null:
+		return
+	battle.set_targeted_enemy(idx)
+	var targeted: int = int(battle.state.get("targeted_enemy_index", 0))
+	enemy_portrait_wrap = _enemy_portrait_widgets[targeted] if not _enemy_portrait_widgets.is_empty() else Control.new()
+	enemy_hp_bar = _enemy_hp_bars[targeted] if not _enemy_hp_bars.is_empty() else ProgressBar.new()
+	enemy_hp_value = _enemy_hp_values[targeted] if not _enemy_hp_values.is_empty() else Label.new()
+	enemy_status_line = _enemy_status_lines[targeted] if not _enemy_status_lines.is_empty() else Label.new()
+	_refresh_battle()
 
 func _build_left_dock(parent: HBoxContainer) -> void:
 	var dock: VBoxContainer = VBoxContainer.new()
@@ -2231,18 +2295,25 @@ func end_player_turn() -> void:
 	end_turn_button.text = "結束回合"
 	end_turn_button.disabled = true
 	_animate_hand_discard()
-	var action: Dictionary = battle.begin_enemy_phase()
-	_show_enemy_action_preview(action)
+	var enemy_actions: Array[Dictionary] = battle.begin_enemy_phase_all()
 	_refresh_battle()
-	await get_tree().create_timer(0.8).timeout
-	if CardFormat.action_has_damage(action):
-		UIFactory.dash_node(enemy_portrait_wrap, Vector2(-1, 0), 36.0, 0.22)
-		await get_tree().create_timer(0.1).timeout
-	var result: Dictionary = battle.resolve_enemy_phase(action)
-	_show_state_feedback(result["before_enemy"])
-	_refresh_battle()
-	if bool(result["ended"]) and await _finish_battle_after_delay():
-		return
+	for item: Dictionary in enemy_actions:
+		var action: Dictionary = item["action"] as Dictionary
+		var eidx: int = int(item.get("enemy_index", 0))
+		_show_enemy_action_preview(action)
+		await get_tree().create_timer(0.8).timeout
+		if CardFormat.action_has_damage(action):
+			var portrait: Control = _enemy_portrait_widgets[eidx] if eidx < _enemy_portrait_widgets.size() else enemy_portrait_wrap
+			if portrait != null and is_instance_valid(portrait):
+				UIFactory.dash_node(portrait, Vector2(-1, 0), 36.0, 0.22)
+			await get_tree().create_timer(0.1).timeout
+		var result: Dictionary = battle.resolve_single_enemy_action(eidx, action)
+		_show_state_feedback(result["before_enemy"])
+		_refresh_battle()
+		if bool(result["ended"]) and await _finish_battle_after_delay():
+			return
+		if item != enemy_actions.back():
+			await get_tree().create_timer(0.4).timeout
 	await get_tree().create_timer(0.6).timeout
 	_start_player_turn()
 
@@ -2310,10 +2381,32 @@ func _set_battle_input_enabled(enabled: bool) -> void:
 			button.disabled = not enabled
 
 func _complete_battle_victory() -> void:
+	if _event_battle_on_win.is_valid():
+		var cb: Callable = _event_battle_on_win
+		_event_battle_on_win = Callable()
+		battle.complete_victory()
+		var group_for_event: Array = battle.state.get("enemy_group", []) as Array
+		for eg_v: Variant in group_for_event:
+			Bestiary.mark_defeated(String((eg_v as Dictionary)["id"]))
+		var gold: int = _battle_gold_reward(battle.enemy)
+		run_state.gold += gold
+		battle.add_log("獲得 %d 枚銅錢。" % gold)
+		cb.call()
+		return
 	battle.complete_victory()
-	Bestiary.mark_defeated(battle.enemy.id)
+	var group: Array = battle.state.get("enemy_group", []) as Array
+	for eg_v: Variant in group:
+		Bestiary.mark_defeated(String((eg_v as Dictionary)["id"]))
 	_grant_battle_exp()
-	var gold_reward: int = _battle_gold_reward(battle.enemy)
+	var gold_reward: int = 0
+	var was_boss: bool = Ascension.is_boss_id(battle.enemy.id)
+	for eg_v2: Variant in group:
+		var eid: String = String((eg_v2 as Dictionary)["id"])
+		var e_data: EnemyData = EnemyData.new()
+		e_data.id = eid
+		gold_reward += _battle_gold_reward(e_data)
+	if group.is_empty():
+		gold_reward = _battle_gold_reward(battle.enemy)
 	# 聚寶盆：勝利額外金錢
 	for r: RelicData in run_state.relics:
 		for t: Dictionary in r.triggers:
@@ -2326,7 +2419,6 @@ func _complete_battle_victory() -> void:
 	battle.add_log("獲得 %d 枚銅錢。" % gold_reward)
 	# Boss 必掉神器；一般戰鬥 25% 機率掉裝備
 	var dropped: RelicData = null
-	var was_boss: bool = Ascension.is_boss_id(battle.enemy.id)
 	if was_boss:
 		for a: RelicData in RelicCatalog.artifacts():
 			if a.boss_id == battle.enemy.id and not run_state.has_relic(a.id):
@@ -2683,6 +2775,16 @@ func show_event_node() -> void:
 				var td: int = int(event_data.get("taint_damage", 6))
 				grid.add_child(_event_choice_button(String(event_data["power_label"]),
 					"增傷 +%d，但損血 %d" % [power_gain, td], false, _resolve_tainted_power))
+			"fight":
+				grid.add_child(_event_choice_button("出手", "與花妖一戰，奪取寶物",
+					false, _start_event_fight))
+
+func _start_event_fight() -> void:
+	var outcome_text: String = _get_event_outcome(
+		EventData.for_variant(run_state.current_event_variant), "fight_win")
+	_event_battle_on_win = func() -> void:
+		_show_event_outcome(outcome_text, advance_non_battle_node)
+	start_next_battle([GameData.flower_spirit_enemy()])
 
 func _get_event_outcome(event_data: Dictionary, key: String) -> String:
 	return String((event_data.get("outcomes", {}) as Dictionary).get(key, ""))
@@ -3866,7 +3968,23 @@ func _retry_current_battle() -> void:
 		run_state.character_hps[i] = run_state.character_max_hps[i]
 	run_state.active_character_index = 0  # 重打 = 隊長重上場
 	SaveManager.save(run_state)
-	start_next_battle(enemy_to_retry)
+	# 重打時復原原本的群組（若是群戰則重建）
+	var retry_group: Array[EnemyData] = []
+	var prev_group: Array = battle.state.get("enemy_group", []) as Array
+	if prev_group.size() > 1:
+		for eg_v: Variant in prev_group:
+			var eg_e: EnemyData = EnemyData.new()
+			eg_e.id = String((eg_v as Dictionary)["id"])
+			eg_e.display_name = String((eg_v as Dictionary)["name"])
+			eg_e.max_hp = int((eg_v as Dictionary)["max_hp"])
+			eg_e.portrait_path = String((eg_v as Dictionary)["portrait_path"])
+			eg_e.portrait_tint = (eg_v as Dictionary)["portrait_tint"] as Color
+			eg_e.actions = ((eg_v as Dictionary)["actions"] as Array).duplicate(true)
+			eg_e.phase_2_actions = ((eg_v as Dictionary)["phase_2_actions"] as Array).duplicate(true)
+			retry_group.append(eg_e)
+	else:
+		retry_group.append(enemy_to_retry)
+	start_next_battle(retry_group)
 
 func _refresh_battle(animate_draw: bool = false) -> void:
 	var top_parts: Array[String] = ["第%s幕 %d/%d 層" % [_act_numeral(run_state.act), run_state.encounter_index + 1, run_state.encounter_choices.size()]]
@@ -3902,9 +4020,32 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 	player_block_badge.set_amount(int(battle.state["player_block"]))
 	player_status_line.text = UIFactory.status_summary(int(battle.state["player_poison"]), int(battle.state["player_weak"]), int(battle.state["player_vulnerable"]))
 	_refresh_bench_strip()
+	# 多敵群組 HP / 狀態刷新
+	var group: Array = battle.state.get("enemy_group", []) as Array
+	var targeted_idx: int = int(battle.state.get("targeted_enemy_index", 0))
+	for ei: int in range(_enemy_portrait_widgets.size()):
+		if ei >= group.size():
+			break
+		var eg: Dictionary = group[ei] as Dictionary
+		var alive: bool = int(eg["hp"]) > 0
+		if ei < _enemy_hp_bars.size() and is_instance_valid(_enemy_hp_bars[ei]):
+			_refresh_combatant_hp(_enemy_hp_bars[ei], _enemy_hp_values[ei], int(eg["hp"]), int(eg["max_hp"]))
+		if ei < _enemy_status_lines.size() and is_instance_valid(_enemy_status_lines[ei]):
+			_enemy_status_lines[ei].text = UIFactory.status_summary(int(eg["poison"]), int(eg["weak"]), int(eg["vulnerable"]))
+		# 目標高亮 / 死亡遮罩
+		if is_instance_valid(_enemy_portrait_widgets[ei]):
+			if not alive:
+				_enemy_portrait_widgets[ei].modulate = Color(0.3, 0.3, 0.3, 0.6)
+			elif ei == targeted_idx:
+				_enemy_portrait_widgets[ei].modulate = Color(1.25, 1.15, 1.0)
+			else:
+				_enemy_portrait_widgets[ei].modulate = Color.WHITE
+	# 平坦別名也刷（backward compat）
 	_refresh_combatant_hp(enemy_hp_bar, enemy_hp_value, int(battle.state["enemy_hp"]), int(battle.state["enemy_max_hp"]))
-	enemy_block_badge.set_amount(int(battle.state["enemy_block"]))
-	enemy_status_line.text = UIFactory.status_summary(int(battle.state["enemy_poison"]), int(battle.state["enemy_weak"]), int(battle.state["enemy_vulnerable"]))
+	if is_instance_valid(enemy_block_badge):
+		enemy_block_badge.set_amount(int(battle.state["enemy_block"]))
+	if is_instance_valid(enemy_status_line):
+		enemy_status_line.text = UIFactory.status_summary(int(battle.state["enemy_poison"]), int(battle.state["enemy_weak"]), int(battle.state["enemy_vulnerable"]))
 	var next_action: Dictionary = battle.next_enemy_action()
 	var intent_lines: Array[String] = ["%s  下一步" % CardFormat.intent_badge(next_action), String(next_action["intent"])]
 	if CardFormat.action_has_damage(next_action):
@@ -4004,10 +4145,20 @@ func _is_valid_card_drop(card: CardData, global_pos: Vector2) -> bool:
 	return _is_position_outside_hand(global_pos)
 
 func _is_position_near_enemy(global_pos: Vector2) -> bool:
-	if enemy_portrait_wrap == null or not is_instance_valid(enemy_portrait_wrap):
-		return false
-	var rect: Rect2 = Rect2(enemy_portrait_wrap.global_position, enemy_portrait_wrap.size)
-	return rect.grow(CARD_DRAG_TARGET_PADDING).has_point(global_pos)
+	for pw: Control in _enemy_portrait_widgets:
+		if pw == null or not is_instance_valid(pw):
+			continue
+		if int((battle.state.get("enemy_group", []) as Array)[_enemy_portrait_widgets.find(pw) if _enemy_portrait_widgets.has(pw) else 0]["hp"]) <= 0:
+			continue
+		var rect: Rect2 = Rect2(pw.global_position, pw.size)
+		if rect.grow(CARD_DRAG_TARGET_PADDING).has_point(global_pos):
+			return true
+	if _enemy_portrait_widgets.is_empty():
+		if enemy_portrait_wrap == null or not is_instance_valid(enemy_portrait_wrap):
+			return false
+		var rect: Rect2 = Rect2(enemy_portrait_wrap.global_position, enemy_portrait_wrap.size)
+		return rect.grow(CARD_DRAG_TARGET_PADDING).has_point(global_pos)
+	return false
 
 func _is_position_outside_hand(global_pos: Vector2) -> bool:
 	if hand_row == null or not is_instance_valid(hand_row):

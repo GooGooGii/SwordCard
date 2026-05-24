@@ -22,10 +22,20 @@ func resolve_enemy_action(action: Dictionary, state: Dictionary) -> Array[String
 
 func tick_statuses(state: Dictionary) -> Array[String]:
 	var log_lines: Array[String] = []
-	if int(state["enemy_poison"]) > 0:
-		state["enemy_hp"] = max(0, int(state["enemy_hp"]) - int(state["enemy_poison"]))
-		log_lines.append("中毒造成 %d 點傷害。" % int(state["enemy_poison"]))
-		state["enemy_poison"] = max(0, int(state["enemy_poison"]) - 1)
+	var group: Array = state.get("enemy_group", []) as Array
+	if not group.is_empty():
+		for eg_v: Variant in group:
+			var eg: Dictionary = eg_v as Dictionary
+			if int(eg["hp"]) <= 0 or int(eg["poison"]) <= 0:
+				continue
+			eg["hp"] = max(0, int(eg["hp"]) - int(eg["poison"]))
+			log_lines.append("%s 中毒造成 %d 點傷害。" % [String(eg["name"]), int(eg["poison"])])
+			eg["poison"] = max(0, int(eg["poison"]) - 1)
+	else:
+		if int(state["enemy_poison"]) > 0:
+			state["enemy_hp"] = max(0, int(state["enemy_hp"]) - int(state["enemy_poison"]))
+			log_lines.append("中毒造成 %d 點傷害。" % int(state["enemy_poison"]))
+			state["enemy_poison"] = max(0, int(state["enemy_poison"]) - 1)
 	if int(state["player_poison"]) > 0:
 		state["player_hp"] = max(0, int(state["player_hp"]) - int(state["player_poison"]))
 		log_lines.append("你受到 %d 點蠱毒傷害。" % int(state["player_poison"]))
@@ -55,6 +65,31 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				state["enemy_block"] = int(state["enemy_block"]) - blocked
 				state["enemy_hp"] = max(0, int(state["enemy_hp"]) - (modified - blocked))
 				log_lines.append("造成 %d 點傷害。" % (modified - blocked))
+		"damage_all":
+			var base: int = max(0, amount + int(state["player_power"]) - int(state["player_weak"])) + int(state.get("damage_out_bonus", 0))
+			var group: Array = state.get("enemy_group", []) as Array
+			var hit_count: int = 0
+			for eg_v: Variant in group:
+				var eg: Dictionary = eg_v as Dictionary
+				if int(eg["hp"]) <= 0:
+					continue
+				var dmg: int = base
+				if int(eg["vulnerable"]) > 0:
+					dmg = int(ceil(dmg * 1.5))
+				var blocked: int = min(int(eg["block"]), dmg)
+				eg["block"] = int(eg["block"]) - blocked
+				eg["hp"] = max(0, int(eg["hp"]) - (dmg - blocked))
+				log_lines.append("%s 受到 %d 點傷害。" % [String(eg["name"]), dmg - blocked])
+				hit_count += 1
+			if hit_count == 0:
+				# fallback: single enemy aliases
+				var modified: int = base
+				if int(state["enemy_vulnerable"]) > 0:
+					modified = int(ceil(modified * 1.5))
+				var blocked: int = min(int(state["enemy_block"]), modified)
+				state["enemy_block"] = int(state["enemy_block"]) - blocked
+				state["enemy_hp"] = max(0, int(state["enemy_hp"]) - (modified - blocked))
+				log_lines.append("造成 %d 點傷害（全體）。" % (modified - blocked))
 		"block":
 			if from_enemy:
 				state["enemy_block"] = int(state["enemy_block"]) + amount
@@ -75,6 +110,21 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				var poison_amount: int = amount + int(state.get("poison_bonus", 0))
 				state["enemy_poison"] = int(state["enemy_poison"]) + poison_amount
 				log_lines.append("施加 %d 層蠱毒。" % poison_amount)
+		"poison_all":
+			var pa: int = amount + int(state.get("poison_bonus", 0))
+			var group: Array = state.get("enemy_group", []) as Array
+			var hit_count: int = 0
+			for eg_v: Variant in group:
+				var eg: Dictionary = eg_v as Dictionary
+				if int(eg["hp"]) <= 0:
+					continue
+				eg["poison"] = int(eg["poison"]) + pa
+				hit_count += 1
+			if hit_count > 0:
+				log_lines.append("對所有敵人施加 %d 層蠱毒。" % pa)
+			else:
+				state["enemy_poison"] = int(state["enemy_poison"]) + pa
+				log_lines.append("施加 %d 層蠱毒。" % pa)
 		"weak":
 			if from_enemy:
 				state["player_weak"] = int(state["player_weak"]) + amount
@@ -82,10 +132,38 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			else:
 				state["enemy_weak"] = int(state["enemy_weak"]) + amount
 				log_lines.append("敵人受到 %d 層虛弱。" % amount)
+		"weak_all":
+			var group: Array = state.get("enemy_group", []) as Array
+			var hit_count: int = 0
+			for eg_v: Variant in group:
+				var eg: Dictionary = eg_v as Dictionary
+				if int(eg["hp"]) <= 0:
+					continue
+				eg["weak"] = int(eg["weak"]) + amount
+				hit_count += 1
+			if hit_count > 0:
+				log_lines.append("對所有敵人施加 %d 層虛弱。" % amount)
+			else:
+				state["enemy_weak"] = int(state["enemy_weak"]) + amount
+				log_lines.append("敵人受到 %d 層虛弱。" % amount)
 		"vulnerable":
 			if from_enemy:
 				state["player_vulnerable"] = int(state["player_vulnerable"]) + amount
 				log_lines.append("你受到 %d 層破綻。" % amount)
+			else:
+				state["enemy_vulnerable"] = int(state["enemy_vulnerable"]) + amount
+				log_lines.append("敵人受到 %d 層破綻。" % amount)
+		"vulnerable_all":
+			var group: Array = state.get("enemy_group", []) as Array
+			var hit_count: int = 0
+			for eg_v: Variant in group:
+				var eg: Dictionary = eg_v as Dictionary
+				if int(eg["hp"]) <= 0:
+					continue
+				eg["vulnerable"] = int(eg["vulnerable"]) + amount
+				hit_count += 1
+			if hit_count > 0:
+				log_lines.append("對所有敵人施加 %d 層破綻。" % amount)
 			else:
 				state["enemy_vulnerable"] = int(state["enemy_vulnerable"]) + amount
 				log_lines.append("敵人受到 %d 層破綻。" % amount)
