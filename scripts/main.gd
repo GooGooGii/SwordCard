@@ -2713,8 +2713,13 @@ func resolve_rest_heal() -> void:
 func show_event_node() -> void:
 	_set_background("res://assets/art/event_bg.png")
 	_clear_root()
+	var layout: VBoxContainer = VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 6)
+	root.add_child(layout)
+	layout.add_child(_event_status_strip())
 	var panel: PanelContainer = UIFactory.make_panel()
-	root.add_child(panel)
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	layout.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_theme_constant_override("separation", 16)
@@ -2722,7 +2727,6 @@ func show_event_node() -> void:
 	var event_data: Dictionary = EventData.for_variant(run_state.current_event_variant)
 	box.add_child(_title(String(event_data["title"]), 32))
 	box.add_child(UIFactory.paragraph(String(event_data["flavor"])))
-	box.add_child(_event_status_strip())
 	var heal_amount: int = int(event_data["heal"])
 	var gain_cost: int = int(event_data["gain_cost"])
 	var power_gain: int = int(event_data["power"])
