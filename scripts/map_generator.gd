@@ -1,7 +1,9 @@
 class_name MapGenerator
 extends RefCounted
 
-const EVENT_VARIANTS: Array[String] = ["shrine", "spring", "talisman_cache", "treasure_chest", "ancestor_relic", "wandering_sage", "moonlit_pool", "broken_temple", "yokai_pact", "forgotten_altar", "ancient_battlefield", "alchemy_furnace", "ghost_forest", "immortal_ruins", "spirit_clan_ruins", "baiyue_altar", "tavern_acquaintance", "sword_tomb", "miao_healer", "shilipo_sword_god", "drunk_swordsman", "yinlong_cave", "yangzhou_officer", "xianling_shrine", "lingmiao"]
+const EVENT_VARIANTS: Array[String] = ["shrine", "spring", "talisman_cache", "treasure_chest", "ancestor_relic", "wandering_sage", "moonlit_pool", "broken_temple", "yokai_pact", "forgotten_altar", "ancient_battlefield", "alchemy_furnace", "ghost_forest", "immortal_ruins", "spirit_clan_ruins", "baiyue_altar", "tavern_acquaintance", "sword_tomb", "miao_healer", "shilipo_sword_god", "drunk_swordsman", "yinlong_cave", "yangzhou_officer", "xianling_shrine", "lingmiao", "flower_thief"]
+const FEMALE_ONLY_VARIANTS: Array[String] = ["flower_thief"]
+const FEMALE_CHARACTER_IDS: Array[String] = ["zhao_linger", "lin_yueru", "anu"]
 const BLACK_SHOP_CHANCE: float = 0.25
 const MIN_NORMAL_ROW_COUNT: int = 9
 const MAX_NORMAL_ROW_COUNT: int = 11
@@ -10,7 +12,22 @@ const MAX_ROW_OPTIONS: int = 6
 const SECONDARY_SPECIAL_TYPES: Array[String] = ["event", "rest", "shop"]
 const EXTRA_SPECIAL_TYPES: Array[String] = ["battle", "event", "rest", "shop"]
 
-static func generate(normal_enemies: Array[EnemyData], bosses: Array[EnemyData]) -> Array[Array]:
+static func _has_female_character(character_ids: Array[String]) -> bool:
+	for id: String in character_ids:
+		if FEMALE_CHARACTER_IDS.has(id):
+			return true
+	return false
+
+static func _build_event_pool(has_female: bool) -> Array[String]:
+	var pool: Array[String] = []
+	for v: String in EVENT_VARIANTS:
+		if has_female or not FEMALE_ONLY_VARIANTS.has(v):
+			pool.append(v)
+	return pool
+
+static func generate(normal_enemies: Array[EnemyData], bosses: Array[EnemyData], character_ids: Array[String] = []) -> Array[Array]:
+	var has_female: bool = _has_female_character(character_ids)
+	var event_pool: Array[String] = _build_event_pool(has_female)
 	var choices: Array[Array] = []
 	var normal_row_count: int = randi_range(MIN_NORMAL_ROW_COUNT, MAX_NORMAL_ROW_COUNT)
 	for row_index: int in range(normal_row_count):
@@ -19,7 +36,7 @@ static func generate(normal_enemies: Array[EnemyData], bosses: Array[EnemyData])
 		var node_types: Array[String] = _build_row_types(row_index, normal_row_count, row_size)
 		for node_index: int in range(row_size):
 			var node_type: String = String(node_types[node_index])
-			row.append(_make_map_node(node_type, node_index, normal_enemies))
+			row.append(_make_map_node(node_type, node_index, normal_enemies, event_pool))
 		choices.append(row)
 	if not bosses.is_empty():
 		var chosen_boss: EnemyData = bosses[randi() % bosses.size()]
@@ -67,7 +84,7 @@ static func _build_row_types(row_index: int, total_rows: int, row_size: int) -> 
 	node_types.shuffle()
 	return node_types
 
-static func _make_map_node(node_type: String, node_index: int, normal_enemies: Array[EnemyData]) -> Dictionary:
+static func _make_map_node(node_type: String, node_index: int, normal_enemies: Array[EnemyData], event_pool: Array[String] = EVENT_VARIANTS) -> Dictionary:
 	var node_data: Dictionary = {
 		"type": node_type,
 		"index": node_index,
@@ -78,7 +95,7 @@ static func _make_map_node(node_type: String, node_index: int, normal_enemies: A
 		pool.shuffle()
 		node_data["enemy"] = pool[0].clone()
 	elif node_type == "event":
-		node_data["event_variant"] = EVENT_VARIANTS[randi_range(0, EVENT_VARIANTS.size() - 1)]
+		node_data["event_variant"] = event_pool[randi_range(0, event_pool.size() - 1)]
 	elif node_type == "shop":
 		node_data["black_market"] = randf() < BLACK_SHOP_CHANCE
 	return node_data

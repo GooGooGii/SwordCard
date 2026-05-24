@@ -1288,7 +1288,10 @@ func _make_encounter_choices() -> Array[Array]:
 	var act_enemies: Array[EnemyData] = GameData.enemies_for_act(run_state.act)
 	var act_boss: Array[EnemyData] = []
 	act_boss.append(GameData.boss_for_act(run_state.act))
-	return MapGenerator.generate(act_enemies, act_boss)
+	var char_ids: Array[String] = []
+	for c: CharacterData in run_state.characters:
+		char_ids.append(c.id)
+	return MapGenerator.generate(act_enemies, act_boss, char_ids)
 
 func show_progress_screen() -> void:
 	SaveManager.save(run_state)
