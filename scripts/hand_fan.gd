@@ -62,6 +62,12 @@ func set_selected_button(button: Button) -> void:
 	_selected_index = -1
 	if button != null:
 		_selected_index = _card_buttons.find(button)
+	# 清除所有非選中卡的 hover tween，避免兩張卡同時被抬起
+	for i: Variant in _hover_tweens.keys():
+		if int(i) != _selected_index:
+			_kill_hover_tween(int(i))
+	if _hovered_index >= 0 and _hovered_index != _selected_index:
+		_hovered_index = -1
 	_apply_layout(false, Vector2.ZERO)
 
 func clear_selected_button() -> void:
@@ -146,6 +152,10 @@ func _on_hover(index: int) -> void:
 		return
 	if index == _selected_index:
 		return
+	# 先把前一張 hover 的卡降回原位
+	if _hovered_index >= 0 and _hovered_index != index:
+		_kill_hover_tween(_hovered_index)
+		_apply_button_rest_state(_card_buttons[_hovered_index], _hovered_index)
 	_hovered_index = index
 	var button: Button = _card_buttons[index]
 	button.z_index = 1000
