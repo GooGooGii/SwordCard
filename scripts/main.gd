@@ -1743,8 +1743,8 @@ func _build_battle_scene() -> void:
 	_build_left_dock(bottom)
 	hand_row = HandFan.new()
 	hand_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hand_row.custom_minimum_size = Vector2(0, 180 if _battle_compact else 290)
-	hand_row.hand_base_lift = 80.0 if _battle_compact else 72.0
+	hand_row.custom_minimum_size = Vector2(0, 220 if _battle_compact else 290)
+	hand_row.hand_base_lift = -8.0 if _battle_compact else 72.0
 	bottom.add_child(hand_row)
 	_build_right_dock(bottom)
 
@@ -4050,7 +4050,9 @@ func _is_position_near_enemy(global_pos: Vector2) -> bool:
 func _is_position_outside_hand(global_pos: Vector2) -> bool:
 	if hand_row == null or not is_instance_valid(hand_row):
 		return false
-	return global_pos.y < hand_row.global_position.y
+	var card_h: float = 200.0 if _battle_compact else 238.0
+	var visual_card_top: float = hand_row.global_position.y + hand_row.size.y - card_h - hand_row.hand_base_lift
+	return global_pos.y < visual_card_top + card_h * 0.35
 
 func _update_drag_target_highlight(card: CardData, global_pos: Vector2) -> void:
 	# 簡單回饋：拖到有效位置時 enemy_portrait_wrap 微亮 / 拖到手牌外（self 卡）時 player 微亮
