@@ -22,6 +22,7 @@ var player_hp_bar: ProgressBar
 var player_hp_value: Label
 var player_status_line: Label
 var player_name_label: Label
+var player_level_label: Label
 var player_block_badge: BlockBadge
 var player_portrait_wrap: Control
 var player_portrait_image: TextureRect  # 戰鬥中切換 active 時動態換肖像
@@ -66,6 +67,7 @@ var _selected_hand_button: Button = null
 var _temporary_player_pose: String = ""
 var _pose_timer: SceneTreeTimer = null
 var _pending_revive_indices: Array[int] = []
+var _pending_levelups: Array[Dictionary] = []
 
 # 卡片 drag-to-play 狀態
 var _card_drag_button: Button = null
@@ -1813,6 +1815,9 @@ func _bench_portrait(index: int, player_data: Dictionary) -> Control:
 	else:
 		var ko_label: Label = UIFactory.card_label("倒下", 11, Color("c84a3a"), HORIZONTAL_ALIGNMENT_CENTER)
 		wrap.add_child(ko_label)
+	if index < run_state.character_levels.size():
+		var bench_lv_label: Label = UIFactory.card_label("Lv %d" % run_state.character_levels[index], 10, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+		wrap.add_child(bench_lv_label)
 	return wrap
 
 func _on_bench_pressed(index: int) -> void:
@@ -1874,6 +1879,9 @@ func _build_player_widget(parent: HBoxContainer) -> void:
 	col.add_child(_portrait_with_block_badge(selected_character.portrait_path, Vector2(220, 230), true, true))
 	player_name_label = UIFactory.card_label(selected_character.display_name, 18, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(player_name_label)
+	var active_lv: int = run_state.character_levels[run_state.active_character_index] if run_state.character_levels.size() > run_state.active_character_index else 1
+	player_level_label = UIFactory.card_label("Lv %d" % active_lv, 12, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	col.add_child(player_level_label)
 	player_hp_bar = UIFactory.hp_bar(ThemeColors.HP_FILL, ThemeColors.HP_BG_DARK)
 	col.add_child(player_hp_bar)
 	player_hp_value = UIFactory.card_label("", 13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
@@ -2304,6 +2312,7 @@ func _set_battle_input_enabled(enabled: bool) -> void:
 func _complete_battle_victory() -> void:
 	battle.complete_victory()
 	Bestiary.mark_defeated(battle.enemy.id)
+	_grant_battle_exp()
 	var gold_reward: int = _battle_gold_reward(battle.enemy)
 	# 聚寶盆：勝利額外金錢
 	for r: RelicData in run_state.relics:
@@ -2359,6 +2368,17 @@ func show_card_reward() -> void:
 	box.add_child(_title("戰鬥勝利", 34))
 	box.add_child(UIFactory.paragraph("%s 擊敗了 %s。選擇 1 張卡加入牌組。" % [selected_character.display_name, battle.enemy.display_name]))
 	box.add_child(UIFactory.paragraph("目前 HP %d/%d，銅錢 %d，牌組 %d 張。" % [run_state.hp, selected_character.max_hp, run_state.gold, run_state.deck.size()]))
+	for lu: Dictionary in _pending_levelups:
+		var lu_lbl: Label = UIFactory.card_label(
+			"✦ %s 升至 Lv %d！" % [String(lu.get("char_name", "")), int(lu.get("new_level", 1))],
+			16, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+		box.add_child(lu_lbl)
+		for uc_v: Variant in (lu.get("unlocked_cards", []) as Array):
+			var uc: CardData = uc_v as CardData
+			var uc_lbl: Label = UIFactory.card_label(
+				"  解鎖招式：%s（%s）" % [uc.display_name, uc.rarity],
+				13, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+			box.add_child(uc_lbl)
 	var rewards: Array[CardData] = _make_reward_choices()
 	var reward_row: HBoxContainer = HBoxContainer.new()
 	reward_row.add_theme_constant_override("separation", 12)
@@ -2381,6 +2401,13 @@ func _make_reward_choices() -> Array[CardData]:
 		if not used_ids.has(card.id):
 			used_ids.append(card.id)
 			pool.append(card.clone())
+	var active_idx: int = run_state.active_character_index
+	if active_idx < run_state.character_levels.size() and active_idx < run_state.characters.size():
+		var char_lv: int = run_state.character_levels[active_idx]
+		for unlocked: CardData in LevelSystem.all_unlocked_cards(run_state.characters[active_idx].id, char_lv):
+			if not used_ids.has(unlocked.id):
+				used_ids.append(unlocked.id)
+				pool.append(unlocked.clone())
 	pool.shuffle()
 	var count: int = 3
 	for r: RelicData in run_state.relics:
@@ -2398,6 +2425,30 @@ func _make_reward_choices() -> Array[CardData]:
 func choose_reward_card(card: CardData) -> void:
 	run_state.deck.append(card.clone())
 	show_progress_screen()
+
+func _grant_battle_exp() -> void:
+	_pending_levelups.clear()
+	var is_boss: bool = Ascension.is_boss_id(battle.enemy.id)
+	var floor_idx: int = run_state.encounter_index
+	var exp_gain: int = LevelSystem.battle_exp(is_boss, floor_idx)
+	for i: int in range(run_state.characters.size()):
+		if run_state.character_hps[i] <= 0:
+			continue
+		run_state.character_exps[i] += exp_gain
+		var old_lv: int = run_state.character_levels[i]
+		var new_lv: int = LevelSystem.level_from_exp(run_state.character_exps[i])
+		if new_lv <= old_lv:
+			continue
+		run_state.character_levels[i] = new_lv
+		var unlocked: Array[CardData] = []
+		for lv: int in range(old_lv + 1, new_lv + 1):
+			unlocked.append_array(LevelSystem.unlock_cards_for(run_state.characters[i].id, lv))
+		_pending_levelups.append({
+			"char_name": run_state.characters[i].display_name,
+			"old_level": old_lv,
+			"new_level": new_lv,
+			"unlocked_cards": unlocked,
+		})
 
 func _battle_gold_reward(enemy: EnemyData) -> int:
 	var is_boss: bool = Ascension.is_boss_id(enemy.id)
@@ -3838,6 +3889,9 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 	if battle.character != null:
 		if player_name_label != null:
 			player_name_label.text = battle.character.display_name
+		if player_level_label != null and is_instance_valid(player_level_label):
+			var _aidx: int = run_state.active_character_index
+			player_level_label.text = "Lv %d" % (run_state.character_levels[_aidx] if _aidx < run_state.character_levels.size() else 1)
 		if player_portrait_image != null and is_instance_valid(player_portrait_image):
 			var pose: String = _get_active_player_pose()
 			var path: String = _get_battle_portrait_path(battle.character, pose)
