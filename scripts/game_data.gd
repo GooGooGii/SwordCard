@@ -83,7 +83,16 @@ static func _zhao_linger() -> CharacterData:
 		make_card("zl_lingxi", "靈息術", "趙靈兒", 1, "skill", "抽 2 張牌並回復 4 點生命。", [{"kind": "draw", "amount": 2}, {"kind": "heal", "amount": 4}], "uncommon"),
 		make_card("zl_shenlei", "神雷降世", "趙靈兒", 3, "attack", "天降神雷，造成 30 點傷害。", [{"kind": "damage", "amount": 30}], "rare")
 	]
-	return _character("zhao_linger", "趙靈兒", 68, "五靈仙術、治療、護盾與夢蛇爆發。", cards)
+	var character: CharacterData = _character("zhao_linger", "趙靈兒", 68, "五靈仙術、治療、護盾與夢蛇爆發。", cards)
+	character.starting_deck = [
+		cards[3], cards[3], cards[3],   # 3x 雷咒 10
+		cards[2], cards[2],              # 2x 玄冰咒 6+虛弱
+		cards[12], cards[12],            # 2x 雷光連擊 7+虛弱
+		cards[7], cards[7],              # 2x 靈光護體 12
+		cards[0], cards[0],              # 2x 觀音咒 治療
+		cards[4],                        # 1x 夢蛇 強化
+	]
+	return character
 
 static func _lin_yueru() -> CharacterData:
 	var cards: Array[CardData] = [
