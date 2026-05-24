@@ -202,6 +202,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif keycode == KEY_F1:
 			_toggle_debug_menu()
 			get_viewport().set_input_as_handled()
+	# 點空白處取消手牌選取
+	if _selected_hand_card != null:
+		var is_tap_release: bool = false
+		if event is InputEventScreenTouch:
+			is_tap_release = not (event as InputEventScreenTouch).pressed
+		elif event is InputEventMouseButton:
+			var mb := event as InputEventMouseButton
+			is_tap_release = not mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT
+		if is_tap_release:
+			_clear_selected_hand_card()
+			get_viewport().set_input_as_handled()
 	if _handle_map_pointer_input(event):
 		get_viewport().set_input_as_handled()
 
@@ -4026,10 +4037,10 @@ func _on_card_button_up(card: CardData, button: Button) -> void:
 			_clear_drag_target_highlight()
 			play_card(c, b)
 		else:
+			# 不清除選取狀態，讓最後滑到的卡保持高亮
 			_mobile_swipe_selected_card = null
 			_mobile_swipe_selected_button = null
 			_mobile_swipe_should_play = false
-			_clear_selected_hand_card()
 		return
 	if _card_drag_button == button and _card_drag_active:
 		_evaluate_card_drop(card, button)

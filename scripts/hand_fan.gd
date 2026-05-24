@@ -85,8 +85,7 @@ func set_selected_button(button: Button) -> void:
 			_apply_button_rest_state(btn, i)
 
 func clear_selected_button() -> void:
-	_selected_index = -1
-	_apply_layout(false, Vector2.ZERO)
+	set_selected_button(null)
 
 # 強制重新套用 layout（drag-to-play 沒打成功時用來 snap back）
 func relayout() -> void:
