@@ -139,4 +139,15 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 		"cure_poison":
 			state["player_poison"] = 0
 			log_lines.append("蠱毒已全數清除。")
+		"steal":
+			if from_enemy:
+				pass
+			else:
+				var loot_table: Array = state.get("enemy_loot_table", []) as Array
+				if loot_table.is_empty():
+					log_lines.append("（對方身上空無一物。）")
+				else:
+					var item: Dictionary = (loot_table[randi() % loot_table.size()] as Dictionary).duplicate()
+					state["steal_result"] = item
+					log_lines.append("偷到了%s！" % String(item.get("display_name", "某物")))
 	return log_lines

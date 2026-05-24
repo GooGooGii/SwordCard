@@ -49,7 +49,7 @@ static func _li_xiaoyao() -> CharacterData:
 	var cards: Array[CardData] = [
 		make_card("lxy_yujian", "御劍術", "李逍遙", 1, "attack", "造成 7 點傷害。", [{"kind": "damage", "amount": 7}]),
 		make_card("lxy_wanjian", "萬劍訣", "李逍遙", 2, "attack", "連續劍氣，造成 5 點傷害三次。", [{"kind": "damage", "amount": 5}, {"kind": "damage", "amount": 5}, {"kind": "damage", "amount": 5}]),
-		make_card("lxy_feilong", "飛龍探雲手", "李逍遙", 1, "skill", "造成 4 點傷害，抽 1 張牌並回復 1 點靈力。", [{"kind": "damage", "amount": 4}, {"kind": "draw", "amount": 1}, {"kind": "energy", "amount": 1}]),
+		make_card("lxy_feilong", "飛龍探雲手", "李逍遙", 1, "skill", "造成 4 點傷害，抽 1 張牌，回復 1 點靈力，並從敵人身上偷取一件物品。", [{"kind": "damage", "amount": 4}, {"kind": "draw", "amount": 1}, {"kind": "energy", "amount": 1}, {"kind": "steal"}]),
 		make_card("lxy_tianshi", "天師符法", "李逍遙", 1, "attack", "造成 9 點法術傷害。", [{"kind": "damage", "amount": 9}]),
 		make_card("lxy_jiushen", "酒神咒", "李逍遙", 3, "attack", "造成 28 點傷害，自身承受 8 點反噬。", [{"kind": "damage", "amount": 28}, {"kind": "self_damage", "amount": 8}], "rare"),
 		make_card("lxy_xianfeng", "仙風雲體", "李逍遙", 1, "skill", "獲得 8 點護體，抽 1 張牌。", [{"kind": "block", "amount": 8}, {"kind": "draw", "amount": 1}], "uncommon"),
@@ -167,6 +167,102 @@ static func _passives_for(id: String) -> Array[Dictionary]:
 				"amount": 5,
 				"label": "敵人每場戰鬥開場受到 5 層蠱毒"
 			}]
+	return []
+
+static func loot_table_for(enemy_id: String) -> Array[Dictionary]:
+	match enemy_id:
+		"bandit":
+			return [
+				{"type": "gold",   "amount": 40,          "display_name": "40 銅錢"},
+				{"type": "potion", "potion_id": "huichun_dan",  "display_name": "回春丹"},
+				{"type": "potion", "potion_id": "jinchuang_yao","display_name": "金瘡藥"},
+			]
+		"beast":
+			return [
+				{"type": "potion", "potion_id": "hugu_jiu",    "display_name": "虎骨酒"},
+				{"type": "potion", "potion_id": "huichun_dan", "display_name": "回春丹"},
+			]
+		"gu_cultist":
+			return [
+				{"type": "potion", "potion_id": "jiedu_san",  "display_name": "解毒散"},
+				{"type": "potion", "potion_id": "lingshe_dan","display_name": "靈蛇膽"},
+			]
+		"sword_spirit":
+			return [
+				{"type": "potion", "potion_id": "lingli_dan", "display_name": "靈力丹"},
+				{"type": "potion", "potion_id": "huti_fu",    "display_name": "護體符"},
+			]
+		"fox_spirit":
+			return [
+				{"type": "potion", "potion_id": "yuehun_cao", "display_name": "月魂草"},
+				{"type": "potion", "potion_id": "lingli_dan", "display_name": "靈力丹"},
+			]
+		"serpent_demon":
+			return [
+				{"type": "potion", "potion_id": "lingshe_dan","display_name": "靈蛇膽"},
+				{"type": "potion", "potion_id": "jiedu_san",  "display_name": "解毒散"},
+			]
+		"zombie_soldier":
+			return [
+				{"type": "potion", "potion_id": "huti_fu",    "display_name": "護體符"},
+				{"type": "gold",   "amount": 20,              "display_name": "20 銅錢"},
+			]
+		"toxic_centipede":
+			return [
+				{"type": "potion", "potion_id": "jiedu_san",  "display_name": "解毒散"},
+				{"type": "potion", "potion_id": "hugu_jiu",   "display_name": "虎骨酒"},
+			]
+		"tower_demon":
+			return [
+				{"type": "potion", "potion_id": "huti_fu",    "display_name": "護體符"},
+				{"type": "gold",   "amount": 25,              "display_name": "25 銅錢"},
+			]
+		"tower_ghost_soldier":
+			return [
+				{"type": "potion", "potion_id": "lingli_dan", "display_name": "靈力丹"},
+				{"type": "potion", "potion_id": "huti_fu",    "display_name": "護體符"},
+			]
+		"baiyue_guard":
+			return [
+				{"type": "potion", "potion_id": "jinchuang_yao","display_name": "金瘡藥"},
+				{"type": "potion", "potion_id": "lingshe_dan",  "display_name": "靈蛇膽"},
+			]
+		"ancient_evil_spirit":
+			return [
+				{"type": "potion", "potion_id": "xianren_xue",  "display_name": "仙人遺血"},
+				{"type": "potion", "potion_id": "tianling_dan",  "display_name": "天靈丹"},
+			]
+		# Bosses — 稀有掉落
+		"moon_worshipper":
+			return [
+				{"type": "potion", "potion_id": "yuehun_cao",   "display_name": "月魂草"},
+				{"type": "potion", "potion_id": "tianling_dan",  "display_name": "天靈丹"},
+			]
+		"centipede_lord":
+			return [
+				{"type": "potion", "potion_id": "jiedu_san",    "display_name": "解毒散"},
+				{"type": "potion", "potion_id": "xianren_xue",  "display_name": "仙人遺血"},
+			]
+		"witch_queen":
+			return [
+				{"type": "potion", "potion_id": "lingshe_dan",  "display_name": "靈蛇膽"},
+				{"type": "potion", "potion_id": "tianling_dan",  "display_name": "天靈丹"},
+			]
+		"red_eye_demon":
+			return [
+				{"type": "potion", "potion_id": "tianling_dan",  "display_name": "天靈丹"},
+				{"type": "potion", "potion_id": "hugu_jiu",      "display_name": "虎骨酒"},
+			]
+		"zombie_general":
+			return [
+				{"type": "potion", "potion_id": "jinchuang_yao","display_name": "金瘡藥"},
+				{"type": "potion", "potion_id": "huti_fu",      "display_name": "護體符"},
+			]
+		"baiyue_lord":
+			return [
+				{"type": "potion", "potion_id": "xianren_xue",  "display_name": "仙人遺血"},
+				{"type": "potion", "potion_id": "yuehun_cao",   "display_name": "月魂草"},
+			]
 	return []
 
 static func _bandit() -> EnemyData:

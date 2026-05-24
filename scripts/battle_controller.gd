@@ -88,7 +88,9 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: EnemyDa
 		"heal_bonus": 0,
 		"poison_bonus": 0,
 		"draw_next_turn_bonus": 0,
-		"card_played_counts": {}
+		"card_played_counts": {},
+		"enemy_loot_table": GameData.loot_table_for(enemy.id),
+		"steal_result": {}
 	}
 	# 若 active 死了（舊存檔載入後可能發生），自動跳到第一個活的
 	if not _is_active_alive():
@@ -308,6 +310,10 @@ func play_card(card: CardData) -> Dictionary:
 	add_log("施放 %s。" % card.display_title())
 	var before_card: Dictionary = snapshot_state()
 	add_logs(resolver.resolve_card(card, state))
+	var steal: Dictionary = state.get("steal_result", {}) as Dictionary
+	if not steal.is_empty():
+		state["steal_result"] = {}
+		_apply_stolen_item(steal)
 	_check_phase_transition()
 	_apply_card_play_passive(card)
 	_fire_relic_triggers("card_played", {
@@ -492,6 +498,25 @@ func _apply_trigger_effects(effects: Array, relic_name: String) -> void:
 				if bonus_dmg > 0:
 					state["enemy_hp"] = max(0, int(state["enemy_hp"]) - bonus_dmg)
 					add_log("【%s】蠱毒共鳴造成 %d 傷害。" % [relic_name, bonus_dmg])
+
+func _apply_stolen_item(item: Dictionary) -> void:
+	var item_type: String = String(item.get("type", ""))
+	match item_type:
+		"gold":
+			var amount: int = int(item.get("amount", 0))
+			run_state.gold += amount
+			add_log("【飛龍探雲手】獲得 %s。" % item.get("display_name", "銅錢"))
+		"potion":
+			if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
+				var potion_id: String = String(item.get("potion_id", ""))
+				var potion: Dictionary = PotionCatalog.by_id(potion_id)
+				if not potion.is_empty():
+					run_state.potions.append(potion)
+					add_log("【飛龍探雲手】獲得 %s（已存入藥格）。" % item.get("display_name", "藥品"))
+				else:
+					add_log("【飛龍探雲手】偷取失敗（藥品資料遺失）。")
+			else:
+				add_log("【飛龍探雲手】藥格已滿，%s 無法攜帶。" % item.get("display_name", "藥品"))
 
 func _apply_card_play_passive(card: CardData) -> void:
 	if character == null:
