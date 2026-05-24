@@ -2,12 +2,12 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://df0pu3jbth23a"
+uid="uid://dx5he7kfbsvel"
 valid=false
 
 [deps]
 
-source_file="res://assets/art/enemies/bandit.png"
+source_file="res://assets/art/relics/xuanshuang_bian.png"
 
 [params]
 

@@ -184,6 +184,8 @@ func _on_unhover(index: int) -> void:
 		return
 	if index == _selected_index:
 		return
+	if _is_mouse_really_over(index):
+		return
 	if _hovered_index == index:
 		_hovered_index = -1
 	var button: Button = _card_buttons[index]
@@ -195,6 +197,40 @@ func _on_unhover(index: int) -> void:
 	tween.tween_property(button, "scale", Vector2.ONE, ANIM_DURATION)
 	tween.tween_property(button, "position", _base_positions[index], ANIM_DURATION)
 	_hover_tweens[index] = tween
+
+func _is_mouse_really_over(index: int) -> bool:
+	if index < 0 or index >= _card_buttons.size():
+		return false
+	var btn: Button = _card_buttons[index]
+	if btn == null or not is_instance_valid(btn):
+		return false
+	
+	var hand_mouse: Vector2 = get_local_mouse_position()
+	var rect: Rect2 = Rect2(Vector2.ZERO, btn.size)
+	
+	# 1. Check current physical position of the button
+	var local_mouse: Vector2 = btn.get_local_mouse_position()
+	if rect.has_point(local_mouse):
+		return true
+		
+	# 2. Check base position of the button (without the hover lift offset)
+	var base_pos: Vector2 = _base_positions[index]
+	var base_rot: float = _base_rotations[index]
+	var pivot: Vector2 = Vector2(btn.size.x / 2.0, btn.size.y + ARC_RADIUS)
+	var base_local_mouse: Vector2 = (hand_mouse - base_pos - pivot).rotated(-base_rot) + pivot
+	if rect.has_point(base_local_mouse):
+		return true
+		
+	return false
+
+func _process(_delta: float) -> void:
+	if _hovered_index >= 0:
+		var btn: Button = _card_buttons[_hovered_index]
+		if is_instance_valid(btn):
+			if btn.is_pressed() or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+				return
+			if not _is_mouse_really_over(_hovered_index):
+				_on_unhover(_hovered_index)
 
 func _apply_button_rest_state(button: Button, index: int) -> void:
 	if index == _selected_index:
