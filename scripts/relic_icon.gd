@@ -66,6 +66,20 @@ func _show_info_popup() -> void:
 func _draw() -> void:
 	if relic == null:
 		return
+	
+	var art_path: String = "res://assets/art/relics/%s.png" % relic.id
+	var texture: Texture2D = UIFactory.load_texture(art_path)
+	if texture != null:
+		var rect_size: Vector2 = size
+		# Draw the custom relic art
+		draw_texture_rect(texture, Rect2(Vector2.ZERO, rect_size), false)
+		# Draw a subtle rarity border
+		var border: Color = _rarity_border()
+		var c: Vector2 = size / 2.0
+		var r: float = min(size.x, size.y) * 0.48
+		draw_arc(c, r, 0, TAU, 32, border, 1.5, true)
+		return
+
 	var s: float = min(size.x, size.y)
 	var c: Vector2 = size / 2.0
 	var r: float = s * 0.42
