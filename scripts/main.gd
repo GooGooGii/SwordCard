@@ -206,13 +206,16 @@ func _handle_map_pointer_input(event: InputEvent) -> bool:
 		_map_drag_candidate = false
 		_map_dragging = false
 		return false
-	var scroll_rect: Rect2 = active_map_scroll.get_global_rect()
+	# Use the full viewport rect instead of get_global_rect() which can report an
+	# incorrect (too-narrow) rect on Android before layout stabilises, causing the
+	# left half of the map to be unresponsive.
+	var viewport_rect: Rect2 = Rect2(Vector2.ZERO, get_viewport_rect().size)
 	if event is InputEventMouseButton:
 		var mouse_button: InputEventMouseButton = event as InputEventMouseButton
 		if mouse_button.button_index != MOUSE_BUTTON_LEFT:
 			return false
 		if mouse_button.pressed:
-			if not scroll_rect.has_point(mouse_button.position):
+			if not viewport_rect.has_point(mouse_button.position):
 				return false
 			_map_drag_candidate = true
 			_map_dragging = false
@@ -236,8 +239,6 @@ func _handle_map_pointer_input(event: InputEvent) -> bool:
 	if event is InputEventScreenTouch:
 		var touch: InputEventScreenTouch = event as InputEventScreenTouch
 		if touch.pressed:
-			if not scroll_rect.has_point(touch.position):
-				return false
 			_map_drag_candidate = true
 			_map_dragging = false
 			_map_drag_start_pointer = touch.position
