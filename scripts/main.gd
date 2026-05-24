@@ -2668,7 +2668,8 @@ func show_event_node() -> void:
 	panel.add_child(box)
 	var event_data: Dictionary = EventData.for_variant(run_state.current_event_variant)
 	box.add_child(_title(String(event_data["title"]), 32))
-	box.add_child(UIFactory.paragraph(String(event_data["flavor"])))
+	var _active_char_id: String = run_state.characters[run_state.active_character_index].id if run_state.characters.size() > run_state.active_character_index else ""
+	box.add_child(UIFactory.paragraph(EventData.flavor_for(event_data, _active_char_id)))
 	box.add_child(_event_status_strip())
 	var heal_amount: int = int(event_data["heal"])
 	var gain_cost: int = int(event_data["gain_cost"])
