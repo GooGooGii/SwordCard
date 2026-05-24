@@ -2798,22 +2798,31 @@ func _event_status_strip() -> PanelContainer:
 	bar.max_value = run_state.max_hp
 	bar.value = run_state.hp
 	hbox.add_child(bar)
+	# HBoxContainer 內的 Label 必須關掉 autowrap，否則每個字都換行
 	var hp_lbl: Label = UIFactory.card_label(
 		"HP %d / %d" % [run_state.hp, run_state.max_hp],
 		13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_LEFT)
+	hp_lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
 	hbox.add_child(hp_lbl)
-	# dot separator
-	hbox.add_child(UIFactory.card_label("·", 13, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-	# gold
-	hbox.add_child(UIFactory.card_label("銅錢 %d" % run_state.gold, 13, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_LEFT))
-	# dot separator
-	hbox.add_child(UIFactory.card_label("·", 13, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-	# deck count
-	hbox.add_child(UIFactory.card_label("牌組 %d" % run_state.deck.size(), 13, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_LEFT))
-	# power bonus – only show when non-zero
+	var dot1: Label = UIFactory.card_label("·", 13, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	dot1.autowrap_mode = TextServer.AUTOWRAP_OFF
+	hbox.add_child(dot1)
+	var gold_lbl: Label = UIFactory.card_label("銅錢 %d" % run_state.gold, 13, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_LEFT)
+	gold_lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
+	hbox.add_child(gold_lbl)
+	var dot2: Label = UIFactory.card_label("·", 13, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	dot2.autowrap_mode = TextServer.AUTOWRAP_OFF
+	hbox.add_child(dot2)
+	var deck_lbl: Label = UIFactory.card_label("牌組 %d" % run_state.deck.size(), 13, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_LEFT)
+	deck_lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
+	hbox.add_child(deck_lbl)
 	if run_state.power_bonus > 0:
-		hbox.add_child(UIFactory.card_label("·", 13, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-		hbox.add_child(UIFactory.card_label("增傷 +%d" % run_state.power_bonus, 13, Color("88c8ff"), HORIZONTAL_ALIGNMENT_LEFT))
+		var dot3: Label = UIFactory.card_label("·", 13, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+		dot3.autowrap_mode = TextServer.AUTOWRAP_OFF
+		hbox.add_child(dot3)
+		var pow_lbl: Label = UIFactory.card_label("增傷 +%d" % run_state.power_bonus, 13, Color("88c8ff"), HORIZONTAL_ALIGNMENT_LEFT)
+		pow_lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
+		hbox.add_child(pow_lbl)
 	return container
 
 func _event_choice_button(title: String, subtitle: String, disabled: bool, on_press: Callable) -> Button:
