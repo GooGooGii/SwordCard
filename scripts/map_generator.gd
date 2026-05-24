@@ -1,9 +1,11 @@
 class_name MapGenerator
 extends RefCounted
 
-const EVENT_VARIANTS: Array[String] = ["shrine", "spring", "talisman_cache", "treasure_chest", "ancestor_relic", "wandering_sage", "moonlit_pool", "broken_temple", "yokai_pact", "forgotten_altar", "ancient_battlefield", "alchemy_furnace", "ghost_forest", "immortal_ruins", "spirit_clan_ruins", "baiyue_altar", "tavern_acquaintance", "sword_tomb", "miao_healer", "shilipo_sword_god", "drunk_swordsman", "yinlong_cave", "yangzhou_officer", "xianling_shrine", "lingmiao", "flower_thief"]
+const EVENT_VARIANTS: Array[String] = ["shrine", "spring", "talisman_cache", "treasure_chest", "ancestor_relic", "wandering_sage", "moonlit_pool", "broken_temple", "yokai_pact", "forgotten_altar", "ancient_battlefield", "alchemy_furnace", "ghost_forest", "immortal_ruins", "spirit_clan_ruins", "baiyue_altar", "tavern_acquaintance", "sword_tomb", "miao_healer", "shilipo_sword_god", "drunk_swordsman", "yinlong_cave", "yangzhou_officer", "xianling_shrine", "lingmiao", "flower_thief", "flower_spirit"]
 const FEMALE_ONLY_VARIANTS: Array[String] = ["flower_thief"]
+const MALE_ONLY_VARIANTS: Array[String] = ["flower_spirit"]
 const FEMALE_CHARACTER_IDS: Array[String] = ["zhao_linger", "lin_yueru", "anu"]
+const MALE_CHARACTER_IDS: Array[String] = ["li_xiaoyao"]
 const BLACK_SHOP_CHANCE: float = 0.25
 const MIN_NORMAL_ROW_COUNT: int = 9
 const MAX_NORMAL_ROW_COUNT: int = 11
@@ -18,16 +20,26 @@ static func _has_female_character(character_ids: Array[String]) -> bool:
 			return true
 	return false
 
-static func _build_event_pool(has_female: bool) -> Array[String]:
+static func _has_male_character(character_ids: Array[String]) -> bool:
+	for id: String in character_ids:
+		if MALE_CHARACTER_IDS.has(id):
+			return true
+	return false
+
+static func _build_event_pool(has_female: bool, has_male: bool) -> Array[String]:
 	var pool: Array[String] = []
 	for v: String in EVENT_VARIANTS:
-		if has_female or not FEMALE_ONLY_VARIANTS.has(v):
-			pool.append(v)
+		if FEMALE_ONLY_VARIANTS.has(v) and not has_female:
+			continue
+		if MALE_ONLY_VARIANTS.has(v) and not has_male:
+			continue
+		pool.append(v)
 	return pool
 
 static func generate(normal_enemies: Array[EnemyData], bosses: Array[EnemyData], character_ids: Array[String] = []) -> Array[Array]:
 	var has_female: bool = _has_female_character(character_ids)
-	var event_pool: Array[String] = _build_event_pool(has_female)
+	var has_male: bool = _has_male_character(character_ids)
+	var event_pool: Array[String] = _build_event_pool(has_female, has_male)
 	var choices: Array[Array] = []
 	var normal_row_count: int = randi_range(MIN_NORMAL_ROW_COUNT, MAX_NORMAL_ROW_COUNT)
 	for row_index: int in range(normal_row_count):
