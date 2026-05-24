@@ -78,6 +78,13 @@ var _card_drag_active: bool = false
 const CARD_DRAG_THRESHOLD: float = 14.0
 const CARD_DRAG_TARGET_PADDING: float = 80.0  # 拖到敵人附近 N px 都算命中
 
+# Mobile swipe-to-play 狀態（水平滑動選卡，向上滑出手牌區出牌）
+var _mobile_swipe_active: bool = false
+var _mobile_swipe_should_play: bool = false
+var _mobile_swipe_selected_card: CardData = null
+var _mobile_swipe_selected_button: Button = null
+var _hand_buttons_map: Dictionary = {}  # Button → CardData，每次 _refresh_hand 重建
+
 var selected_ascension: int = 0
 var pending_seed: int = 0  # 0 = 隨機；非 0 = 下次 start_run 用此 seed 生地圖
 var selected_party_ids: Array[String] = []  # character_select 多選 buffer，1–3 人
@@ -3957,11 +3964,13 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 	energy_orb.set_energy(int(battle.state["energy"]), int(battle.state.get("per_turn_energy", BattleController.BASE_TURN_ENERGY)))
 	var buttons: Array[Button] = []
 	card_buttons.clear()
+	_hand_buttons_map.clear()
 	_selected_hand_button = null
 	for card: CardData in battle.deck.hand:
 		var button: Button = _card_button(card)
 		buttons.append(button)
 		card_buttons.append(button)
+		_hand_buttons_map[button] = card
 		if card == _selected_hand_card:
 			_selected_hand_button = button
 	var draw_source: Vector2 = Vector2(120.0, get_viewport_rect().size.y - 70.0)
@@ -3995,15 +4004,39 @@ func _on_card_button_down(card: CardData, button: Button) -> void:
 	_card_drag_start_global = button.get_global_mouse_position()
 	_card_drag_active = false
 	_start_card_long_press(card, button)
+	if OS.has_feature("mobile"):
+		_mobile_swipe_active = true
+		_mobile_swipe_should_play = false
+		_mobile_set_selected_card(card, button)
 
 func _on_card_button_up(card: CardData, button: Button) -> void:
+	_cancel_card_long_press()
+	if OS.has_feature("mobile"):
+		_mobile_swipe_active = false
+		_card_drag_button = null
+		_card_drag_card = null
+		_card_drag_active = false
+		if _mobile_swipe_should_play and _mobile_swipe_selected_card != null and is_instance_valid(_mobile_swipe_selected_button):
+			var c: CardData = _mobile_swipe_selected_card
+			var b: Button = _mobile_swipe_selected_button
+			_mobile_swipe_selected_card = null
+			_mobile_swipe_selected_button = null
+			_mobile_swipe_should_play = false
+			_suppress_next_card_play = true
+			_clear_drag_target_highlight()
+			play_card(c, b)
+		else:
+			_mobile_swipe_selected_card = null
+			_mobile_swipe_selected_button = null
+			_mobile_swipe_should_play = false
+			_clear_selected_hand_card()
+		return
 	if _card_drag_button == button and _card_drag_active:
 		_evaluate_card_drop(card, button)
 		_suppress_next_card_play = true
 	_card_drag_button = null
 	_card_drag_card = null
 	_card_drag_active = false
-	_cancel_card_long_press()
 
 func _on_card_button_gui_input(card: CardData, button: Button, event: InputEvent) -> void:
 	if _card_drag_button != button:
@@ -4013,6 +4046,28 @@ func _on_card_button_gui_input(card: CardData, button: Button, event: InputEvent
 	if not (event is InputEventMouseMotion or event is InputEventScreenDrag):
 		return
 	var current_global: Vector2 = button.get_global_mouse_position()
+
+	if OS.has_feature("mobile") and _mobile_swipe_active:
+		# 有任何移動就取消長按預覽
+		if current_global.distance_to(_card_drag_start_global) >= CARD_DRAG_THRESHOLD:
+			_cancel_card_long_press()
+		if _is_position_outside_hand(current_global):
+			# 手指移出手牌區 → 標記為出牌，等 button_up 觸發
+			if not _mobile_swipe_should_play:
+				_mobile_swipe_should_play = true
+				_update_drag_target_highlight(_mobile_swipe_selected_card if _mobile_swipe_selected_card != null else card, current_global)
+		else:
+			_mobile_swipe_should_play = false  # 手指縮回手牌區 → 取消出牌意圖
+			_clear_drag_target_highlight()
+			# 水平滑動：找最近的可打卡片並高亮
+			var nearest: Button = _find_nearest_card_at_x(current_global.x)
+			if nearest != null and nearest != _mobile_swipe_selected_button:
+				var nc: CardData = _hand_buttons_map.get(nearest, null) as CardData
+				if nc != null:
+					_mobile_set_selected_card(nc, nearest)
+		return
+
+	# Desktop drag-to-play
 	if not _card_drag_active:
 		if current_global.distance_to(_card_drag_start_global) >= CARD_DRAG_THRESHOLD:
 			_card_drag_active = true
@@ -4053,6 +4108,28 @@ func _is_position_outside_hand(global_pos: Vector2) -> bool:
 	var card_h: float = 200.0 if _battle_compact else 238.0
 	var visual_card_top: float = hand_row.global_position.y + hand_row.size.y - card_h - hand_row.hand_base_lift
 	return global_pos.y < visual_card_top + card_h * 0.35
+
+func _mobile_set_selected_card(card: CardData, button: Button) -> void:
+	_mobile_swipe_selected_card = card
+	_mobile_swipe_selected_button = button
+	_selected_hand_card = card
+	_selected_hand_button = button
+	if hand_row != null:
+		hand_row.set_selected_button(button)
+
+func _find_nearest_card_at_x(global_x: float) -> Button:
+	var best: Button = null
+	var best_dist: float = INF
+	for btn_v: Variant in _hand_buttons_map.keys():
+		var b: Button = btn_v as Button
+		if b == null or not is_instance_valid(b) or b.disabled:
+			continue
+		var center_x: float = b.global_position.x + b.size.x * 0.5
+		var dist: float = abs(center_x - global_x)
+		if dist < best_dist:
+			best_dist = dist
+			best = b
+	return best
 
 func _update_drag_target_highlight(card: CardData, global_pos: Vector2) -> void:
 	# 簡單回饋：拖到有效位置時 enemy_portrait_wrap 微亮 / 拖到手牌外（self 卡）時 player 微亮
