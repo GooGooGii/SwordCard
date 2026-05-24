@@ -2969,10 +2969,17 @@ func show_shop_node() -> void:
 	_clear_root()
 	var panel: PanelContainer = UIFactory.make_panel()
 	root.add_child(panel)
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	panel.add_child(scroll)
 	var box: VBoxContainer = VBoxContainer.new()
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_theme_constant_override("separation", 14)
-	panel.add_child(box)
+	scroll.add_child(box)
 	var title_text: String = "夜路黑店" if run_state.current_shop_is_black else "山道商店"
 	var flavor_text: String = "簾後藏著來路不明的珍品，價格狠，成色也狠。" if run_state.current_shop_is_black else "行商在山道旁支起小攤，貨色普通但價格公道。"
 	box.add_child(_title(title_text, 34))
@@ -3044,7 +3051,7 @@ func _pick_shop_relic_id() -> String:
 func _shop_relic_view(relic: RelicData) -> Control:
 	var price: int = _shop_relic_price(relic)
 	var panel: PanelContainer = UIFactory.make_panel()
-	panel.custom_minimum_size = Vector2(230, 338)
+	panel.custom_minimum_size = Vector2(210, 305)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -3202,14 +3209,14 @@ func _shop_item_view(item: Dictionary) -> Control:
 				if String(e.get("kind", "")) == "shop_discount":
 					price = max(5, price - int(e.get("amount", 0)))
 	var panel: PanelContainer = UIFactory.make_panel()
-	panel.custom_minimum_size = Vector2(230, 338)
+	panel.custom_minimum_size = Vector2(210, 305)
 	var box: VBoxContainer = VBoxContainer.new()
-	box.add_theme_constant_override("separation", 8)
+	box.add_theme_constant_override("separation", 6)
 	panel.add_child(box)
 	if item.get("on_sale", false):
 		box.add_child(UIFactory.card_label("★ 特賣！五折優惠", 12, Color("ff5555"), HORIZONTAL_ALIGNMENT_CENTER))
 	var can_buy: bool = run_state.gold >= price
-	var card_button: Button = _make_card_button(card, card.cost, Vector2(210, 270), can_buy, true)
+	var card_button: Button = _make_card_button(card, card.cost, Vector2(190, 240), can_buy, true)
 	card_button.disabled = not can_buy
 	card_button.pressed.connect(func(): buy_shop_card(card, price))
 	box.add_child(card_button)
