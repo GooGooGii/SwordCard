@@ -111,6 +111,8 @@ func _initialize() -> void:
 	_test_potion_use_heal(characters[0], enemies[0])
 	_test_potion_cure_poison(characters[0], enemies[0])
 	_test_potion_old_save_compat(characters)
+	_test_level_system(characters)
+	_test_level_unlock_cards()
 	print("SwordCard smoke test passed.")
 	quit(0)
 
@@ -1097,3 +1099,66 @@ func _test_potion_old_save_compat(characters: Array[CharacterData]) -> void:
 	var rs: RunState = RunState.new()
 	assert(rs.from_dict(old_save, characters), "old save without potions field should load successfully")
 	assert(rs.potions.is_empty(), "old save should produce empty potions array, got %d" % rs.potions.size())
+
+func _test_level_system(characters: Array[CharacterData]) -> void:
+	# EXP 公式
+	assert(LevelSystem.exp_to_next_level(1) == 15, "L1→L2 should need 15 EXP")
+	assert(LevelSystem.exp_to_next_level(5) == 75, "L5→L6 should need 75 EXP")
+	assert(LevelSystem.exp_to_next_level(50) == 0, "MAX_LEVEL should need 0 EXP")
+	# 等級計算
+	assert(LevelSystem.level_from_exp(0) == 1, "0 EXP = Lv1")
+	assert(LevelSystem.level_from_exp(14) == 1, "14 EXP = Lv1")
+	assert(LevelSystem.level_from_exp(15) == 2, "15 EXP = Lv2")
+	assert(LevelSystem.level_from_exp(15 + 30 - 1) == 2, "44 EXP = Lv2")
+	assert(LevelSystem.level_from_exp(15 + 30) == 3, "45 EXP = Lv3")
+	assert(LevelSystem.level_from_exp(15 + 30 + 45) == 4, "90 EXP = Lv4")
+	# 戰鬥 EXP
+	assert(LevelSystem.battle_exp(false, 0) == 30, "floor 0 normal = 30 EXP")
+	assert(LevelSystem.battle_exp(false, 5) == 55, "floor 5 normal = 55 EXP")
+	assert(LevelSystem.battle_exp(true, 0) == 150, "boss = 150 EXP")
+	# RunState 整合：init 後有 level/exp 陣列
+	var rs: RunState = RunState.new()
+	rs.init_for(characters[0])
+	assert(rs.character_levels.size() == 1, "single char should have 1 level entry")
+	assert(rs.character_levels[0] == 1, "initial level should be 1")
+	assert(rs.character_exps[0] == 0, "initial exp should be 0")
+	# 3 人隊伍
+	var party: Array[CharacterData] = [characters[0], characters[1], characters[2]]
+	rs.init_for(party)
+	assert(rs.character_levels.size() == 3, "3-person party needs 3 level entries")
+	# to_dict / from_dict round-trip
+	rs.character_levels[0] = 5
+	rs.character_exps[0] = 250
+	var d: Dictionary = rs.to_dict()
+	var rs2: RunState = RunState.new()
+	rs2.from_dict(d, characters)
+	assert(rs2.character_levels[0] == 5, "level should survive round-trip; got %d" % rs2.character_levels[0])
+	assert(rs2.character_exps[0] == 250, "exp should survive round-trip; got %d" % rs2.character_exps[0])
+	# 舊存檔（無 character_levels 欄位）→ 預設 Lv 1
+	var old_d: Dictionary = d.duplicate()
+	old_d.erase("character_levels")
+	old_d.erase("character_exps")
+	var rs3: RunState = RunState.new()
+	rs3.from_dict(old_d, characters)
+	assert(rs3.character_levels[0] == 1, "old save without levels should default to Lv1")
+
+func _test_level_unlock_cards() -> void:
+	# 每個角色在 Lv 3, 6, 10, 15, 20 各有至少 1 張解鎖卡
+	var unlock_levels: Array[int] = [3, 6, 10, 15, 20]
+	for char_id: String in ["li_xiaoyao", "zhao_linger", "lin_yueru", "anu"]:
+		for lv: int in unlock_levels:
+			var cards: Array[CardData] = LevelSystem.unlock_cards_for(char_id, lv)
+			assert(cards.size() >= 1, "%s should unlock >= 1 card at Lv %d" % [char_id, lv])
+			for card: CardData in cards:
+				assert(not card.id.is_empty(), "unlock card id empty for %s at Lv %d" % [char_id, lv])
+				assert(not card.display_name.is_empty(), "unlock card name empty for %s at Lv %d" % [char_id, lv])
+				assert(card.effects.size() > 0, "unlock card has no effects for %s at Lv %d" % [char_id, lv])
+	# all_unlocked_cards 應依 max_level 累積
+	var lxy_lv10: Array[CardData] = LevelSystem.all_unlocked_cards("li_xiaoyao", 10)
+	assert(lxy_lv10.size() == 3, "li_xiaoyao should have 3 unlocks by Lv10 (Lv3,6,10); got %d" % lxy_lv10.size())
+	var lxy_lv20: Array[CardData] = LevelSystem.all_unlocked_cards("li_xiaoyao", 20)
+	assert(lxy_lv20.size() == 5, "li_xiaoyao should have 5 unlocks by Lv20; got %d" % lxy_lv20.size())
+	var lxy_lv2: Array[CardData] = LevelSystem.all_unlocked_cards("li_xiaoyao", 2)
+	assert(lxy_lv2.size() == 0, "li_xiaoyao should have 0 unlocks at Lv2; got %d" % lxy_lv2.size())
+	# 不存在的角色應回傳空陣列
+	assert(LevelSystem.all_unlocked_cards("unknown_char", 50).is_empty(), "unknown char should return empty")

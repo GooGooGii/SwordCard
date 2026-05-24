@@ -10,6 +10,8 @@ var character_max_hps: Array[int] = []
 var character_power_bonus: Array[int] = []
 var character_decks: Array = []  # Array of Array[CardData] — GDScript 不易宣告巢狀 typed
 var active_character_index: int = 0
+var character_levels: Array[int] = []   # 每人等級（初始 1，上限 50）
+var character_exps: Array[int] = []     # 每人累積經驗值
 
 # 全隊共用的 run 狀態
 var act: int = 1
@@ -100,11 +102,15 @@ func init_for(chars: Variant) -> void:
 	character_power_bonus.clear()
 	character_decks.clear()
 	active_character_index = 0
+	character_levels.clear()
+	character_exps.clear()
 	for c: CharacterData in party:
 		characters.append(c)
 		character_hps.append(c.max_hp)
 		character_max_hps.append(c.max_hp)
 		character_power_bonus.append(0)
+		character_levels.append(1)
+		character_exps.append(0)
 		var deck_copy: Array[CardData] = []
 		for card: CardData in c.starting_deck:
 			deck_copy.append(card.clone())
@@ -220,6 +226,8 @@ func to_dict() -> Dictionary:
 		"character_power_bonus": character_power_bonus.duplicate(),
 		"character_decks": character_decks_data,
 		"active_character_index": active_character_index,
+		"character_levels": character_levels.duplicate(),
+		"character_exps": character_exps.duplicate(),
 		"gold": gold,
 		"encounter_index": encounter_index,
 		"encounter_choices": _serialize_choices(),
@@ -281,6 +289,16 @@ func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> 
 		var empty_deck: Array[CardData] = []
 		character_decks.append(empty_deck)
 	active_character_index = clamp(int(data.get("active_character_index", 0)), 0, max(0, characters.size() - 1))
+	character_levels.clear()
+	for lv_v: Variant in (data.get("character_levels", []) as Array):
+		character_levels.append(int(lv_v))
+	while character_levels.size() < characters.size():
+		character_levels.append(1)
+	character_exps.clear()
+	for exp_v: Variant in (data.get("character_exps", []) as Array):
+		character_exps.append(int(exp_v))
+	while character_exps.size() < characters.size():
+		character_exps.append(0)
 	gold = int(data.get("gold", 0))
 	encounter_index = int(data.get("encounter_index", 0))
 	encounter_choices = _deserialize_choices(data.get("encounter_choices", []) as Array)
