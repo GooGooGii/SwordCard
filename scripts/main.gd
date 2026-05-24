@@ -455,6 +455,16 @@ func _set_background(path: String) -> void:
 	if texture != null:
 		background_rect.texture = texture
 
+func _set_event_background(event_variant: String = "") -> void:
+	var variant: String = event_variant
+	if variant.is_empty() and run_state != null:
+		variant = String(run_state.current_event_variant)
+	var specific_path: String = "res://assets/art/events/%s.png" % variant
+	if not variant.is_empty() and ResourceLoader.exists(specific_path):
+		_set_background(specific_path)
+		return
+	_set_background("res://assets/art/event_bg.png")
+
 func show_main_menu() -> void:
 	selected_party_ids.clear()  # 進主選單清掉 character_select 的暫存隊伍
 	_set_background("res://assets/art/login_background.jpg")
@@ -2670,7 +2680,7 @@ func resolve_rest_heal() -> void:
 	advance_non_battle_node()
 
 func show_event_node() -> void:
-	_set_background("res://assets/art/event_bg.png")
+	_set_event_background()
 	_clear_root()
 	var panel: PanelContainer = UIFactory.make_panel()
 	root.add_child(panel)
@@ -2962,7 +2972,7 @@ func resolve_event_gain_card(hp_cost: int = 6) -> void:
 		show_event_card_reward(hp_cost)
 
 func show_event_card_reward(hp_cost_paid: int) -> void:
-	_set_background("res://assets/art/event_bg.png")
+	_set_event_background()
 	_clear_root()
 	var panel: PanelContainer = UIFactory.make_panel()
 	root.add_child(panel)
