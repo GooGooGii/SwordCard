@@ -165,9 +165,9 @@ func _on_hover(index: int) -> void:
 		return
 	if index == _selected_index:
 		return
-	# 先把前一張 hover 的卡動畫降回原位
+	# 先把前一張 hover 的卡動畫降回原位（強制，繞過 base position 重疊檢查）
 	if _hovered_index >= 0 and _hovered_index != index:
-		_on_unhover(_hovered_index)
+		_force_unhover(_hovered_index)
 	_hovered_index = index
 	var button: Button = _card_buttons[index]
 	button.z_index = 1000
@@ -185,6 +185,13 @@ func _on_unhover(index: int) -> void:
 	if index == _selected_index:
 		return
 	if _is_mouse_really_over(index):
+		return
+	_force_unhover(index)
+
+func _force_unhover(index: int) -> void:
+	if index < 0 or index >= _card_buttons.size():
+		return
+	if index == _selected_index:
 		return
 	if _hovered_index == index:
 		_hovered_index = -1

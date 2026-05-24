@@ -1767,6 +1767,7 @@ func _build_battle_scene() -> void:
 	_build_player_widget(arena)
 	var spacer: Control = Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	arena.add_child(spacer)
 	_build_enemy_widget(arena)
 	var bottom: HBoxContainer = HBoxContainer.new()
@@ -1902,7 +1903,7 @@ func _animate_portrait_switch() -> void:
 
 func _build_player_widget(parent: HBoxContainer) -> void:
 	var col: VBoxContainer = VBoxContainer.new()
-	col.custom_minimum_size = Vector2(160 if _battle_compact else 250, 0)
+	col.custom_minimum_size = Vector2(210 if _battle_compact else 280, 0)
 	col.size_flags_horizontal = 0
 	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.alignment = BoxContainer.ALIGNMENT_END
@@ -1912,7 +1913,7 @@ func _build_player_widget(parent: HBoxContainer) -> void:
 	if _battle_compact:
 		player_feedback_label.custom_minimum_size = Vector2(0, 0)
 	col.add_child(player_feedback_label)
-	var portrait_size: Vector2 = Vector2(120, 130) if _battle_compact else Vector2(220, 230)
+	var portrait_size: Vector2 = Vector2(190, 220) if _battle_compact else Vector2(260, 290)
 	col.add_child(_portrait_with_block_badge(selected_character.portrait_path, portrait_size, true, true))
 	player_name_label = UIFactory.card_label(selected_character.display_name, 14 if _battle_compact else 18, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(player_name_label)
@@ -1920,17 +1921,15 @@ func _build_player_widget(parent: HBoxContainer) -> void:
 	player_level_label = UIFactory.card_label("Lv %d" % active_lv, 12, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(player_level_label)
 	player_hp_bar = UIFactory.hp_bar(ThemeColors.HP_FILL, ThemeColors.HP_BG_DARK)
-	player_hp_bar.custom_minimum_size = Vector2(0, 12 if _battle_compact else 18)
-	col.add_child(player_hp_bar)
 	player_hp_value = UIFactory.card_label("", 11 if _battle_compact else 13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
-	col.add_child(player_hp_value)
+	col.add_child(_hp_bar_with_overlay(player_hp_bar, player_hp_value))
 	player_status_line = UIFactory.card_label("", 11 if _battle_compact else 13, Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
 	player_status_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(player_status_line)
 
 func _build_enemy_widget(parent: HBoxContainer) -> void:
 	var col: VBoxContainer = VBoxContainer.new()
-	col.custom_minimum_size = Vector2(170 if _battle_compact else 260, 0)
+	col.custom_minimum_size = Vector2(210 if _battle_compact else 280, 0)
 	col.size_flags_horizontal = 0
 	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.alignment = BoxContainer.ALIGNMENT_END
@@ -1946,15 +1945,13 @@ func _build_enemy_widget(parent: HBoxContainer) -> void:
 	if _battle_compact:
 		enemy_feedback_label.custom_minimum_size = Vector2(0, 0)
 	col.add_child(enemy_feedback_label)
-	var portrait_size: Vector2 = Vector2(120, 130) if _battle_compact else Vector2(230, 230)
+	var portrait_size: Vector2 = Vector2(190, 220) if _battle_compact else Vector2(260, 290)
 	col.add_child(_portrait_with_block_badge(battle.enemy.portrait_path, portrait_size, true, false, battle.enemy.portrait_tint))
 	enemy_name_label = UIFactory.card_label(battle.enemy.display_name, 14 if _battle_compact else 18, Color("ffd9a3"), HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(enemy_name_label)
 	enemy_hp_bar = UIFactory.hp_bar(ThemeColors.HP_FILL, ThemeColors.HP_BG_DARK)
-	enemy_hp_bar.custom_minimum_size = Vector2(0, 12 if _battle_compact else 18)
-	col.add_child(enemy_hp_bar)
 	enemy_hp_value = UIFactory.card_label("", 11 if _battle_compact else 13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
-	col.add_child(enemy_hp_value)
+	col.add_child(_hp_bar_with_overlay(enemy_hp_bar, enemy_hp_value))
 	enemy_status_line = UIFactory.card_label("", 11 if _battle_compact else 13, Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
 	enemy_status_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(enemy_status_line)
@@ -2155,6 +2152,27 @@ func _discard_potion_prompt(slot: int) -> void:
 	var cancel_btn: Button = _button("取消")
 	cancel_btn.pressed.connect(func() -> void: popup.queue_free())
 	btn_row.add_child(cancel_btn)
+
+func _hp_bar_with_overlay(bar: ProgressBar, value_label: Label) -> Control:
+	var bar_height: int = 18 if _battle_compact else 22
+	var wrap: Control = Control.new()
+	wrap.custom_minimum_size = Vector2(0, bar_height)
+	wrap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bar.custom_minimum_size = Vector2(0, bar_height)
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrap.add_child(bar)
+	value_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	value_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	value_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
+	value_label.add_theme_constant_override("shadow_offset_x", 1)
+	value_label.add_theme_constant_override("shadow_offset_y", 1)
+	value_label.add_theme_constant_override("shadow_outline_size", 2)
+	wrap.add_child(value_label)
+	return wrap
 
 func _portrait_with_block_badge(path: String, portrait_size: Vector2, show_full: bool, is_player: bool, tint: Color = Color.WHITE) -> Control:
 	var wrap: Control = Control.new()
@@ -4283,10 +4301,10 @@ func _card_frame_texture_path(card_type: String) -> String:
 
 func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: bool, selectable: bool) -> Button:
 	var is_small: bool = size.y < 220.0
-	var title_font_size: int = 11 if is_small else 13
-	var cost_font_size: int = 12 if is_small else 14
-	var type_font_size: int = 9 if is_small else 11
-	var desc_font_size: int = 10 if is_small else 12
+	var title_font_size: int = 13 if is_small else 16
+	var cost_font_size: int = 14 if is_small else 16
+	var type_font_size: int = 11 if is_small else 13
+	var desc_font_size: int = 12 if is_small else 15
 	
 	var rules_margin_left: int = 6 if is_small else 10
 	var rules_margin_right: int = 6 if is_small else 10
