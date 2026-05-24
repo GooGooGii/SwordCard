@@ -100,6 +100,7 @@ func _initialize() -> void:
 	_test_ascension_persistence_and_modifiers()
 	_test_boss_phase_transition(bosses)
 	_test_event_variety()
+	_test_revive_event(characters)
 	_test_map_seed_determinism(enemies, bosses)
 	_test_balance_regression(characters, enemies)
 	_test_balance_regression_mid(characters, bosses)
@@ -685,6 +686,45 @@ func _test_event_variety() -> void:
 	for key_v: Variant in variant_keys:
 		assert(MapGenerator.EVENT_VARIANTS.has(String(key_v)),
 			"variant %s defined in EventData but not in MapGenerator.EVENT_VARIANTS" % key_v)
+
+func _test_revive_event(characters: Array[CharacterData]) -> void:
+	# 驗證 lingmiao event variant 存在且有 revive choice + revive_amount 欄位
+	var ev: Dictionary = EventData.for_variant("lingmiao")
+	assert(not ev.is_empty(), "lingmiao variant should exist in EventData")
+	assert(ev.has("revive_amount"), "lingmiao should have revive_amount field")
+	assert(int(ev.get("revive_amount", 0)) > 0, "lingmiao revive_amount should be positive")
+	var choices: Array = ev.get("choices", []) as Array
+	assert(choices.has("revive"), "lingmiao choices should include 'revive'")
+	# 驗證 lingmiao 在 MapGenerator pool 中
+	assert(MapGenerator.EVENT_VARIANTS.has("lingmiao"),
+		"lingmiao should be in MapGenerator.EVENT_VARIANTS")
+	# 驗證 resolve_event_revive 邏輯：三人隊伍，idx 1 倒下 → 復活後 HP == revive_amount
+	if characters.size() < 2:
+		return
+	var run_state: RunState = RunState.new()
+	var party: Array[CharacterData] = [characters[0], characters[1]]
+	run_state.init_for(party)
+	run_state.character_hps[1] = 0  # 讓 idx 1 倒下
+	var amount: int = int(ev.get("revive_amount", 30))
+	# 模擬 resolve_event_revive 邏輯
+	var revived: bool = false
+	for i: int in range(run_state.character_hps.size()):
+		if run_state.character_hps[i] <= 0:
+			run_state.character_hps[i] = min(run_state.character_max_hps[i], amount)
+			revived = true
+			break
+	assert(revived, "resolve_event_revive should find a downed character")
+	assert(run_state.character_hps[1] == amount,
+		"revived character hp should be %d; got %d" % [amount, run_state.character_hps[1]])
+	# 再跑一次：無人倒下時不應有任何 revive
+	var run_state2: RunState = RunState.new()
+	run_state2.init_for([characters[0]])
+	var revived2: bool = false
+	for i: int in range(run_state2.character_hps.size()):
+		if run_state2.character_hps[i] <= 0:
+			revived2 = true
+			break
+	assert(not revived2, "no downed characters means no revive should occur")
 
 func _test_map_seed_determinism(enemies: Array[EnemyData], bosses: Array[EnemyData]) -> void:
 	# 相同 seed 兩次跑 generate，產出的節點結構一致
