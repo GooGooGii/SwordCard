@@ -58,7 +58,7 @@ static func boss_for_act(act: int) -> EnemyData:
 static func _li_xiaoyao() -> CharacterData:
 	var cards: Array[CardData] = [
 		make_card("lxy_yujian", "御劍術", "李逍遙", 1, "attack", "造成 7 點傷害。", [{"kind": "damage", "amount": 7}]),
-		make_card("lxy_wanjian", "萬劍訣", "李逍遙", 2, "attack", "連續劍氣，造成 5 點傷害三次。", [{"kind": "damage", "amount": 5}, {"kind": "damage", "amount": 5}, {"kind": "damage", "amount": 5}]),
+		make_card("lxy_wanjian", "萬劍訣", "李逍遙", 2, "attack", "萬劍齊發，對所有敵人各造成 4 點傷害兩次。", [{"kind": "damage_all", "amount": 4}, {"kind": "damage_all", "amount": 4}]),
 		make_card("lxy_feilong", "飛龍探雲手", "李逍遙", 1, "skill", "造成 4 點傷害，抽 1 張牌並回復 1 點靈力。", [{"kind": "damage", "amount": 4}, {"kind": "draw", "amount": 1}, {"kind": "energy", "amount": 1}]),
 		make_card("lxy_tianshi", "天師符法", "李逍遙", 1, "attack", "造成 9 點法術傷害。", [{"kind": "damage", "amount": 9}]),
 		make_card("lxy_jiushen", "酒神咒", "李逍遙", 3, "attack", "造成 28 點傷害，自身承受 8 點反噬。", [{"kind": "damage", "amount": 28}, {"kind": "self_damage", "amount": 8}], "rare"),
@@ -93,7 +93,7 @@ static func _zhao_linger() -> CharacterData:
 		make_card("zl_shuiling", "水靈護罩", "趙靈兒", 2, "skill", "回復 8 點生命並獲得 10 點護體。", [{"kind": "heal", "amount": 8}, {"kind": "block", "amount": 10}], "uncommon"),
 		make_card("zl_leiguang", "雷光連擊", "趙靈兒", 1, "attack", "造成 7 點傷害，使敵人虛弱 1 層。", [{"kind": "damage", "amount": 7}, {"kind": "weak", "amount": 1}]),
 		make_card("zl_lingxi", "靈息術", "趙靈兒", 1, "skill", "抽 2 張牌並回復 4 點生命。", [{"kind": "draw", "amount": 2}, {"kind": "heal", "amount": 4}], "uncommon"),
-		make_card("zl_shenlei", "神雷降世", "趙靈兒", 3, "attack", "天降神雷，造成 30 點傷害。", [{"kind": "damage", "amount": 30}], "rare"),
+		make_card("zl_shenlei", "神雷降世", "趙靈兒", 3, "attack", "天雷降臨人間，對所有敵人各造成 12 點傷害。", [{"kind": "damage_all", "amount": 12}], "rare"),
 		make_card("zl_leizhen", "天雷陣", "趙靈兒", 2, "attack", "布下雷陣，對所有敵人各造成 7 點傷害。", [{"kind": "damage_all", "amount": 7}], "uncommon"),
 		make_card("zl_xuanbingfeng", "玄冰封", "趙靈兒", 2, "skill", "冰封四方，對所有敵人施加 3 層虛弱。", [{"kind": "weak_all", "amount": 3}], "uncommon"),
 	]
@@ -114,7 +114,7 @@ static func _lin_yueru() -> CharacterData:
 		make_card("lyr_xuanjian", "旋劍花舞", "林月如", 1, "attack", "造成 5 點傷害兩次。", [{"kind": "damage", "amount": 5}, {"kind": "damage", "amount": 5}]),
 		make_card("lyr_kuaijian", "輕劍急刺", "林月如", 0, "attack", "造成 6 點傷害。", [{"kind": "damage", "amount": 6}], "uncommon"),
 		make_card("lyr_poqian", "破千謀", "林月如", 2, "attack", "造成 20 點傷害，抽 1 張牌。", [{"kind": "damage", "amount": 20}, {"kind": "draw", "amount": 1}], "uncommon"),
-		make_card("lyr_tianv", "天女散花", "林月如", 1, "attack", "造成 4 點傷害，施加 1 層破綻，抽 1 張牌。", [{"kind": "damage", "amount": 4}, {"kind": "vulnerable", "amount": 1}, {"kind": "draw", "amount": 1}], "uncommon"),
+		make_card("lyr_tianv", "天女散花", "林月如", 1, "attack", "向四面八方散射，對所有敵人各造成 3 點傷害並施加 1 層破綻。", [{"kind": "damage_all", "amount": 3}, {"kind": "vulnerable_all", "amount": 1}], "uncommon"),
 		make_card("lyr_tieyi", "鐵衣功", "林月如", 2, "skill", "獲得 18 點護體。", [{"kind": "block", "amount": 18}], "rare"),
 		make_card("lyr_xuanfengzhan", "旋風連斬", "林月如", 2, "attack", "旋轉劍斬，對所有敵人各造成 5 點傷害。", [{"kind": "damage_all", "amount": 5}], "uncommon"),
 		make_card("lyr_pojian", "破陣劍勢", "林月如", 1, "skill", "破開架勢，對所有敵人施加 1 層破綻。", [{"kind": "vulnerable_all", "amount": 1}], "uncommon"),
@@ -124,8 +124,8 @@ static func _lin_yueru() -> CharacterData:
 static func _anu() -> CharacterData:
 	var cards: Array[CardData] = [
 		make_card("anu_yufeng", "御蜂術", "阿奴", 1, "attack", "造成 3 點傷害四次。", [{"kind": "damage", "amount": 3}, {"kind": "damage", "amount": 3}, {"kind": "damage", "amount": 3}, {"kind": "damage", "amount": 3}]),
-		make_card("anu_wanyi", "萬蟻蝕象", "阿奴", 1, "skill", "施加 6 層蠱毒。", [{"kind": "poison", "amount": 6}]),
-		make_card("anu_mihun", "迷魂術", "阿奴", 1, "skill", "使敵人虛弱 3 層。", [{"kind": "weak", "amount": 3}]),
+		make_card("anu_wanyi", "萬蟻蝕象", "阿奴", 1, "skill", "萬蟻蔓延，對所有敵人各施加 4 層蠱毒。", [{"kind": "poison_all", "amount": 4}]),
+		make_card("anu_mihun", "迷魂術", "阿奴", 1, "skill", "幻覺漫場，使所有敵人各虛弱 2 層。", [{"kind": "weak_all", "amount": 2}]),
 		make_card("anu_baozhagu", "爆炸蠱", "阿奴", 2, "attack", "引爆全部蠱毒，每層造成 3 點傷害。", [{"kind": "poison_burst", "amount": 3}], "uncommon"),
 		make_card("anu_lingxue", "靈血咒", "阿奴", 0, "skill", "自身承受 4 點反噬，抽 2 張牌並回復 1 點靈力。", [{"kind": "self_damage", "amount": 4}, {"kind": "draw", "amount": 2}, {"kind": "energy", "amount": 1}], "rare"),
 		make_card("anu_jiedu", "解毒咒", "阿奴", 1, "skill", "回復 7 點生命並獲得 5 點護體。", [{"kind": "heal", "amount": 7}, {"kind": "block", "amount": 5}]),
