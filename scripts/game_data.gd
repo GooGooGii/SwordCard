@@ -132,7 +132,7 @@ static func _character(id: String, display_name: String, max_hp: int, style: Str
 	character.max_hp = max_hp
 	character.battle_style = style
 	character.portrait_path = "res://assets/art/portraits/%s.png" % id
-	character.starting_deck = [cards[0], cards[0], cards[1], cards[2], cards[3], cards[4], cards[7], cards[7]]
+	character.starting_deck = [cards[0], cards[0], cards[0], cards[0], cards[1], cards[2], cards[3], cards[4], cards[7], cards[7], cards[7], cards[7]]
 	character.reward_pool = cards.slice(5)
 	character.passives = _passives_for(id)
 	return character
