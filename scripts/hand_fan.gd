@@ -3,7 +3,7 @@ extends Control
 
 const ARC_RADIUS: float = 1600.0
 const MAX_TOTAL_ANGLE_DEG: float = 28.0
-const ANGLE_PER_CARD_DEG: float = 5.5
+const ANGLE_PER_CARD_DEG: float = 4.0
 const HOVER_LIFT: float = 56.0
 var hand_base_lift: float = 72.0
 const HOVER_SCALE: float = 1.06
