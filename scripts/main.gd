@@ -965,6 +965,9 @@ func continue_saved_run() -> void:
 func show_character_select(preview_id: String = "") -> void:
 	_set_background("res://assets/art/main_menu_bg.png")
 	_clear_root()
+	# 初次進入（非點頭像切換）且隊伍空 → 預先選入第一個角色
+	if preview_id.is_empty() and selected_party_ids.is_empty() and not characters.is_empty():
+		selected_party_ids.append(characters[0].id)
 	# preview 預設順序：明確 preview_id > 目前隊伍隊長 > characters[0]
 	var preview_character: CharacterData = null
 	if not preview_id.is_empty():
