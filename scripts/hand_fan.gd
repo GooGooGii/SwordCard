@@ -59,16 +59,30 @@ func set_cards(buttons: Array[Button], animate: bool = false, animate_from: Vect
 	_apply_layout(false, Vector2.ZERO)
 
 func set_selected_button(button: Button) -> void:
+	var prev_selected: int = _selected_index
 	_selected_index = -1
 	if button != null:
 		_selected_index = _card_buttons.find(button)
-	# 清除所有非選中卡的 hover tween，避免兩張卡同時被抬起
-	for i: Variant in _hover_tweens.keys():
-		if int(i) != _selected_index:
-			_kill_hover_tween(int(i))
 	if _hovered_index >= 0 and _hovered_index != _selected_index:
 		_hovered_index = -1
-	_apply_layout(false, Vector2.ZERO)
+	for i: int in range(_card_buttons.size()):
+		var btn: Button = _card_buttons[i]
+		var card_size: Vector2 = btn.custom_minimum_size
+		btn.pivot_offset = Vector2(card_size.x / 2.0, card_size.y + ARC_RADIUS)
+		var is_selected: bool = (i == _selected_index)
+		btn.z_index = 1100 if is_selected else i
+		_kill_hover_tween(i)
+		if is_selected or i == prev_selected:
+			# 選中的卡動畫抬起，取消選中的卡動畫降回
+			var target_pos: Vector2 = _base_positions[i] + (Vector2(0, -HOVER_LIFT) if is_selected else Vector2.ZERO)
+			var target_scale: Vector2 = Vector2(HOVER_SCALE, HOVER_SCALE) if is_selected else Vector2.ONE
+			var tween: Tween = create_tween().set_parallel(true)
+			tween.tween_property(btn, "position", target_pos, ANIM_DURATION).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			tween.tween_property(btn, "scale", target_scale, ANIM_DURATION)
+			tween.tween_property(btn, "rotation", _base_rotations[i], ANIM_DURATION)
+			_hover_tweens[i] = tween
+		else:
+			_apply_button_rest_state(btn, i)
 
 func clear_selected_button() -> void:
 	_selected_index = -1
@@ -152,10 +166,9 @@ func _on_hover(index: int) -> void:
 		return
 	if index == _selected_index:
 		return
-	# 先把前一張 hover 的卡降回原位
+	# 先把前一張 hover 的卡動畫降回原位
 	if _hovered_index >= 0 and _hovered_index != index:
-		_kill_hover_tween(_hovered_index)
-		_apply_button_rest_state(_card_buttons[_hovered_index], _hovered_index)
+		_on_unhover(_hovered_index)
 	_hovered_index = index
 	var button: Button = _card_buttons[index]
 	button.z_index = 1000
