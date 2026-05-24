@@ -1904,9 +1904,8 @@ func _build_player_widget(parent: HBoxContainer) -> void:
 	col.add_child(player_feedback_label)
 	var portrait_size: Vector2 = Vector2(120, 130) if _battle_compact else Vector2(220, 230)
 	col.add_child(_portrait_with_block_badge(selected_character.portrait_path, portrait_size, true, true))
-	player_name_label = UIFactory.card_label(selected_character.display_name, 18, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
-	if not _battle_compact:
-		col.add_child(player_name_label)
+	player_name_label = UIFactory.card_label(selected_character.display_name, 14 if _battle_compact else 18, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
+	col.add_child(player_name_label)
 	var active_lv: int = run_state.character_levels[run_state.active_character_index] if run_state.character_levels.size() > run_state.active_character_index else 1
 	player_level_label = UIFactory.card_label("Lv %d" % active_lv, 12, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(player_level_label)
@@ -1939,9 +1938,8 @@ func _build_enemy_widget(parent: HBoxContainer) -> void:
 	col.add_child(enemy_feedback_label)
 	var portrait_size: Vector2 = Vector2(120, 130) if _battle_compact else Vector2(230, 230)
 	col.add_child(_portrait_with_block_badge(battle.enemy.portrait_path, portrait_size, true, false, battle.enemy.portrait_tint))
-	enemy_name_label = UIFactory.card_label(battle.enemy.display_name, 18, Color("ffd9a3"), HORIZONTAL_ALIGNMENT_CENTER)
-	if not _battle_compact:
-		col.add_child(enemy_name_label)
+	enemy_name_label = UIFactory.card_label(battle.enemy.display_name, 14 if _battle_compact else 18, Color("ffd9a3"), HORIZONTAL_ALIGNMENT_CENTER)
+	col.add_child(enemy_name_label)
 	enemy_hp_bar = UIFactory.hp_bar(ThemeColors.HP_FILL, ThemeColors.HP_BG_DARK)
 	enemy_hp_bar.custom_minimum_size = Vector2(0, 12 if _battle_compact else 18)
 	col.add_child(enemy_hp_bar)
