@@ -39,6 +39,7 @@ var enemy_status_line: Label
 var enemy_name_label: Label
 var enemy_block_badge: BlockBadge
 var enemy_portrait_wrap: Control
+var enemy_portrait_image: TextureRect  # ref to TextureRect inside wrap, for phase 2 swap
 var energy_orb: EnergyOrb
 var relic_strip: HBoxContainer
 var deck_overlay: Control
@@ -1843,16 +1844,33 @@ func _on_phase_transitioned(new_name: String) -> void:
 	# 1. 大幅震動 + 藍紫色光芒閃爍（水妖意象）
 	UIFactory.shake_node(enemy_portrait_wrap, 22.0, 0.55)
 	UIFactory.flash_node(enemy_portrait_wrap, Color(0.7, 1.1, 2.4), 0.55)
-	# 2. 肖像膨脹回縮（覺醒感）
+	# 2. 肖像膨脹回縮（覺醒感）+ 中段點換 texture（若 boss 有設 phase_2_portrait_path）
 	var tween: Tween = enemy_portrait_wrap.create_tween()
 	tween.tween_property(enemy_portrait_wrap, "scale", Vector2(1.22, 1.22), 0.20) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_callback(_swap_to_phase_2_portrait)  # 在 scale 峰值時換圖
 	tween.tween_property(enemy_portrait_wrap, "scale", Vector2.ONE, 0.28) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 	# 3. 浮動覺醒文字
 	_spawn_phase_reveal_text(new_name)
 	# 4. 立刻刷新 UI（label 從 state["enemy_name"] 取新名）
 	_refresh_battle()
+
+# 換到 phase 2 肖像（若 boss 有提供 phase_2_portrait_path / phase_2_portrait_tint）
+# 沒設定就維持原圖、原色。安全：任何欄位缺失都 fallback 到 phase 1。
+func _swap_to_phase_2_portrait() -> void:
+	if enemy_portrait_image == null or not is_instance_valid(enemy_portrait_image):
+		return
+	if battle == null or battle.enemy == null:
+		return
+	var phase_2_path: String = battle.enemy.phase_2_portrait_path
+	if not phase_2_path.is_empty():
+		var tex: Texture2D = UIFactory.load_texture(phase_2_path)
+		if tex != null:
+			enemy_portrait_image.texture = tex
+	var phase_2_tint: Color = battle.enemy.phase_2_portrait_tint
+	if phase_2_tint != Color.WHITE:
+		enemy_portrait_image.modulate = phase_2_tint
 
 func _spawn_phase_reveal_text(name: String) -> void:
 	if enemy_portrait_wrap == null or not is_instance_valid(enemy_portrait_wrap):
@@ -2175,6 +2193,7 @@ func _portrait_with_block_badge(path: String, portrait_size: Vector2, show_full:
 	else:
 		enemy_block_badge = badge
 		enemy_portrait_wrap = wrap
+		enemy_portrait_image = portrait  # 保留 ref 給 phase 2 變身換圖
 	return wrap
 
 func _refresh_relic_strip() -> void:
