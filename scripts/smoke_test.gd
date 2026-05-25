@@ -819,29 +819,28 @@ const BALANCE_BASELINES: Dictionary = {
 }
 # 蜈蚣大王（bosses[1]）+ 10 回合上限：起始牌組對 boss 的「速贏率」。
 # 給夠時間 random AI 都會贏，限時才能拿到中段勝率做雙向偵測。
-# li_xiaoyao / lin_yueru / anu 是高傷快攻牌組，10 回合內必勝 → 100% baseline 只抓 nerf；
-# zhao_linger 是治療/控制牌組，10 回合內勉強 20% → 雙向偵測。
+# 起始牌組重整後（refactor: 統一 8 basic + 3 uncommon + 1 簽名 rare）：
+# - li_xiaoyao / lin_yueru / anu 仍 100%（速攻足以 10t 內結束蜈蚣大王 HP 92）
+# - zhao_linger 從 20% → 87%（夢蛇 power+3 + 天雷破 18 + 雷咒×3 速攻提升）
 const BALANCE_BASELINES_MID: Dictionary = {
 	"li_xiaoyao": 100,
-	"zhao_linger": 20,
+	"zhao_linger": 87,
 	"lin_yueru": 100,
 	"anu": 100
 }
 # 全升級起始牌組 vs 山賊頭目。升級應嚴格 >= 基礎勝率，預期全 100%。
-# null = 第一次跑後填入觀測值。
 const BALANCE_BASELINES_UPGRADED: Dictionary = {
-	"li_xiaoyao": null,
-	"zhao_linger": null,
-	"lin_yueru": null,
-	"anu": null
+	"li_xiaoyao": 100,
+	"zhao_linger": 100,
+	"lin_yueru": 100,
+	"anu": 100
 }
-# 全升級起始牌組 vs 蜈蚣大王（10 回合）。升級後快攻角色應仍 100%；
-# 趙靈兒治療型預期比基礎 20% 有所提升。null = 初次跑後填入。
+# 全升級起始牌組 vs 蜈蚣大王（10 回合）。升級後牌組強度足以全 100%。
 const BALANCE_BASELINES_MID_UPGRADED: Dictionary = {
-	"li_xiaoyao": null,
-	"zhao_linger": null,
-	"lin_yueru": null,
-	"anu": null
+	"li_xiaoyao": 100,
+	"zhao_linger": 100,
+	"lin_yueru": 100,
+	"anu": 100
 }
 
 func _test_balance_regression(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:

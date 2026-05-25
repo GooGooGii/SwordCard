@@ -63,7 +63,19 @@ static func _li_xiaoyao() -> CharacterData:
 		make_card("lxy_jiulong", "九龍訣", "李逍遙", 3, "attack", "御劍九式，造成 12 點傷害三次。", [{"kind": "damage", "amount": 12}, {"kind": "damage", "amount": 12}, {"kind": "damage", "amount": 12}], "rare"),
 		make_card("lxy_zuilong", "醉龍翻江", "李逍遙", 2, "attack", "造成 18 點傷害，自身承受 5 點反噬，抽 1 張牌。", [{"kind": "damage", "amount": 18}, {"kind": "self_damage", "amount": 5}, {"kind": "draw", "amount": 1}], "rare")
 	]
-	return _character("li_xiaoyao", "李逍遙", 74, "劍術、爆發、偷取與酒神系高風險高傷害。", cards)
+	var character: CharacterData = _character("li_xiaoyao", "李逍遙", 74, "劍術、爆發、偷取與酒神系高風險高傷害。", cards)
+	# 8 basic + 3 uncommon + 1 簽名 rare（rare 提供 scaling / 過渡能力，非碾壓傷害）
+	character.starting_deck = [
+		cards[0], cards[0], cards[0],     # 3x 御劍術 (basic 7dmg)
+		cards[2],                          # 1x 飛龍探雲手 (basic 4dmg+steal+draw+energy)
+		cards[3],                          # 1x 天師符法 (basic 9dmg)
+		cards[7], cards[7], cards[7],     # 3x 劍氣護身 (basic 10block)
+		cards[5],                          # 1x 仙風雲體 (uncommon 8block+draw1)
+		cards[6],                          # 1x 醉夢望月 (uncommon power+2)
+		cards[8],                          # 1x 靈火符 (uncommon 6dmg+vuln1)
+		cards[9],                          # 1x 逍遙遊 (rare 0c draw1+energy1) — 風流簽名牌
+	]
+	return character
 
 static func _zhao_linger() -> CharacterData:
 	var cards: Array[CardData] = [
@@ -84,13 +96,17 @@ static func _zhao_linger() -> CharacterData:
 		make_card("zl_shenlei", "神雷降世", "趙靈兒", 3, "attack", "天降神雷，造成 30 點傷害。", [{"kind": "damage", "amount": 30}], "rare")
 	]
 	var character: CharacterData = _character("zhao_linger", "趙靈兒", 68, "五靈仙術、治療、護盾與夢蛇爆發。", cards)
+	# 8 basic + 3 uncommon + 1 簽名 rare
 	character.starting_deck = [
-		cards[3], cards[3], cards[3],   # 3x 雷咒 10
-		cards[2], cards[2],              # 2x 玄冰咒 6+虛弱
-		cards[12], cards[12],            # 2x 雷光連擊 7+虛弱
-		cards[7], cards[7],              # 2x 靈光護體 12
-		cards[0], cards[0],              # 2x 觀音咒 治療
-		cards[4],                        # 1x 夢蛇 強化
+		cards[3], cards[3], cards[3],     # 3x 雷咒 (basic 10dmg)
+		cards[2],                          # 1x 玄冰咒 (basic 6dmg+weak2)
+		cards[12],                         # 1x 雷光連擊 (basic 7dmg+weak1)
+		cards[7], cards[7],               # 2x 靈光護體 (basic 12block)
+		cards[0],                          # 1x 觀音咒 (basic 8heal)
+		cards[6],                          # 1x 天雷破 (uncommon 18dmg)
+		cards[8],                          # 1x 幻雨咒 (uncommon 7block+weak1)
+		cards[13],                         # 1x 靈息術 (uncommon draw2+heal4)
+		cards[4],                          # 1x 夢蛇 (rare power+3+draw1) — 仙術簽名牌
 	]
 	return character
 
@@ -112,7 +128,18 @@ static func _lin_yueru() -> CharacterData:
 		make_card("lyr_tianv", "天女散花", "林月如", 1, "attack", "造成 4 點傷害，施加 1 層破綻，抽 1 張牌。", [{"kind": "damage", "amount": 4}, {"kind": "vulnerable", "amount": 1}, {"kind": "draw", "amount": 1}], "uncommon"),
 		make_card("lyr_tieyi", "鐵衣功", "林月如", 2, "skill", "獲得 18 點護體。", [{"kind": "block", "amount": 18}], "rare")
 	]
-	return _character("lin_yueru", "林月如", 72, "鞭劍武學、連擊、反擊與單體爆發。", cards)
+	var character: CharacterData = _character("lin_yueru", "林月如", 72, "鞭劍武學、連擊、反擊與單體爆發。", cards)
+	# 8 basic + 3 uncommon + 1 簽名 rare
+	character.starting_deck = [
+		cards[0], cards[0], cards[0], cards[0],   # 4x 氣劍指 (basic 8dmg)
+		cards[4], cards[4],                        # 2x 回身反擊 (basic 8block+5dmg)
+		cards[10], cards[10],                      # 2x 旋劍花舞 (basic 5x2)
+		cards[1],                                   # 1x 一陽指 (uncommon 18dmg)
+		cards[6],                                   # 1x 月影身法 (uncommon 7block+draw1)
+		cards[8],                                   # 1x 連環快斬 (uncommon 3x3)
+		cards[9],                                   # 1x 金蟬卸力 (rare 1c 5block+draw2) — 身法簽名牌
+	]
+	return character
 
 static func _anu() -> CharacterData:
 	var cards: Array[CardData] = [
@@ -132,7 +159,19 @@ static func _anu() -> CharacterData:
 		make_card("anu_sanmao", "三毛蠱", "阿奴", 2, "skill", "施加 5 層蠱毒，使敵人虛弱 2 層。", [{"kind": "poison", "amount": 5}, {"kind": "weak", "amount": 2}], "uncommon"),
 		make_card("anu_gushen", "蠱神附體", "阿奴", 3, "power", "本場戰鬥傷害提升 3，施加 4 層蠱毒。", [{"kind": "power", "amount": 3}, {"kind": "poison", "amount": 4}], "rare")
 	]
-	return _character("anu", "阿奴", 66, "蠱毒、召喚、持續傷害、削弱與干擾。", cards)
+	var character: CharacterData = _character("anu", "阿奴", 66, "蠱毒、召喚、持續傷害、削弱與干擾。", cards)
+	# 8 basic + 3 uncommon + 1 簽名 rare（補 3 張解毒咒給她點生存能力，原本起始牌組 0 護體太脆）
+	character.starting_deck = [
+		cards[0], cards[0], cards[0],     # 3x 御蜂術 (basic 3x4)
+		cards[1],                          # 1x 萬蟻蝕象 (basic 6 poison)
+		cards[2],                          # 1x 迷魂術 (basic 3 weak)
+		cards[5], cards[5], cards[5],     # 3x 解毒咒 (basic 7heal+5block)
+		cards[3],                          # 1x 爆炸蠱 (uncommon poison_burst)
+		cards[6],                          # 1x 蠱靈護身 (uncommon 12block)
+		cards[8],                          # 1x 毒霧繚繞 (uncommon 3poison+weak1)
+		cards[9],                          # 1x 蠱血共鳴 (rare power+1+5poison) — 蠱術簽名牌
+	]
+	return character
 
 static func _character(id: String, display_name: String, max_hp: int, style: String, cards: Array[CardData]) -> CharacterData:
 	var character: CharacterData = CharacterData.new()
