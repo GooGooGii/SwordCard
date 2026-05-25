@@ -1,6 +1,11 @@
+class_name Main
 extends Control
 
 const BATTLE_END_DELAY: float = 0.8
+
+# Phase 1 screen 系統：current_screen 持有 RefCounted screen 實例，
+# 避免它在 _show() 結束後立刻被回收（其 button callback 可能還會用到它）。
+var current_screen: Screen = null
 
 var characters: Array[CharacterData] = []
 var enemies: Array[EnemyData] = []
@@ -896,84 +901,11 @@ func _build_ascension_picker(compact_layout: bool = false, ultra_compact: bool =
 func show_bestiary() -> void:
 	_set_background("res://assets/art/main_menu_bg.png")
 	_clear_root()
-	var panel: PanelContainer = UIFactory.make_panel()
-	root.add_child(panel)
-	var box: VBoxContainer = VBoxContainer.new()
-	box.add_theme_constant_override("separation", 14)
-	panel.add_child(box)
-	box.add_child(_title("敵將圖鑑", 32))
-	var data: Dictionary = Bestiary.load_all()
-	var defeated_count: int = 0
-	var total_count: int = enemies.size() + bosses.size()
-	for k: Variant in data.keys():
-		if int(data[k]) > 0:
-			defeated_count += 1
-	box.add_child(UIFactory.paragraph("已記錄 %d / %d 種敵將" % [defeated_count, total_count]))
-	var scroll: ScrollContainer = ScrollContainer.new()
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(960, 480)
-	box.add_child(scroll)
-	var grid: GridContainer = GridContainer.new()
-	grid.columns = 3
-	grid.add_theme_constant_override("h_separation", 12)
-	grid.add_theme_constant_override("v_separation", 12)
-	scroll.add_child(grid)
-	for enemy: EnemyData in enemies:
-		grid.add_child(_bestiary_tile(enemy, false, int(data.get(enemy.id, 0))))
-	for boss: EnemyData in bosses:
-		grid.add_child(_bestiary_tile(boss, true, int(data.get(boss.id, 0))))
-	var back: Button = _button("返回主選單")
-	back.pressed.connect(show_main_menu)
-	box.add_child(back)
+	_show(BestiaryScreen.new())
 
-func _bestiary_tile(enemy: EnemyData, is_boss: bool, kill_count: int) -> Control:
-	var defeated: bool = kill_count > 0
-	var border: Color = ThemeColors.HIGHLIGHT_GOLD if is_boss else (ThemeColors.BORDER_GOLD if defeated else Color("5f6570", 0.5))
-	var bg: Color = Color("18212f", 0.85) if defeated else Color("0d121b", 0.85)
-	var tile: PanelContainer = PanelContainer.new()
-	tile.add_theme_stylebox_override("panel", UIFactory.style_box(bg, border, 2 if is_boss else 1, 8))
-	tile.custom_minimum_size = Vector2(290, 220)
-	var inner: VBoxContainer = VBoxContainer.new()
-	inner.add_theme_constant_override("separation", 6)
-	tile.add_child(inner)
-	var portrait: TextureRect = UIFactory.portrait_rect(enemy.portrait_path, Vector2(120, 96), true)
-	portrait.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	if not defeated:
-		portrait.modulate = Color(0.0, 0.0, 0.0, 0.85)
-	inner.add_child(portrait)
-	var name_label: Label = Label.new()
-	name_label.text = enemy.display_name if defeated else "???"
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.add_theme_font_size_override("font_size", 16)
-	name_label.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD if defeated else ThemeColors.TEXT_DIM)
-	inner.add_child(name_label)
-	if defeated:
-		var stats: Label = Label.new()
-		stats.text = "HP %d  ·  擊敗 %d 次%s" % [enemy.max_hp, kill_count, "  ·  Boss" if is_boss else ""]
-		stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		stats.add_theme_font_size_override("font_size", 12)
-		stats.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
-		inner.add_child(stats)
-		var intents: Array[String] = []
-		for action: Dictionary in enemy.actions:
-			intents.append(String(action.get("intent", "")))
-		var intent_label: Label = Label.new()
-		intent_label.text = "招式：%s" % "、".join(intents)
-		intent_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		intent_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		intent_label.add_theme_font_size_override("font_size", 11)
-		intent_label.add_theme_color_override("font_color", ThemeColors.TEXT_MUTED)
-		intent_label.custom_minimum_size = Vector2(260, 0)
-		inner.add_child(intent_label)
-	else:
-		var locked: Label = Label.new()
-		locked.text = "尚未交手"
-		locked.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		locked.add_theme_font_size_override("font_size", 12)
-		locked.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
-		inner.add_child(locked)
-	return tile
+func _show(next: Screen) -> void:
+	current_screen = next
+	next.attach(self)
 
 func continue_saved_run() -> void:
 	var data: Dictionary = SaveManager.load_save()
