@@ -3555,13 +3555,14 @@ func _deck_view_card(card: CardData, mode: String = "view", count: int = 1) -> C
 	elif mode == "shop_remove":
 		button.pressed.connect(func(): _shop_deck_remove(card))
 	elif mode == "upgrade" and not card.upgraded:
-		button.pressed.connect(func(): upgrade_card_in_deck(card))
+		# 點擊 → 開啟「原 vs 升級後」對照 overlay，使用者確認後才升級
+		button.pressed.connect(func(): _show_upgrade_confirm_overlay(card, func(): upgrade_card_in_deck(card)))
 	elif mode == "shop_upgrade" and not card.upgraded:
-		button.pressed.connect(func(): _shop_deck_upgrade(card))
+		button.pressed.connect(func(): _show_upgrade_confirm_overlay(card, func(): _shop_deck_upgrade(card)))
 	else:
 		button.add_theme_stylebox_override("disabled", UIFactory.style_box(CardFormat.card_color(card.card_type, true), Color("e7d38a"), 2, 8))
 		button.add_theme_color_override("font_disabled_color", ThemeColors.TEXT_LIGHT)
-	
+
 	if count > 1:
 		var badge: PanelContainer = PanelContainer.new()
 		badge.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a"), ThemeColors.BORDER_GOLD, 2, 6))
@@ -3572,54 +3573,70 @@ func _deck_view_card(card: CardData, mode: String = "view", count: int = 1) -> C
 		badge.offset_right = 4
 		badge.offset_bottom = 26
 		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		
+
 		var badge_label: Label = UIFactory.card_label("x%d" % count, 12, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 		badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		badge_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		badge.add_child(badge_label)
 		button.add_child(badge)
-		
-	if (mode == "upgrade" or mode == "shop_upgrade") and not card.upgraded:
-		var wrap: VBoxContainer = VBoxContainer.new()
-		wrap.add_theme_constant_override("separation", 4)
-		wrap.alignment = BoxContainer.ALIGNMENT_CENTER
-		wrap.add_child(button)
-		wrap.add_child(_upgrade_preview_panel(card))
-		return wrap
 	return button
 
-func _upgrade_preview_panel(card: CardData) -> Control:
+func _show_upgrade_confirm_overlay(card: CardData, on_confirm: Callable) -> void:
+	# 升級畫面點卡片時彈出：左原卡 / → / 右升級後卡，下方確認/取消按鈕。
+	# 仿戰鬥中長按卡片預覽（_show_card_preview）的視覺設計，但加上 confirm/cancel 行為。
+	_hide_card_preview()  # 清除任何先前的 overlay（重用 _card_preview_overlay 欄位）
+	var overlay: Control = Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.z_index = 300
+	add_child(overlay)
+	_card_preview_overlay = overlay
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0, 0, 0, 0.55)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.add_child(backdrop)
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+	var col: VBoxContainer = VBoxContainer.new()
+	col.add_theme_constant_override("separation", 18)
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.add_child(col)
+	# 卡片對照列
+	var stack: HBoxContainer = HBoxContainer.new()
+	stack.add_theme_constant_override("separation", 24)
+	stack.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.add_child(stack)
+	var big: Button = _make_card_button(card, card.cost, Vector2(260, 360), true, true)
+	big.disabled = true
+	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.add_child(big)
+	var arrow: Label = Label.new()
+	arrow.text = "→\n升級後"
+	arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	arrow.add_theme_font_size_override("font_size", 20)
+	arrow.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
+	stack.add_child(arrow)
 	var upgraded: CardData = card.upgraded_copy()
-	var panel: PanelContainer = PanelContainer.new()
-	panel.custom_minimum_size = Vector2(190, 0)
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = Color("f3ede2", 0.16)
-	style.border_color = Color("c8b46f", 0.55)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(4)
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 5
-	style.content_margin_bottom = 5
-	panel.add_theme_stylebox_override("panel", style)
-	var box: VBoxContainer = VBoxContainer.new()
-	box.add_theme_constant_override("separation", 2)
-	panel.add_child(box)
-	var title: Label = Label.new()
-	title.text = "升級後 → %s" % upgraded.display_title()
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 11)
-	title.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
-	box.add_child(title)
-	var desc: Label = Label.new()
-	desc.text = upgraded.description
-	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	desc.custom_minimum_size = Vector2(174, 0)
-	desc.add_theme_font_size_override("font_size", 11)
-	desc.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
-	box.add_child(desc)
-	return panel
+	var up_btn: Button = _make_card_button(upgraded, upgraded.cost, Vector2(260, 360), true, true)
+	up_btn.disabled = true
+	up_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.add_child(up_btn)
+	# 確認 / 取消
+	var btn_row: HBoxContainer = HBoxContainer.new()
+	btn_row.add_theme_constant_override("separation", 16)
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.add_child(btn_row)
+	var confirm_btn: Button = _button("確認升級")
+	confirm_btn.pressed.connect(func() -> void:
+		_hide_card_preview()
+		on_confirm.call())
+	btn_row.add_child(confirm_btn)
+	var cancel_btn: Button = _button("取消")
+	cancel_btn.pressed.connect(_hide_card_preview)
+	btn_row.add_child(cancel_btn)
 
 func show_result(victory: bool) -> void:
 	if victory:
