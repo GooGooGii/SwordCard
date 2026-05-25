@@ -120,4 +120,15 @@ Target:
 - Keep icon silhouettes simple enough for Android screen sizes (high contrast, readable at 48x48 px, transparent background)
 - Style: 2D Chinese ink-wash brush stroke illustration, clean black lineart with subtle watercolor texture.
 
+## Card Layering Convention
+
+Card UI should follow a fixed rendering stack so art replacements do not require layout rewrites:
+
+1. Card art at the bottom
+2. Card frame above the art
+3. Decorative overlays above the frame
+4. Text as the topmost layer
+
+Decorative overlays include the mana badge, rarity badge, name plaque, and rules-panel ornaments. When replacing the three card frames with ink-wash versions, keep those elements as separate overlays unless they must be baked into the frame for a specific visual effect.
+
 ---
