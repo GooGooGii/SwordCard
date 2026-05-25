@@ -4541,7 +4541,13 @@ func _detach_card_button(button: Button) -> void:
 	animating_cards.append(button)
 
 func _animate_played_card(button: Button, card: CardData) -> void:
-	var target_label: Label = enemy_feedback_label if card.card_type == "attack" else player_feedback_label
+	# 飛向決定：根據 effects 而非 card_type。
+	# - 任何 effect 是「敵人標靶」(damage / poison / weak / vulnerable /
+	#   consume_energy_damage / poison_burst) → 飛向敵人
+	# - 純自身效果（block / heal / draw / energy / power / cure_*）→ 飛向自己
+	# 這修正一堆 skill 卡（蠱毒、weak、飛龍探雲手）以前錯飛自己的 bug
+	# CardFormat.requires_enemy_target 是 drag-to-play 命中判定也用同一規則，保持一致。
+	var target_label: Label = enemy_feedback_label if CardFormat.requires_enemy_target(card) else player_feedback_label
 	if target_label == null:
 		button.queue_free()
 		return
