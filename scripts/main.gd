@@ -75,6 +75,14 @@ var _potion_overlay: HBoxContainer = null
 var _potion_overlay_buttons: Array[Button] = []
 var _selected_hand_button: Button = null
 
+var title_bar: PanelContainer = null
+var title_bar_name_label: Label = null
+var title_bar_hp_bar: ProgressBar = null
+var title_bar_hp_label: Label = null
+var title_bar_gold_label: Label = null
+var title_bar_relics_button: Button = null
+const TITLE_BAR_HEIGHT: float = 52.0
+
 var _temporary_player_pose: String = ""
 var _pose_timer: SceneTreeTimer = null
 var _pending_revive_indices: Array[int] = []
@@ -122,6 +130,7 @@ func _ready() -> void:
 	_apply_safe_area_margins()
 	get_viewport().size_changed.connect(_apply_safe_area_margins)
 	_build_potion_overlay()
+	_build_title_bar()
 	show_main_menu()
 
 func _process(_delta: float) -> void:
@@ -477,6 +486,7 @@ func _set_event_background(event_variant: String = "") -> void:
 
 func show_main_menu() -> void:
 	selected_party_ids.clear()  # 進主選單清掉 character_select 的暫存隊伍
+	_hide_title_bar()
 	_set_background("res://assets/art/login_background.jpg")
 	_clear_root()
 	var viewport_size: Vector2 = get_viewport_rect().size
@@ -904,6 +914,7 @@ func _build_ascension_picker(compact_layout: bool = false, ultra_compact: bool =
 	return panel
 
 func show_bestiary() -> void:
+	_hide_title_bar()
 	_set_background("res://assets/art/main_menu_bg.png")
 	_clear_root()
 	_show(BestiaryScreen.new())
@@ -926,6 +937,7 @@ func continue_saved_run() -> void:
 	show_progress_screen()
 
 func show_character_select(preview_id: String = "") -> void:
+	_hide_title_bar()
 	_set_background("res://assets/art/main_menu_bg.png")
 	_clear_root()
 	# preview 預設順序：明確 preview_id > 目前隊伍隊長 > characters[0]
@@ -1245,6 +1257,7 @@ func show_progress_screen() -> void:
 	SaveManager.save(run_state)
 	_set_background("res://assets/art/map_bg_ink.png")
 	_clear_root()
+	_show_title_bar()
 	var viewport_size: Vector2 = get_viewport_rect().size
 	var compact_map: bool = viewport_size.y <= 760.0
 	_build_streamlined_progress_screen(compact_map)
@@ -1329,7 +1342,6 @@ func _build_map_toolbar() -> Control:
 	toolbar.alignment = BoxContainer.ALIGNMENT_END
 	toolbar.add_theme_constant_override("separation", 8)
 	toolbar.add_child(_map_icon_button("人", "角色狀態", _show_map_status_popup))
-	toolbar.add_child(_map_icon_button("牌", "查看牌組", func() -> void: show_deck_view()))
 	return toolbar
 
 func _map_icon_button(symbol: String, tooltip: String, action: Callable) -> Button:
@@ -1678,6 +1690,7 @@ func start_next_battle(enemy: EnemyData) -> void:
 func _build_battle_scene() -> void:
 	_set_background("res://assets/art/battle_bg.png")
 	_clear_root()
+	_show_title_bar()
 	if _potion_overlay != null:
 		_potion_overlay.visible = false
 	var viewport_size: Vector2 = get_viewport_rect().size
@@ -2149,21 +2162,11 @@ func _build_left_dock(parent: HBoxContainer) -> void:
 	dock.add_child(log_label)
 	var btn_h: float = 26.0 if _battle_compact else 32.0
 	var btn_f: int = 11 if _battle_compact else 13
-	var deck_button: Button = _button("查看牌組")
-	deck_button.add_theme_font_size_override("font_size", btn_f)
-	deck_button.custom_minimum_size = Vector2(0, btn_h)
-	deck_button.pressed.connect(show_deck_view)
-	dock.add_child(deck_button)
 	draw_pile_button = _button("抽牌堆 (0)")
 	draw_pile_button.add_theme_font_size_override("font_size", btn_f)
 	draw_pile_button.custom_minimum_size = Vector2(0, btn_h)
 	draw_pile_button.pressed.connect(show_draw_pile_view)
 	dock.add_child(draw_pile_button)
-	var relics_button: Button = _button("遺物 (%d)" % run_state.relics.size())
-	relics_button.add_theme_font_size_override("font_size", btn_f)
-	relics_button.custom_minimum_size = Vector2(0, btn_h)
-	relics_button.pressed.connect(_show_battle_relics_popup)
-	dock.add_child(relics_button)
 
 func _build_right_dock(parent: HBoxContainer) -> void:
 	var dock: VBoxContainer = VBoxContainer.new()
@@ -2199,6 +2202,105 @@ func _build_right_dock(parent: HBoxContainer) -> void:
 	exhausted_pile_button.custom_minimum_size = Vector2(0, btn_h)
 	exhausted_pile_button.pressed.connect(show_exhaust_pile_view)
 	dock.add_child(exhausted_pile_button)
+
+func _build_title_bar() -> void:
+	title_bar = PanelContainer.new()
+	title_bar.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.78), ThemeColors.BORDER_GOLD, 1, 6))
+	title_bar.set_anchors_preset(Control.PRESET_TOP_WIDE, false)
+	title_bar.offset_left = 12
+	title_bar.offset_top = 8
+	title_bar.offset_right = -PAUSE_BUTTON_SIZE.x - 20
+	title_bar.offset_bottom = 8 + TITLE_BAR_HEIGHT
+	title_bar.visible = false
+	title_bar.z_index = 50
+	title_bar.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(title_bar)
+	var pad: MarginContainer = MarginContainer.new()
+	pad.add_theme_constant_override("margin_left", 14)
+	pad.add_theme_constant_override("margin_right", 14)
+	pad.add_theme_constant_override("margin_top", 4)
+	pad.add_theme_constant_override("margin_bottom", 4)
+	title_bar.add_child(pad)
+	var hbox: HBoxContainer = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 14)
+	pad.add_child(hbox)
+
+	title_bar_name_label = UIFactory.card_label("", 16, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_LEFT)
+	title_bar_name_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	title_bar_name_label.custom_minimum_size = Vector2(150, 0)
+	hbox.add_child(title_bar_name_label)
+
+	title_bar_hp_bar = UIFactory.hp_bar(ThemeColors.HP_FILL, ThemeColors.HP_BG_DARK)
+	title_bar_hp_bar.custom_minimum_size = Vector2(150, 14)
+	title_bar_hp_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hbox.add_child(title_bar_hp_bar)
+	title_bar_hp_label = UIFactory.card_label("", 13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_LEFT)
+	title_bar_hp_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	hbox.add_child(title_bar_hp_label)
+
+	title_bar_gold_label = UIFactory.card_label("", 14, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_LEFT)
+	title_bar_gold_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	hbox.add_child(title_bar_gold_label)
+
+	var spacer: Control = Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hbox.add_child(spacer)
+
+	title_bar_relics_button = _title_bar_button("遺物 (0)", _show_battle_relics_popup)
+	hbox.add_child(title_bar_relics_button)
+	hbox.add_child(_title_bar_button("查看牌組", func() -> void: show_deck_view()))
+	hbox.add_child(_title_bar_button("查看地圖", _show_map_overview_popup))
+
+func _title_bar_button(text: String, action: Callable) -> Button:
+	var btn: Button = Button.new()
+	btn.text = text
+	btn.add_theme_font_size_override("font_size", 12)
+	btn.custom_minimum_size = Vector2(76, 30)
+	btn.focus_mode = Control.FOCUS_NONE
+	btn.pressed.connect(action)
+	return btn
+
+func _show_title_bar() -> void:
+	if title_bar == null:
+		_build_title_bar()
+	title_bar.visible = true
+	if root != null:
+		root.add_theme_constant_override("margin_top", int(TITLE_BAR_HEIGHT) + 24)
+	_refresh_title_bar()
+
+func _hide_title_bar() -> void:
+	if title_bar != null:
+		title_bar.visible = false
+	if root != null:
+		root.add_theme_constant_override("margin_top", 20)
+
+func _refresh_title_bar() -> void:
+	if title_bar == null or not title_bar.visible or run_state == null:
+		return
+	var char_data: CharacterData = null
+	var hp: int = 0
+	var max_hp_v: int = 0
+	var lv: int = 1
+	if run_state.characters.size() > 0:
+		var idx: int = clamp(run_state.active_character_index, 0, run_state.characters.size() - 1)
+		char_data = run_state.characters[idx]
+		hp = run_state.character_hps[idx] if idx < run_state.character_hps.size() else 0
+		max_hp_v = run_state.character_max_hps[idx] if idx < run_state.character_max_hps.size() else 1
+		lv = run_state.character_levels[idx] if idx < run_state.character_levels.size() else 1
+	if char_data == null:
+		char_data = selected_character
+		hp = run_state.hp
+		max_hp_v = run_state.max_hp
+	var name_text: String = ""
+	if char_data != null:
+		name_text = "%s   Lv %d" % [char_data.display_name, lv]
+	title_bar_name_label.text = name_text
+	title_bar_hp_bar.max_value = max(1, max_hp_v)
+	title_bar_hp_bar.value = hp
+	title_bar_hp_label.text = "%d / %d" % [hp, max_hp_v]
+	title_bar_gold_label.text = "銅錢 %d" % run_state.gold
+	title_bar_relics_button.text = "遺物 (%d)" % run_state.relics.size()
 
 func _build_potion_overlay() -> void:
 	_potion_overlay = HBoxContainer.new()
@@ -2286,10 +2388,14 @@ func _show_use_potion_confirm(slot: int) -> void:
 		return
 	var potion: Dictionary = run_state.potions[slot]
 	var rarity_col: Color = PotionCatalog.rarity_color(potion)
+	var center_wrap: CenterContainer = CenterContainer.new()
+	center_wrap.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center_wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center_wrap.z_index = 300
+	add_child(center_wrap)
 	var popup: PanelContainer = PanelContainer.new()
-	popup.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	popup.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.96), rarity_col, 2, 10))
-	add_child(popup)
+	center_wrap.add_child(popup)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 12)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -2309,23 +2415,27 @@ func _show_use_potion_confirm(slot: int) -> void:
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_child(btn_row)
 	var captured_slot: int = slot
+	var cancel_btn: Button = _button("取消")
+	cancel_btn.pressed.connect(func() -> void: center_wrap.queue_free())
+	btn_row.add_child(cancel_btn)
 	var use_btn: Button = _button("使用")
 	use_btn.pressed.connect(func() -> void:
-		popup.queue_free()
+		center_wrap.queue_free()
 		_use_potion(captured_slot))
 	btn_row.add_child(use_btn)
-	var cancel_btn: Button = _button("取消")
-	cancel_btn.pressed.connect(func() -> void: popup.queue_free())
-	btn_row.add_child(cancel_btn)
 
 func _discard_potion_prompt(slot: int) -> void:
 	if slot >= run_state.potions.size():
 		return
 	var potion: Dictionary = run_state.potions[slot]
+	var center_wrap: CenterContainer = CenterContainer.new()
+	center_wrap.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center_wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center_wrap.z_index = 300
+	add_child(center_wrap)
 	var popup: PanelContainer = PanelContainer.new()
-	popup.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	popup.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.96), ThemeColors.BORDER_GOLD, 2, 10))
-	add_child(popup)
+	center_wrap.add_child(popup)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 12)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -2336,17 +2446,17 @@ func _discard_potion_prompt(slot: int) -> void:
 	btn_row.add_theme_constant_override("separation", 16)
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_child(btn_row)
+	var cancel_btn: Button = _button("取消")
+	cancel_btn.pressed.connect(func() -> void: center_wrap.queue_free())
+	btn_row.add_child(cancel_btn)
 	var discard_btn: Button = _button("丟棄")
 	var captured_slot: int = slot
 	discard_btn.pressed.connect(func() -> void:
 		if captured_slot < run_state.potions.size():
 			run_state.potions.remove_at(captured_slot)
-		popup.queue_free()
+		center_wrap.queue_free()
 		_refresh_potion_overlay_buttons())
 	btn_row.add_child(discard_btn)
-	var cancel_btn: Button = _button("取消")
-	cancel_btn.pressed.connect(func() -> void: popup.queue_free())
-	btn_row.add_child(cancel_btn)
 
 func _hp_bar_with_overlay(bar: ProgressBar, value_label: Label) -> Control:
 	var bar_height: int = 18 if _battle_compact else 22
@@ -2910,6 +3020,7 @@ func show_event_node(sub_stage: String = "") -> void:
 	# 渲染 sub_flavors[sub_stage] + sub_choices[sub_stage] 而非預設 flavor / choices
 	_set_event_background()
 	_clear_root()
+	_show_title_bar()
 	var panel: PanelContainer = UIFactory.make_panel()
 	root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
@@ -2930,7 +3041,6 @@ func show_event_node(sub_stage: String = "") -> void:
 		var sub_choices_map: Dictionary = event_data.get("sub_choices", {}) as Dictionary
 		choices_list = sub_choices_map.get(sub_stage, []) as Array
 	box.add_child(UIFactory.paragraph(flavor_text))
-	box.add_child(_event_status_strip())
 	var heal_amount: int = int(event_data["heal"])
 	var gain_cost: int = int(event_data["gain_cost"])
 	var power_gain: int = int(event_data["power"])
@@ -3028,8 +3138,8 @@ func _event_branch_label(event_data: Dictionary, choice_key: String) -> Array:
 			return [String(entry[0]), String(entry[1])]
 	return [choice_key.capitalize(), "深入此選項"]
 
-func _event_show_observe(event_data: Dictionary, sub_stage: String) -> void:
-	# 觀察 = 顯示加長 observe_text 後返回事件主選單（不結束）
+func _event_show_observe(event_data: Dictionary, _sub_stage: String) -> void:
+	# 觀察 = 顯示加長 observe_text、結算獎勵後直接結束事件
 	# 若 event 有 observe_effects（陣列），結算後在 text 末附上獲得/失去摘要；
 	# 若沒設，預設給輕微 +3 HP「片刻安寧」，讓觀察永遠不是純文字。
 	var text: String = String(event_data.get("observe_text", "你細細地觀察了一遍，但似乎沒有新的發現。"))
@@ -3039,7 +3149,7 @@ func _event_show_observe(event_data: Dictionary, sub_stage: String) -> void:
 	var summary: String = _resolve_observe_effects(effects)
 	if not summary.is_empty():
 		text += "\n\n[ %s ]" % summary
-	_show_event_outcome(text, func() -> void: show_event_node(sub_stage))
+	_show_event_outcome(text, advance_non_battle_node)
 
 # 結算 observe_effects 並回傳摘要字串。支援的 kind：
 #   heal / damage   — active 角色 HP +/-
@@ -3415,6 +3525,7 @@ func open_shop_node(is_black_shop: bool) -> void:
 func show_shop_node() -> void:
 	_set_background("res://assets/art/event_bg.png")
 	_clear_root()
+	_show_title_bar()
 	var panel: PanelContainer = UIFactory.make_panel()
 	root.add_child(panel)
 	var scroll: ScrollContainer = ScrollContainer.new()
@@ -3432,7 +3543,6 @@ func show_shop_node() -> void:
 	var flavor_text: String = "簾後藏著來路不明的珍品，價格狠，成色也狠。" if run_state.current_shop_is_black else "行商在山道旁支起小攤，貨色普通但價格公道。"
 	box.add_child(_title(title_text, 34))
 	box.add_child(UIFactory.paragraph(flavor_text))
-	box.add_child(UIFactory.paragraph("%s  HP %d/%d  銅錢 %d  牌組 %d 張" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, run_state.deck.size()]))
 	var goods_row: HBoxContainer = HBoxContainer.new()
 	goods_row.add_theme_constant_override("separation", 12)
 	box.add_child(goods_row)
@@ -3551,25 +3661,64 @@ func _buy_shop_relic(relic: RelicData, price: int) -> void:
 func _shop_potion_view(item: Dictionary) -> Control:
 	var potion: Dictionary = item["potion"] as Dictionary
 	var price: int = _shop_apply_discount(int(item["price"]))
-	var panel: PanelContainer = UIFactory.make_panel()
-	panel.custom_minimum_size = Vector2(180, 160)
-	var box: VBoxContainer = VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	panel.add_child(box)
-	var rarity_col: Color = PotionCatalog.rarity_color(potion)
-	box.add_child(UIFactory.card_label(String(potion.get("display_name", "?")), 17, rarity_col, HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(UIFactory.card_label(String(potion.get("description", "")), 11, Color("d8e0ec"), HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(UIFactory.card_label("價格：%d 銅錢" % price, 13, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER))
 	var full: bool = run_state.potions.size() >= RunState.MAX_POTION_SLOTS
 	var can_buy: bool = run_state.gold >= price and not full
-	var btn: Button = _button("買下藥品")
+	var rarity_col: Color = PotionCatalog.rarity_color(potion)
+	var btn: Button = Button.new()
+	btn.custom_minimum_size = Vector2(150, 56)
+	btn.text = "%s\n%d 銅錢" % [String(potion.get("display_name", "?")), price]
+	btn.add_theme_color_override("font_color", rarity_col)
+	btn.add_theme_font_size_override("font_size", 14)
 	btn.disabled = not can_buy
 	if full:
 		btn.tooltip_text = "藥格已滿（%d/%d）" % [run_state.potions.size(), RunState.MAX_POTION_SLOTS]
-	btn.pressed.connect(func(): _buy_shop_potion(potion, item, price))
-	box.add_child(btn)
-	return panel
+	else:
+		btn.tooltip_text = String(potion.get("description", ""))
+	btn.pressed.connect(func(): _show_shop_potion_confirm_overlay(potion, item, price))
+	return btn
+
+func _show_shop_potion_confirm_overlay(potion: Dictionary, item: Dictionary, price: int) -> void:
+	_hide_card_preview()
+	var overlay: Control = Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.z_index = 300
+	add_child(overlay)
+	_card_preview_overlay = overlay
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0, 0, 0, 0.55)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.add_child(backdrop)
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+	var panel: PanelContainer = UIFactory.make_panel()
+	panel.custom_minimum_size = Vector2(360, 0)
+	center.add_child(panel)
+	var col: VBoxContainer = VBoxContainer.new()
+	col.add_theme_constant_override("separation", 14)
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_child(col)
+	var rarity_col: Color = PotionCatalog.rarity_color(potion)
+	col.add_child(UIFactory.card_label(String(potion.get("display_name", "?")), 22, rarity_col, HORIZONTAL_ALIGNMENT_CENTER))
+	col.add_child(UIFactory.paragraph(String(potion.get("description", ""))))
+	col.add_child(UIFactory.card_label("價格：%d 銅錢   （持有 %d）" % [price, run_state.gold], 16, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER))
+	var btn_row: HBoxContainer = HBoxContainer.new()
+	btn_row.add_theme_constant_override("separation", 16)
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.add_child(btn_row)
+	var full: bool = run_state.potions.size() >= RunState.MAX_POTION_SLOTS
+	var cancel_btn: Button = _button("取消")
+	cancel_btn.pressed.connect(_hide_card_preview)
+	btn_row.add_child(cancel_btn)
+	var confirm_btn: Button = _button("購買")
+	confirm_btn.disabled = run_state.gold < price or full
+	confirm_btn.pressed.connect(func() -> void:
+		_hide_card_preview()
+		_buy_shop_potion(potion, item, price))
+	btn_row.add_child(confirm_btn)
 
 func _buy_shop_potion(potion: Dictionary, item: Dictionary, price: int) -> void:
 	if run_state.gold < price or run_state.potions.size() >= RunState.MAX_POTION_SLOTS:
@@ -3666,15 +3815,52 @@ func _shop_item_view(item: Dictionary) -> Control:
 	var can_buy: bool = run_state.gold >= price
 	var card_button: Button = _make_card_button(card, card.cost, Vector2(190, 240), can_buy, true)
 	card_button.disabled = not can_buy
-	card_button.pressed.connect(func(): buy_shop_card(card, price))
+	card_button.pressed.connect(func(): _show_shop_buy_confirm_overlay(card, price))
 	box.add_child(card_button)
 	var price_label: Label = UIFactory.card_label("價格：%d 銅錢" % price, 15, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	box.add_child(price_label)
-	var buy_button: Button = _button("買下")
-	buy_button.disabled = not can_buy
-	buy_button.pressed.connect(func(): buy_shop_card(card, price))
-	box.add_child(buy_button)
 	return panel
+
+func _show_shop_buy_confirm_overlay(card: CardData, price: int) -> void:
+	_hide_card_preview()
+	var overlay: Control = Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.z_index = 300
+	add_child(overlay)
+	_card_preview_overlay = overlay
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0, 0, 0, 0.55)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.add_child(backdrop)
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+	var col: VBoxContainer = VBoxContainer.new()
+	col.add_theme_constant_override("separation", 18)
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.add_child(col)
+	var big: Button = _make_card_button(card, card.cost, Vector2(260, 360), true, true)
+	big.disabled = true
+	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(big)
+	var price_lbl: Label = UIFactory.card_label("價格：%d 銅錢   （持有 %d）" % [price, run_state.gold], 18, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	col.add_child(price_lbl)
+	var btn_row: HBoxContainer = HBoxContainer.new()
+	btn_row.add_theme_constant_override("separation", 16)
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.add_child(btn_row)
+	var cancel_btn: Button = _button("取消")
+	cancel_btn.pressed.connect(_hide_card_preview)
+	btn_row.add_child(cancel_btn)
+	var confirm_btn: Button = _button("購買")
+	confirm_btn.disabled = run_state.gold < price
+	confirm_btn.pressed.connect(func() -> void:
+		_hide_card_preview()
+		buy_shop_card(card, price))
+	btn_row.add_child(confirm_btn)
 
 func buy_shop_card(card: CardData, price: int) -> void:
 	if run_state.gold < price:
@@ -3843,7 +4029,14 @@ func show_deck_view(mode: String = "view", custom_cards = null, custom_title: St
 		target_cards = run_state.deck
 	else:
 		target_cards = custom_cards
-		
+
+	if deck_view_mode == "upgrade" or deck_view_mode == "shop_upgrade":
+		var filtered: Array = []
+		for c: CardData in target_cards:
+			if not c.upgraded:
+				filtered.append(c)
+		target_cards = filtered
+
 	var count_text: String = "%s  HP %d/%d  銅錢 %d" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold]
 	if custom_cards == null:
 		count_text += "  共 %d 張牌" % run_state.deck.size()
@@ -3851,17 +4044,19 @@ func show_deck_view(mode: String = "view", custom_cards = null, custom_title: St
 		count_text += "  共 %d 張牌" % target_cards.size()
 	box.add_child(UIFactory.paragraph(count_text))
 	
-	var summary: Label = UIFactory.paragraph(_deck_summary_text(target_cards, custom_cards == null))
+	var summary_text: String = _deck_summary_text(target_cards, custom_cards == null)
+	if deck_view_mode == "upgrade" or deck_view_mode == "shop_upgrade":
+		# 升級畫面隱藏「重複：...」
+		var nl: int = summary_text.find("\n")
+		if nl != -1:
+			summary_text = summary_text.substr(0, nl)
+	var summary: Label = UIFactory.paragraph(summary_text)
 	box.add_child(summary)
-	
+
 	if deck_view_mode == "remove":
 		box.add_child(UIFactory.paragraph("至少保留 5 張牌。點選一張牌後會移除並完成事件。"))
 	elif deck_view_mode == "shop_remove":
 		box.add_child(UIFactory.paragraph("至少保留 5 張牌。點選一張牌後花費 %d 銅錢並移除。" % _deck_view_service_price))
-	elif deck_view_mode == "upgrade":
-		box.add_child(UIFactory.paragraph("點選一張未升級的牌，升級後會完成此節點。每張卡下方標註升級後的數值。"))
-	elif deck_view_mode == "shop_upgrade":
-		box.add_child(UIFactory.paragraph("點選一張未升級的牌，花費 %d 銅錢後升級。每張卡下方標註升級後的數值。" % _deck_view_service_price))
 		
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -4067,16 +4262,17 @@ func _show_upgrade_confirm_overlay(card: CardData, on_confirm: Callable) -> void
 	btn_row.add_theme_constant_override("separation", 16)
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	col.add_child(btn_row)
+	var cancel_btn: Button = _button("取消")
+	cancel_btn.pressed.connect(_hide_card_preview)
+	btn_row.add_child(cancel_btn)
 	var confirm_btn: Button = _button("確認升級")
 	confirm_btn.pressed.connect(func() -> void:
 		_hide_card_preview()
 		on_confirm.call())
 	btn_row.add_child(confirm_btn)
-	var cancel_btn: Button = _button("取消")
-	cancel_btn.pressed.connect(_hide_card_preview)
-	btn_row.add_child(cancel_btn)
 
 func show_result(victory: bool) -> void:
+	_hide_title_bar()
 	if victory:
 		Ascension.mark_cleared(run_state.ascension_level)
 		SaveManager.clear()
@@ -4363,6 +4559,7 @@ func _retry_current_battle() -> void:
 	start_next_battle(enemy_to_retry)
 
 func _refresh_battle(animate_draw: bool = false) -> void:
+	_refresh_title_bar()
 	var top_parts: Array[String] = ["第%s幕 %d/%d 層" % [_act_numeral(run_state.act), run_state.encounter_index + 1, run_state.encounter_choices.size()]]
 	top_parts.append("抽 %d / 棄 %d" % [battle.deck.draw_pile.size(), battle.deck.discard_pile.size()])
 	var passive_status: String = battle.passive_status_text()
@@ -4729,16 +4926,16 @@ func _card_frame_texture_path(card_type: String) -> String:
 
 func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: bool, selectable: bool) -> Button:
 	var is_small: bool = size.y < 220.0
-	var title_font_size: int = 13 if is_small else 16
-	var cost_font_size: int = 14 if is_small else 16
-	var type_font_size: int = 11 if is_small else 13
-	var desc_font_size: int = 12 if is_small else 15
+	var title_font_size: int = 13 if is_small else 18
+	var cost_font_size: int = 18 if is_small else 24
+	var type_font_size: int = 10 if is_small else 11
+	var desc_font_size: int = 11 if is_small else 14
 	
-	var rules_margin_left: int = 6 if is_small else 10
-	var rules_margin_right: int = 6 if is_small else 10
-	var rules_margin_top: int = 4 if is_small else 8
-	var rules_margin_bottom: int = 4 if is_small else 12
-	var rules_separation: int = 2 if is_small else 4
+	var rules_margin_left: int = 12 if is_small else 18
+	var rules_margin_right: int = 12 if is_small else 18
+	var rules_margin_top: int = 12 if is_small else 18
+	var rules_margin_bottom: int = 8 if is_small else 14
+	var rules_separation: int = 4 if is_small else 7
 
 	var button: Button = Button.new()
 	button.text = ""
@@ -4746,39 +4943,51 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	button.focus_mode = Control.FOCUS_NONE
 	button.clip_contents = true
 	_style_card_button(button, card, affordable)
-	var frame: TextureRect = TextureRect.new()
-	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	frame.stretch_mode = TextureRect.STRETCH_SCALE
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.texture = UIFactory.load_texture(_card_frame_texture_path(card.card_type))
-	if not affordable or not selectable:
-		frame.modulate = Color(0.82, 0.82, 0.82, 0.78)
-	button.add_child(frame)
+
+	var frame_layer_root: Control = Control.new()
+	frame_layer_root.name = "FrameLayer"
+	frame_layer_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	frame_layer_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(frame_layer_root)
+
+	var content_layer_root: Control = Control.new()
+	content_layer_root.name = "ContentLayer"
+	content_layer_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content_layer_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(content_layer_root)
+
 	var outer: MarginContainer = MarginContainer.new()
 	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	outer.add_theme_constant_override("margin_left", int(round(size.x * 0.11)))
-	outer.add_theme_constant_override("margin_top", int(round(size.y * 0.065)))
-	outer.add_theme_constant_override("margin_right", int(round(size.x * 0.11)))
-	outer.add_theme_constant_override("margin_bottom", int(round(size.y * 0.08)))
-	button.add_child(outer)
+	outer.add_theme_constant_override("margin_left", int(round(size.x * 0.09)))
+	outer.add_theme_constant_override("margin_top", int(round(size.y * 0.07)))
+	outer.add_theme_constant_override("margin_right", int(round(size.x * 0.09)))
+	outer.add_theme_constant_override("margin_bottom", int(round(size.y * 0.06)))
+	content_layer_root.add_child(outer)
 	var box: VBoxContainer = VBoxContainer.new()
-	box.add_theme_constant_override("separation", 3)
+	box.add_theme_constant_override("separation", 0)
 	outer.add_child(box)
-	var type_bar: PanelContainer = PanelContainer.new()
-	type_bar.custom_minimum_size = Vector2(0, max(4.0, size.y * 0.015))
-	type_bar.add_theme_stylebox_override("panel", UIFactory.strip_box(CardFormat.card_color(card.card_type, true).lightened(0.16), 999))
-	box.add_child(type_bar)
 	var art_frame: PanelContainer = PanelContainer.new()
 	# 只指定最小高度；寬度跟著 outer margin 計算過的 box 內寬走，避免硬寫 (size.x - 22)
 	# 超過 outer margin 真正留下的空間（2 * 11% = 22% > 22 像素）導致 art_frame 溢出右側
-	art_frame.custom_minimum_size = Vector2(0, 72.0 if is_small else max(92.0, size.y * 0.41))
-	art_frame.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.14), Color(1, 1, 1, 0), 0, 6))
+	art_frame.custom_minimum_size = Vector2(0, 72.0 if is_small else max(88.0, size.y * 0.39))
+	art_frame.add_theme_stylebox_override("panel", UIFactory.style_box(Color(0, 0, 0, 0), Color(1, 1, 1, 0), 0, 6))
 	box.add_child(art_frame)
+	# Inside the art window we keep a local stack: art -> ornaments -> text.
 	var art_layer: Control = Control.new()
+	art_layer.name = "CardArtLayer"
 	art_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	art_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	art_frame.add_child(art_layer)
+	var art_ornament_layer: Control = Control.new()
+	art_ornament_layer.name = "CardOrnamentLayer"
+	art_ornament_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art_ornament_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art_frame.add_child(art_ornament_layer)
+	var art_text_layer: Control = Control.new()
+	art_text_layer.name = "CardTextLayer"
+	art_text_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art_text_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art_frame.add_child(art_text_layer)
 	var art: TextureRect = TextureRect.new()
 	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -4790,52 +4999,52 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	if not affordable or not selectable:
 		art.modulate = Color(0.72, 0.72, 0.72, 0.62)
 	art_layer.add_child(art)
-	var title_back: PanelContainer = PanelContainer.new()
-	title_back.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	title_back.offset_left = 0
-	title_back.offset_top = -22 if is_small else -28
-	title_back.offset_right = 0
-	title_back.offset_bottom = 0
-	title_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	title_back.add_theme_stylebox_override("panel", UIFactory.style_box(Color(0.06, 0.05, 0.04, 0.32), Color(0, 0, 0, 0), 0, 6))
-	art_layer.add_child(title_back)
-	var title_row: HBoxContainer = HBoxContainer.new()
-	title_row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	title_row.add_theme_constant_override("separation", 4)
-	title_back.add_child(title_row)
-	var title: Label = UIFactory.card_label(card.display_title(), title_font_size, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_LEFT)
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title_row.add_child(title)
-	var rarity_badge: Label = UIFactory.card_label(CardFormat.card_rarity_name(card), 10 if is_small else 10, CardFormat.card_rarity_color(card), HORIZONTAL_ALIGNMENT_RIGHT)
-	rarity_badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title_row.add_child(rarity_badge)
+
+	var frame: TextureRect = TextureRect.new()
+	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	frame.stretch_mode = TextureRect.STRETCH_SCALE
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.texture = UIFactory.load_texture(_card_frame_texture_path(card.card_type))
+	if not affordable or not selectable:
+		frame.modulate = Color(0.82, 0.82, 0.82, 0.78)
+	frame_layer_root.add_child(frame)
+
+	var top_overlay: Control = Control.new()
+	top_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	top_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content_layer_root.add_child(top_overlay)
 	var cost_badge: PanelContainer = PanelContainer.new()
-	cost_badge.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	var badge_size: float = 24.0 if is_small else 28.0
-	cost_badge.offset_left = -badge_size - (4.0 if is_small else 6.0)
-	cost_badge.offset_top = 4.0 if is_small else 6.0
-	cost_badge.offset_right = - (4.0 if is_small else 6.0)
-	cost_badge.offset_bottom = badge_size + (4.0 if is_small else 6.0)
+	cost_badge.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	var badge_size: float = 36.0 if is_small else 54.0
+	cost_badge.offset_left = 8.0 if is_small else 12.0
+	cost_badge.offset_top = 8.0 if is_small else 12.0
+	cost_badge.offset_right = cost_badge.offset_left + badge_size
+	cost_badge.offset_bottom = cost_badge.offset_top + badge_size
 	cost_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var cost_style: StyleBoxFlat = StyleBoxFlat.new()
-	cost_style.bg_color = Color(0.10, 0.08, 0.05, 0.42)
-	cost_style.border_color = Color("f2d48a", 0.45)
-	cost_style.set_border_width_all(1)
-	cost_style.set_corner_radius_all(6)
-	cost_style.content_margin_left = 2
-	cost_style.content_margin_right = 2
-	cost_style.content_margin_top = 2
-	cost_style.content_margin_bottom = 2
+	cost_style.bg_color = Color(0, 0, 0, 0)
+	cost_style.border_color = Color(0, 0, 0, 0)
 	cost_badge.add_theme_stylebox_override("panel", cost_style)
-	art_layer.add_child(cost_badge)
-	var cost_label: Label = UIFactory.card_label(str(cost), cost_font_size, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	top_overlay.add_child(cost_badge)
+	var cost_label: Label = UIFactory.card_label(str(cost), cost_font_size, Color("f7f0dc"), HORIZONTAL_ALIGNMENT_CENTER)
 	cost_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cost_label.add_theme_color_override("font_outline_color", Color("1b150f", 0.9))
+	cost_label.add_theme_constant_override("outline_size", 2 if is_small else 3)
 	cost_badge.add_child(cost_label)
+	var name_wrap: MarginContainer = MarginContainer.new()
+	name_wrap.custom_minimum_size = Vector2(0, 28.0 if is_small else 40.0)
+	name_wrap.add_theme_constant_override("margin_left", 18 if is_small else 28)
+	name_wrap.add_theme_constant_override("margin_right", 18 if is_small else 28)
+	box.add_child(name_wrap)
+	var title: Label = UIFactory.card_label(card.display_title(), title_font_size, Color("2e2318"), HORIZONTAL_ALIGNMENT_CENTER)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	name_wrap.add_child(title)
 	var rules_panel: PanelContainer = PanelContainer.new()
 	rules_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	rules_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color(0.90, 0.87, 0.76, 0.78), Color(0, 0, 0, 0), 0, 10))
+	rules_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, 10))
 	box.add_child(rules_panel)
 	var rules_margin: MarginContainer = MarginContainer.new()
 	rules_margin.add_theme_constant_override("margin_left", rules_margin_left)
@@ -4852,6 +5061,7 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	var desc: Label = UIFactory.card_label(card.display_description(), desc_font_size, Color("2d2418"), HORIZONTAL_ALIGNMENT_LEFT)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	desc.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	rules_box.add_child(desc)
 	UIFactory.ignore_child_mouse(button)
 	return button
