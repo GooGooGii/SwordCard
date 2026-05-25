@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://df0pu3jbth23a"
-path="res://.godot/imported/bandit.png-5ce21d0e40aea176725725266e5038d6.ctex"
+uid="uid://7mqg877etf0j"
+path="res://.godot/imported/ancestor_relic.png-54ee97edc34a74b08ad4f86e2507899e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/enemies/bandit.png"
-dest_files=["res://.godot/imported/bandit.png-5ce21d0e40aea176725725266e5038d6.ctex"]
+source_file="res://assets/art/events/ancestor_relic.png"
+dest_files=["res://.godot/imported/ancestor_relic.png-54ee97edc34a74b08ad4f86e2507899e.ctex"]
 
 [params]
 
