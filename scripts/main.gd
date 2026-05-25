@@ -2070,12 +2070,10 @@ func _build_potion_overlay() -> void:
 
 func _update_potion_button(btn: Button, slot: int, in_battle: bool = true) -> void:
 	if slot >= run_state.potions.size():
-		btn.text = "—"
-		btn.disabled = true
-		btn.tooltip_text = "（空槽）"
-		btn.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("131a26"), Color("3a4460"), 1, 6))
-		btn.add_theme_color_override("font_disabled_color", Color("505870"))
+		# 空槽：完全隱藏，避免一排「—」的視覺雜訊
+		btn.visible = false
 		return
+	btn.visible = true
 	var potion: Dictionary = run_state.potions[slot]
 	var name: String = String(potion.get("display_name", "?"))
 	btn.text = name.substr(0, 4) if name.length() > 4 else name
@@ -2095,6 +2093,13 @@ func _refresh_potion_buttons() -> void:
 			_update_potion_button(_potion_buttons[i], i, true)
 
 func _refresh_potion_overlay_buttons() -> void:
+	# 完全沒藥草時整條 strip 也隱藏；有藥草時 strip 顯示、空槽 button visible=false
+	if _potion_overlay != null and is_instance_valid(_potion_overlay):
+		if run_state == null or run_state.potions.is_empty():
+			_potion_overlay.visible = false
+			return
+		# 若這個函式被呼叫，預期當前 screen 是非戰鬥（戰鬥場景另有 _potion_buttons）；
+		# 注意 start_next_battle 會主動把 overlay 設為 false，所以不會在戰鬥中誤露出
 	for i: int in range(_potion_overlay_buttons.size()):
 		_update_potion_button(_potion_overlay_buttons[i], i, false)
 
