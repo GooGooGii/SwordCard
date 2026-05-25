@@ -145,6 +145,23 @@ smoke_test.gd 共 32 個測試，涵蓋：
   - smoke test 加 AOE 卡命中所有敵測試
   - 更新 BALANCE_BASELINES 含多敵情境
 
+### 進行中（Event Branching — 奇遇分支故事化）
+詳見 [`docs/EVENT_BRANCHING.md`](docs/EVENT_BRANCHING.md)。把 28 個 event 從扁平選單升級為分支故事樹，葉節點分類 reward / punish / battle / gamble / mixed。
+- [ ] **P1 Schema + Runner**（~280 行）— `event_runner.gd`、`tree` 欄位、requires 過濾、UI 徽章
+- [ ] **P2 Event UI 改版**（~220 行）— `show_event_node()` 支援多層樹走訪
+- [ ] **P3 戰鬥回流**（~100 行）— `pending_event_return`、戰敗不結束 run
+- [ ] **P4 Curse 牌系統**（~250 行）— 新 card_type、6 張 curse、淨化符遺物、黑市驅邪
+- [ ] **P5 observe Token**（~120 行）— `RunState.observe_tokens`，全 run 限定資源
+- [ ] **P6 新 effect kinds**（~150 行）— gain_card_pool / lose_card / gain_curse / next_battle_buff / act_modifier / permanent_power
+- [ ] **P7 內容 A**（10 事件，~600 行）
+- [ ] **P8 內容 B**（10 事件，~700 行）
+- [ ] **P9 內容 C**（11 事件含戰鬥，~750 行）
+- [ ] **P10 戰鬥用敵人**（4–6 個 event-only enemies，~180 行）
+- [ ] **P11 Smoke tests**（~280 行）
+
+設計凍結：節點密度 3–5、戰鬥分支 10–12 個事件、curse 牌會做、每事件至少 1 條角色獨家路徑、observe 改為全 run 限定 token。
+6 個事件分支樹已凍結（spring / yokai_pact / flower_spirit / yangzhou_officer / jiang_waner_grief / baiyue_altar），剩 25 個待 review。
+
 ### 高優先（影響玩法完整度）
 - [x] **Boss 專屬神器** — 已實作
 - [x] **平衡 regression baseline 更新** — 已含 leveled progression + multi-enemy 配套
