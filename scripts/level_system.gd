@@ -224,24 +224,21 @@ static func _lyr_unlocks() -> Dictionary:
 				"uncommon"),
 		],
 		# Lv9 (PAL1 Lv15) — 元靈歸心術：HP 500 治療
+		# 林版調 12 heal（她起手 凝神歸元 ×2 已 24 治療；治療+治療使她近乎不死）
 		9: [
 			GameData.make_card("lyr_yuanlinggui", "元靈歸心術", "林月如", 2, "skill",
-				"PAL1 Lv15 高階治療，回復 28 點生命。",
-				([{"kind": "heal", "amount": 28}] as Array[Dictionary]),
+				"PAL1 Lv15 高階治療，回復 12 點生命。",
+				([{"kind": "heal", "amount": 12}] as Array[Dictionary]),
 				"rare"),
 		],
-		# Lv10 (PAL1 Lv16) — 乾坤一擲：金錢鏢全體
-		10: [
-			GameData.make_card("lyr_qiankun_ls", "乾坤一擲", "林月如", 0, "attack",
-				"PAL1 Lv16 散財絕招。消耗全部靈力，每點造成 9 點傷害。",
-				([{"kind": "consume_energy_damage", "amount": 9}] as Array[Dictionary]),
-				"rare"),
-		],
+		# 乾坤一擲：原本在 Lv10 unlock，但 0c consume_energy 配合她的 burst 太 OP；
+		# 移出 unlock 表，只在 reward pool / shop 可取得（game_data.gd 中 lyr_qiankun 維持）
 		# Lv12 (PAL1 Lv20) — 斬龍訣：氣勁橫掃
+		# 30 → 16（rare unlock 從超量 burst 改成穩定中產傷）
 		12: [
 			GameData.make_card("lyr_zhanlong_ls", "斬龍訣", "林月如", 3, "attack",
-				"PAL1 Lv20 氣勁橫掃群魔，造成 30 點傷害。",
-				([{"kind": "damage", "amount": 30}] as Array[Dictionary]),
+				"PAL1 Lv20 氣勁橫掃群魔，造成 16 點傷害。",
+				([{"kind": "damage", "amount": 16}] as Array[Dictionary]),
 				"rare"),
 		],
 		# Lv22 (PAL1 Lv35) — 萬里狂沙：林家獨門絕招
@@ -257,17 +254,19 @@ static func _lyr_unlocks() -> Dictionary:
 static func _anu_unlocks() -> Dictionary:
 	return {
 		# Lv4 — 三屍蠱（PAL1 初登場但效果偏強，當早期 unlock）
+		# 4→3 poison（阿奴蠱毒堆疊太強，每張少 1 整體下降明顯）
 		4: [
 			GameData.make_card("anu_sanshigu", "三屍蠱", "阿奴", 1, "skill",
-				"PAL1 苗疆蠱術。施加 4 層蠱毒並使敵人虛弱 1 層。",
-				([{"kind": "poison", "amount": 4}, {"kind": "weak", "amount": 1}] as Array[Dictionary]),
+				"PAL1 苗疆蠱術。施加 3 層蠱毒並使敵人虛弱 1 層。",
+				([{"kind": "poison", "amount": 3}, {"kind": "weak", "amount": 1}] as Array[Dictionary]),
 				"uncommon"),
 		],
 		# Lv6 — 炎殺咒（PAL1 初登場高級火系）
+		# 15 → 12 dmg（阿奴蠱毒堆疊已強，攻擊輔助打中產傷即可）
 		6: [
 			GameData.make_card("anu_yanshazhou", "炎殺咒", "阿奴", 2, "attack",
-				"PAL1 高級火系咒術。造成 15 點傷害並施加 1 層破綻。",
-				([{"kind": "damage", "amount": 15}, {"kind": "vulnerable", "amount": 1}] as Array[Dictionary]),
+				"PAL1 高級火系咒術。造成 12 點傷害並施加 1 層破綻。",
+				([{"kind": "damage", "amount": 12}, {"kind": "vulnerable", "amount": 1}] as Array[Dictionary]),
 				"uncommon"),
 		],
 		# Lv9 — 贖魂（PAL1 初登場 復活 30%）
@@ -278,17 +277,19 @@ static func _anu_unlocks() -> Dictionary:
 				"rare"),
 		],
 		# Lv12 — 奪魂（PAL1 初登場 機率秒殺 → 卡牌化為高傷害）
+		# 14+2 → 10+1（避免蠱毒堆疊+burst 雙重 OP）
 		12: [
 			GameData.make_card("anu_duohun", "奪魂", "阿奴", 2, "attack",
-				"PAL1 吸取魂魄。造成 18 點傷害並施加 3 層蠱毒。",
-				([{"kind": "damage", "amount": 18}, {"kind": "poison", "amount": 3}] as Array[Dictionary]),
+				"PAL1 吸取魂魄。造成 10 點傷害並施加 1 層蠱毒。",
+				([{"kind": "damage", "amount": 10}, {"kind": "poison", "amount": 1}] as Array[Dictionary]),
 				"rare"),
 		],
 		# Lv18 (PAL1 Lv30) — 萬蟻蝕象
+		# 7 → 4 poison（單張上限再降，配合多 unlock 才疊高位毒）
 		18: [
 			GameData.make_card("anu_wanyi_ls", "萬蟻蝕象", "阿奴", 2, "skill",
-				"PAL1 Lv30 食人毒蟻。施加 10 層蠱毒。",
-				([{"kind": "poison", "amount": 10}] as Array[Dictionary]),
+				"PAL1 Lv30 食人毒蟻。施加 4 層蠱毒。",
+				([{"kind": "poison", "amount": 4}] as Array[Dictionary]),
 				"rare"),
 		],
 		# Lv22 (PAL1 Lv35) — 萬蠱蝕天

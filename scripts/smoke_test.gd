@@ -820,15 +820,18 @@ const BALANCE_BASELINES: Dictionary = {
 }
 # 蜈蚣大王（bosses[1]）+ 10 回合上限：起始牌組對 boss 的「速贏率」。
 # 給夠時間 random AI 都會贏，限時才能拿到中段勝率做雙向偵測。
-# PAL1 對齊重整後（10/2/0 規範 + burst 卡）：
-# - lin_yueru / anu 仍 100%（高傷快攻 / 蠱毒堆疊）
-# - li_xiaoyao 約 63%（移除酒神咒、九龍訣等 burst，靠御劍+萬劍）
-# - zhao_linger 約 80%（雷咒×3 + 天雷破 burst，配合金剛咒+觀音咒持續）
+# 此測試本質不真實（玩家到 act 3 必有 unlock），保留作純 regression 警報；
+# 真實場景請看 BALANCE_BASELINES_LEVELED。
+# 林/阿 nerf 後（御蜂術 3×4→3×3、萬蟻/解毒/毒霧 微降、林乾坤移出 unlock）：
+# - li_xiaoyao 約 63%
+# - zhao_linger 約 80%
+# - lin_yueru 仍 100%（一陽指 18dmg 起手即在，10t 內速殺仍夠）
+# - anu 跌到 50%（御蜂術連擊 -25%、毒堆疊降幅大）
 const BALANCE_BASELINES_MID: Dictionary = {
 	"li_xiaoyao": 63,
 	"zhao_linger": 80,
 	"lin_yueru": 100,
-	"anu": 100
+	"anu": 50
 }
 # 全升級起始牌組 vs 山賊頭目。升級應嚴格 >= 基礎勝率，預期全 100%。
 const BALANCE_BASELINES_UPGRADED: Dictionary = {
@@ -858,11 +861,12 @@ const BALANCE_BASELINES_LEVELED: Dictionary = {
 	# Lv5 vs 殭屍大帥（act 2 boss HP 90）：應全部 ≥95%
 	# Lv10 vs 蜈蚣大王（act 3 boss HP 92）：李/趙 80-90%，林/阿 100%
 	# Lv15 vs 山靈巫后（act 4 boss HP 78）：應全部 100%
-	# Lv20 vs 拜月教主（act 5 boss HP 115）：李/趙 半數左右（爆發不足），林/阿 ≥95%
+	# Lv20 vs 拜月教主（act 5 boss HP 115）：李/趙 半數左右（爆發不足），林/阿 70-90%
+	#   （林/阿 nerf 後降到合理範圍，差距收斂到 30pp）
 	"li_xiaoyao":  {5: 97,  10: 90,  15: 100, 20: 57},
 	"zhao_linger": {5: 100, 10: 87,  15: 100, 20: 47},
-	"lin_yueru":   {5: 100, 10: 100, 15: 100, 20: 100},
-	"anu":         {5: 100, 10: 100, 15: 100, 20: 97},
+	"lin_yueru":   {5: 100, 10: 100, 15: 100, 20: 77},
+	"anu":         {5: 100, 10: 100, 15: 100, 20: 90},
 }
 
 # Lv → act 對應
