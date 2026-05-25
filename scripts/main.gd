@@ -2629,7 +2629,9 @@ func resolve_rest_heal() -> void:
 	run_state.pending_rest_heal = 0
 	advance_non_battle_node()
 
-func show_event_node() -> void:
+func show_event_node(sub_stage: String = "") -> void:
+	# sub_stage 非空 = 從某個主選項進入的次階段（sub-menu）
+	# 渲染 sub_flavors[sub_stage] + sub_choices[sub_stage] 而非預設 flavor / choices
 	_set_event_background()
 	_clear_root()
 	var panel: PanelContainer = UIFactory.make_panel()
@@ -2641,12 +2643,21 @@ func show_event_node() -> void:
 	var event_data: Dictionary = EventData.for_variant(run_state.current_event_variant)
 	box.add_child(_title(String(event_data["title"]), 32))
 	var _active_char_id: String = run_state.characters[run_state.active_character_index].id if run_state.characters.size() > run_state.active_character_index else ""
-	box.add_child(UIFactory.paragraph(EventData.flavor_for(event_data, _active_char_id)))
+	var flavor_text: String
+	var choices_list: Array
+	if sub_stage.is_empty():
+		flavor_text = EventData.flavor_for(event_data, _active_char_id)
+		choices_list = event_data.get("choices", ["heal", "gain_card", "power", "upgrade", "remove", "view_deck"])
+	else:
+		var sub_flavors: Dictionary = event_data.get("sub_flavors", {}) as Dictionary
+		flavor_text = String(sub_flavors.get(sub_stage, ""))
+		var sub_choices_map: Dictionary = event_data.get("sub_choices", {}) as Dictionary
+		choices_list = sub_choices_map.get(sub_stage, []) as Array
+	box.add_child(UIFactory.paragraph(flavor_text))
 	box.add_child(_event_status_strip())
 	var heal_amount: int = int(event_data["heal"])
 	var gain_cost: int = int(event_data["gain_cost"])
 	var power_gain: int = int(event_data["power"])
-	var choices_list: Array = event_data.get("choices", ["heal", "gain_card", "power", "upgrade", "remove", "view_deck"])
 	var grid: GridContainer = GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 16)
@@ -2654,7 +2665,18 @@ func show_event_node() -> void:
 	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	box.add_child(grid)
 	for choice_key: Variant in choices_list:
-		match String(choice_key):
+		var key: String = String(choice_key)
+		# 角色限定 filter（choice_filters[key].if_character = [ids]）
+		if not _event_choice_passes_filter(event_data, key, _active_char_id):
+			continue
+		# 多階段 sub_choices override — 若此 key 定義了 sub_choices，按下開 sub-menu 而非 resolve
+		var sub_choices_map: Dictionary = event_data.get("sub_choices", {}) as Dictionary
+		if sub_choices_map.has(key):
+			var label_pair: Array = _event_branch_label(event_data, key)
+			grid.add_child(_event_choice_button(String(label_pair[0]), String(label_pair[1]),
+				false, func() -> void: show_event_node(key)))
+			continue
+		match key:
 			"heal":
 				grid.add_child(_event_choice_button("調息", "回復 %d 點生命" % heal_amount,
 					heal_amount <= 0, func() -> void: resolve_event_heal(heal_amount)))
@@ -2699,6 +2721,41 @@ func show_event_node() -> void:
 			"fight":
 				grid.add_child(_event_choice_button("出手", "與花妖一戰，奪取寶物",
 					false, _start_event_fight))
+			"observe":
+				# 觀察：顯示加長 flavor，不結束事件
+				grid.add_child(_event_choice_button("觀察", "細看周遭，不冒任何風險",
+					false, func() -> void: _event_show_observe(event_data, sub_stage)))
+			"leave":
+				# 離開：不領任何獎勵或損失，直接過場
+				grid.add_child(_event_choice_button("離開", "繞道離去，不參與此事",
+					false, advance_non_battle_node))
+
+func _event_choice_passes_filter(event_data: Dictionary, choice_key: String, active_char_id: String) -> bool:
+	# 角色限定：choice_filters[key].if_character = [char_ids]
+	# 若 list 非空且 active char 不在其中，按鈕不顯示
+	var filters: Dictionary = event_data.get("choice_filters", {}) as Dictionary
+	if not filters.has(choice_key):
+		return true
+	var filter: Dictionary = filters[choice_key] as Dictionary
+	var if_char: Array = filter.get("if_character", []) as Array
+	if not if_char.is_empty() and not (active_char_id in if_char):
+		return false
+	return true
+
+func _event_branch_label(event_data: Dictionary, choice_key: String) -> Array:
+	# 多階段主選項的按鈕文字。EventData.branch_labels[key] = [title, desc] 可選；
+	# 沒設則 fallback 用 choice key 與一段通用敘述。
+	var labels: Dictionary = event_data.get("branch_labels", {}) as Dictionary
+	if labels.has(choice_key):
+		var entry: Array = labels[choice_key] as Array
+		if entry.size() >= 2:
+			return [String(entry[0]), String(entry[1])]
+	return [choice_key.capitalize(), "深入此選項"]
+
+func _event_show_observe(event_data: Dictionary, sub_stage: String) -> void:
+	# 觀察 = 顯示加長 observe_text 後返回事件主選單（不結束）
+	var text: String = String(event_data.get("observe_text", "你細細地觀察了一遍，但似乎沒有新的發現。"))
+	_show_event_outcome(text, func() -> void: show_event_node(sub_stage))
 
 func _start_event_fight() -> void:
 	var outcome_text: String = _get_event_outcome(
