@@ -95,6 +95,22 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			var actual_heal: int = amount + int(state.get("heal_bonus", 0))
 			state["player_hp"] = min(int(state["player_max_hp"]), int(state["player_hp"]) + actual_heal)
 			log_lines.append("回復 %d 點生命。" % actual_heal)
+		"heal_party":
+			# 全隊活著的成員回血（PAL1 五氣朝元等全體治療對應）
+			var party_heal: int = amount + int(state.get("heal_bonus", 0))
+			var players: Array = state.get("players", []) as Array
+			var healed_any: bool = false
+			for p_v: Variant in players:
+				var p: Dictionary = p_v as Dictionary
+				if int(p["hp"]) > 0:
+					p["hp"] = min(int(p["max_hp"]), int(p["hp"]) + party_heal)
+					healed_any = true
+			if healed_any:
+				# 同步 active alias
+				var idx: int = int(state.get("active_player_index", 0))
+				if idx < players.size():
+					state["player_hp"] = int((players[idx] as Dictionary)["hp"])
+				log_lines.append("全隊回復 %d 點生命。" % party_heal)
 		"poison":
 			if from_enemy:
 				state["player_poison"] = int(state["player_poison"]) + amount
@@ -211,6 +227,16 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				slot["vulnerable"] = int(slot["vulnerable"]) + amount
 				log_lines.append("%s 受到 %d 層破綻。" % [String(slot["name"]), amount])
 			_sync_alias_from_active_slot(state)
+		"summon":
+			# 由 enemy action 觸發：將召喚請求加進 pending list，
+			# BattleController.resolve_enemy_phase 結算完該敵 action 後處理。
+			# effect 可指定 enemy_id；未指定 → BC 從該敵的 summon_pool 隨機抽。
+			var count: int = max(1, int(effect.get("count", 1)))
+			var pending: Array = state.get("pending_summons", []) as Array
+			for _i: int in range(count):
+				pending.append({"id": String(effect.get("enemy_id", ""))})
+			state["pending_summons"] = pending
+			log_lines.append("施展召喚之術。")
 		"cure_poison":
 			state["player_poison"] = 0
 			log_lines.append("蠱毒已全數清除。")

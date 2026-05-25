@@ -151,8 +151,8 @@ static func _zl_unlocks() -> Dictionary:
 		# Lv4 (PAL1 Lv7) — 旋風咒：風系全體攻擊
 		4: [
 			GameData.make_card("zl_xuanfengzhou", "旋風咒", "趙靈兒", 1, "attack",
-				"PAL1 Lv7 風系中級。造成 8 點傷害並施加 2 層虛弱。",
-				([{"kind": "damage", "amount": 8}, {"kind": "weak", "amount": 2}] as Array[Dictionary]),
+				"PAL1 Lv7 風系全體。對全體敵人造成 8 點傷害並施加 2 層虛弱。",
+				([{"kind": "damage_all", "amount": 8}, {"kind": "weak_all", "amount": 2}] as Array[Dictionary]),
 				"uncommon"),
 		],
 		# Lv6 (PAL1 Lv11) — 五雷咒：雷系中級
@@ -164,7 +164,7 @@ static func _zl_unlocks() -> Dictionary:
 		],
 		# Lv7 (PAL1 Lv13) — 三昧真火：火系中級
 		7: [
-			GameData.make_card("zl_sanmeifire", "三昧真火", "趙靈兒", 2, "attack",
+			GameData.make_card("zl_sanmeizhenhuo", "三昧真火", "趙靈兒", 2, "attack",
 				"PAL1 Lv13 火系。造成 10 點傷害並施加 2 層破綻。",
 				([{"kind": "damage", "amount": 10}, {"kind": "vulnerable", "amount": 2}] as Array[Dictionary]),
 				"uncommon"),
@@ -223,8 +223,8 @@ static func _lyr_unlocks() -> Dictionary:
 		# Lv7 (PAL1 Lv13) — 七訣劍氣：以指代劍裂地劍氣
 		7: [
 			GameData.make_card("lyr_qijuejianqi", "七訣劍氣", "林月如", 1, "attack",
-				"PAL1 Lv13 以指代劍。造成 6 點傷害兩次。",
-				([{"kind": "damage", "amount": 6}, {"kind": "damage", "amount": 6}] as Array[Dictionary]),
+				"PAL1 Lv13 以指代劍裂地劍氣，對全體敵人造成 6 點傷害兩次。",
+				([{"kind": "damage_all", "amount": 6}, {"kind": "damage_all", "amount": 6}] as Array[Dictionary]),
 				"uncommon"),
 		],
 		# Lv9 (PAL1 Lv15) — 元靈歸心術：HP 500 治療
@@ -238,10 +238,10 @@ static func _lyr_unlocks() -> Dictionary:
 		# 乾坤一擲：原本在 Lv10 unlock，但 0c consume_energy 配合她的 burst 太 OP；
 		# 移出 unlock 表，只在 reward pool / shop 可取得（game_data.gd 中 lyr_qiankun 維持）
 		# Lv12 (PAL1 Lv20) — 斬龍訣：氣勁橫掃
-		# 30 → 16（rare unlock 從超量 burst 改成穩定中產傷）
+		# 此 unlock 版改名「裂龍式」與 reward pool 的「斬龍訣 (30 dmg)」區分，避免同名兩張卡
 		12: [
-			GameData.make_card("lyr_zhanlong_ls", "斬龍訣", "林月如", 3, "attack",
-				"PAL1 Lv20 氣勁橫掃群魔，造成 16 點傷害。",
+			GameData.make_card("lyr_lielong", "裂龍式", "林月如", 3, "attack",
+				"PAL1 Lv20 氣勁橫掃前奏式，造成 16 點傷害。",
 				([{"kind": "damage", "amount": 16}] as Array[Dictionary]),
 				"rare"),
 		],
@@ -299,8 +299,8 @@ static func _anu_unlocks() -> Dictionary:
 		# Lv22 (PAL1 Lv35) — 萬蠱蝕天
 		22: [
 			GameData.make_card("anu_wangushitian", "萬蠱蝕天", "阿奴", 2, "skill",
-				"PAL1 Lv35 放蠱攻擊。施加 8 層蠱毒並施加 2 層破綻。",
-				([{"kind": "poison", "amount": 8}, {"kind": "vulnerable", "amount": 2}] as Array[Dictionary]),
+				"PAL1 Lv35 放蠱攻擊敵全。對全體敵人施加 8 層蠱毒並施加 2 層破綻。",
+				([{"kind": "poison_all", "amount": 8}, {"kind": "vulnerable_all", "amount": 2}] as Array[Dictionary]),
 				"rare"),
 		],
 	}
