@@ -6,7 +6,7 @@ const DURATION: float = 0.65
 const FONT_SIZE_DAMAGE: int = 38
 const FONT_SIZE_NUMBER: int = 28
 
-# kind: "damage" | "heal" | "block" | "poison"
+# kind: "damage" | "heal" | "block" | "poison" | "weak" | "vulnerable"
 static func spawn(parent: CanvasItem, world_pos: Vector2, amount: int, kind: String) -> void:
 	if parent == null or not is_instance_valid(parent):
 		return
@@ -41,9 +41,19 @@ func _configure(amount: int, kind: String) -> void:
 			add_theme_color_override("font_outline_color", Color("0a1a30"))
 			add_theme_font_size_override("font_size", FONT_SIZE_NUMBER)
 		"poison":
-			text = "蠱 -%d" % amount
+			text = "蠱 +%d" % amount
 			add_theme_color_override("font_color", Color("8fd07a"))
 			add_theme_color_override("font_outline_color", Color("1a2a0a"))
+			add_theme_font_size_override("font_size", FONT_SIZE_NUMBER)
+		"weak":
+			text = "弱 +%d" % amount
+			add_theme_color_override("font_color", Color("d8b9f0"))
+			add_theme_color_override("font_outline_color", Color("2a1840"))
+			add_theme_font_size_override("font_size", FONT_SIZE_NUMBER)
+		"vulnerable":
+			text = "破 +%d" % amount
+			add_theme_color_override("font_color", Color("f0a8a0"))
+			add_theme_color_override("font_outline_color", Color("3a1010"))
 			add_theme_font_size_override("font_size", FONT_SIZE_NUMBER)
 		_:
 			text = "%d" % amount

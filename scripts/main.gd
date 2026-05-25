@@ -4131,8 +4131,17 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 	end_turn_button.disabled = false
 
 func _refresh_combatant_hp(bar: ProgressBar, value_label: Label, hp: int, max_hp: int) -> void:
-	bar.value = 0.0 if max_hp <= 0 else float(hp) / float(max_hp)
+	# 平滑 tween 到目標值。重複呼叫時前一個 tween 會被 kill 以避免累積。
+	# 文字 label 直接設定（不必 tween），讓玩家立刻看到數值；條色慢慢追上去更有「失血感」。
+	var target: float = 0.0 if max_hp <= 0 else float(hp) / float(max_hp)
 	value_label.text = "%d / %d" % [hp, max_hp]
+	if bar.has_meta("hp_tween"):
+		var old_tween: Variant = bar.get_meta("hp_tween")
+		if old_tween is Tween and (old_tween as Tween).is_valid():
+			(old_tween as Tween).kill()
+	var tween: Tween = bar.create_tween()
+	tween.tween_property(bar, "value", target, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	bar.set_meta("hp_tween", tween)
 
 func _card_button(card: CardData) -> Button:
 	var affordable: bool = int(battle.state["energy"]) >= battle.effective_card_cost(card)
@@ -4624,6 +4633,26 @@ func _show_state_feedback(before: Dictionary) -> void:
 	if enemy_block_delta > 0:
 		UIFactory.flash_node(enemy_portrait_wrap, Color(1.2, 1.35, 1.55), 0.22)
 		_spawn_damage_popup(enemy_portrait_wrap, enemy_block_delta, "block")
+	# 狀態 delta 浮字（蠱毒 / 虛弱 / 破綻）— 玩家 / 敵人雙邊
+	if player_poison_delta > 0:
+		_spawn_damage_popup(player_portrait_wrap, player_poison_delta, "poison")
+	if player_weak_delta > 0:
+		_spawn_damage_popup(player_portrait_wrap, player_weak_delta, "weak")
+	if player_vulnerable_delta > 0:
+		_spawn_damage_popup(player_portrait_wrap, player_vulnerable_delta, "vulnerable")
+	if enemy_poison_delta > 0:
+		_spawn_damage_popup(enemy_portrait_wrap, enemy_poison_delta, "poison")
+	if enemy_weak_delta > 0:
+		_spawn_damage_popup(enemy_portrait_wrap, enemy_weak_delta, "weak")
+	if enemy_vulnerable_delta > 0:
+		_spawn_damage_popup(enemy_portrait_wrap, enemy_vulnerable_delta, "vulnerable")
+	# 暴擊 / 重擊強化反饋：傷害 >= max_hp 20% 視為重擊，加大震動 + screen-wide flash
+	var enemy_max_hp: int = int(bs.get("enemy_max_hp", 1))
+	if enemy_hp_delta < 0 and enemy_max_hp > 0 and abs(enemy_hp_delta) >= int(enemy_max_hp * 0.20):
+		UIFactory.shake_node(enemy_portrait_wrap, 18.0, 0.45)
+	var player_max_hp: int = int(bs.get("player_max_hp", 1))
+	if player_hp_delta < 0 and player_max_hp > 0 and abs(player_hp_delta) >= int(player_max_hp * 0.20):
+		UIFactory.shake_node(player_portrait_wrap, 18.0, 0.45)
 
 func _spawn_damage_popup(target: Control, amount: int, kind: String) -> void:
 	if target == null or not is_instance_valid(target):

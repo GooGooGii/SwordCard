@@ -8,6 +8,8 @@ const BORDER_WIDTH: float = 2.0
 
 var amount: int = 0
 var _label: Label
+var _last_amount: int = -1  # 首次設定不觸發動畫
+var _pulse_tween: Tween = null
 
 func _ready() -> void:
 	_label = Label.new()
@@ -23,8 +25,22 @@ func _ready() -> void:
 	_apply_amount()
 
 func set_amount(value: int) -> void:
+	var prior: int = _last_amount
+	_last_amount = value
 	amount = value
 	_apply_amount()
+	# 第一次設定不 pulse；護體增加 pulse；護體減少不 pulse（已有受擊震動足夠）
+	if prior == -1 or value <= prior:
+		return
+	_pulse()
+
+func _pulse() -> void:
+	if _pulse_tween != null and _pulse_tween.is_valid():
+		_pulse_tween.kill()
+	pivot_offset = size / 2.0
+	_pulse_tween = create_tween()
+	_pulse_tween.tween_property(self, "scale", Vector2(1.22, 1.22), 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_pulse_tween.tween_property(self, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 func _apply_amount() -> void:
 	visible = amount > 0
