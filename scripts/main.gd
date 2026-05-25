@@ -2925,6 +2925,41 @@ func _resolve_observe_effects(effects: Array) -> String:
 					parts.append("本輪攻擊 +%d" % amount)
 				elif amount < 0:
 					parts.append("本輪攻擊 %d" % amount)
+			"heal_party":
+				# 全隊活著的角色都回血（倒下的不算）
+				if amount > 0:
+					var healed_any: bool = false
+					for i: int in range(run_state.character_hps.size()):
+						if run_state.character_hps[i] > 0:
+							run_state.character_hps[i] = min(run_state.character_max_hps[i], run_state.character_hps[i] + amount)
+							healed_any = true
+					if healed_any:
+						parts.append("全隊回復 %d 點生命" % amount)
+			"gain_potion":
+				# 隨機獲得一瓶藥草（背包滿則跳過）
+				if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
+					var pool: Array[Dictionary] = PotionCatalog.all()
+					if not pool.is_empty():
+						var chosen: Dictionary = (pool[randi() % pool.size()] as Dictionary).duplicate()
+						run_state.potions.append(chosen)
+						parts.append("獲得藥草「%s」" % String(chosen.get("display_name", "?")))
+				else:
+					parts.append("藥袋已滿，無從收取")
+			"upgrade_random":
+				# 升級 1 張隨機未升級的卡（active 角色牌組）
+				var active_idx: int = run_state.active_character_index
+				if active_idx < run_state.character_decks.size():
+					var d: Array = run_state.character_decks[active_idx] as Array
+					var candidates: Array[int] = []
+					for i: int in range(d.size()):
+						var c: CardData = d[i] as CardData
+						if c != null and not c.upgraded:
+							candidates.append(i)
+					if not candidates.is_empty():
+						var pick: int = candidates[randi() % candidates.size()]
+						var orig: CardData = d[pick] as CardData
+						d[pick] = orig.upgraded_copy()
+						parts.append("領悟「%s」更精妙的招式" % orig.display_name)
 	if parts.is_empty():
 		return ""
 	return "、".join(parts)

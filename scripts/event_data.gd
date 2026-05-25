@@ -37,6 +37,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 6, "gain_cost": 4, "power": 2, "power_label": "催符",
 		"observe_text": "你細細打量符匣。鎖鏈鏽蝕但禁制完整，符文走向是中原正統派系，書寫的人態度極為認真——這不是隨意拋棄的，是某個修者刻意留下的「給有緣人」的遺贈。其中一道符紋帶著一絲警告意味：「貪者，反噬」。",
+		"observe_effects": [{"kind": "heal", "amount": 4}, {"kind": "power", "amount": 1}],
 		"choices": ["heal", "gain_card", "power", "remove", "observe", "leave"],
 		"outcomes": {
 			"heal": "符匣中溢出一縷溫熱靈氣，緩緩流入掌心，驅散了幾分傷痛。那股暖意像有人把手攏在你的傷口上，不聲不響地待了片刻。",
@@ -113,6 +114,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 10, "gain_cost": 5, "power": 2, "power_label": "問道",
 		"observe_text": "你不開口，只是靜靜看著老者。他煮茶的動作極慢，每一個步驟都精準到像是練過幾十年的招式——這位老者並非閒人，他的靜止是經過無數動作淬鍊出來的。他的目光偶爾抬起，掃過你身上的傷口、神色、佩劍位置——他看見的，比他說出來的多得多。",
+		"observe_effects": [{"kind": "power", "amount": 1}, {"kind": "heal", "amount": 3}],
 		"choices": ["heal", "upgrade", "remove", "view_deck", "observe", "leave"],
 		"outcomes": {
 			"heal": "老者拈起一把草葉往你傷口一貼，涼意透入，血色退去大半。他一句話都沒說，就那樣放手，轉身繼續煮茶，好像幫你療傷只是順手的事。",
@@ -149,6 +151,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 4, "gain_cost": 2, "power": 3, "power_label": "撕符",
 		"observe_text": "你蹲下細看那道暗紅符紙。墨色仍鮮，是近期才有人來過——而且不只是路過，是在這裡進行了完整的儀式。符紙背面有極淡的指印，像是按下符紙時用力的痕跡。這個施符者並非熟手，動作有遲疑，是某個剛入門的後輩，可能還會回來。",
+		"observe_effects": [{"kind": "gold", "amount": 4}, {"kind": "power", "amount": 1}],
 		"choices": ["gain_card", "power", "remove", "observe", "leave"],
 		"outcomes": {
 			"gain_card": "符紙在掌心炸裂，一道混濁卻濃烈的術法如烙印燒進了你的記憶。那字跡潦草，像是主人在某個倉皇的夜裡草草記下的，越想越覺得字裡藏著什麼故事。",
@@ -186,6 +189,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 7, "gain_cost": 6, "power": 2, "power_label": "焚香",
 		"observe_text": "你蹲下細看那炷未滅的香。香灰下的字跡可以勉強辨認——是一個母親祈求孩子平安歸來的留言，落款日期已是七十多年前。神龕底部刻著一行更小的字：「願後來者，亦能在此片刻平靜」。這個祭壇早被遺忘，但前人留下的善念仍在低語，等待著被聽見。",
+		"observe_effects": [{"kind": "heal_party", "amount": 4}],
 		"choices": ["approach", "observe", "leave"],
 		"branch_labels": {
 			"approach": ["接近祭壇", "走到神龕前細看殘留的痕跡"]
@@ -213,6 +217,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 3, "gain_cost": 5, "power": 3, "power_label": "祭英靈",
 		"observe_text": "你蹲下，撿起一小塊乾涸的旌旗碎片。布上的紋章你不認得，但編織的方法是中原某個失落王朝的軍服樣式——這片戰場至少有千年之久。風吹過，旌旗的低鳴中能聽到極微弱的、像是無數人同時呼喊的尾音，但每一個聲音都已散得太遠，連自己的名字都記不起來了。",
+		"observe_effects": [{"kind": "power", "amount": 2}, {"kind": "damage", "amount": 2}],
 		"choices": ["power", "upgrade", "view_deck", "observe", "leave"],
 		"outcomes": {
 			"power": "鐵馬嘯聲穿越千年壓來，死亡的殺機從血土中沁透腳底，浸入你的每一道招式。那份重量讓你的出手更沉，也更狠，像是帶著那些人最後沒能打出去的力氣。",
@@ -230,6 +235,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 10, "gain_cost": 8, "power": 2, "power_label": "服丹",
 		"observe_text": "你細看丹爐的構造。爐壁上刻著一段失傳的「煉魂篇」殘卷，看似教人煉丹，實則暗藏對煉丹者本身的考驗——「丹未成而人先成」。爐口殘留的氣味告訴你，前主人嘗試的丹方是極端的「以己為材」，他可能沒有走出這裡。",
+		"observe_effects": [{"kind": "upgrade_random"}],
 		"choices": ["approach", "observe", "leave"],
 		"branch_labels": {
 			"approach": ["走近丹爐", "靠近爐口取走藥方或試丹"]
@@ -258,6 +264,7 @@ const VARIANTS: Dictionary = {
 		"heal": 0, "gain_cost": 3, "power": 5, "power_label": "借膽",
 		"gamble_win_power": 5, "gamble_lose_damage": 10,
 		"observe_text": "你停下腳步，閉眼感應周遭。霧中的眼睛有兩種：一種帶著好奇，從遠處飄過，並不靠近；另一種懸在你正前方一棵老樹的高處，紋絲不動，呼吸極淺——這個是危險的，是會撲擊的捕食者。你知道：往北走是安全方向，往南走會迎向那雙眼睛。賭一把進去，可以借膽，也可能受傷。",
+		"observe_effects": [{"kind": "heal", "amount": 5}, {"kind": "gold", "amount": 4}],
 		"choices": ["gain_card", "gamble", "observe", "leave"],
 		"outcomes": {
 			"gain_card": "霧中有什麼東西跟了你一段路，離去前在地上留下一手殘術。那術法粗糙，卻透著一股野生的力量——像是某個從未拜師的存在，自己摸索出來的東西。",
@@ -276,6 +283,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 6, "gain_cost": 6, "power": 2, "power_label": "感悟",
 		"observe_text": "你細感腳下符紋的震動。那不是死去的符紋的迴響，是「仍在運作中」的——這位仙人並未離去，只是入定到極深的層次，他的修為仍在以一種你理解不了的方式繼續著。在這裡的存在本身，就是一種「被見證」的福氣。",
+		"observe_effects": [{"kind": "max_hp", "amount": 3}, {"kind": "heal", "amount": 5}],
 		"choices": ["power", "upgrade", "gain_card", "view_deck", "observe", "leave"],
 		"choice_filters": {
 			"gain_card": {"if_character": ["li_xiaoyao"]}
@@ -303,6 +311,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 10, "gain_cost": 7, "power": 2, "power_label": "引靈",
 		"observe_text": "你細看遺址。牆上有些字符你似乎認得，又似乎不認得——那是靈族最古老的書寫方式，已經失傳千年。一塊石板上刻著一句完整的句子：「我們選擇沉默，是為了不讓恨意延續。」這個遺址的主人，做了一個比戰鬥更艱難的決定。",
+		"observe_effects": [{"kind": "max_hp", "amount": 2}, {"kind": "power", "amount": 1}],
 		"choices": ["heal", "gain_card", "power", "upgrade", "observe", "leave"],
 		"character_outcomes": {
 			"zhao_linger": {
@@ -329,6 +338,7 @@ const VARIANTS: Dictionary = {
 		"heal": 0, "gain_cost": 5, "power": 3, "power_label": "邪法",
 		"taint_damage": 6,
 		"observe_text": "你謹慎地環視四周。祭壇中央有一個用血畫成的環，環裡缺了一塊，像是儀式進行到一半被人打斷。地上散落幾片帶字的黃色符紙，字跡都是反書——這是拜月教刻意製造的失序儀軌。你判斷：此處留有殘餘邪力，但已無守護術，貿然汲取會反噬，破除卻能取得一點代價可控的力量。",
+		"observe_effects": [{"kind": "damage", "amount": 3}, {"kind": "gold", "amount": 8}],
 		"choices": ["approach", "observe", "leave"],
 		"branch_labels": {
 			"approach": ["踏入祭壇", "走入這個邪氣未散的儀軌之中"]
@@ -361,6 +371,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 18, "gain_cost": 6, "power": 1, "power_label": "聽聞",
 		"observe_text": "你細看酒館裡的人。靠窗坐著一個老劍客，劍橫於桌邊，眼神空——他在等什麼人，等了很久。角落有兩個商旅在交頭接耳，談的是最近某條商路被截的事。掌櫃擦杯子的手法很穩，是練過的——他可能不只是掌櫃，這個酒館，可能是某個門派的隱秘聯絡點。",
+		"observe_effects": [{"kind": "gold", "amount": 8}, {"kind": "heal", "amount": 4}],
 		"choices": ["heal", "upgrade", "power", "observe", "leave"],
 		"character_outcomes": {
 			"li_xiaoyao": {
@@ -417,6 +428,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 12, "gain_cost": 5, "power": 1, "power_label": "疏脈",
 		"observe_text": "你打量草棚的擺設。藥材分成兩堆：靠門口那一排是常見中草藥，按照中原藥理的「君臣佐使」排列；靠角落那一排卻是苗疆草藥，按照南疆「五行相生」的方式擺放——這位老藥師同時精通兩派藥理。牆角還掛著一個褪色的布包，上面繡著南疆某個小村的圖騰，估計他年輕時曾在那裡學藝多年。",
+		"observe_effects": [{"kind": "gain_potion"}, {"kind": "heal", "amount": 4}],
 		"choices": ["heal", "remove", "power", "observe", "leave"],
 		"character_outcomes": {
 			"anu": {
@@ -440,6 +452,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 0, "gain_cost": 6, "power": 2, "power_label": "共鳴",
 		"observe_text": "你從遠處靜靜看了片刻。少年揮劍時呼吸短促、腕力不穩，但每一劍下落的軌跡都很穩定——這不是天賦，這是反覆練到刻進骨頭的執著。你想起一句話：「劍仙不問師承，問人是否肯死磕。」這個少年值得指點。",
+		"observe_effects": [{"kind": "power", "amount": 1}, {"kind": "heal", "amount": 2}],
 		"choices": ["upgrade", "power", "remove", "gain_card", "observe", "leave"],
 		"choice_filters": {
 			"gain_card": {"if_character": ["lin_yueru"]}
@@ -462,6 +475,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 8, "gain_cost": 5, "power": 3, "power_label": "共飲", "taint_damage": 6,
 		"observe_text": "你蹲在道士身旁，仔細嗅了嗅葫蘆的氣味。酒色澤深而帶金，藥味隱於酒香之後——是用蜀地野山楂與南方靈草釀製的丹方，連葫蘆口的木塞都用上了千年陳年桑木。道士懷裡那把劍刻著古樸劍紋，劍鞘磨損的方向只有真正以劍為生的人才會有。這位邋遢道人絕非普通酒鬼。",
+		"observe_effects": [{"kind": "heal", "amount": 8}, {"kind": "gold", "amount": 3}],
 		"choices": ["approach", "observe", "leave"],
 		"branch_labels": {
 			"approach": ["上前攀談", "與這位醉漢直接交談"]
@@ -494,6 +508,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 12, "gain_cost": 6, "power": 0, "pact_max_hp_cost": 6, "pact_power": 3, "power_label": "奪丹",
 		"observe_text": "你不動聲色地觀察少女的神情。她瞳孔仍是妖族特徵的金色，但眼神之中沒有殺意，只有恐懼與絕望。她身後的洞穴牆壁上有幾抹陳舊血漬，旁邊散落著一個破碎的木雕——是她族人的圖騰，被人砸碎在地。你心中有了答案：這不是埋伏，這是悲劇現場的最後倖存者。",
+		"observe_effects": [{"kind": "heal_party", "amount": 3}, {"kind": "gold", "amount": 5}],
 		"choices": ["approach", "observe", "leave"],
 		"branch_labels": {
 			"approach": ["走入洞窟", "靠近這名瑟瑟發抖的少女"]
@@ -521,6 +536,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 0, "gain_cost": 0, "power": 2, "power_label": "分贓", "gamble_win_power": 4, "gamble_lose_damage": 8,
 		"observe_text": "你不急著動包袱，先看了一眼追上來的官差。年輕，制服整齊但鞋底沾著新泥——是真正在跑案子的，不是擺架子的。他的目光鎖定的不是你，是包袱本身。你判斷：這個官差該怕的不是「抓不到嫌犯」，是「抓到了無法交差」。事情可以談。",
+		"observe_effects": [{"kind": "gold", "amount": 15}],
 		"choices": ["gamble", "upgrade", "remove", "observe", "leave"],
 		"outcomes": {
 			"gamble_win": "你悄悄收起包袱，將官差引向別處。事後打開包袱，裡面有一些療傷靈藥，還有一卷珍貴的戰鬥身法，你功力大增。你決定不去想那個包袱的來歷，有些事情，不知道反而更自在。",
@@ -541,6 +557,7 @@ const VARIANTS: Dictionary = {
 		"heal": 16, "gain_cost": 0, "power": 0, "power_label": "求力",
 		"revive_amount": 30,
 		"observe_text": "你細看那盞無風自動的油燈。燈芯上凝著一滴未墜的金光，是某個極虔誠的祈求剛在這裡完成過。神像基座有極淺的水跡——有人在此跪拜時掉了眼淚，這個眼淚還沒乾。這座靈廟是真有靈，但它的「靈」依賴造訪者的真心。",
+		"observe_effects": [{"kind": "heal", "amount": 6}, {"kind": "max_hp", "amount": 1}],
 		"choices": ["revive", "heal", "upgrade", "observe", "leave"],
 		"outcomes": {
 			"revive": "你恭敬地在廟前上香叩頭。那盞油燈的火光突然大盛，化作一道暖流穿透虛空——倒下的同伴在金光中緩緩睜開雙眼，生機已然回返。廟中的靜默讓你覺得，這個奇蹟，是真的。",
@@ -559,6 +576,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 20, "gain_cost": 4, "power": 3, "power_label": "歸宗",
 		"observe_text": "你在水月宮中靜立，四面靈氣如蓮葉露珠，柔和不侵。神像基座刻著三行細小的篆字：「水德潤萬物，月光照孤魂，靈族不孤。」這是女媧後裔留給後人的話。蓮池中央有一塊溫潤的玉璧，看起來只有特定血脈才能取下——它對普通修者是普通的玉，對靈族卻是傳承的信物。",
+		"observe_effects": [{"kind": "max_hp", "amount": 2}, {"kind": "power", "amount": 1}],
 		"choices": ["heal", "upgrade", "view_deck", "gain_card", "observe", "leave"],
 		"choice_filters": {
 			"gain_card": {"if_character": ["zhao_linger"]}
@@ -581,6 +599,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 10, "gain_cost": 6, "power": 2, "power_label": "識妖",
 		"observe_text": "你忍住花香的魅惑，細看女子。她的指尖確實是長指甲——但仔細看，那是花瓣與真實指甲交織的妖體。她的眼神中沒有惡意，只有一種空虛的飢渴，像是她不是想害你，只是必須這麼做。或許她也曾經是某個普通女子，只是被某個更深的東西捲入了這個輪迴。",
+		"observe_effects": [{"kind": "heal", "amount": 5}, {"kind": "power", "amount": 1}],
 		"choices": ["fight", "gain_card", "heal", "observe", "leave"],
 		"outcomes": {
 			"fight_win": "你斬破迷香幻陣，花妖現出原形，最終不敵跌落。散落的花瓣裡藏著幾件寶物，全被你收入囊中。",
@@ -598,6 +617,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 8, "gain_cost": 5, "power": 2, "power_label": "教訓惡徒",
 		"observe_text": "你淡淡打量這個惡徒。他不是真正的高手——衣服華麗但姿勢散亂，是被人慣壞的某個地方少爺。他的腰間沒帶武器，但鞋底磨損嚴重，是逃跑能力很強的那種。打他不會有挑戰，只會弄髒手；他真正的麻煩，是他背後可能有某個富戶在罩著。",
+		"observe_effects": [{"kind": "gold", "amount": 12}],
 		"choices": ["power", "gain_card", "heal", "observe", "leave"],
 		"outcomes": {
 			"power": "那惡徒被揍得半死，倒在路邊哀號。你踩著他走過去，憤恨在丹田化成了氣力，此後出手多了一分不需要解釋的狠。有些道理，只有這樣才說得清楚。",
@@ -617,6 +637,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 0, "gain_cost": 0, "power": 3, "power_label": "劍意共鳴",
 		"observe_text": "你細細感受那縷紅光的氣息。它有人類女子的執拗與委屈，也有劍靈獨有的飄逸與孤獨。她在劍中存在了不知多久，等的人或許並不是你。但她願意對你開口，已經是莫大的善意。",
+		"observe_effects": [{"kind": "power", "amount": 2}],
 		"choices": ["power", "upgrade", "observe", "leave"],
 		"choice_filters": {
 			"upgrade": {"if_character": ["li_xiaoyao"]}
@@ -643,6 +664,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 15, "gain_cost": 5, "power": 2, "power_label": "族脈",
 		"observe_text": "你不動聲色地觀察少年。他坐姿端正，雙手粗糙但乾淨——是經過長時間勞動的手。笛子用的是苗疆深山才有的玉竹，竹節上刻著一個小小的「七」字。他在等人，等的時間夠久，腳邊的草都被他坐扁了一圈。",
+		"observe_effects": [{"kind": "heal_party", "amount": 4}],
 		"choices": ["heal", "gain_card", "observe", "leave"],
 		"choice_filters": {
 			"gain_card": {"if_character": ["anu"]}
@@ -669,6 +691,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 0, "gain_cost": 6, "power": 3, "power_label": "切磋",
 		"observe_text": "你細看少年的姿態。他的青鋼劍是好劍，但對他來說太重——這把劍應該是別人留給他的，而不是他自己挑的。他堅持用這把劍，是因為某種情感上的原因，而不是實用考量。他的劍意很乾淨，沒有殺氣，只有一種「想要變強來保護什麼」的純粹。",
+		"observe_effects": [{"kind": "power", "amount": 2}, {"kind": "heal", "amount": 3}],
 		"choices": ["power", "upgrade", "gain_card", "observe", "leave"],
 		"character_outcomes": {
 			"li_xiaoyao": {
@@ -692,6 +715,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 0, "gain_cost": 0, "power": 4, "power_label": "立誓",
 		"observe_text": "你細讀那幾頁血書。婉兒並非普通村女——她是某個拜月教叛逃者的妹妹，被當作報復的對象帶到這裡，緩慢地用作儀式祭品。她最後的一頁寫著：「無論誰看到這封信，我求你一件事：替我告訴拜月教的人，他們最終的祭壇上會有人替我，把他們的血一起灑下去。」字跡到這裡突然中斷。",
+		"observe_effects": [{"kind": "damage", "amount": 2}, {"kind": "power", "amount": 3}],
 		"choices": ["power", "remove", "observe", "leave"],
 		"choice_filters": {
 			"remove": {"if_character": ["zhao_linger"]}
