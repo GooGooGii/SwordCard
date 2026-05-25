@@ -822,14 +822,10 @@ const BALANCE_BASELINES: Dictionary = {
 # 給夠時間 random AI 都會贏，限時才能拿到中段勝率做雙向偵測。
 # 此測試本質不真實（玩家到 act 3 必有 unlock），保留作純 regression 警報；
 # 真實場景請看 BALANCE_BASELINES_LEVELED。
-# 林/阿 nerf 後（御蜂術 3×4→3×3、萬蟻/解毒/毒霧 微降、林乾坤移出 unlock）：
-# - li_xiaoyao 約 63%
-# - zhao_linger 約 80%
-# - lin_yueru 仍 100%（一陽指 18dmg 起手即在，10t 內速殺仍夠）
-# - anu 跌到 50%（御蜂術連擊 -25%、毒堆疊降幅大）
+# 趙靈兒被動「靈台啟明」(self_power+3) 後勝率拉高到 100%
 const BALANCE_BASELINES_MID: Dictionary = {
 	"li_xiaoyao": 63,
-	"zhao_linger": 80,
+	"zhao_linger": 100,
 	"lin_yueru": 100,
 	"anu": 50
 }
@@ -864,7 +860,7 @@ const BALANCE_BASELINES_LEVELED: Dictionary = {
 	# Lv20 vs 拜月教主（act 5 boss HP 115）：李/趙 半數左右（爆發不足），林/阿 70-90%
 	#   （林/阿 nerf 後降到合理範圍，差距收斂到 30pp）
 	"li_xiaoyao":  {5: 97,  10: 90,  15: 100, 20: 57},
-	"zhao_linger": {5: 100, 10: 87,  15: 100, 20: 47},
+	"zhao_linger": {5: 100, 10: 100, 15: 100, 20: 70},
 	"lin_yueru":   {5: 100, 10: 100, 15: 100, 20: 77},
 	"anu":         {5: 100, 10: 100, 15: 100, 20: 90},
 }

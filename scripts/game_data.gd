@@ -227,9 +227,9 @@ static func _passives_for(id: String) -> Array[Dictionary]:
 		"zhao_linger":
 			return [{
 				"trigger": "battle_start",
-				"kind": "self_heal",
-				"amount": 4,
-				"label": "每場戰鬥開始回復 4 點生命"
+				"kind": "self_power",
+				"amount": 3,
+				"label": "靈台啟明：每場戰鬥開始攻擊提升 3",
 			}]
 		"lin_yueru":
 			return [{

@@ -391,6 +391,13 @@ func _apply_party_battle_start_passives() -> void:
 				if i == _active_index():
 					state["player_hp"] = p["hp"]
 				add_log("%s被動：戰鬥開始回復 %d 點生命。" % [c.display_name, amount])
+			"self_power":
+				# 戰鬥開場給該角色 +amount power（攻擊牌傷害 +amount）
+				var p: Dictionary = players[i] as Dictionary
+				p["power"] = int(p["power"]) + amount
+				if i == _active_index():
+					state["player_power"] = p["power"]
+				add_log("%s被動：戰鬥開始攻擊提升 %d。" % [c.display_name, amount])
 			"enemy_poison":
 				state["enemy_poison"] = int(state["enemy_poison"]) + amount
 				add_log("%s被動：敵人開場受到 %d 層蠱毒。" % [c.display_name, amount])
