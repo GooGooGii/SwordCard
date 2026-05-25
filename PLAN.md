@@ -172,5 +172,6 @@ smoke_test.gd 共 32 個測試，涵蓋：
 - [ ] **玩家「召喚」卡**（如召喚劍靈助戰） — 需新 effect kind `summon_ally`
 
 ### Pre-existing smoke test 警告（不擋 CI，但該修）
-- [ ] `upgraded revive description should contain 38` — revive 卡升級描述生成有 bug
-- [ ] `_test_potion_use_heal` / `_test_potion_cure_poison` 的 `Attempted to free a RefCounted object` 錯誤 — 兩個 potion 測試的測試碼有 leak
+- [x] `upgraded revive description should contain 38` — revive 卡升級描述生成有 bug
+- [x] `_test_potion_use_heal` / `_test_potion_cure_poison` 的 `Attempted to free a RefCounted object` 錯誤 — 兩個 potion 測試的測試碼有 leak
+

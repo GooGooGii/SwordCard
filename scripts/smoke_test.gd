@@ -519,7 +519,7 @@ func _test_revive_effect(characters: Array[CharacterData], enemy_template: Enemy
 	# 殺死 idx 1
 	(bc.state["players"] as Array)[1]["hp"] = 0
 	# Active 還是 0；玩家打復活卡
-	var revive_card: CardData = GameData.make_card("revive_test", "復活", "P", 1, "skill", "救回", ([{"kind": "revive", "amount": 30}] as Array[Dictionary]))
+	var revive_card: CardData = GameData.make_card("revive_test", "復活", "P", 1, "skill", "救回 30", ([{"kind": "revive", "amount": 30}] as Array[Dictionary]))
 	bc.state["energy"] = 99
 	bc.play_card(revive_card)
 	var revived_hp: int = int((bc.state["players"] as Array)[1]["hp"])
@@ -1143,7 +1143,6 @@ func _test_potion_use_heal(character: CharacterData, enemy: EnemyData) -> void:
 	var after_hp: int = int(bc.state["player_hp"])
 	assert(after_hp == min(before_hp + 15, int(bc.state["player_max_hp"])),
 		"heal potion: expected %d HP, got %d" % [min(before_hp + 15, int(bc.state["player_max_hp"])), after_hp])
-	bc.free()
 
 func _test_potion_cure_poison(character: CharacterData, enemy: EnemyData) -> void:
 	var bc: BattleController = BattleController.new()
@@ -1158,7 +1157,6 @@ func _test_potion_cure_poison(character: CharacterData, enemy: EnemyData) -> voi
 	var effects: Array = cure_potion.get("effects", []) as Array
 	bc.resolver.resolve_effects_list(effects, bc.state)
 	assert(int(bc.state["player_poison"]) == 0, "cure_poison: player_poison should be 0, got %d" % int(bc.state["player_poison"]))
-	bc.free()
 
 func _test_potion_old_save_compat(characters: Array[CharacterData]) -> void:
 	var old_save: Dictionary = {
