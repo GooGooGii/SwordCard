@@ -1658,6 +1658,8 @@ func choose_route_node(node_data: Dictionary) -> void:
 func start_next_battle(enemy: EnemyData) -> void:
 	battle = BattleController.new()
 	battle.setup(run_state, selected_character, enemy)
+	# Boss phase 2 變身動畫（如拜月教主 → 水魔獸）
+	battle.phase_transitioned.connect(_on_phase_transitioned)
 	var mult: float = Ascension.enemy_hp_multiplier(run_state.ascension_level, Ascension.is_boss_id(enemy.id))
 	if mult != 1.0:
 		var scaled_max: int = max(1, int(round(float(battle.state["enemy_max_hp"]) * mult)))
@@ -1832,6 +1834,53 @@ func _animate_portrait_switch() -> void:
 		if player_portrait_wrap != null and is_instance_valid(player_portrait_wrap):
 			UIFactory.flash_node(player_portrait_wrap, Color(1.3, 1.2, 0.85), 0.35)
 	)
+
+# Boss 進入 phase 2 時播放變身動畫（如拜月教主→水魔獸）。
+# 由 BattleController.phase_transitioned signal 觸發。
+func _on_phase_transitioned(new_name: String) -> void:
+	if enemy_portrait_wrap == null or not is_instance_valid(enemy_portrait_wrap):
+		return
+	# 1. 大幅震動 + 藍紫色光芒閃爍（水妖意象）
+	UIFactory.shake_node(enemy_portrait_wrap, 22.0, 0.55)
+	UIFactory.flash_node(enemy_portrait_wrap, Color(0.7, 1.1, 2.4), 0.55)
+	# 2. 肖像膨脹回縮（覺醒感）
+	var tween: Tween = enemy_portrait_wrap.create_tween()
+	tween.tween_property(enemy_portrait_wrap, "scale", Vector2(1.22, 1.22), 0.20) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(enemy_portrait_wrap, "scale", Vector2.ONE, 0.28) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	# 3. 浮動覺醒文字
+	_spawn_phase_reveal_text(new_name)
+	# 4. 立刻刷新 UI（label 從 state["enemy_name"] 取新名）
+	_refresh_battle()
+
+func _spawn_phase_reveal_text(name: String) -> void:
+	if enemy_portrait_wrap == null or not is_instance_valid(enemy_portrait_wrap):
+		return
+	var label: Label = Label.new()
+	label.text = "%s 覺醒！" % name
+	label.add_theme_font_size_override("font_size", 40)
+	label.add_theme_color_override("font_color", Color("c0ecff"))
+	label.add_theme_color_override("font_outline_color", Color("0a1838"))
+	label.add_theme_constant_override("outline_size", 10)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.z_index = 600
+	add_child(label)
+	# 居中於肖像上方
+	var start_pos: Vector2 = enemy_portrait_wrap.global_position + Vector2(enemy_portrait_wrap.size.x * 0.5 - 130, -10)
+	label.global_position = start_pos
+	label.scale = Vector2(0.6, 0.6)
+	label.modulate.a = 0.0
+	var t: Tween = create_tween()
+	t.set_parallel(true)
+	t.tween_property(label, "modulate:a", 1.0, 0.20)
+	t.tween_property(label, "scale", Vector2(1.18, 1.18), 0.25) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(label, "scale", Vector2.ONE, 0.28).set_delay(0.25)
+	t.tween_property(label, "global_position", start_pos + Vector2(0, -60), 1.4) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(label, "modulate:a", 0.0, 0.55).set_delay(0.85)
+	t.finished.connect(label.queue_free)
 
 func _build_player_widget(parent: HBoxContainer) -> void:
 	var col: VBoxContainer = VBoxContainer.new()

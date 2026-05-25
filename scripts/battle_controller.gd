@@ -5,6 +5,10 @@ const HAND_SIZE: int = 5
 const BASE_TURN_ENERGY: int = 3
 const BENCH_HEAL_PER_TURN: int = 2
 
+# Boss 進入 phase 2 時觸發，main.gd 接收後播放變身動畫
+# 參數：new_name = state["enemy_name"]（phase_2_display_name 或 fallback 原名）
+signal phase_transitioned(new_name: String)
+
 var run_state: RunState
 var enemy: EnemyData
 var decks: Array[DeckManager] = []  # 每個角色一份；舊 `deck` 屬性指向 active
@@ -257,11 +261,15 @@ func _check_phase_transition() -> void:
 		action_index = 0
 		# 有 phase_2_display_name 的 boss（如拜月教主→水魔獸）：切換顯示名稱
 		var phase_2_name: String = enemy.phase_2_display_name
+		var emit_name: String
 		if not phase_2_name.is_empty():
 			state["enemy_name"] = phase_2_name
 			add_log("%s 吟咒撕裂虛空，召出 %s 現世！" % [enemy.display_name, phase_2_name])
+			emit_name = phase_2_name
 		else:
 			add_log("%s 怒色暴漲，招式變換！" % enemy.display_name)
+			emit_name = enemy.display_name
+		phase_transitioned.emit(emit_name)
 
 func effective_card_cost(card: CardData) -> int:
 	if character == null:
