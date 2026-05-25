@@ -33,15 +33,17 @@ SwordCard 是仙劍奇俠傳 1 粉絲向原型，Godot 4 開發，Windows + Andr
 - 通關畫面：「通關！仙劍成道」（需打完第五幕）
 - 節點類型：戰鬥、事件、商店、休息、Boss
 
-### 事件系統（19 種 variant）
-shrine、spring、talisman_cache、treasure_chest、ancestor_relic、wandering_sage、
-moonlit_pool、broken_temple、yokai_pact（契約降 max_hp 換 power）、
-forgotten_altar、ancient_battlefield、alchemy_furnace、ghost_forest（50/50 賭注）、
-immortal_ruins、spirit_clan_ruins、baiyue_altar（tainted_power：必中 power + 固定反噬）、
-tavern_acquaintance、sword_tomb、miao_healer
+### 事件系統（31 種 variant）
+- **基礎 (8)**: shrine、spring、talisman_cache、treasure_chest、ancestor_relic、wandering_sage、moonlit_pool、broken_temple
+- **進階 (10)**: yokai_pact、forgotten_altar、ancient_battlefield、alchemy_furnace、ghost_forest、immortal_ruins、spirit_clan_ruins、baiyue_altar、tavern_acquaintance、sword_tomb、miao_healer
+- **PAL1 名場面 (9)**: shilipo_sword_god、drunk_swordsman、yinlong_cave、yangzhou_officer、xianling_shrine、lingmiao、flower_thief、flower_spirit、jianling_whisper、aqi_reunion、tangyu_sparring、jiang_waner_grief
 
-每種事件有獨立選項組（heal / power / gain_card / upgrade / remove / view_deck / pact / gamble / tainted_power）
-選擇後顯示結果 overlay（含劇情文字）
+每事件可有：
+- choices: heal / power / gain_card / upgrade / remove / view_deck / pact / gamble / tainted_power / fight / **observe / leave**
+- **sub_choices**: 多階段（先選 approach → 開子選單再選 effect）。已套用：drunk_swordsman / yinlong_cave / baiyue_altar / forgotten_altar / alchemy_furnace
+- **choice_filters**: 角色限定選項（shilipo / xianling 趙靈兒 / immortal_ruins 李逍遙）
+- **character_outcomes**: 個人化結局文字（baiyue / sword_tomb / xianling / miao_healer / spirit_clan_ruins / tavern_acquaintance 4 chars / drunk_swordsman / jianling 等）
+- **observe_text**: 加長觀察文字，玩家可看完再決定要不要進入
 
 ### 遺物系統（56 件）
 - 稀有度：basic、uncommon、rare、legendary、artifact（Boss 特定掉落）
@@ -88,11 +90,32 @@ tavern_acquaintance、sword_tomb、miao_healer
 - 戰鬥失敗可「重打此場（扣 1 遺物）」
 - 路線總覽 popup（★當前 / ✓已過 / ·待選）
 - 地圖節點 icon、連線渲染（MapLinkLayer）
-- DamagePopup 浮動數字（傷害/治療/護體）
+- DamagePopup 浮動數字（傷害/治療/護體/蠱毒/虛弱/破綻）
 - 角色切換肖像動畫漸變
 - F1 開發者選單（+金幣 / 滿血 / 加卡 / 加遺物 / 跳 Boss）
 - 暫停選單（Esc / 實體返回鍵 / 螢幕按鈕）
 - Android Safe Area 適配、觸控友善
+- 戰鬥手感反饋：HP bar 平滑 tween / 能量珠 pulse / 狀態變化浮字 / 重擊強化震動 / Block badge pulse
+- 卡片出牌動畫飛行（根據 effect 自動判斷飛向敵人或自己）
+
+### 多敵人系統（Multi-Enemy Mode，Phase 1–4A 已完成）
+- 戰場 1–3 敵人；boss 一律開場 1 敵但可召喚小怪
+- BattleController.enemies 陣列化、state["enemies"] / state["active_enemy_index"]
+- AOE effect kinds：damage_all / poison_all / weak_all / vulnerable_all
+- 召喚機制：EnemyData.summon_pool、effect kind "summon"、spawn_enemy() 上限 3 敵
+- 每敵獨立 phase 2、action_index、attack 順序
+- UI：水平 enemy row、portrait 點擊切 active、drag 個別命中、active 高亮其他半暗、死敵變灰
+- 5 個新召喚物 placeholder：水妖觸手（拜月教主可召喚）
+- 9 個新 smoke test 覆蓋（multi enemy setup / damage routing / AOE / partial kill / summon basic+cap+unknown+from_pool / per-enemy phase）
+
+### 角色等級系統（PAL1 對齊）
+- 每角色 Lv 1-22 unlock 表（按 PAL1 招式等級 7/11/15/20/24/26/30/34 壓縮對應 game Lv）
+- 8 個 lxy unlock、8 個 zhao、6 個 lin、6 個 anu
+- 等級驗證 baseline：Lv5/10/15/20 各對應幕 boss 勝率（_test_balance_leveled_progression）
+
+### 主控制器重構（Phase 1 起手，未完成）
+- Screen 基底類別 + BestiaryScreen 已抽出
+- main.gd 仍 4548 行，剩 ~8 個 screen 待抽（main_menu / character_select / progress_screen / battle_scene 等）
 
 ### 測試
 smoke_test.gd 共 32 個測試，涵蓋：
@@ -104,24 +127,50 @@ smoke_test.gd 共 32 個測試，涵蓋：
 
 ## 待辦 / 下一步
 
+### 進行中（Multi-Enemy Mode 後續 phases）
+- [ ] **Phase 4B：戰鬥手感 polish**（~170 行）
+  - 召喚物 fade-in tween（scale 0.7→1.0、alpha 0→1，0.4s）
+  - 敵人死亡淡出（alpha + 灰階）
+  - AOE 卡視覺：3 敵同步 flash + shake
+  - AOE 卡飛行：飛到 row 中央而非單一敵
+  - Damage popup spawn 在正確敵 portrait（不只 active）
+  - Compact mode 自動觸發（3 敵時強制 compact）
+- [ ] **Phase 5+8：內容**（~230 行）
+  - MapGenerator encounter 表（act 2+ 加雙弱敵 combos）
+  - 4 個新弱版 EnemyData：山賊小弟 / 妖獸幼獸 / 蠱毒徒弟 / 拜月小卒
+  - 4 個召喚物：red_eye_imp / tower_wisp / centipede_brood / zombie_thrall（每 boss 至少 1 種）
+  - 6 張卡用 `*_all` 改造：萬劍訣 / 御蜂術 / 九龍訣 / 萬蠱蝕天 / 旋風咒 / 乾坤一擲
+- [ ] **Phase 6+7：測試 + baseline**（~250 行）
+  - balance_matrix 加多敵 scenarios（act 2+ 雙弱敵 vs 4 chars）
+  - smoke test 加 AOE 卡命中所有敵測試
+  - 更新 BALANCE_BASELINES 含多敵情境
+
 ### 高優先（影響玩法完整度）
-- [x] **Boss 專屬神器** — 赤眼山魈、殭屍大帥、拜月教主已補上專屬的神物遺物，並設定於擊敗後必掉。
-- [x] **平衡 regression baseline 更新** — 跑 CI 並更新了 smoke test 中的勝率基準。
-- [x] **更多 PAL1 事件** — 已補足至 24 種經典奇遇事件（含十里坡、醉酒劍仙、隱龍窟、揚州緝盜、水月宮等）。
+- [x] **Boss 專屬神器** — 已實作
+- [x] **平衡 regression baseline 更新** — 已含 leveled progression + multi-enemy 配套
+- [x] **更多 PAL1 事件** — 已擴至 31 種（含 4 名場面 + 觀察/離開機制）
+- [ ] **Card Art / 肖像** — 4 角色 6 戰鬥姿勢已有，卡片 art 仍是借用既有圖（8 張新 PAL1 卡用 art_id 借）
+- [ ] **奇遇事件插圖 (Event Art)** — 7/31 已有專屬背景，**還缺 24 張**（fallback 用通用 event_bg.png）
 
 ### 中優先（體驗提升）
-- [x] **Act title 顯示在地圖** — 地圖上方顯示當前幕名稱（余杭山間…）
-- [x] **銅錢差異化** — 各幕 Boss 掉落銅錢量隨幕數提升
-- [x] **牌組視圖** — 分組顯示重複卡；戰鬥中顯示抽/手/棄/消耗堆
-- [ ] **卡片出牌動畫** — 從手牌區飛向敵人的簡單 tween
-- [ ] **Card Art / 肖像** — 四角色、各幕敵人的正式圖檔（**強制去背/透明背景**，目前為佔位符）
-- [ ] **奇遇事件插圖 (Event Art)** — 為各經典奇遇事件補上專屬的劇情背景插畫，以提昇劇情沉浸感（目前使用通用 `event_bg.png` 佔位）。
-
+- [x] **Act title 顯示在地圖** — 已實作
+- [x] **銅錢差異化** — 已實作
+- [x] **牌組視圖** — 已實作
+- [x] **卡片出牌動畫** — 已實作（根據 effect 自動判斷飛向）
+- [x] **戰鬥手感反饋** — HP bar tween / 能量珠 pulse / 狀態浮字 / 重擊震動 / Block pulse 已實作
+- [ ] **main.gd Phase 1 重構繼續** — Bestiary 已抽出（68 行），剩餘 ~8 個 screen 待抽（main_menu / character_select / progress_screen / event_node / shop_node / battle_scene / deck_view / result）
+- [ ] **音效（SFX）** — bus 與音量設定已就緒，**0 個音檔**。需 4-8 個 SFX（打牌、命中、治療、被打、end turn、勝利、boss 變身、召喚）
 
 ### 低優先（長期）
 - [ ] **第六幕 epilogue / 後日談** — 通關後可選地圖？
-- [ ] **更多角色** — 酒劍仙？唐鈺？
+- [ ] **更多角色** — 酒劍仙？唐鈺？（PAL1 事件中已 cameo）
 - [ ] **排行榜 / 統計** — Run 時長、最高幕、常用卡片
-- [ ] **音效 / 音樂** — PAL1 BGM 授權研究
+- [ ] **音樂 / BGM** — PAL1 BGM 授權研究
 - [ ] **卡片升級獨立描述** — 目前用演算法自動改數字，理想是手寫升級文本
 - [ ] **多人連線** — 超出原型範疇，待定
+- [ ] **多敵 boss 同場戰**（2 boss 同時） — Multi-Enemy Phase 5 之後再說
+- [ ] **玩家「召喚」卡**（如召喚劍靈助戰） — 需新 effect kind `summon_ally`
+
+### Pre-existing smoke test 警告（不擋 CI，但該修）
+- [ ] `upgraded revive description should contain 38` — revive 卡升級描述生成有 bug
+- [ ] `_test_potion_use_heal` / `_test_potion_cure_poison` 的 `Attempted to free a RefCounted object` 錯誤 — 兩個 potion 測試的測試碼有 leak
