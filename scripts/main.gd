@@ -2765,6 +2765,16 @@ func _start_event_fight() -> void:
 	start_next_battle(GameData.flower_spirit_enemy())
 
 func _get_event_outcome(event_data: Dictionary, key: String) -> String:
+	# 優先用 character_outcomes[active_char][key]（per-char 個股化結局文字），
+	# 否則 fallback 到 outcomes[key]
+	var active_char_id: String = ""
+	if run_state != null and run_state.characters.size() > run_state.active_character_index:
+		active_char_id = run_state.characters[run_state.active_character_index].id
+	var char_outcomes: Dictionary = event_data.get("character_outcomes", {}) as Dictionary
+	if char_outcomes.has(active_char_id):
+		var per_char: Dictionary = char_outcomes[active_char_id] as Dictionary
+		if per_char.has(key):
+			return String(per_char[key])
 	return String((event_data.get("outcomes", {}) as Dictionary).get(key, ""))
 
 func _show_event_outcome(text: String, on_continue: Callable) -> void:
