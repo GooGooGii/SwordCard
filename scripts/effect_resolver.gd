@@ -20,6 +20,34 @@ func resolve_enemy_action(action: Dictionary, state: Dictionary) -> Array[String
 		log_lines.append_array(_resolve_effect(effect, state, true))
 	return log_lines
 
+# Multi-Enemy alias 同步：把 state["enemy_*"] 寫回 enemies[active_enemy_index] slot
+# 多體效果（damage_all 等）前呼叫，確保 active slot 反映最新單體 effect 結果
+func _sync_active_slot_from_alias(state: Dictionary) -> void:
+	var slots: Array = state.get("enemies", []) as Array
+	var idx: int = int(state.get("active_enemy_index", 0))
+	if idx < 0 or idx >= slots.size():
+		return
+	var slot: Dictionary = slots[idx] as Dictionary
+	slot["hp"] = int(state.get("enemy_hp", slot["hp"]))
+	slot["block"] = int(state.get("enemy_block", slot["block"]))
+	slot["poison"] = int(state.get("enemy_poison", slot["poison"]))
+	slot["weak"] = int(state.get("enemy_weak", slot["weak"]))
+	slot["vulnerable"] = int(state.get("enemy_vulnerable", slot["vulnerable"]))
+
+# Multi-Enemy alias 同步：把 enemies[active_enemy_index] slot 寫到 state["enemy_*"] alias
+# 多體效果結算後呼叫，讓後續單體 effect 看到正確 active 值
+func _sync_alias_from_active_slot(state: Dictionary) -> void:
+	var slots: Array = state.get("enemies", []) as Array
+	var idx: int = int(state.get("active_enemy_index", 0))
+	if idx < 0 or idx >= slots.size():
+		return
+	var slot: Dictionary = slots[idx] as Dictionary
+	state["enemy_hp"] = int(slot["hp"])
+	state["enemy_block"] = int(slot["block"])
+	state["enemy_poison"] = int(slot["poison"])
+	state["enemy_weak"] = int(slot["weak"])
+	state["enemy_vulnerable"] = int(slot["vulnerable"])
+
 func tick_statuses(state: Dictionary) -> Array[String]:
 	var log_lines: Array[String] = []
 	if int(state["enemy_poison"]) > 0:
@@ -136,6 +164,53 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				var actual_heal: int = amount + int(state.get("heal_bonus", 0))
 				state["player_hp"] = min(int(state["player_max_hp"]), int(state["player_hp"]) + actual_heal)
 				log_lines.append("無人需救，改回復 %d 點生命。" % actual_heal)
+		"damage_all":
+			# 對全部活著的敵人各造成 amount 傷害（套用 power / weak / vulnerable / block）
+			_sync_active_slot_from_alias(state)
+			var slots: Array = state.get("enemies", []) as Array
+			for i: int in range(slots.size()):
+				var slot: Dictionary = slots[i] as Dictionary
+				if int(slot["hp"]) <= 0:
+					continue
+				var modified: int = max(0, amount + int(state["player_power"]) - int(state["player_weak"])) + int(state.get("damage_out_bonus", 0))
+				if int(slot["vulnerable"]) > 0:
+					modified = int(ceil(modified * 1.5))
+				var blocked: int = min(int(slot["block"]), modified)
+				slot["block"] = int(slot["block"]) - blocked
+				slot["hp"] = max(0, int(slot["hp"]) - (modified - blocked))
+				log_lines.append("對 %s 造成 %d 點傷害。" % [String(slot["name"]), modified - blocked])
+			_sync_alias_from_active_slot(state)
+		"poison_all":
+			_sync_active_slot_from_alias(state)
+			var poison_amount: int = amount + int(state.get("poison_bonus", 0))
+			var slots: Array = state.get("enemies", []) as Array
+			for i: int in range(slots.size()):
+				var slot: Dictionary = slots[i] as Dictionary
+				if int(slot["hp"]) <= 0:
+					continue
+				slot["poison"] = int(slot["poison"]) + poison_amount
+				log_lines.append("對 %s 施加 %d 層蠱毒。" % [String(slot["name"]), poison_amount])
+			_sync_alias_from_active_slot(state)
+		"weak_all":
+			_sync_active_slot_from_alias(state)
+			var slots: Array = state.get("enemies", []) as Array
+			for i: int in range(slots.size()):
+				var slot: Dictionary = slots[i] as Dictionary
+				if int(slot["hp"]) <= 0:
+					continue
+				slot["weak"] = int(slot["weak"]) + amount
+				log_lines.append("%s 受到 %d 層虛弱。" % [String(slot["name"]), amount])
+			_sync_alias_from_active_slot(state)
+		"vulnerable_all":
+			_sync_active_slot_from_alias(state)
+			var slots: Array = state.get("enemies", []) as Array
+			for i: int in range(slots.size()):
+				var slot: Dictionary = slots[i] as Dictionary
+				if int(slot["hp"]) <= 0:
+					continue
+				slot["vulnerable"] = int(slot["vulnerable"]) + amount
+				log_lines.append("%s 受到 %d 層破綻。" % [String(slot["name"]), amount])
+			_sync_alias_from_active_slot(state)
 		"cure_poison":
 			state["player_poison"] = 0
 			log_lines.append("蠱毒已全數清除。")

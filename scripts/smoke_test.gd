@@ -114,6 +114,13 @@ func _initialize() -> void:
 	_test_potion_old_save_compat(characters)
 	_test_level_system(characters)
 	_test_level_unlock_cards()
+	# Multi-Enemy Mode（Phase 1+2 資料層 + AOE effects）
+	_test_multi_enemy_setup(characters, enemies)
+	_test_multi_enemy_damage_routing(characters, enemies)
+	_test_multi_enemy_aoe_damage(characters, enemies)
+	_test_multi_enemy_aoe_status(characters, enemies)
+	_test_multi_enemy_partial_kill(characters, enemies)
+	_test_multi_enemy_set_active(characters, enemies)
 	print("SwordCard smoke test passed.")
 	quit(0)
 
@@ -1236,3 +1243,122 @@ func _test_level_unlock_cards() -> void:
 		assert(by_15 <= by_25, "%s: by_15 (%d) > by_25 (%d), 應累積" % [char_id, by_15, by_25])
 	# 不存在的角色應回傳空陣列
 	assert(LevelSystem.all_unlocked_cards("unknown_char", 50).is_empty(), "unknown char should return empty")
+
+# ── Multi-Enemy Mode 測試 ───────────────────────────────────────────
+
+func _make_multi_battle(character: CharacterData, enemy_templates: Array[EnemyData]) -> BattleController:
+	var rs: RunState = RunState.new()
+	rs.init_for(character)
+	# 移除起始專武，否則 self_power / damage_out_bonus 會擾亂測試
+	rs.relics.clear()
+	var bc: BattleController = BattleController.new()
+	bc.setup(rs, character, enemy_templates)
+	return bc
+
+func _test_multi_enemy_setup(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# 3 敵 setup → state["enemies"].size() == 3、active = 0、alias 同步到 enemies[0]
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0], enemies[1], enemies[2]])
+	var slots: Array = bc.state["enemies"] as Array
+	assert(slots.size() == 3, "should have 3 enemy slots, got %d" % slots.size())
+	assert(int(bc.state["active_enemy_index"]) == 0, "active_enemy_index should default to 0")
+	assert(int(bc.state["enemy_hp"]) == int((slots[0] as Dictionary)["hp"]), "alias enemy_hp must equal enemies[0].hp")
+	assert(String(bc.state["enemy_name"]) == String((slots[0] as Dictionary)["name"]), "alias enemy_name must equal enemies[0].name")
+	assert(bc.enemies.size() == 3, "BC.enemies array should have 3")
+	# 向後相容單敵 setup
+	var bc_single: BattleController = _make_multi_battle(characters[0], [enemies[0]])
+	assert((bc_single.state["enemies"] as Array).size() == 1, "single enemy via array → 1 slot")
+	# 舊 API（傳 EnemyData 而非 Array）
+	var rs: RunState = RunState.new()
+	rs.init_for(characters[0])
+	var bc_old: BattleController = BattleController.new()
+	bc_old.setup(rs, characters[0], enemies[0])
+	assert((bc_old.state["enemies"] as Array).size() == 1, "legacy single-EnemyData setup → 1 slot")
+	assert(bc_old.enemy != null, "legacy enemy getter should still work")
+
+func _test_multi_enemy_damage_routing(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# 單體 damage 只打 active；切換 active 後再打、原敵 HP 不變
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0], enemies[1]])
+	var initial_hp_0: int = int((bc.state["enemies"][0] as Dictionary)["hp"])
+	var initial_hp_1: int = int((bc.state["enemies"][1] as Dictionary)["hp"])
+	# 對 active (idx 0) 施加 10 傷
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 10}, bc.state)
+	bc._sync_state_to_active_enemy()
+	assert(int((bc.state["enemies"][0] as Dictionary)["hp"]) == initial_hp_0 - 10, "active enemy slot must reflect single damage")
+	assert(int((bc.state["enemies"][1] as Dictionary)["hp"]) == initial_hp_1, "non-active enemy must not be touched")
+	# 切到 enemies[1]
+	assert(bc.set_active_enemy(1), "set_active_enemy(1) should succeed")
+	assert(int(bc.state["enemy_hp"]) == initial_hp_1, "after switch, alias must point to enemies[1]")
+	# 打 5 傷
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 5}, bc.state)
+	bc._sync_state_to_active_enemy()
+	assert(int((bc.state["enemies"][0] as Dictionary)["hp"]) == initial_hp_0 - 10, "enemies[0] HP must not change after we switched")
+	assert(int((bc.state["enemies"][1] as Dictionary)["hp"]) == initial_hp_1 - 5, "enemies[1] takes the new damage")
+
+func _test_multi_enemy_aoe_damage(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# damage_all 應對 3 敵都打到 (扣除個別 block)
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0], enemies[1], enemies[2]])
+	var hp_before: Array[int] = []
+	for i: int in range(3):
+		hp_before.append(int((bc.state["enemies"][i] as Dictionary)["hp"]))
+	bc.resolver._resolve_effect({"kind": "damage_all", "amount": 8}, bc.state)
+	for i: int in range(3):
+		var after: int = int((bc.state["enemies"][i] as Dictionary)["hp"])
+		assert(after == hp_before[i] - 8, "enemy[%d] HP %d → %d expected %d" % [i, hp_before[i], after, hp_before[i] - 8])
+	# alias 應同步 active (idx 0)
+	assert(int(bc.state["enemy_hp"]) == int((bc.state["enemies"][0] as Dictionary)["hp"]), "alias enemy_hp should sync to active after AOE")
+
+func _test_multi_enemy_aoe_status(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# poison_all / weak_all / vulnerable_all 應對全敵套 (skip 已死)
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0], enemies[1]])
+	bc.resolver._resolve_effect({"kind": "poison_all", "amount": 3}, bc.state)
+	bc.resolver._resolve_effect({"kind": "weak_all", "amount": 2}, bc.state)
+	bc.resolver._resolve_effect({"kind": "vulnerable_all", "amount": 1}, bc.state)
+	for i: int in range(2):
+		var slot: Dictionary = bc.state["enemies"][i] as Dictionary
+		assert(int(slot["poison"]) == 3, "enemy[%d] poison should be 3" % i)
+		assert(int(slot["weak"]) == 2, "enemy[%d] weak should be 2" % i)
+		assert(int(slot["vulnerable"]) == 1, "enemy[%d] vulnerable should be 1" % i)
+	# alias 應同步 active
+	assert(int(bc.state["enemy_poison"]) == 3, "alias poison should sync")
+	assert(int(bc.state["enemy_weak"]) == 2, "alias weak should sync")
+	assert(int(bc.state["enemy_vulnerable"]) == 1, "alias vulnerable should sync")
+
+func _test_multi_enemy_partial_kill(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# active 被打死 → _check_active_enemy_death 應切到下一個活敵
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0], enemies[1]])
+	# 把 enemies[0] HP 設成 1 (作弊)
+	(bc.state["enemies"][0] as Dictionary)["hp"] = 1
+	bc._sync_active_enemy_to_state()
+	# 找一張會打 damage 的卡（任何 character 的 starting deck 都有）
+	var damage_card: CardData = null
+	for c: CardData in characters[0].starting_deck:
+		for eff: Dictionary in c.effects:
+			if String(eff.get("kind", "")) == "damage" and int(eff.get("amount", 0)) >= 1:
+				damage_card = c
+				break
+		if damage_card != null:
+			break
+	assert(damage_card != null, "需要找到一張 damage 卡測試")
+	bc.state["energy"] = 99
+	bc.play_card(damage_card)
+	# active 應自動切到 enemies[1]
+	assert(int(bc.state["active_enemy_index"]) == 1, "active should auto-switch to enemies[1] after enemies[0] death; got %d" % int(bc.state["active_enemy_index"]))
+	# 但 victory 還不是（enemies[1] 還活）
+	assert(not bc.is_victory(), "should not be victory while enemies[1] still alive")
+	# 把 enemies[1] 也擊敗
+	(bc.state["enemies"][1] as Dictionary)["hp"] = 0
+	assert(bc.is_victory(), "全敵死光 = is_victory")
+
+func _test_multi_enemy_set_active(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# set_active_enemy 邊界：超出 / 同 / 已死 = false；切換後 alias 換值
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0], enemies[1], enemies[2]])
+	assert(not bc.set_active_enemy(0), "same index → false")
+	assert(not bc.set_active_enemy(-1), "negative index → false")
+	assert(not bc.set_active_enemy(99), "out of range → false")
+	# 把 enemies[1] 打死
+	(bc.state["enemies"][1] as Dictionary)["hp"] = 0
+	assert(not bc.set_active_enemy(1), "switching to dead enemy → false")
+	# 合法切換
+	assert(bc.set_active_enemy(2), "valid switch → true")
+	assert(int(bc.state["active_enemy_index"]) == 2, "active index should be 2")
+	assert(String(bc.state["enemy_name"]) == String((bc.state["enemies"][2] as Dictionary)["name"]), "alias name should match enemies[2]")

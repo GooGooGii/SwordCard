@@ -4,19 +4,51 @@ extends RefCounted
 const HAND_SIZE: int = 5
 const BASE_TURN_ENERGY: int = 3
 const BENCH_HEAL_PER_TURN: int = 2
+const MAX_ENEMIES_PER_BATTLE: int = 3
 
 # Boss 進入 phase 2 時觸發，main.gd 接收後播放變身動畫
 # 參數：new_name = state["enemy_name"]（phase_2_display_name 或 fallback 原名）
 signal phase_transitioned(new_name: String)
 
 var run_state: RunState
-var enemy: EnemyData
+# Multi-Enemy Mode：戰場可有 1–3 敵人（boss 戰開場 1，可召出小怪）
+# 舊 `enemy` 為 getter，指向 active enemy；state["enemy_*"] 為 alias 同步到 active slot
+var enemies: Array[EnemyData] = []
+var enemy_action_indices: Array[int] = []  # 每敵獨立 action 輪替
+var enemy_phased: Array[bool] = []          # 每敵獨立 phase_2 旗標
 var decks: Array[DeckManager] = []  # 每個角色一份；舊 `deck` 屬性指向 active
 var resolver: EffectResolver
 var state: Dictionary = {}
-var action_index: int = 0
 var battle_log: Array[String] = []
-var phased: bool = false  # Boss HP 跌破 50% 後切換到 phase_2_actions
+
+# 向後相容 getter — 指向 active enemy
+var enemy: EnemyData:
+	get:
+		var idx: int = _active_enemy_index()
+		return enemies[idx] if idx >= 0 and idx < enemies.size() else null
+
+# 向後相容 getter/setter — 對應 active enemy 的 action_index
+var action_index: int:
+	get:
+		var idx: int = _active_enemy_index()
+		return enemy_action_indices[idx] if idx >= 0 and idx < enemy_action_indices.size() else 0
+	set(value):
+		var idx: int = _active_enemy_index()
+		if idx >= 0 and idx < enemy_action_indices.size():
+			enemy_action_indices[idx] = value
+
+# 向後相容 getter/setter — 對應 active enemy 的 phased 旗標
+var phased: bool:
+	get:
+		var idx: int = _active_enemy_index()
+		return enemy_phased[idx] if idx >= 0 and idx < enemy_phased.size() else false
+	set(value):
+		var idx: int = _active_enemy_index()
+		if idx >= 0 and idx < enemy_phased.size():
+			enemy_phased[idx] = value
+
+func _active_enemy_index() -> int:
+	return int(state.get("active_enemy_index", 0))
 
 # 向後相容：character / deck 永遠對應到目前 active player
 var character: CharacterData:
@@ -40,12 +72,23 @@ var deck: DeckManager:
 func _active_index() -> int:
 	return int(state.get("active_player_index", 0))
 
-func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: EnemyData) -> void:
+func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant) -> void:
+	# chosen_enemy 可為單一 EnemyData（向後相容）或 Array[EnemyData]（多敵戰場）
 	run_state = rs
-	enemy = chosen_enemy.clone()
+	enemies.clear()
+	enemy_action_indices.clear()
+	enemy_phased.clear()
+	if chosen_enemy is EnemyData:
+		enemies.append((chosen_enemy as EnemyData).clone())
+	elif chosen_enemy is Array:
+		for e: Variant in (chosen_enemy as Array):
+			if e is EnemyData:
+				enemies.append((e as EnemyData).clone())
+	assert(not enemies.is_empty(), "BattleController.setup requires at least 1 enemy")
+	for _i: int in range(enemies.size()):
+		enemy_action_indices.append(0)
+		enemy_phased.append(false)
 	resolver = EffectResolver.new()
-	action_index = 0
-	phased = false
 	battle_log.clear()
 	var party_size: int = run_state.characters.size()
 	var per_turn_energy: int = BASE_TURN_ENERGY + max(0, party_size - 1)
@@ -69,18 +112,37 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: EnemyDa
 			"vulnerable": 0,
 			"power": run_state.character_power_bonus[i],
 		})
+	# 多敵 slot 陣列
+	var enemy_slots: Array[Dictionary] = []
+	for e: EnemyData in enemies:
+		enemy_slots.append({
+			"id": e.id,
+			"name": e.display_name,
+			"max_hp": e.max_hp,
+			"hp": e.max_hp,
+			"block": 0,
+			"poison": 0,
+			"weak": 0,
+			"vulnerable": 0,
+			"loot_table": GameData.loot_table_for(e.id),
+		})
 	state = {
 		"players": players,
 		"active_player_index": clamp(run_state.active_character_index, 0, max(0, party_size - 1)),
 		"switched_this_turn": false,
 		"per_turn_energy": per_turn_energy,
-		"enemy_name": enemy.display_name,
-		"enemy_max_hp": enemy.max_hp,
-		"enemy_hp": enemy.max_hp,
+		# Multi-enemy state
+		"enemies": enemy_slots,
+		"active_enemy_index": 0,
+		# 以下 enemy_* 是 alias，從 enemies[active_enemy_index] 複製出來
+		"enemy_name": enemy_slots[0]["name"],
+		"enemy_max_hp": enemy_slots[0]["max_hp"],
+		"enemy_hp": enemy_slots[0]["hp"],
 		"enemy_block": 0,
 		"enemy_poison": 0,
 		"enemy_weak": 0,
 		"enemy_vulnerable": 0,
+		"enemy_loot_table": enemy_slots[0]["loot_table"],
 		"energy": per_turn_energy,
 		"pending_draw": 0,
 		"turn": 0,
@@ -93,7 +155,7 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: EnemyDa
 		"poison_bonus": 0,
 		"draw_next_turn_bonus": 0,
 		"card_played_counts": {},
-		"enemy_loot_table": GameData.loot_table_for(enemy.id),
+		"last_attacker_index": 0,  # 林月如反擊指向的敵人
 		"steal_result": {}
 	}
 	# 若 active 死了（舊存檔載入後可能發生），自動跳到第一個活的
@@ -120,6 +182,52 @@ func _sync_active_to_state() -> void:
 	state["player_weak"] = p["weak"]
 	state["player_vulnerable"] = p["vulnerable"]
 	state["player_power"] = p["power"]
+
+# 多敵 alias 同步：enemies[active_enemy_index] → state["enemy_*"]
+# 在 set_active_enemy() 切換後、AOE 效果結算後呼叫
+func _sync_active_enemy_to_state() -> void:
+	var idx: int = _active_enemy_index()
+	var enemy_slots: Array = state.get("enemies", []) as Array
+	if idx < 0 or idx >= enemy_slots.size():
+		return
+	var slot: Dictionary = enemy_slots[idx] as Dictionary
+	state["enemy_name"] = slot["name"]
+	state["enemy_max_hp"] = slot["max_hp"]
+	state["enemy_hp"] = slot["hp"]
+	state["enemy_block"] = slot["block"]
+	state["enemy_poison"] = slot["poison"]
+	state["enemy_weak"] = slot["weak"]
+	state["enemy_vulnerable"] = slot["vulnerable"]
+	state["enemy_loot_table"] = slot["loot_table"]
+
+# 把 state["enemy_*"] 寫回 enemies[active_enemy_index] slot
+# 在單體 effect（damage/poison/weak/vulnerable 等）結算後呼叫
+func _sync_state_to_active_enemy() -> void:
+	var idx: int = _active_enemy_index()
+	var enemy_slots: Array = state.get("enemies", []) as Array
+	if idx < 0 or idx >= enemy_slots.size():
+		return
+	var slot: Dictionary = enemy_slots[idx] as Dictionary
+	slot["hp"] = int(state.get("enemy_hp", slot["hp"]))
+	slot["block"] = int(state.get("enemy_block", slot["block"]))
+	slot["poison"] = int(state.get("enemy_poison", slot["poison"]))
+	slot["weak"] = int(state.get("enemy_weak", slot["weak"]))
+	slot["vulnerable"] = int(state.get("enemy_vulnerable", slot["vulnerable"]))
+	# name / max_hp / loot_table 不變
+
+# 玩家主動切換 active enemy（drag-to-play / click portrait 觸發）
+func set_active_enemy(new_index: int) -> bool:
+	var enemy_slots: Array = state.get("enemies", []) as Array
+	if new_index < 0 or new_index >= enemy_slots.size():
+		return false
+	if int((enemy_slots[new_index] as Dictionary)["hp"]) <= 0:
+		return false  # 不能 active 已死敵
+	if new_index == _active_enemy_index():
+		return false  # 已是 active
+	_sync_state_to_active_enemy()  # 寫回舊 active
+	state["active_enemy_index"] = new_index
+	_sync_active_enemy_to_state()  # 加載新 active
+	return true
 
 # 把 state["player_*"] 寫回 active player slot
 func _sync_state_to_active() -> void:
@@ -219,7 +327,14 @@ func snapshot_state() -> Dictionary:
 	}
 
 func is_victory() -> bool:
-	return int(state["enemy_hp"]) <= 0
+	# 全部敵人 HP <= 0 才算勝（含召喚物）
+	var enemy_slots: Array = state.get("enemies", []) as Array
+	if enemy_slots.is_empty():
+		return false
+	for slot_v: Variant in enemy_slots:
+		if int((slot_v as Dictionary)["hp"]) > 0:
+			return false
+	return true
 
 func is_defeat() -> bool:
 	var players: Array = state.get("players", []) as Array
@@ -348,7 +463,25 @@ func play_card(card: CardData) -> Dictionary:
 			deck.draw(int(state["pending_draw"]))
 		state["pending_draw"] = 0
 	_sync_state_to_active()
+	_sync_state_to_active_enemy()  # 單體敵人 effects 寫回 active slot
+	_check_active_enemy_death()  # active 敵被打死 → 自動換到下一個活敵
 	return {"affordable": true, "before_card": before_card, "ended": is_battle_over()}
+
+# active 敵 HP <= 0 時，自動切換 active 到第一個活敵
+func _check_active_enemy_death() -> void:
+	var enemy_slots: Array = state.get("enemies", []) as Array
+	var idx: int = _active_enemy_index()
+	if idx < 0 or idx >= enemy_slots.size():
+		return
+	if int((enemy_slots[idx] as Dictionary)["hp"]) > 0:
+		return  # active 還活著
+	# 找下一個活敵
+	for i: int in range(enemy_slots.size()):
+		if int((enemy_slots[i] as Dictionary)["hp"]) > 0:
+			state["active_enemy_index"] = i
+			_sync_active_enemy_to_state()
+			return
+	# 全部死光 → is_victory 會處理
 
 func begin_enemy_phase() -> Dictionary:
 	_fire_relic_triggers("turn_end")
@@ -369,6 +502,7 @@ func resolve_enemy_phase(action: Dictionary) -> Dictionary:
 	var before_enemy: Dictionary = snapshot_state()
 	add_logs(resolver.resolve_enemy_action(action, state))
 	_sync_state_to_active()
+	_sync_state_to_active_enemy()  # 敵人若自我 block，寫回 slot
 	# active 死了？嘗試強制換人
 	if not _is_active_alive() and not is_defeat():
 		_force_switch_to_first_alive(true)
