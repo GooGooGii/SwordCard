@@ -139,6 +139,13 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 		"cure_poison":
 			state["player_poison"] = 0
 			log_lines.append("蠱毒已全數清除。")
+		"cure_debuff":
+			# 清除自身全部負面狀態：虛弱、破綻、蠱毒
+			# PAL1 「冰心訣 / 靈血咒」對應效果
+			state["player_weak"] = 0
+			state["player_vulnerable"] = 0
+			state["player_poison"] = 0
+			log_lines.append("負面狀態已清除。")
 		"steal":
 			if from_enemy:
 				pass

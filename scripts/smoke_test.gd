@@ -819,12 +819,13 @@ const BALANCE_BASELINES: Dictionary = {
 }
 # 蜈蚣大王（bosses[1]）+ 10 回合上限：起始牌組對 boss 的「速贏率」。
 # 給夠時間 random AI 都會贏，限時才能拿到中段勝率做雙向偵測。
-# 起始牌組重整後（refactor: 統一 8 basic + 3 uncommon + 1 簽名 rare）：
-# - li_xiaoyao / lin_yueru / anu 仍 100%（速攻足以 10t 內結束蜈蚣大王 HP 92）
-# - zhao_linger 從 20% → 87%（夢蛇 power+3 + 天雷破 18 + 雷咒×3 速攻提升）
+# PAL1 對齊重整後（10/2/0 規範 + burst 卡）：
+# - lin_yueru / anu 仍 100%（高傷快攻 / 蠱毒堆疊）
+# - li_xiaoyao 約 63%（移除酒神咒、九龍訣等 burst，靠御劍+萬劍）
+# - zhao_linger 約 80%（雷咒×3 + 天雷破 burst，配合金剛咒+觀音咒持續）
 const BALANCE_BASELINES_MID: Dictionary = {
-	"li_xiaoyao": 100,
-	"zhao_linger": 87,
+	"li_xiaoyao": 63,
+	"zhao_linger": 80,
 	"lin_yueru": 100,
 	"anu": 100
 }
@@ -1142,22 +1143,24 @@ func _test_level_system(characters: Array[CharacterData]) -> void:
 	assert(rs3.character_levels[0] == 1, "old save without levels should default to Lv1")
 
 func _test_level_unlock_cards() -> void:
-	# 每個角色在 Lv 3, 6, 10, 15, 20 各有至少 1 張解鎖卡
-	var unlock_levels: Array[int] = [3, 6, 10, 15, 20]
+	# 每個角色至少要在 Lv 1-25 間有 >= 5 個 unlock 點，且每張 unlock 卡資料完整
+	# （之前寫死 Lv 3/6/10/15/20，但 PAL1 對齊後改用 Lv 4/6/9/11/13/15/18/22 等）
 	for char_id: String in ["li_xiaoyao", "zhao_linger", "lin_yueru", "anu"]:
-		for lv: int in unlock_levels:
-			var cards: Array[CardData] = LevelSystem.unlock_cards_for(char_id, lv)
-			assert(cards.size() >= 1, "%s should unlock >= 1 card at Lv %d" % [char_id, lv])
-			for card: CardData in cards:
-				assert(not card.id.is_empty(), "unlock card id empty for %s at Lv %d" % [char_id, lv])
-				assert(not card.display_name.is_empty(), "unlock card name empty for %s at Lv %d" % [char_id, lv])
-				assert(card.effects.size() > 0, "unlock card has no effects for %s at Lv %d" % [char_id, lv])
-	# all_unlocked_cards 應依 max_level 累積
-	var lxy_lv10: Array[CardData] = LevelSystem.all_unlocked_cards("li_xiaoyao", 10)
-	assert(lxy_lv10.size() == 3, "li_xiaoyao should have 3 unlocks by Lv10 (Lv3,6,10); got %d" % lxy_lv10.size())
-	var lxy_lv20: Array[CardData] = LevelSystem.all_unlocked_cards("li_xiaoyao", 20)
-	assert(lxy_lv20.size() == 5, "li_xiaoyao should have 5 unlocks by Lv20; got %d" % lxy_lv20.size())
-	var lxy_lv2: Array[CardData] = LevelSystem.all_unlocked_cards("li_xiaoyao", 2)
-	assert(lxy_lv2.size() == 0, "li_xiaoyao should have 0 unlocks at Lv2; got %d" % lxy_lv2.size())
+		var all_by_25: Array[CardData] = LevelSystem.all_unlocked_cards(char_id, 25)
+		assert(all_by_25.size() >= 5, "%s should have >= 5 unlocks by Lv25; got %d" % [char_id, all_by_25.size()])
+		for card: CardData in all_by_25:
+			assert(not card.id.is_empty(), "unlock card id empty for %s" % char_id)
+			assert(not card.display_name.is_empty(), "unlock card name empty for %s (id=%s)" % [char_id, card.id])
+			assert(card.effects.size() > 0, "unlock card has no effects for %s (id=%s)" % [char_id, card.id])
+	# Lv1 應該無 unlock（unlock 從 Lv2+ 才開始）
+	for char_id: String in ["li_xiaoyao", "zhao_linger", "lin_yueru", "anu"]:
+		assert(LevelSystem.all_unlocked_cards(char_id, 1).is_empty(), "%s should have 0 unlocks at Lv1" % char_id)
+	# all_unlocked_cards 應依 max_level 累積（更高等級不會回傳更少卡）
+	for char_id: String in ["li_xiaoyao", "zhao_linger", "lin_yueru", "anu"]:
+		var by_5: int = LevelSystem.all_unlocked_cards(char_id, 5).size()
+		var by_15: int = LevelSystem.all_unlocked_cards(char_id, 15).size()
+		var by_25: int = LevelSystem.all_unlocked_cards(char_id, 25).size()
+		assert(by_5 <= by_15, "%s: by_5 (%d) > by_15 (%d), 應累積" % [char_id, by_5, by_15])
+		assert(by_15 <= by_25, "%s: by_15 (%d) > by_25 (%d), 應累積" % [char_id, by_15, by_25])
 	# 不存在的角色應回傳空陣列
 	assert(LevelSystem.all_unlocked_cards("unknown_char", 50).is_empty(), "unknown char should return empty")
