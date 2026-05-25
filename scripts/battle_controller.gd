@@ -243,13 +243,25 @@ func next_enemy_action() -> Dictionary:
 	var active: Array[Dictionary] = enemy.phase_2_actions if (phased and not enemy.phase_2_actions.is_empty()) else enemy.actions
 	return active[action_index % active.size()]
 
+func _enemy_display_name() -> String:
+	# Phase 2 boss（如拜月教主→水魔獸）變身後使用替代名稱
+	if phased and not enemy.phase_2_display_name.is_empty():
+		return enemy.phase_2_display_name
+	return enemy.display_name
+
 func _check_phase_transition() -> void:
 	if phased or enemy.phase_2_actions.is_empty():
 		return
 	if int(state["enemy_hp"]) * 2 < int(state["enemy_max_hp"]):
 		phased = true
 		action_index = 0
-		add_log("%s 怒色暴漲，招式變換！" % enemy.display_name)
+		# 有 phase_2_display_name 的 boss（如拜月教主→水魔獸）：切換顯示名稱
+		var phase_2_name: String = enemy.phase_2_display_name
+		if not phase_2_name.is_empty():
+			state["enemy_name"] = phase_2_name
+			add_log("%s 吟咒撕裂虛空，召出 %s 現世！" % [enemy.display_name, phase_2_name])
+		else:
+			add_log("%s 怒色暴漲，招式變換！" % enemy.display_name)
 
 func effective_card_cost(card: CardData) -> int:
 	if character == null:
@@ -341,11 +353,11 @@ func begin_enemy_phase() -> Dictionary:
 	_sync_state_to_active()
 	var action: Dictionary = next_enemy_action()
 	action_index = action_index + 1
-	add_log("%s 準備施放：%s。" % [enemy.display_name, String(action["intent"])])
+	add_log("%s 準備施放：%s。" % [_enemy_display_name(), String(action["intent"])])
 	return action
 
 func resolve_enemy_phase(action: Dictionary) -> Dictionary:
-	add_log("%s：%s。" % [enemy.display_name, String(action["intent"])])
+	add_log("%s：%s。" % [_enemy_display_name(), String(action["intent"])])
 	var before_enemy: Dictionary = snapshot_state()
 	add_logs(resolver.resolve_enemy_action(action, state))
 	_sync_state_to_active()

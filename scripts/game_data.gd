@@ -651,6 +651,7 @@ static func _zombie_general() -> EnemyData:
 	return enemy
 
 static func _baiyue_lord() -> EnemyData:
+	# PAL1 最終 boss：拜月教主 HP 過半召出水魔獸現世（phase 2 變身）
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "baiyue_lord"
 	enemy.display_name = "拜月教主"
@@ -662,9 +663,12 @@ static func _baiyue_lord() -> EnemyData:
 		{"intent": "黑暗護罩 16", "effects": [{"kind": "block", "amount": 16}]},
 		{"intent": "邪神降世 20", "effects": [{"kind": "damage", "amount": 20}]}
 	]
+	# Phase 2：召出水魔獸（PAL1 原作終局妖獸）
+	enemy.phase_2_display_name = "水魔獸"
 	enemy.phase_2_actions = [
-		{"intent": "月神降臨 24 + 虛弱 2", "effects": [{"kind": "damage", "amount": 24}, {"kind": "weak", "amount": 2}]},
-		{"intent": "邪力爆發 蠱毒 8 + 破綻 2", "effects": [{"kind": "poison", "amount": 8}, {"kind": "vulnerable", "amount": 2}]},
-		{"intent": "黑暗洗禮 28", "effects": [{"kind": "damage", "amount": 28}]}
+		{"intent": "海嘯襲擊 24 + 虛弱 2", "effects": [{"kind": "damage", "amount": 24}, {"kind": "weak", "amount": 2}]},
+		{"intent": "水妖蝕魂 蠱毒 8 + 破綻 2", "effects": [{"kind": "poison", "amount": 8}, {"kind": "vulnerable", "amount": 2}]},
+		{"intent": "觸手鞭打 8x3", "effects": [{"kind": "damage", "amount": 8}, {"kind": "damage", "amount": 8}, {"kind": "damage", "amount": 8}]},
+		{"intent": "滅世巨浪 28", "effects": [{"kind": "damage", "amount": 28}]}
 	]
 	return enemy

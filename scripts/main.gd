@@ -4025,6 +4025,9 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 	player_block_badge.set_amount(int(battle.state["player_block"]))
 	player_status_line.text = UIFactory.status_summary(int(battle.state["player_poison"]), int(battle.state["player_weak"]), int(battle.state["player_vulnerable"]))
 	_refresh_bench_strip()
+	# 敵人名稱：phase 2 變身後（如拜月教主→水魔獸）會由 state["enemy_name"] 改寫
+	if enemy_name_label != null and is_instance_valid(enemy_name_label):
+		enemy_name_label.text = String(battle.state.get("enemy_name", battle.enemy.display_name))
 	_refresh_combatant_hp(enemy_hp_bar, enemy_hp_value, int(battle.state["enemy_hp"]), int(battle.state["enemy_max_hp"]))
 	enemy_block_badge.set_amount(int(battle.state["enemy_block"]))
 	enemy_status_line.text = UIFactory.status_summary(int(battle.state["enemy_poison"]), int(battle.state["enemy_weak"]), int(battle.state["enemy_vulnerable"]))
