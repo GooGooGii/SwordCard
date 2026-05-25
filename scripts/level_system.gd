@@ -177,31 +177,35 @@ static func _zl_unlocks() -> Dictionary:
 				"rare"),
 		],
 		# Lv12 (PAL1 Lv20) — 地裂天崩：土系高級
+		# 3c 20傷 → 2c 14傷（隨機 AI 偏低費卡，2c 出手率高得多）
 		12: [
-			GameData.make_card("zl_diliebeng", "地裂天崩", "趙靈兒", 3, "attack",
-				"PAL1 Lv20 土系絕招。造成 20 點傷害並施加 3 層破綻。",
-				([{"kind": "damage", "amount": 20}, {"kind": "vulnerable", "amount": 3}] as Array[Dictionary]),
+			GameData.make_card("zl_diliebeng", "地裂天崩", "趙靈兒", 2, "attack",
+				"PAL1 Lv20 土系絕招。造成 14 點傷害並施加 2 層破綻。",
+				([{"kind": "damage", "amount": 14}, {"kind": "vulnerable", "amount": 2}] as Array[Dictionary]),
 				"rare"),
 		],
-		# Lv16 (PAL1 Lv24) — 泰山壓頂
-		16: [
-			GameData.make_card("zl_taishan", "泰山壓頂", "趙靈兒", 3, "attack",
-				"PAL1 Lv24 土系絕招。造成 28 點傷害。",
-				([{"kind": "damage", "amount": 28}] as Array[Dictionary]),
-				"rare"),
-		],
-		# Lv18 (PAL1 Lv26) — 狂雷
-		18: [
-			GameData.make_card("zl_kuanglei", "狂雷", "趙靈兒", 3, "attack",
-				"PAL1 Lv26 雷系絕招。造成 30 點傷害。",
-				([{"kind": "damage", "amount": 30}] as Array[Dictionary]),
-				"rare"),
-		],
-		# Lv22 (鎖妖塔變身 — act 4 對應 game Lv22) — 夢蛇
-		22: [
+		# Lv13 (act 3-4 過渡) — 夢蛇：power scaling，讓她長戰有持續輸出
+		# 原本放在 Lv22，但純攻擊類 unlock 對她而言效益不夠；前移以補 act 5 boss 對策
+		13: [
 			GameData.make_card("zl_mengshe_ls", "夢蛇", "趙靈兒", 2, "power",
 				"PAL1 鎖妖塔變身。本場戰鬥傷害提升 3，並抽 1 張牌。",
 				([{"kind": "power", "amount": 3}, {"kind": "draw", "amount": 1}] as Array[Dictionary]),
+				"rare"),
+		],
+		# Lv16 (PAL1 Lv24) — 泰山壓頂
+		# 3c 28傷 → 2c 18傷
+		16: [
+			GameData.make_card("zl_taishan", "泰山壓頂", "趙靈兒", 2, "attack",
+				"PAL1 Lv24 土系絕招。造成 18 點傷害。",
+				([{"kind": "damage", "amount": 18}] as Array[Dictionary]),
+				"rare"),
+		],
+		# Lv18 (PAL1 Lv26) — 狂雷
+		# 3c 30傷 → 2c 20傷
+		18: [
+			GameData.make_card("zl_kuanglei", "狂雷", "趙靈兒", 2, "attack",
+				"PAL1 Lv26 雷系絕招。造成 20 點傷害。",
+				([{"kind": "damage", "amount": 20}] as Array[Dictionary]),
 				"rare"),
 		],
 	}
