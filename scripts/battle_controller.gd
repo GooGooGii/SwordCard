@@ -359,32 +359,55 @@ func complete_victory() -> void:
 	run_state.active_character_index = _active_index()
 
 func next_enemy_action() -> Dictionary:
-	var active: Array[Dictionary] = enemy.phase_2_actions if (phased and not enemy.phase_2_actions.is_empty()) else enemy.actions
-	return active[action_index % active.size()]
+	# 向後相容：回傳 active 敵的下一招
+	return _action_for_enemy(_active_enemy_index())
+
+func _action_for_enemy(idx: int) -> Dictionary:
+	if idx < 0 or idx >= enemies.size():
+		return {}
+	var e: EnemyData = enemies[idx]
+	var active_actions: Array[Dictionary] = e.phase_2_actions if (enemy_phased[idx] and not e.phase_2_actions.is_empty()) else e.actions
+	if active_actions.is_empty():
+		return {}
+	return active_actions[enemy_action_indices[idx] % active_actions.size()]
 
 func _enemy_display_name() -> String:
-	# Phase 2 boss（如拜月教主→水魔獸）變身後使用替代名稱
-	if phased and not enemy.phase_2_display_name.is_empty():
-		return enemy.phase_2_display_name
-	return enemy.display_name
+	return _enemy_display_name_for(_active_enemy_index())
 
+func _enemy_display_name_for(idx: int) -> String:
+	if idx < 0 or idx >= enemies.size():
+		return ""
+	var e: EnemyData = enemies[idx]
+	if enemy_phased[idx] and not e.phase_2_display_name.is_empty():
+		return e.phase_2_display_name
+	return e.display_name
+
+# 每敵獨立 phase 2 切換（AOE 後可能多敵同時跨 50% HP）
 func _check_phase_transition() -> void:
-	if phased or enemy.phase_2_actions.is_empty():
-		return
-	if int(state["enemy_hp"]) * 2 < int(state["enemy_max_hp"]):
-		phased = true
-		action_index = 0
-		# 有 phase_2_display_name 的 boss（如拜月教主→水魔獸）：切換顯示名稱
-		var phase_2_name: String = enemy.phase_2_display_name
-		var emit_name: String
-		if not phase_2_name.is_empty():
-			state["enemy_name"] = phase_2_name
-			add_log("%s 吟咒撕裂虛空，召出 %s 現世！" % [enemy.display_name, phase_2_name])
-			emit_name = phase_2_name
-		else:
-			add_log("%s 怒色暴漲，招式變換！" % enemy.display_name)
-			emit_name = enemy.display_name
-		phase_transitioned.emit(emit_name)
+	# 確保 active slot 反映最新 alias（單體 damage 後 alias 已更新但 slot 還沒）
+	_sync_state_to_active_enemy()
+	for i: int in range(enemies.size()):
+		var e: EnemyData = enemies[i]
+		if enemy_phased[i] or e.phase_2_actions.is_empty():
+			continue
+		var slot: Dictionary = state["enemies"][i] as Dictionary
+		if int(slot["hp"]) <= 0:
+			continue  # 死敵不切 phase
+		if int(slot["hp"]) * 2 < int(slot["max_hp"]):
+			enemy_phased[i] = true
+			enemy_action_indices[i] = 0
+			var phase_2_name: String = e.phase_2_display_name
+			var emit_name: String
+			if not phase_2_name.is_empty():
+				slot["name"] = phase_2_name
+				if i == _active_enemy_index():
+					state["enemy_name"] = phase_2_name
+				add_log("%s 吟咒撕裂虛空，召出 %s 現世！" % [e.display_name, phase_2_name])
+				emit_name = phase_2_name
+			else:
+				add_log("%s 怒色暴漲，招式變換！" % e.display_name)
+				emit_name = e.display_name
+			phase_transitioned.emit(emit_name)
 
 func effective_card_cost(card: CardData) -> int:
 	if character == null:
@@ -483,7 +506,9 @@ func _check_active_enemy_death() -> void:
 			return
 	# 全部死光 → is_victory 會處理
 
-func begin_enemy_phase() -> Dictionary:
+func begin_enemy_phase() -> Array[Dictionary]:
+	# Multi-Enemy 模式：每隻活敵各預備一招，回傳陣列（死敵 = empty dict）
+	# 1v1 退化情況：array size == 1
 	_fire_relic_triggers("turn_end")
 	if deck != null:
 		deck.discard_hand()
@@ -492,21 +517,112 @@ func begin_enemy_phase() -> Dictionary:
 	if int(state["player_vulnerable"]) > 0:
 		state["player_vulnerable"] = int(state["player_vulnerable"]) - 1
 	_sync_state_to_active()
-	var action: Dictionary = next_enemy_action()
-	action_index = action_index + 1
-	add_log("%s 準備施放：%s。" % [_enemy_display_name(), String(action["intent"])])
-	return action
+	var actions: Array[Dictionary] = []
+	for i: int in range(enemies.size()):
+		var slot: Dictionary = state["enemies"][i] as Dictionary
+		if int(slot["hp"]) <= 0:
+			actions.append({})  # 死敵跳過
+			continue
+		var action: Dictionary = _action_for_enemy(i)
+		enemy_action_indices[i] = enemy_action_indices[i] + 1
+		actions.append(action)
+		add_log("%s 準備施放：%s。" % [_enemy_display_name_for(i), String(action.get("intent", ""))])
+	return actions
 
-func resolve_enemy_phase(action: Dictionary) -> Dictionary:
-	add_log("%s：%s。" % [_enemy_display_name(), String(action["intent"])])
+func resolve_enemy_phase(actions: Variant) -> Dictionary:
+	# 向後相容：actions 可為 Array[Dictionary]（multi-enemy）或單一 Dictionary（legacy 1v1 caller）
+	var action_list: Array[Dictionary] = []
+	if actions is Dictionary:
+		action_list.append(actions as Dictionary)
+	elif actions is Array:
+		for a: Variant in (actions as Array):
+			action_list.append((a as Dictionary) if a is Dictionary else {})
 	var before_enemy: Dictionary = snapshot_state()
-	add_logs(resolver.resolve_enemy_action(action, state))
+	var saved_active: int = _active_enemy_index()
+	for i: int in range(action_list.size()):
+		var action: Dictionary = action_list[i]
+		if action.is_empty():
+			continue
+		if i >= state["enemies"].size():
+			break
+		var slot: Dictionary = state["enemies"][i] as Dictionary
+		if int(slot["hp"]) <= 0:
+			continue
+		# 切 active 到 i，讓 enemy_weak / enemy_block alias 反映該敵
+		if i != _active_enemy_index():
+			_sync_state_to_active_enemy()
+			state["active_enemy_index"] = i
+			_sync_active_enemy_to_state()
+		add_log("%s：%s。" % [_enemy_display_name_for(i), String(action.get("intent", ""))])
+		add_logs(resolver.resolve_enemy_action(action, state))
+		_sync_state_to_active_enemy()
+		# 林月如反擊指向最後一個對玩家造成傷害的敵人
+		if CardFormat.action_has_damage(action):
+			state["last_attacker_index"] = i
+		# 處理該敵 action 內的召喚請求
+		_process_pending_summons(i)
+		# 玩家若被打死，戰鬥結束，不繼續處理後面敵人
+		if is_defeat():
+			break
+	# 還原 active：若 saved 還活著切回；否則找第一個活敵
+	var enemy_slots: Array = state.get("enemies", []) as Array
+	if saved_active < enemy_slots.size() and int((enemy_slots[saved_active] as Dictionary)["hp"]) > 0:
+		if saved_active != _active_enemy_index():
+			_sync_state_to_active_enemy()
+			state["active_enemy_index"] = saved_active
+			_sync_active_enemy_to_state()
+	else:
+		_check_active_enemy_death()
 	_sync_state_to_active()
-	_sync_state_to_active_enemy()  # 敵人若自我 block，寫回 slot
-	# active 死了？嘗試強制換人
 	if not _is_active_alive() and not is_defeat():
 		_force_switch_to_first_alive(true)
 	return {"before_enemy": before_enemy, "ended": is_battle_over()}
+
+# 召喚機制：EffectResolver 的 "summon" effect 會把請求加進 state["pending_summons"]
+# 在每隻敵人的 action 結算完後呼叫此函式處理
+func _process_pending_summons(caster_idx: int) -> void:
+	var pending: Array = state.get("pending_summons", []) as Array
+	if pending.is_empty():
+		return
+	for req_v: Variant in pending:
+		var req: Dictionary = req_v as Dictionary
+		var id: String = String(req.get("id", ""))
+		# 若未指定 id，從 caster.summon_pool 隨機抽
+		if id.is_empty() and caster_idx >= 0 and caster_idx < enemies.size():
+			var pool: Array[String] = enemies[caster_idx].summon_pool
+			if not pool.is_empty():
+				id = pool[randi() % pool.size()]
+		if not id.is_empty():
+			spawn_enemy(id)
+	state["pending_summons"] = []
+
+# 召喚新敵到戰場。回傳成功與否；戰場 >= MAX_ENEMIES_PER_BATTLE 或 id 未知 → false
+func spawn_enemy(enemy_id: String) -> bool:
+	if enemies.size() >= MAX_ENEMIES_PER_BATTLE:
+		add_log("戰場已滿，召喚未成。")
+		return false
+	var template: EnemyData = GameData.enemy_by_id(enemy_id)
+	if template == null:
+		push_warning("BattleController.spawn_enemy: unknown enemy id '%s'" % enemy_id)
+		return false
+	var clone: EnemyData = template.clone()
+	enemies.append(clone)
+	enemy_action_indices.append(0)
+	enemy_phased.append(false)
+	var slot: Dictionary = {
+		"id": clone.id,
+		"name": clone.display_name,
+		"max_hp": clone.max_hp,
+		"hp": clone.max_hp,
+		"block": 0,
+		"poison": 0,
+		"weak": 0,
+		"vulnerable": 0,
+		"loot_table": GameData.loot_table_for(clone.id),
+	}
+	(state["enemies"] as Array).append(slot)
+	add_log("召出 %s！" % clone.display_name)
+	return true
 
 func passive_status_text() -> String:
 	if state.is_empty() or character == null:

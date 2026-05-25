@@ -110,8 +110,8 @@ func _simulate_with_deck(character: CharacterData, enemy_template: EnemyData, ma
 				break
 		if bc.is_battle_over():
 			break
-		var action: Dictionary = bc.begin_enemy_phase()
-		bc.resolve_enemy_phase(action)
+		var actions: Array = bc.begin_enemy_phase()
+		bc.resolve_enemy_phase(actions)
 	return bc.is_victory()
 
 func _print_matrix(characters: Array[CharacterData], targets: Array[EnemyData], turn_limit: int) -> void:
@@ -174,8 +174,8 @@ func _simulate(character: CharacterData, enemy_template: EnemyData, max_turns: i
 				break
 		if bc.is_battle_over():
 			break
-		var action: Dictionary = bc.begin_enemy_phase()
-		bc.resolve_enemy_phase(action)
+		var actions: Array = bc.begin_enemy_phase()
+		bc.resolve_enemy_phase(actions)
 	return bc.is_victory()
 
 func _print_deck_summary(character: CharacterData) -> void:

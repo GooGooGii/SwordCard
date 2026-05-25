@@ -121,6 +121,13 @@ func _initialize() -> void:
 	_test_multi_enemy_aoe_status(characters, enemies)
 	_test_multi_enemy_partial_kill(characters, enemies)
 	_test_multi_enemy_set_active(characters, enemies)
+	# Phase 3+3.5
+	_test_multi_enemy_turn_each_attacks(characters, enemies)
+	_test_multi_enemy_per_enemy_phase(characters)
+	_test_summon_basic(characters, enemies)
+	_test_summon_cap(characters, enemies)
+	_test_summon_unknown_id(characters, enemies)
+	_test_summon_from_boss_pool(characters)
 	print("SwordCard smoke test passed.")
 	quit(0)
 
@@ -388,8 +395,8 @@ func _test_multi_turn_battle(character: CharacterData, enemy_template: EnemyData
 			bc.play_card(card)
 		if bc.is_battle_over():
 			break
-		var action: Dictionary = bc.begin_enemy_phase()
-		bc.resolve_enemy_phase(action)
+		var actions: Array = bc.begin_enemy_phase()
+		bc.resolve_enemy_phase(actions)
 	assert(bc.is_victory(), "battle should end in victory within %d turns" % max_turns)
 	assert(int(bc.state["enemy_hp"]) <= 0, "enemy hp should be 0 on victory")
 	bc.complete_victory()
@@ -866,10 +873,10 @@ const BALANCE_BASELINES_LEVELED: Dictionary = {
 	# Lv15 vs 山靈巫后（act 4 boss HP 78）：應全部 100%
 	# Lv20 vs 拜月教主（act 5 boss HP 115）：李/趙 半數左右（爆發不足），林/阿 70-90%
 	#   （林/阿 nerf 後降到合理範圍，差距收斂到 30pp）
-	"li_xiaoyao":  {5: 97,  10: 90,  15: 100, 20: 70},
-	"zhao_linger": {5: 100, 10: 100, 15: 100, 20: 75},
-	"lin_yueru":   {5: 100, 10: 100, 15: 100, 20: 90},
-	"anu":         {5: 100, 10: 100, 15: 100, 20: 95},
+	"li_xiaoyao":  {5: 97,  10: 90,  15: 100, 20: 83},
+	"zhao_linger": {5: 100, 10: 100, 15: 100, 20: 93},
+	"lin_yueru":   {5: 100, 10: 100, 15: 100, 20: 100},
+	"anu":         {5: 100, 10: 93,  15: 100, 20: 93},
 }
 
 # Lv → act 對應
@@ -1054,8 +1061,8 @@ func _simulate_random_battle(character: CharacterData, enemy_template: EnemyData
 				break
 		if bc.is_battle_over():
 			break
-		var action: Dictionary = bc.begin_enemy_phase()
-		bc.resolve_enemy_phase(action)
+		var actions: Array = bc.begin_enemy_phase()
+		bc.resolve_enemy_phase(actions)
 	return bc.is_victory()
 
 func _test_deck_pile_views(characters: Array[CharacterData]) -> void:
@@ -1362,3 +1369,106 @@ func _test_multi_enemy_set_active(characters: Array[CharacterData], enemies: Arr
 	assert(bc.set_active_enemy(2), "valid switch → true")
 	assert(int(bc.state["active_enemy_index"]) == 2, "active index should be 2")
 	assert(String(bc.state["enemy_name"]) == String((bc.state["enemies"][2] as Dictionary)["name"]), "alias name should match enemies[2]")
+
+# ── Phase 3+3.5：多敵回合 + 召喚 ───────────────────────────────────
+
+func _test_multi_enemy_turn_each_attacks(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# 2 敵各自攻擊一次 → 玩家受 2 倍傷害（無 block）
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0], enemies[1]])
+	bc.start_turn()
+	var player_hp_before: int = int(bc.state["player_hp"])
+	var actions: Array[Dictionary] = bc.begin_enemy_phase()
+	assert(actions.size() == 2, "begin_enemy_phase should return one entry per enemy")
+	# 兩敵各自有 intent
+	assert(not actions[0].is_empty(), "enemies[0] should have an action")
+	assert(not actions[1].is_empty(), "enemies[1] should have an action")
+	bc.resolve_enemy_phase(actions)
+	# 兩敵都打到玩家（假設兩個都選了 damage action）— 至少 HP 有掉
+	var player_hp_after: int = int(bc.state["player_hp"])
+	assert(player_hp_after < player_hp_before, "player should take damage from at least one enemy")
+	# 死敵測試：把 enemies[1] HP 設 0 → begin_enemy_phase 該敵 action 為 empty
+	(bc.state["enemies"][1] as Dictionary)["hp"] = 0
+	var actions2: Array[Dictionary] = bc.begin_enemy_phase()
+	assert(actions2[1].is_empty(), "dead enemy's action should be empty")
+	assert(not actions2[0].is_empty(), "alive enemy still acts")
+
+func _test_multi_enemy_per_enemy_phase(characters: Array[CharacterData]) -> void:
+	# 每個敵獨立 phase 2 切換：bandit 沒有 phase_2 → 永不 phased；boss 有
+	# 用兩個 boss（拜月教主 + 殭屍大帥）測試
+	var moon: EnemyData = GameData.boss_for_act(5)  # 拜月教主
+	var zombie: EnemyData = GameData.boss_for_act(2)  # 殭屍大帥
+	var bc: BattleController = _make_multi_battle(characters[0], [moon, zombie])
+	# 把 enemies[0] (moon) HP 砍到 < 50%
+	var slot0: Dictionary = bc.state["enemies"][0] as Dictionary
+	slot0["hp"] = int(slot0["max_hp"]) / 3  # ~38
+	bc._sync_active_enemy_to_state()
+	# 觸發 phase check
+	bc._check_phase_transition()
+	assert(bc.enemy_phased[0], "moon should phase after dropping below 50% (hp=%d / max=%d)" % [int(slot0["hp"]), int(slot0["max_hp"])])
+	assert(not bc.enemy_phased[1], "zombie should not phase yet")
+	# 切到 zombie，砍它 hp 也 < 50%
+	bc.set_active_enemy(1)
+	var slot1: Dictionary = bc.state["enemies"][1] as Dictionary
+	slot1["hp"] = int(slot1["max_hp"]) / 3
+	bc._sync_active_enemy_to_state()
+	bc._check_phase_transition()
+	assert(bc.enemy_phased[1], "zombie should now phase too")
+
+func _test_summon_basic(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# spawn_enemy("water_tentacle") → enemies +1，state["enemies"] +1
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0]])
+	var size_before: int = bc.enemies.size()
+	var slots_before: int = (bc.state["enemies"] as Array).size()
+	var ok: bool = bc.spawn_enemy("water_tentacle")
+	assert(ok, "spawn_enemy(water_tentacle) should succeed")
+	assert(bc.enemies.size() == size_before + 1, "enemies array should grow by 1")
+	assert((bc.state["enemies"] as Array).size() == slots_before + 1, "state.enemies should grow by 1")
+	assert(bc.enemy_action_indices.size() == bc.enemies.size(), "enemy_action_indices size synced")
+	assert(bc.enemy_phased.size() == bc.enemies.size(), "enemy_phased size synced")
+	var new_slot: Dictionary = bc.state["enemies"][size_before] as Dictionary
+	assert(String(new_slot["id"]) == "water_tentacle", "new slot id should be water_tentacle")
+	assert(int(new_slot["hp"]) == int(new_slot["max_hp"]), "new minion starts at full HP")
+
+func _test_summon_cap(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# 戰場已 3 敵 → spawn 拒絕
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0], enemies[1], enemies[2]])
+	assert(bc.enemies.size() == BattleController.MAX_ENEMIES_PER_BATTLE, "setup at cap")
+	var ok: bool = bc.spawn_enemy("water_tentacle")
+	assert(not ok, "spawn_enemy should reject when at MAX_ENEMIES_PER_BATTLE")
+	assert(bc.enemies.size() == BattleController.MAX_ENEMIES_PER_BATTLE, "no enemy added")
+
+func _test_summon_unknown_id(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0]])
+	var ok: bool = bc.spawn_enemy("ghost_no_such_enemy")
+	assert(not ok, "spawn_enemy should reject unknown id")
+	assert(bc.enemies.size() == 1, "no enemy added")
+
+func _test_summon_from_boss_pool(characters: Array[CharacterData]) -> void:
+	# 拜月教主 phase 2 的「召喚水妖觸手」action 應觸發 spawn
+	# 模擬：把拜月教主 phase 2 強制啟動，再走 begin/resolve_enemy_phase
+	var moon: EnemyData = GameData.boss_for_act(5)
+	var bc: BattleController = _make_multi_battle(characters[0], [moon])
+	# 強制 phased + action_index 指向召喚招式
+	bc.enemy_phased[0] = true
+	# 找召喚招式在 phase_2_actions 的 index
+	var summon_idx: int = -1
+	for i: int in range(moon.phase_2_actions.size()):
+		var effs: Array = (moon.phase_2_actions[i] as Dictionary).get("effects", []) as Array
+		for ef: Variant in effs:
+			if String((ef as Dictionary).get("kind", "")) == "summon":
+				summon_idx = i
+				break
+		if summon_idx >= 0:
+			break
+	assert(summon_idx >= 0, "boss phase_2_actions should include a summon action")
+	bc.enemy_action_indices[0] = summon_idx
+	# 跑回合
+	bc.start_turn()
+	var size_before: int = bc.enemies.size()
+	var actions: Array[Dictionary] = bc.begin_enemy_phase()
+	bc.resolve_enemy_phase(actions)
+	# 召喚成功 → 戰場 +1（前提：未到 cap）
+	assert(bc.enemies.size() == size_before + 1, "summon action should add 1 enemy; got %d → %d" % [size_before, bc.enemies.size()])
+	# 新敵應在 summon_pool 內
+	var new_id: String = String((bc.state["enemies"][size_before] as Dictionary)["id"])
+	assert(new_id in moon.summon_pool, "summoned id should be from boss summon_pool; got '%s'" % new_id)

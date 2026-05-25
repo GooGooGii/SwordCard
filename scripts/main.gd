@@ -2345,14 +2345,26 @@ func end_player_turn() -> void:
 	end_turn_button.text = "結束回合"
 	end_turn_button.disabled = true
 	_animate_hand_discard()
-	var action: Dictionary = battle.begin_enemy_phase()
-	_show_enemy_action_preview(action)
+	# Multi-Enemy 模式：begin_enemy_phase 回傳每隻敵人的 action（陣列）
+	# Phase 4 UI 才會每敵顯示獨立 intent；目前先取 active 敵 (或首個非空) 作 preview
+	var actions: Array[Dictionary] = battle.begin_enemy_phase()
+	var preview_action: Dictionary = {}
+	var preview_idx: int = battle._active_enemy_index()
+	if preview_idx >= 0 and preview_idx < actions.size():
+		preview_action = actions[preview_idx]
+	if preview_action.is_empty():
+		for a: Dictionary in actions:
+			if not a.is_empty():
+				preview_action = a
+				break
+	if not preview_action.is_empty():
+		_show_enemy_action_preview(preview_action)
 	_refresh_battle()
 	await get_tree().create_timer(0.8).timeout
-	if CardFormat.action_has_damage(action):
+	if not preview_action.is_empty() and CardFormat.action_has_damage(preview_action):
 		UIFactory.dash_node(enemy_portrait_wrap, Vector2(-1, 0), 36.0, 0.22)
 		await get_tree().create_timer(0.1).timeout
-	var result: Dictionary = battle.resolve_enemy_phase(action)
+	var result: Dictionary = battle.resolve_enemy_phase(actions)
 	_show_state_feedback(result["before_enemy"])
 	_refresh_battle()
 	if bool(result["ended"]) and await _finish_battle_after_delay():
