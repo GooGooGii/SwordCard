@@ -39,6 +39,10 @@ var enemy_status_line: Label
 var enemy_name_label: Label
 var enemy_block_badge: BlockBadge
 var enemy_portrait_wrap: Control
+# Multi-Enemy 模式：每隻敵人的 widget refs，singular enemy_* 是 active 敵的 alias
+# 每個 dict: {root, wrap, portrait, name_label, hp_bar, hp_value, block_badge, status_line, feedback_label, enemy_idx}
+var enemy_widgets: Array[Dictionary] = []
+var enemy_row_container: HBoxContainer = null  # 召喚物加入時用此 ref 重建 row
 var enemy_portrait_image: TextureRect  # ref to TextureRect inside wrap, for phase 2 swap
 var energy_orb: EnergyOrb
 var relic_strip: HBoxContainer
@@ -1704,7 +1708,7 @@ func _build_battle_scene() -> void:
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	arena.add_child(spacer)
-	_build_enemy_widget(arena)
+	_build_enemy_row(arena)
 	var bottom: HBoxContainer = HBoxContainer.new()
 	bottom.add_theme_constant_override("separation", 6 if _battle_compact else 14)
 	screen.add_child(bottom)
@@ -1926,34 +1930,182 @@ func _build_player_widget(parent: HBoxContainer) -> void:
 	player_status_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(player_status_line)
 
-func _build_enemy_widget(parent: HBoxContainer) -> void:
-	var col: VBoxContainer = VBoxContainer.new()
-	col.custom_minimum_size = Vector2(210 if _battle_compact else 280, 0)
-	col.size_flags_horizontal = 0
-	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	col.alignment = BoxContainer.ALIGNMENT_END
-	col.add_theme_constant_override("separation", 2 if _battle_compact else 4)
-	parent.add_child(col)
+func _build_enemy_row(parent: HBoxContainer) -> void:
+	# Multi-Enemy 模式：水平 row 排列 1–3 敵；singular alias 自動指向 active 敵
+	enemy_widgets.clear()
+	var enemy_count: int = 0
+	if battle != null and battle.state.has("enemies"):
+		enemy_count = (battle.state["enemies"] as Array).size()
+	if enemy_count == 0:
+		return
+	# 共用標題（顯示「敵將」或敵人總數）— 多敵時放在 row 上方
+	var col_wrap: VBoxContainer = VBoxContainer.new()
+	col_wrap.alignment = BoxContainer.ALIGNMENT_END
+	col_wrap.add_theme_constant_override("separation", 4)
+	col_wrap.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	parent.add_child(col_wrap)
 	enemy_label = Label.new()
 	enemy_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	enemy_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	enemy_label.add_theme_font_size_override("font_size", 11 if _battle_compact else 16)
 	enemy_label.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
-	col.add_child(enemy_label)
-	enemy_feedback_label = UIFactory.feedback_label()
-	if _battle_compact:
-		enemy_feedback_label.custom_minimum_size = Vector2(0, 0)
-	col.add_child(enemy_feedback_label)
-	var portrait_size: Vector2 = Vector2(190, 220) if _battle_compact else Vector2(260, 290)
-	col.add_child(_portrait_with_block_badge(battle.enemy.portrait_path, portrait_size, true, false, battle.enemy.portrait_tint))
-	enemy_name_label = UIFactory.card_label(battle.enemy.display_name, 14 if _battle_compact else 18, Color("ffd9a3"), HORIZONTAL_ALIGNMENT_CENTER)
-	col.add_child(enemy_name_label)
-	enemy_hp_bar = UIFactory.hp_bar(ThemeColors.HP_FILL, ThemeColors.HP_BG_DARK)
-	enemy_hp_value = UIFactory.card_label("", 11 if _battle_compact else 13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
-	col.add_child(_hp_bar_with_overlay(enemy_hp_bar, enemy_hp_value))
-	enemy_status_line = UIFactory.card_label("", 11 if _battle_compact else 13, Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
-	enemy_status_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	col.add_child(enemy_status_line)
+	col_wrap.add_child(enemy_label)
+	var row: HBoxContainer = HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_END
+	row.add_theme_constant_override("separation", 10 if _battle_compact else 18)
+	col_wrap.add_child(row)
+	enemy_row_container = row
+	for i: int in range(enemy_count):
+		var widget: Dictionary = _build_single_enemy_widget(i, enemy_count)
+		row.add_child(widget["root"])
+		enemy_widgets.append(widget)
+	_set_active_enemy_aliases()
+
+# 召喚物加入後 enemies 數量變動 → 重建 row 內容（保持 row container 本體）
+func _rebuild_enemy_row_in_place() -> void:
+	if battle == null or enemy_row_container == null or not is_instance_valid(enemy_row_container):
+		return
+	for child: Node in enemy_row_container.get_children():
+		child.queue_free()
+	enemy_widgets.clear()
+	var enemy_count: int = (battle.state["enemies"] as Array).size()
+	for i: int in range(enemy_count):
+		var widget: Dictionary = _build_single_enemy_widget(i, enemy_count)
+		enemy_row_container.add_child(widget["root"])
+		enemy_widgets.append(widget)
+	_set_active_enemy_aliases()
+
+func _enemy_portrait_size_for(total: int) -> Vector2:
+	# 1 敵=full size、2 敵=78%、3 敵=62%。compact mode 整體再縮 73%
+	var base_w: float = 190.0 if _battle_compact else 260.0
+	var base_h: float = 220.0 if _battle_compact else 290.0
+	var scale_factor: float = 1.0
+	if total == 2:
+		scale_factor = 0.78
+	elif total >= 3:
+		scale_factor = 0.62
+	return Vector2(base_w * scale_factor, base_h * scale_factor)
+
+func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
+	var slot: Dictionary = battle.state["enemies"][idx] as Dictionary
+	var enemy_data: EnemyData = battle.enemies[idx]
+	var portrait_size: Vector2 = _enemy_portrait_size_for(total)
+	var col: VBoxContainer = VBoxContainer.new()
+	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.alignment = BoxContainer.ALIGNMENT_END
+	col.add_theme_constant_override("separation", 2 if _battle_compact else 4)
+	# 浮動 feedback label（傷害數字、狀態提示）
+	var feedback_label: Label = UIFactory.feedback_label()
+	if _battle_compact or total > 1:
+		feedback_label.custom_minimum_size = Vector2(0, 0)
+	col.add_child(feedback_label)
+	# portrait wrap（含 block badge）
+	var wrap: Control = Control.new()
+	wrap.custom_minimum_size = portrait_size
+	var portrait: TextureRect = UIFactory.portrait_rect(enemy_data.portrait_path, portrait_size, true)
+	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	portrait.modulate = enemy_data.portrait_tint
+	wrap.add_child(portrait)
+	var badge: BlockBadge = BlockBadge.new()
+	var badge_size: float = 40.0 if total >= 2 else 48.0
+	badge.custom_minimum_size = Vector2(badge_size, badge_size + 8)
+	badge.size = Vector2(badge_size, badge_size + 8)
+	badge.position = Vector2(6, portrait_size.y - (badge_size + 16))
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrap.add_child(badge)
+	# Click handler — 切 active 敵
+	var captured_idx: int = idx
+	wrap.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton:
+			var mb: InputEventMouseButton = event as InputEventMouseButton
+			if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+				_on_enemy_portrait_clicked(captured_idx))
+	col.add_child(wrap)
+	# Name label
+	var name_label: Label = UIFactory.card_label(String(slot["name"]),
+		12 if (_battle_compact or total >= 2) else 16,
+		Color("ffd9a3"), HORIZONTAL_ALIGNMENT_CENTER)
+	col.add_child(name_label)
+	# HP bar
+	var hp_bar: ProgressBar = UIFactory.hp_bar(ThemeColors.HP_FILL, ThemeColors.HP_BG_DARK)
+	var hp_value: Label = UIFactory.card_label("",
+		10 if (_battle_compact or total >= 2) else 12,
+		ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
+	col.add_child(_hp_bar_with_overlay(hp_bar, hp_value))
+	# Status line
+	var status_line: Label = UIFactory.card_label("",
+		10 if (_battle_compact or total >= 2) else 12,
+		Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
+	status_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(status_line)
+	return {
+		"root": col,
+		"wrap": wrap,
+		"portrait": portrait,
+		"name_label": name_label,
+		"hp_bar": hp_bar,
+		"hp_value": hp_value,
+		"block_badge": badge,
+		"status_line": status_line,
+		"feedback_label": feedback_label,
+		"enemy_idx": idx,
+	}
+
+func _on_enemy_portrait_clicked(idx: int) -> void:
+	if battle == null:
+		return
+	if battle.set_active_enemy(idx):
+		_set_active_enemy_aliases()
+		_refresh_battle()
+
+# 把 singular enemy_* 變數指向 active 敵的 widget refs（向後相容 animation 等程式碼）
+func _set_active_enemy_aliases() -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var idx: int = battle._active_enemy_index()
+	idx = clamp(idx, 0, enemy_widgets.size() - 1)
+	var w: Dictionary = enemy_widgets[idx]
+	enemy_portrait_wrap = w["wrap"]
+	enemy_portrait_image = w["portrait"]
+	enemy_name_label = w["name_label"]
+	enemy_hp_bar = w["hp_bar"]
+	enemy_hp_value = w["hp_value"]
+	enemy_block_badge = w["block_badge"]
+	enemy_status_line = w["status_line"]
+	enemy_feedback_label = w["feedback_label"]
+
+# 每次 state 變動後刷新所有敵人 widget；同時套用 active 高亮 / 死敵 dim
+func _refresh_enemy_widgets() -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var enemy_slots: Array = battle.state.get("enemies", []) as Array
+	# 數量變動（召喚物加入 / 戰場 reset） → 重建 row 後再 refresh
+	if enemy_slots.size() != enemy_widgets.size():
+		_rebuild_enemy_row_in_place()
+	var active_idx: int = battle._active_enemy_index()
+	for i: int in range(enemy_widgets.size()):
+		if i >= enemy_slots.size():
+			continue
+		var slot: Dictionary = enemy_slots[i] as Dictionary
+		var w: Dictionary = enemy_widgets[i]
+		var name_label: Label = w["name_label"]
+		var hp_bar: ProgressBar = w["hp_bar"]
+		var hp_value: Label = w["hp_value"]
+		var block_badge: BlockBadge = w["block_badge"]
+		var status_line: Label = w["status_line"]
+		var wrap: Control = w["wrap"]
+		if name_label != null and is_instance_valid(name_label):
+			name_label.text = String(slot["name"])
+		_refresh_combatant_hp(hp_bar, hp_value, int(slot["hp"]), int(slot["max_hp"]))
+		block_badge.set_amount(int(slot["block"]))
+		status_line.text = UIFactory.status_summary(int(slot["poison"]), int(slot["weak"]), int(slot["vulnerable"]))
+		# 視覺狀態：active 全亮、其他半暗、死敵更暗
+		if int(slot["hp"]) <= 0:
+			wrap.modulate = Color(0.32, 0.32, 0.32, 0.6)
+		elif i == active_idx:
+			wrap.modulate = Color.WHITE
+		else:
+			wrap.modulate = Color(0.72, 0.72, 0.78)
 
 func _build_battle_potion_strip(parent: VBoxContainer) -> void:
 	var slot_size: int = 28 if _battle_compact else 34
@@ -4244,12 +4396,8 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 	player_block_badge.set_amount(int(battle.state["player_block"]))
 	player_status_line.text = UIFactory.status_summary(int(battle.state["player_poison"]), int(battle.state["player_weak"]), int(battle.state["player_vulnerable"]))
 	_refresh_bench_strip()
-	# 敵人名稱：phase 2 變身後（如拜月教主→水魔獸）會由 state["enemy_name"] 改寫
-	if enemy_name_label != null and is_instance_valid(enemy_name_label):
-		enemy_name_label.text = String(battle.state.get("enemy_name", battle.enemy.display_name))
-	_refresh_combatant_hp(enemy_hp_bar, enemy_hp_value, int(battle.state["enemy_hp"]), int(battle.state["enemy_max_hp"]))
-	enemy_block_badge.set_amount(int(battle.state["enemy_block"]))
-	enemy_status_line.text = UIFactory.status_summary(int(battle.state["enemy_poison"]), int(battle.state["enemy_weak"]), int(battle.state["enemy_vulnerable"]))
+	# Multi-Enemy: 迭代更新每個敵人的 widget（active 高亮、死敵 dim、HP/block/status）
+	_refresh_enemy_widgets()
 	var next_action: Dictionary = battle.next_enemy_action()
 	var intent_lines: Array[String] = ["%s  下一步" % CardFormat.intent_badge(next_action), String(next_action["intent"])]
 	if CardFormat.action_has_damage(next_action):
@@ -4406,10 +4554,35 @@ func _is_valid_card_drop(card: CardData, global_pos: Vector2) -> bool:
 	return _is_position_outside_hand(global_pos)
 
 func _is_position_near_enemy(global_pos: Vector2) -> bool:
-	if enemy_portrait_wrap == null or not is_instance_valid(enemy_portrait_wrap):
-		return false
-	var rect: Rect2 = Rect2(enemy_portrait_wrap.global_position, enemy_portrait_wrap.size)
-	return rect.grow(CARD_DRAG_TARGET_PADDING).has_point(global_pos)
+	# Multi-Enemy：迴圈所有敵人的 portrait，活著的且在 hit-box 內就算命中
+	return _find_enemy_under_drag(global_pos) >= 0
+
+# 在 global_pos 下找最近的活敵（含 CARD_DRAG_TARGET_PADDING 緩衝）；無則回 -1
+func _find_enemy_under_drag(global_pos: Vector2) -> int:
+	if battle == null:
+		return -1
+	var best_idx: int = -1
+	var best_dist: float = INF
+	var enemy_slots: Array = battle.state.get("enemies", []) as Array
+	for w: Dictionary in enemy_widgets:
+		var idx: int = int(w["enemy_idx"])
+		if idx >= enemy_slots.size():
+			continue
+		var slot: Dictionary = enemy_slots[idx] as Dictionary
+		if int(slot["hp"]) <= 0:
+			continue  # 死敵不可作為 drop target
+		var wrap: Control = w["wrap"]
+		if wrap == null or not is_instance_valid(wrap):
+			continue
+		var rect: Rect2 = Rect2(wrap.global_position, wrap.size)
+		if not rect.grow(CARD_DRAG_TARGET_PADDING).has_point(global_pos):
+			continue
+		var center: Vector2 = rect.position + rect.size / 2.0
+		var d: float = global_pos.distance_to(center)
+		if d < best_dist:
+			best_dist = d
+			best_idx = idx
+	return best_idx
 
 func _is_position_outside_hand(global_pos: Vector2) -> bool:
 	if hand_row == null or not is_instance_valid(hand_row):
@@ -4441,18 +4614,26 @@ func _find_nearest_card_at_x(global_x: float) -> Button:
 	return best
 
 func _update_drag_target_highlight(card: CardData, global_pos: Vector2) -> void:
-	# 簡單回饋：拖到有效位置時 enemy_portrait_wrap 微亮 / 拖到手牌外（self 卡）時 player 微亮
+	# Multi-Enemy：拖到敵人卡時，找最近的活敵 → 切 active + 該敵金光；其他敵 dim；無命中時 reset
 	var valid: bool = _is_valid_card_drop(card, global_pos)
 	if CardFormat.requires_enemy_target(card):
-		if enemy_portrait_wrap != null:
-			enemy_portrait_wrap.modulate = Color(1.25, 1.15, 1.0) if valid else Color.WHITE
+		var target_idx: int = _find_enemy_under_drag(global_pos)
+		if target_idx >= 0 and battle != null and battle._active_enemy_index() != target_idx:
+			if battle.set_active_enemy(target_idx):
+				_set_active_enemy_aliases()
+		# 套用 highlight：active 金光、其他 dim、死敵更暗
+		_refresh_enemy_widgets()
+		if valid and target_idx >= 0 and target_idx < enemy_widgets.size():
+			var wrap: Control = (enemy_widgets[target_idx] as Dictionary)["wrap"] as Control
+			if wrap != null:
+				wrap.modulate = Color(1.30, 1.18, 1.0)
 	else:
 		if player_portrait_wrap != null:
 			player_portrait_wrap.modulate = Color(1.0, 1.25, 1.15) if valid else Color.WHITE
 
 func _clear_drag_target_highlight() -> void:
-	if enemy_portrait_wrap != null and is_instance_valid(enemy_portrait_wrap):
-		enemy_portrait_wrap.modulate = Color.WHITE
+	# 回到正常 active 高亮（_refresh_enemy_widgets 會處理）
+	_refresh_enemy_widgets()
 	if player_portrait_wrap != null and is_instance_valid(player_portrait_wrap):
 		player_portrait_wrap.modulate = Color.WHITE
 
