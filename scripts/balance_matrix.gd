@@ -33,13 +33,86 @@ func _initialize() -> void:
 	print("")
 	_print_matrix(characters, bosses, 20)
 
-	# 4) 起始牌組組成統計
+	# 4) 分級成長：每個等級對應幕 boss 的勝率（反映真實玩家經歷）
+	print("\n## 分級牌組對應幕 boss 勝率矩陣（20 回合上限，%d trials/cell）" % TRIALS)
+	print("Lv5→act2 / Lv10→act3 / Lv15→act4 / Lv20→act5；牌組 = starting + 所有 Lv≤N unlock")
+	print("")
+	_print_leveled_matrix(characters)
+
+	# 5) 起始牌組組成統計
 	print("\n## 起始牌組稀有度與類型分布")
 	print("")
 	for character: CharacterData in characters:
 		_print_deck_summary(character)
 
 	quit(0)
+
+func _print_leveled_matrix(characters: Array[CharacterData]) -> void:
+	var levels: Array[int] = [5, 10, 15, 20]
+	var acts: Dictionary = {5: 2, 10: 3, 15: 4, 20: 5}
+	# Header
+	var header: String = "| Lv → boss \\ 角色 |"
+	var sep: String = "|---|"
+	for c in characters:
+		header += " %s |" % c.display_name
+		sep += "---|"
+	print(header)
+	print(sep)
+	for lv: int in levels:
+		var act: int = int(acts[lv])
+		var boss: EnemyData = GameData.boss_for_act(act)
+		var row: String = "| Lv%d → %s (HP %d) |" % [lv, boss.display_name, boss.max_hp]
+		for character: CharacterData in characters:
+			var deck: Array[CardData] = _leveled_deck(character, lv)
+			var wr: int = _win_rate_with_deck(character, boss, 20, deck)
+			row += " %d%%%s |" % [wr, _marker(wr, 20)]
+		print(row)
+
+func _leveled_deck(character: CharacterData, level: int) -> Array[CardData]:
+	var deck: Array[CardData] = []
+	for card: CardData in character.starting_deck:
+		deck.append(card)
+	for unlock: CardData in LevelSystem.all_unlocked_cards(character.id, level):
+		deck.append(unlock)
+	return deck
+
+func _win_rate_with_deck(character: CharacterData, enemy: EnemyData, turn_limit: int, deck: Array[CardData]) -> int:
+	var wins: int = 0
+	for trial: int in range(TRIALS):
+		seed(trial * 7919 + hash(character.id) * 17 + hash(enemy.id) * 31)
+		if _simulate_with_deck(character, enemy, turn_limit, deck):
+			wins += 1
+	return int(round(100.0 * float(wins) / float(TRIALS)))
+
+func _simulate_with_deck(character: CharacterData, enemy_template: EnemyData, max_turns: int, deck: Array[CardData]) -> bool:
+	var run_state: RunState = RunState.new()
+	run_state.init_for(character)
+	run_state.deck = deck
+	var enemy: EnemyData = enemy_template.clone()
+	var bc: BattleController = BattleController.new()
+	bc.setup(run_state, character, enemy)
+	for _turn: int in range(max_turns):
+		bc.start_turn()
+		if bc.is_battle_over():
+			break
+		for _attempt: int in range(20):
+			if bc.is_battle_over():
+				break
+			var affordable: Array[CardData] = []
+			for card: CardData in bc.deck.hand:
+				if bc.effective_card_cost(card) <= int(bc.state["energy"]):
+					affordable.append(card)
+			if affordable.is_empty():
+				break
+			var chosen: CardData = affordable[randi() % affordable.size()]
+			var played: Dictionary = bc.play_card(chosen)
+			if not bool(played.get("affordable", false)):
+				break
+		if bc.is_battle_over():
+			break
+		var action: Dictionary = bc.begin_enemy_phase()
+		bc.resolve_enemy_phase(action)
+	return bc.is_victory()
 
 func _print_matrix(characters: Array[CharacterData], targets: Array[EnemyData], turn_limit: int) -> void:
 	# Header

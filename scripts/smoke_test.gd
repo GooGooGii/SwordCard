@@ -105,6 +105,7 @@ func _initialize() -> void:
 	_test_balance_regression(characters, enemies)
 	_test_balance_regression_mid(characters, bosses)
 	_test_balance_regression_upgraded(characters, enemies, bosses)
+	_test_balance_leveled_progression(characters)
 	_test_deck_pile_views(characters)
 	_test_potion_catalog()
 	_test_potion_save_roundtrip(characters)
@@ -844,6 +845,34 @@ const BALANCE_BASELINES_MID_UPGRADED: Dictionary = {
 	"anu": 100
 }
 
+# 分級成長 baseline：每幕 boss 對應一個玩家等級（推測自實際 run 經驗值累積）。
+# 牌組 = starting_deck + LevelSystem.all_unlocked_cards(char, level)
+# 用 20 回合上限（給玩家足夠時間打 act 5 boss）。
+# null = 尚未測過，初次跑後填入觀測值。
+# 對應關係：
+#   Lv5  vs act 2 boss (殭屍大帥 HP 90)
+#   Lv10 vs act 3 boss (蜈蚣大王 HP 92)
+#   Lv15 vs act 4 boss (山靈巫后 HP 78)
+#   Lv20 vs act 5 boss (拜月教主 HP 115)
+const BALANCE_BASELINES_LEVELED: Dictionary = {
+	# Lv5 vs 殭屍大帥（act 2 boss HP 90）：應全部 ≥95%
+	# Lv10 vs 蜈蚣大王（act 3 boss HP 92）：李/趙 80-90%，林/阿 100%
+	# Lv15 vs 山靈巫后（act 4 boss HP 78）：應全部 100%
+	# Lv20 vs 拜月教主（act 5 boss HP 115）：李/趙 半數左右（爆發不足），林/阿 ≥95%
+	"li_xiaoyao":  {5: 97,  10: 90,  15: 100, 20: 57},
+	"zhao_linger": {5: 100, 10: 87,  15: 100, 20: 47},
+	"lin_yueru":   {5: 100, 10: 100, 15: 100, 20: 100},
+	"anu":         {5: 100, 10: 100, 15: 100, 20: 97},
+}
+
+# Lv → act 對應
+const LEVEL_TO_ACT: Dictionary = {
+	5: 2,
+	10: 3,
+	15: 4,
+	20: 5,
+}
+
 func _test_balance_regression(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
 	if enemies.is_empty():
 		return
@@ -947,6 +976,49 @@ func _test_balance_regression_upgraded(characters: Array[CharacterData], enemies
 		assert(delta <= BALANCE_TOLERANCE_PP,
 			"upgraded mid balance regression: %s win rate %d%% drifted %d pp from baseline %d%% (tolerance %d pp)" %
 			[character.id, win_rate, delta, baseline, BALANCE_TOLERANCE_PP])
+
+func _leveled_deck(character: CharacterData, level: int) -> Array[CardData]:
+	# 模擬玩家在 level 時的全部可用牌組：starting + 所有已解鎖的 level unlock。
+	# 不考慮 in-run upgrade（升級是另一層機制，可選 _upgraded_leveled_deck）
+	var deck: Array[CardData] = []
+	for card: CardData in character.starting_deck:
+		deck.append(card)
+	for unlock: CardData in LevelSystem.all_unlocked_cards(character.id, level):
+		deck.append(unlock)
+	return deck
+
+func _test_balance_leveled_progression(characters: Array[CharacterData]) -> void:
+	# 對每個角色測試「Lv N + 對應幕 boss」的勝率。
+	# 反映實際玩家經歷 — 起始牌組是 Lv1，但打到 act 5 時應該有 Lv15-20 + 多張 unlock。
+	# 純靠起始牌組打 act 5 boss 是不合理的測試條件。
+	var levels: Array[int] = [5, 10, 15, 20]
+	var turn_limit: int = 20
+	print("Balance regression (leveled deck) progression, %d trials/cell:" % BALANCE_TRIALS)
+	for character: CharacterData in characters:
+		for lv: int in levels:
+			var act: int = int(LEVEL_TO_ACT[lv])
+			var boss: EnemyData = GameData.boss_for_act(act)
+			var deck: Array[CardData] = _leveled_deck(character, lv)
+			var wins: int = 0
+			for trial: int in range(BALANCE_TRIALS):
+				seed(trial * 7919 + hash(character.id) * 17 + lv * 31)
+				if _simulate_random_battle(character, boss, turn_limit, deck):
+					wins += 1
+			var win_rate: int = int(round(100.0 * float(wins) / float(BALANCE_TRIALS)))
+			var char_baselines: Variant = BALANCE_BASELINES_LEVELED.get(character.id, null)
+			if char_baselines == null:
+				print("  %s Lv%d vs %s: %d%% (no baselines for char)" % [character.id, lv, boss.display_name, win_rate])
+				continue
+			var baseline_v: Variant = (char_baselines as Dictionary).get(lv, null)
+			if baseline_v == null:
+				print("  %s Lv%d vs %s: %d%% (no baseline yet — add to BALANCE_BASELINES_LEVELED)" % [character.id, lv, boss.display_name, win_rate])
+				continue
+			var baseline: int = int(baseline_v)
+			var delta: int = abs(win_rate - baseline)
+			print("  %s Lv%d vs %s: %d%% (baseline %d%%, delta %d pp)" % [character.id, lv, boss.display_name, win_rate, baseline, delta])
+			assert(delta <= BALANCE_TOLERANCE_PP,
+				"leveled balance regression: %s Lv%d vs %s win rate %d%% drifted %d pp from baseline %d%% (tolerance %d pp)" %
+				[character.id, lv, boss.display_name, win_rate, delta, baseline, BALANCE_TOLERANCE_PP])
 
 func _simulate_random_battle(character: CharacterData, enemy_template: EnemyData, max_turns: int = 20, deck_override: Array[CardData] = []) -> bool:
 	var run_state: RunState = RunState.new()
