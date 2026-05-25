@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dsngkc5ho5boj"
-path="res://.godot/imported/chunjun_jian.png-94ba4314bf2e4c00403d65bd701d1f41.ctex"
+uid="uid://b28qr1166yum"
+path="res://.godot/imported/tavern_acquaintance.png-49a547454e7a03d0f0050e83b60365e7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/relics/chunjun_jian.png"
-dest_files=["res://.godot/imported/chunjun_jian.png-94ba4314bf2e4c00403d65bd701d1f41.ctex"]
+source_file="res://assets/art/events/tavern_acquaintance.png"
+dest_files=["res://.godot/imported/tavern_acquaintance.png-49a547454e7a03d0f0050e83b60365e7.ctex"]
 
 [params]
 

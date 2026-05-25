@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d0mp0biswtsbe"
-valid=false
+uid="uid://c84dvvmcwkl42"
+path="res://.godot/imported/longquan_jian.png-4afb30903d3b84be1899566dce2c35cf.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/longquan_jian.png"
+dest_files=["res://.godot/imported/longquan_jian.png-4afb30903d3b84be1899566dce2c35cf.ctex"]
 
 [params]
 

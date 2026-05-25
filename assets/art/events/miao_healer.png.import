@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dsngkc5ho5boj"
-path="res://.godot/imported/chunjun_jian.png-94ba4314bf2e4c00403d65bd701d1f41.ctex"
+uid="uid://dexdbra5nsvi4"
+path="res://.godot/imported/miao_healer.png-aba5f6f68eec21ec91fa4381dfad8fd4.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/relics/chunjun_jian.png"
-dest_files=["res://.godot/imported/chunjun_jian.png-94ba4314bf2e4c00403d65bd701d1f41.ctex"]
+source_file="res://assets/art/events/miao_healer.png"
+dest_files=["res://.godot/imported/miao_healer.png-aba5f6f68eec21ec91fa4381dfad8fd4.ctex"]
 
 [params]
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dsngkc5ho5boj"
-path="res://.godot/imported/chunjun_jian.png-94ba4314bf2e4c00403d65bd701d1f41.ctex"
+uid="uid://bxspepu3klp2h"
+path="res://.godot/imported/yangzhou_officer.png-01774514dfc24637230f4bbffc17842d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/relics/chunjun_jian.png"
-dest_files=["res://.godot/imported/chunjun_jian.png-94ba4314bf2e4c00403d65bd701d1f41.ctex"]
+source_file="res://assets/art/events/yangzhou_officer.png"
+dest_files=["res://.godot/imported/yangzhou_officer.png-01774514dfc24637230f4bbffc17842d.ctex"]
 
 [params]
 

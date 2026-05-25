@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dx5he7kfbsvel"
-valid=false
+uid="uid://1wls8b21yyjo"
+path="res://.godot/imported/xuanshuang_bian.png-0e09f9ee289837994e2f293e54706aa1.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/xuanshuang_bian.png"
+dest_files=["res://.godot/imported/xuanshuang_bian.png-0e09f9ee289837994e2f293e54706aa1.ctex"]
 
 [params]
 

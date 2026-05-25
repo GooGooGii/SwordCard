@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cpmnb1arqya1t"
-valid=false
+uid="uid://j3asp1dqt6nw"
+path="res://.godot/imported/wanyi_wang.png-832b3e52075a378078974a1c418213f4.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/wanyi_wang.png"
+dest_files=["res://.godot/imported/wanyi_wang.png-832b3e52075a378078974a1c418213f4.ctex"]
 
 [params]
 

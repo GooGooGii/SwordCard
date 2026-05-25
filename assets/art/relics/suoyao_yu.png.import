@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ckxla1yrbbyxe"
-valid=false
+uid="uid://qdvcaeo2q1jy"
+path="res://.godot/imported/suoyao_yu.png-5525a233c001166d5aa8818a7d3a3013.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/suoyao_yu.png"
+dest_files=["res://.godot/imported/suoyao_yu.png-5525a233c001166d5aa8818a7d3a3013.ctex"]
 
 [params]
 

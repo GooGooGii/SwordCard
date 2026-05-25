@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dsngkc5ho5boj"
-path="res://.godot/imported/chunjun_jian.png-94ba4314bf2e4c00403d65bd701d1f41.ctex"
+uid="uid://cms18r7ej3j8t"
+path="res://.godot/imported/lingmiao.png-baae18a79e87ed79b845b9e945190009.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/relics/chunjun_jian.png"
-dest_files=["res://.godot/imported/chunjun_jian.png-94ba4314bf2e4c00403d65bd701d1f41.ctex"]
+source_file="res://assets/art/events/lingmiao.png"
+dest_files=["res://.godot/imported/lingmiao.png-baae18a79e87ed79b845b9e945190009.ctex"]
 
 [params]
 

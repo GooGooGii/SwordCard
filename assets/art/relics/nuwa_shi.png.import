@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cqcnkd343fiyr"
-valid=false
+uid="uid://rog0j0fypv16"
+path="res://.godot/imported/nuwa_shi.png-059ba9b533c806967873669dd54ce7ae.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/nuwa_shi.png"
+dest_files=["res://.godot/imported/nuwa_shi.png-059ba9b533c806967873669dd54ce7ae.ctex"]
 
 [params]
 

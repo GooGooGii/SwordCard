@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://q31hl0kv4r5f"
-valid=false
+uid="uid://bq6h86sg216tg"
+path="res://.godot/imported/shigu_gu.png-4790ca25248ca729f181ec7e31113243.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/shigu_gu.png"
+dest_files=["res://.godot/imported/shigu_gu.png-4790ca25248ca729f181ec7e31113243.ctex"]
 
 [params]
 

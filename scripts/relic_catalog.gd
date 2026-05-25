@@ -175,7 +175,7 @@ static func _weapons() -> Array[RelicData]:
 	l.append(_make_weapon("xuanshuang_bian", "玄霜鞭", "每出一張攻擊牌，敵人 +1 層破綻。", "lin_yueru", "rare",
 		[{"trigger": "card_played", "filter": {"card_type": "attack"}, "effects": [{"kind": "enemy_vulnerable", "amount": 1}]}], Color("8edcff")))
 	# 阿奴 (蠱蟲)
-	l.append(_make_weapon("wanyi_wang", "萬蟻王", "敵人受到的蠱毒 +2。", "anu", "rare",
+	l.append(_make_weapon("wanyi_wang", "天蛇靈笛", "笛音催蠱，敵人受到的蠱毒 +2。", "anu", "rare",
 		[{"trigger": "passive_modifier", "effects": [{"kind": "poison_bonus", "amount": 2}]}], Color("6aa44a")))
 	l.append(_make_weapon("shigu_gu", "蝕骨蠱", "每回合開始敵人 +2 層蠱毒。", "anu", "rare",
 		[{"trigger": "turn_start", "effects": [{"kind": "enemy_poison", "amount": 2}]}], Color("8a4a76")))
