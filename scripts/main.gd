@@ -1969,7 +1969,8 @@ func _build_battle_potion_strip(parent: VBoxContainer) -> void:
 		btn.custom_minimum_size = Vector2(slot_size, slot_size)
 		btn.add_theme_font_size_override("font_size", 9 if _battle_compact else 10)
 		var idx: int = i
-		btn.pressed.connect(func(): _use_potion(idx))
+		# 點藥草不再立即使用，先彈出說明 + 確認
+		btn.pressed.connect(func(): _show_use_potion_confirm(idx))
 		_potion_buttons.append(btn)
 		strip.add_child(btn)
 	_refresh_potion_buttons()
@@ -2078,7 +2079,7 @@ func _update_potion_button(btn: Button, slot: int, in_battle: bool = true) -> vo
 	var potion: Dictionary = run_state.potions[slot]
 	var name: String = String(potion.get("display_name", "?"))
 	btn.text = name.substr(0, 4) if name.length() > 4 else name
-	var tip_action: String = "（點擊使用）" if in_battle else "（點擊丟棄）"
+	var tip_action: String = "（點擊查看 → 確認使用）" if in_battle else "（點擊丟棄）"
 	btn.tooltip_text = "%s\n%s\n%s" % [name, String(potion.get("description", "")), tip_action]
 	btn.disabled = false
 	var rarity_col: Color = PotionCatalog.rarity_color(potion)
@@ -2121,6 +2122,44 @@ func _use_potion(slot: int) -> void:
 		_spawn_damage_popup(player_portrait_wrap, hp_delta, "heal")
 	if block_delta > 0:
 		_spawn_damage_popup(player_portrait_wrap, block_delta, "block")
+
+# 戰鬥中點藥草：先彈出說明 + 「使用 / 取消」，避免誤觸
+func _show_use_potion_confirm(slot: int) -> void:
+	if battle == null or slot >= run_state.potions.size():
+		return
+	var potion: Dictionary = run_state.potions[slot]
+	var rarity_col: Color = PotionCatalog.rarity_color(potion)
+	var popup: PanelContainer = PanelContainer.new()
+	popup.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	popup.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.96), rarity_col, 2, 10))
+	add_child(popup)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 12)
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	popup.add_child(box)
+	box.add_child(UIFactory.card_label(String(potion.get("display_name", "?")), 22, rarity_col, HORIZONTAL_ALIGNMENT_CENTER))
+	# 稀有度標籤（common / uncommon / rare）
+	var rarity_text: String = "%s 藥草" % String(potion.get("rarity", "common")).capitalize()
+	box.add_child(UIFactory.card_label(rarity_text, 12, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	# 描述
+	var desc: Label = UIFactory.card_label(String(potion.get("description", "")), 14, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc.custom_minimum_size = Vector2(360, 0)
+	box.add_child(desc)
+	# 按鈕列
+	var btn_row: HBoxContainer = HBoxContainer.new()
+	btn_row.add_theme_constant_override("separation", 16)
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_child(btn_row)
+	var captured_slot: int = slot
+	var use_btn: Button = _button("使用")
+	use_btn.pressed.connect(func() -> void:
+		popup.queue_free()
+		_use_potion(captured_slot))
+	btn_row.add_child(use_btn)
+	var cancel_btn: Button = _button("取消")
+	cancel_btn.pressed.connect(func() -> void: popup.queue_free())
+	btn_row.add_child(cancel_btn)
 
 func _discard_potion_prompt(slot: int) -> void:
 	if slot >= run_state.potions.size():
