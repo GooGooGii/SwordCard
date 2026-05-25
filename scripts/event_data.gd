@@ -18,6 +18,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 12, "gain_cost": 7, "power": 1, "power_label": "凝神",
 		"observe_text": "你蹲在泉邊靜聽。水聲底下藏著另一種更細微的聲音——像是有靈體在水脈深處低語，但不帶威脅，只是純粹的存在感。這眼泉並非無主，但泉靈寬厚，不會苛責造訪者。",
+		"observe_effects": [{"kind": "heal", "amount": 5}, {"kind": "gold", "amount": 5}],
 		"choices": ["heal", "gain_card", "power", "view_deck", "observe", "leave"],
 		"outcomes": {
 			"heal": "清泉水氣滌盡倦意，傷口悄然合攏。清冽的涼意從掌心漫上胸口，比任何藥草都要久久不散。",
@@ -55,6 +56,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 8, "gain_cost": 6, "power": 1, "power_label": "凝神",
 		"observe_text": "你細看石壁上的光痕。那是一個曾經參透了什麼的人，最後留下的靈光，沒有指向具體的招式，只是一個「我懂了」的時刻被定格在石壁上。光痕的溫度因參訪者的心態而變化——焦躁者它退、平靜者它近。",
+		"observe_effects": [{"kind": "heal", "amount": 4}, {"kind": "power", "amount": 1}],
 		"choices": ["heal", "power", "upgrade", "observe", "leave"],
 		"outcomes": {
 			"heal": "靈痕輕觸肌膚，如同有人將一掌暖意按在背脊，傷口漸漸閉合。那股力量溫和而持久，像是前人最後的善意。",
@@ -73,6 +75,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 4, "gain_cost": 3, "power": 1, "power_label": "解鎖",
 		"observe_text": "你不急著開鎖，先在箱蓋邊緣摸了一圈。指尖傳來一根極細的金屬絲——是觸發毒針的暗器。前主人並非不想讓人開，是不想讓「不懂規矩的人」開。看穿這個機關，才能安全地取得寶物。",
+		"observe_effects": [{"kind": "gold", "amount": 12}],
 		"choices": ["gain_card", "upgrade", "remove", "observe", "leave"],
 		"outcomes": {
 			"gain_card": "機關應聲而開，箱底壓著一卷泛黃的功法殘頁，術法輪廓躍然紙上。那字跡略顯潦草，像是主人在某個倉皇的夜裡草草記下的，越看越覺得字裡藏著什麼故事。",
@@ -91,6 +94,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 5, "gain_cost": 8, "power": 3, "power_label": "祈靈",
 		"observe_text": "你細細打量這具骨殖。它的姿勢蜷縮著，雙手抱於胸前——是修者坐化的姿態，不是死於非命。骨殖周圍沒有戰鬥痕跡，反倒擺著三朵已乾枯的小白花，是某個後人來祭拜過的。這個前輩，是有人記得的。",
+		"observe_effects": [{"kind": "heal", "amount": 5}, {"kind": "power", "amount": 1}],
 		"choices": ["power", "upgrade", "heal", "observe", "leave"],
 		"outcomes": {
 			"power": "骨殖微微顫動，一縷殘存的意志悄然融入你的劍意，殺伐之氣更甚從前。那是另一個人走了一輩子才走出來的鋒芒，此刻，傳到了你的手上。",
@@ -127,6 +131,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 15, "gain_cost": 9, "power": 1, "power_label": "沐月",
 		"observe_text": "你細看潭面。月光在水中映出的不是天上那輪，是一個更古老、更圓滿、更明亮的月——傳說中，這種雙月之潭在中原幾近絕跡，是某個失落仙派的修行之地。潭水有兩面：對著光的這一面是淨化，對著陰的那一面是引誘。要靠近時必須帶著明確的意圖。",
+		"observe_effects": [{"kind": "heal", "amount": 6}, {"kind": "max_hp", "amount": 2}],
 		"choices": ["heal", "power", "observe", "leave"],
 		"outcomes": {
 			"heal": "月光滲入水中，你的舊傷如紙浸軟、輕輕化開，浮上水面的是清澈的倒影。走出潭邊時，你發現身上有些東西不只是傷，也一起淡去了。",
@@ -163,6 +168,7 @@ const VARIANTS: Dictionary = {
 		"heal": 0, "gain_cost": 4, "power": 4, "power_label": "立契",
 		"pact_max_hp_cost": 8, "pact_power": 4,
 		"observe_text": "你細細打量這個自稱要與你交易的妖女。她的瞳孔縱裂，瓜子臉看似溫柔，但嘴角扯動的弧度過於精準——是學過人類面部表情的妖物。她身後的黑霧裡有極細的鏈條，像是有什麼東西把她拴在這個位置——她並非自由的存在，這個交易，可能不只是給你力量、收你血肉這麼單純。她在等的，或許是替她解開那條鏈子的人。",
+		"observe_effects": [{"kind": "damage", "amount": 2}, {"kind": "gold", "amount": 5}],
 		"choices": ["gain_card", "pact", "observe", "leave"],
 		"outcomes": {
 			"gain_card": "黑霧中遞來一卷黑色符紙，術法的輪廓燒灼在指尖，讓你不舒服卻難以拒絕。那招式有效，但總讓你覺得，它來自某個你最好不要深究的地方。",
@@ -387,6 +393,7 @@ const VARIANTS: Dictionary = {
 		},
 		"heal": 0, "gain_cost": 6, "power": 4, "power_label": "承志",
 		"observe_text": "你仔細看那些斷劍。它們插的方向並非雜亂——劍尖全部指向北方某個遙遠的點，那是中原劍道的源頭之一。每一把劍上都刻著名字，有的姓氏你認得，有的已經風化模糊。最讓你動容的是其中一柄劍鞘上刻著「未竟」二字，像是劍主臨終前最後的心意——他知道自己走不到，但希望後人能替他走完。",
+		"observe_effects": [{"kind": "power", "amount": 2}],
 		"choices": ["power", "upgrade", "gain_card", "observe", "leave"],
 		"character_outcomes": {
 			"lin_yueru": {

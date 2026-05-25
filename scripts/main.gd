@@ -2866,8 +2866,68 @@ func _event_branch_label(event_data: Dictionary, choice_key: String) -> Array:
 
 func _event_show_observe(event_data: Dictionary, sub_stage: String) -> void:
 	# 觀察 = 顯示加長 observe_text 後返回事件主選單（不結束）
+	# 若 event 有 observe_effects（陣列），結算後在 text 末附上獲得/失去摘要；
+	# 若沒設，預設給輕微 +3 HP「片刻安寧」，讓觀察永遠不是純文字。
 	var text: String = String(event_data.get("observe_text", "你細細地觀察了一遍，但似乎沒有新的發現。"))
+	var effects: Array = event_data.get("observe_effects", []) as Array
+	if effects.is_empty():
+		effects = [{"kind": "heal", "amount": 3}] as Array
+	var summary: String = _resolve_observe_effects(effects)
+	if not summary.is_empty():
+		text += "\n\n[ %s ]" % summary
 	_show_event_outcome(text, func() -> void: show_event_node(sub_stage))
+
+# 結算 observe_effects 並回傳摘要字串。支援的 kind：
+#   heal / damage   — active 角色 HP +/-
+#   gold            — ±銅錢
+#   max_hp          — 永久 max_hp +/-（增加時當前 HP 同步增加；減少時 clamp）
+#   power           — 永久 power_bonus +/-（影響本 run 後續所有戰鬥）
+func _resolve_observe_effects(effects: Array) -> String:
+	if run_state == null:
+		return ""
+	var parts: Array[String] = []
+	for entry: Variant in effects:
+		if not (entry is Dictionary):
+			continue
+		var effect: Dictionary = entry as Dictionary
+		var kind: String = String(effect.get("kind", ""))
+		var amount: int = int(effect.get("amount", 0))
+		match kind:
+			"heal":
+				if amount > 0:
+					var actual: int = min(amount, run_state.max_hp - run_state.hp)
+					run_state.hp = min(run_state.max_hp, run_state.hp + amount)
+					if actual > 0:
+						parts.append("回復 %d 點生命" % actual)
+			"damage":
+				if amount > 0:
+					var dealt: int = min(amount, run_state.hp - 1)  # 保底 HP 1
+					run_state.hp = max(1, run_state.hp - amount)
+					if dealt > 0:
+						parts.append("損失 %d 點生命" % dealt)
+			"gold":
+				run_state.gold = max(0, run_state.gold + amount)
+				if amount > 0:
+					parts.append("獲得 %d 銅錢" % amount)
+				elif amount < 0:
+					parts.append("失去 %d 銅錢" % -amount)
+			"max_hp":
+				run_state.max_hp = max(1, run_state.max_hp + amount)
+				if amount > 0:
+					run_state.hp = min(run_state.max_hp, run_state.hp + amount)
+					parts.append("最大生命 +%d" % amount)
+				elif amount < 0:
+					run_state.hp = min(run_state.hp, run_state.max_hp)
+					parts.append("最大生命 %d" % amount)
+			"power":
+				run_state.power_bonus += amount
+				if amount > 0:
+					parts.append("本輪攻擊 +%d" % amount)
+				elif amount < 0:
+					parts.append("本輪攻擊 %d" % amount)
+	if parts.is_empty():
+		return ""
+	return "、".join(parts)
 
 func _start_event_fight() -> void:
 	var outcome_text: String = _get_event_outcome(
