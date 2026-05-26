@@ -4977,7 +4977,8 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	button.add_child(cost_label)
 
 	# 4) 卡名：對齊卡套標題帶 y 46%~54%
-	var title: Label = UIFactory.card_label(card.display_title(), title_font_size, Color("2e2318"), HORIZONTAL_ALIGNMENT_CENTER)
+	# 標題帶背景是深色木板，用淺米色字 + 深色 outline 確保可讀性
+	var title: Label = UIFactory.card_label(card.display_title(), title_font_size, Color("f7f0dc"), HORIZONTAL_ALIGNMENT_CENTER)
 	title.name = "CardTitle"
 	title.anchor_left = 0.12
 	title.anchor_top = 0.465
@@ -4989,6 +4990,8 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	title.offset_bottom = 0
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title.clip_text = true
+	title.add_theme_color_override("font_outline_color", Color("1b150f", 0.9))
+	title.add_theme_constant_override("outline_size", outline_size)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(title)
 
