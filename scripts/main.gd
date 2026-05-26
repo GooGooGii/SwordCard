@@ -1534,15 +1534,10 @@ func _map_node_button(node_data: Dictionary, row_index: int) -> Button:
 	button.focus_mode = Control.FOCUS_NONE
 	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_style_map_node_button(button, node_data, selected, selectable, completed)
-	if selected:
-		button.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("214130", 0.34), Color("f5f1d6"), 2, 28))
-		button.add_theme_color_override("font_disabled_color", Color("25313b"))
-	elif completed:
-		button.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("345b45", 0.28), Color("8fd2a2", 0.78), 2, 28))
-		button.add_theme_color_override("font_disabled_color", Color("dff3e3"))
-	elif not selectable:
-		button.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("5f6570", 0.08), Color("778899", 0.24), 1, 28))
-		button.add_theme_color_override("font_disabled_color", Color("8c99a6"))
+	# 透明 disabled stylebox — 已通過 / 未連通 都不用 border color 標示，
+	# 視覺差異由 modulate（變暗）+ 之後要替換的 selected/unselected 圖檔承擔
+	button.add_theme_stylebox_override("disabled", UIFactory.style_box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, 28))
+	button.add_theme_color_override("font_disabled_color", Color("25313b", 0.55))
 	var node_type: String = String(node_data.get("type", "battle"))
 	if node_type == "boss":
 		button.custom_minimum_size = Vector2(92, 110)
@@ -1550,24 +1545,11 @@ func _map_node_button(node_data: Dictionary, row_index: int) -> Button:
 	return button
 
 func _style_map_node_button(button: Button, node_data: Dictionary, selected: bool, selectable: bool, completed: bool = false) -> void:
-	var normal_bg: Color = Color(0, 0, 0, 0)
-	var hover_bg: Color = Color("f4edd8", 0.08)
-	var pressed_bg: Color = Color("f4edd8", 0.12)
-	var hover_border: Color = Color("25313b", 0.24)
-	var pressed_border: Color = Color("f5f1d6")
-	if completed:
-		hover_bg = Color("7db58b", 0.18)
-		pressed_bg = Color("5f9d73", 0.22)
-		hover_border = Color("8fd2a2", 0.6)
-		pressed_border = Color("dff3e3", 0.9)
-	elif selectable or selected:
-		hover_bg = Color("f0d79a", 0.18)
-		pressed_bg = Color("e4c67a", 0.24)
-		hover_border = Color("ecd89a", 0.72)
-		pressed_border = Color("fff4d2", 0.94)
-	button.add_theme_stylebox_override("normal", UIFactory.style_box(normal_bg, Color(0, 0, 0, 0), 0, 28))
-	button.add_theme_stylebox_override("hover", UIFactory.style_box(hover_bg, hover_border, 1, 28))
-	button.add_theme_stylebox_override("pressed", UIFactory.style_box(pressed_bg, pressed_border, 1, 28))
+	# 全部狀態統一透明 bg + 無 border —
+	# 已通過/已選/可選的視覺差異交給 modulate（變暗）+ 之後要替換的圖檔
+	button.add_theme_stylebox_override("normal", UIFactory.style_box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, 28))
+	button.add_theme_stylebox_override("hover", UIFactory.style_box(Color("f4edd8", 0.08), Color(0, 0, 0, 0), 0, 28))
+	button.add_theme_stylebox_override("pressed", UIFactory.style_box(Color("f4edd8", 0.12), Color(0, 0, 0, 0), 0, 28))
 	button.add_theme_font_size_override("font_size", 12)
 	button.add_theme_constant_override("v_separation", 0)
 	button.add_theme_color_override("font_color", Color("25313b", 0.55))
@@ -2917,24 +2899,24 @@ func _build_route_button(text: String, icon_type: String, icon_color: Color, fon
 	return button
 
 func _animate_map_node(button: Button, selected: bool, selectable: bool, is_boss: bool) -> void:
+	# 「當下這一層可以選的節點」用 scale 呼吸效果指示，緩慢放大縮小。
+	# 已選 / 已通過 / 未連通 都不動，差異未來由 selected/unselected 圖檔承擔。
 	if button == null:
 		return
-	button.pivot_offset = button.size * 0.5
+	if not selectable:
+		return
 	var target: Control = button
 	if button.has_meta("route_icon"):
 		target = button.get_meta("route_icon") as Control
-	if target != null:
-		target.pivot_offset = target.size * 0.5
-	if selected:
-		button.self_modulate = Color(1.12, 1.2, 1.05, 1.0)
-	elif selectable:
-		var glow: Tween = create_tween().set_loops()
-		glow.tween_property(button, "self_modulate", Color(1.22, 1.18, 0.9, 1.0), 0.9).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		glow.tween_property(button, "self_modulate", Color(1.0, 1.0, 1.0, 1.0), 0.9).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	if is_boss and target != null:
-		var pulse: Tween = create_tween().set_loops()
-		pulse.tween_property(target, "scale", Vector2(1.12, 1.12), 0.72).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		pulse.tween_property(target, "scale", Vector2.ONE, 0.72).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	if target == null:
+		return
+	target.pivot_offset = target.size * 0.5
+	# Boss 振幅稍大一點以強化壓迫感
+	var amplitude: float = 1.15 if is_boss else 1.10
+	var period: float = 0.95   # 單向動畫時長，整個呼吸週期 ≈ 1.9s
+	var pulse: Tween = create_tween().set_loops()
+	pulse.tween_property(target, "scale", Vector2(amplitude, amplitude), period).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	pulse.tween_property(target, "scale", Vector2.ONE, period).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 func _route_enemy_button(enemy: EnemyData, is_boss: bool = false) -> Button:
 	var label_prefix: String = "Boss" if is_boss else "戰鬥"
