@@ -157,6 +157,11 @@ func _initialize() -> void:
 	_test_batch_a_character_gating()
 	_test_batch_a_observe_gating()
 	_test_batch_a_subnode_navigation()
+	# Phase 7-B：Batch B 6 個事件樹（含戰鬥分支）
+	_test_batch_b_all_have_tree()
+	_test_batch_b_character_gating()
+	_test_batch_b_observe_gating()
+	_test_batch_b_battle_leaves_valid()
 	print("SwordCard smoke test passed.")
 	quit(0)
 
@@ -1510,8 +1515,8 @@ func _test_event_runner_has_tree() -> void:
 	# spring 有 tree；某個還沒做 tree 的事件（如 shrine）沒有
 	var spring: Dictionary = EventData.for_variant("spring")
 	assert(EventRunner.has_tree(spring), "spring should have tree schema")
-	var legacy: Dictionary = EventData.for_variant("forgotten_altar")
-	assert(not EventRunner.has_tree(legacy), "forgotten_altar should still use legacy flat schema")
+	var legacy: Dictionary = EventData.for_variant("lingmiao")
+	assert(not EventRunner.has_tree(legacy), "lingmiao should still use legacy flat schema")
 
 func _test_event_runner_root_choices() -> void:
 	var spring: Dictionary = EventData.for_variant("spring")
@@ -1590,7 +1595,7 @@ func _test_event_runner_leaf_detection() -> void:
 
 func _test_event_runner_legacy_fallback() -> void:
 	# 還沒做 tree 的 event：has_tree=false、get_node 回空 dict、不爆炸
-	var legacy_ed: Dictionary = EventData.for_variant("forgotten_altar")
+	var legacy_ed: Dictionary = EventData.for_variant("lingmiao")
 	assert(not EventRunner.has_tree(legacy_ed))
 	assert(EventRunner.get_node(legacy_ed, "root").is_empty())
 	assert(EventRunner.get_node(legacy_ed, "node_anything").is_empty())
@@ -1919,3 +1924,102 @@ func _test_batch_a_subnode_navigation() -> void:
 			assert(not sub.is_empty(), "%s next target '%s' should resolve to a node" % [variant, target])
 			var sub_choices: Array = sub.get("choices", []) as Array
 			assert(sub_choices.size() >= 2, "%s sub-node '%s' should have >=2 choices, got %d" % [variant, target, sub_choices.size()])
+
+# ──────────────────────────────────────────────────────────────────────
+# Event Branching Phase 7-B：Batch B 6 個事件樹（含 1-2 條戰鬥分支）
+# ──────────────────────────────────────────────────────────────────────
+
+const BATCH_B_VARIANTS: Array[String] = [
+	"broken_temple", "forgotten_altar", "ancient_battlefield",
+	"alchemy_furnace", "ghost_forest", "immortal_ruins",
+]
+
+func _test_batch_b_all_have_tree() -> void:
+	# 6 個 variant 都應該有 tree、至少 4 個 root 選項、含 observe + character gate
+	for variant: String in BATCH_B_VARIANTS:
+		var ed: Dictionary = EventData.for_variant(variant)
+		assert(EventRunner.has_tree(ed), "%s should have tree schema" % variant)
+		var root: Dictionary = EventRunner.get_node(ed, "root")
+		var choices: Array = root.get("choices", []) as Array
+		assert(choices.size() >= 4, "%s root should have >=4 choices, got %d" % [variant, choices.size()])
+		var has_observe: bool = false
+		var has_char: bool = false
+		for c_v: Variant in choices:
+			var c: Dictionary = c_v as Dictionary
+			var req: Dictionary = c.get("requires", {}) as Dictionary
+			if bool(req.get("observe_token", false)):
+				has_observe = true
+			if not (req.get("character", []) as Array).is_empty():
+				has_char = true
+		assert(has_observe, "%s should have observe-gated choice" % variant)
+		assert(has_char, "%s should have character-gated choice" % variant)
+
+func _test_batch_b_character_gating() -> void:
+	# 跨 4 個角色的可見選項數應不全相同
+	var character_ids: Array[String] = ["li_xiaoyao", "zhao_linger", "lin_yueru", "anu"]
+	for variant: String in BATCH_B_VARIANTS:
+		var ed: Dictionary = EventData.for_variant(variant)
+		var root: Dictionary = EventRunner.get_node(ed, "root")
+		var sizes: Array[int] = []
+		for cid: String in character_ids:
+			var ctx: Dictionary = EventRunner.build_context(cid, 999, 0, 99, [], 10)
+			sizes.append(EventRunner.visible_choices(root, ctx).size())
+		var min_s: int = sizes[0]
+		var max_s: int = sizes[0]
+		for s: int in sizes:
+			min_s = min(min_s, s)
+			max_s = max(max_s, s)
+		assert(max_s > min_s, "%s should have character-specific choices; all sizes = %d" % [variant, min_s])
+
+func _test_batch_b_observe_gating() -> void:
+	for variant: String in BATCH_B_VARIANTS:
+		var ed: Dictionary = EventData.for_variant(variant)
+		var root: Dictionary = EventRunner.get_node(ed, "root")
+		var ctx_no: Dictionary = EventRunner.build_context("li_xiaoyao", 999, 0, 0, [], 10)
+		var ctx_yes: Dictionary = EventRunner.build_context("li_xiaoyao", 999, 0, 3, [], 10)
+		var v_no: int = EventRunner.visible_choices(root, ctx_no).size()
+		var v_yes: int = EventRunner.visible_choices(root, ctx_yes).size()
+		assert(v_yes > v_no, "%s should expose more choices with observe; %d vs %d" % [variant, v_no, v_yes])
+
+func _test_batch_b_battle_leaves_valid() -> void:
+	# 每個 variant 至少有一條 battle 葉節點（root 或 sub-node 內），且：
+	#   - enemy_id 在 GameData.enemy_by_id 找得到
+	#   - victory_effects 與 defeat_effects 都是 array（可空）
+	#   - hp_mult 若有定義應 > 0
+	var total_battle_leaves: int = 0
+	for variant: String in BATCH_B_VARIANTS:
+		var ed: Dictionary = EventData.for_variant(variant)
+		var battle_count: int = _count_battle_leaves_in_tree(ed)
+		assert(battle_count >= 1, "%s should have >=1 battle leaf, got %d" % [variant, battle_count])
+		total_battle_leaves += battle_count
+	# 設計凍結：6 個事件共 8 條 battle 葉節點
+	assert(total_battle_leaves == 8,
+		"expected 8 battle leaves total in Batch B, got %d" % total_battle_leaves)
+
+func _count_battle_leaves_in_tree(ed: Dictionary) -> int:
+	# 遍歷 root + 所有 nodes 的 choices，找 outcome.kind == "battle"
+	var count: int = 0
+	var all_nodes: Array[Dictionary] = [EventRunner.get_node(ed, "root")]
+	var nodes_map: Dictionary = (ed.get("tree", {}) as Dictionary).get("nodes", {}) as Dictionary
+	for k: Variant in nodes_map.keys():
+		all_nodes.append(nodes_map[k] as Dictionary)
+	for node: Dictionary in all_nodes:
+		for c_v: Variant in (node.get("choices", []) as Array):
+			var c: Dictionary = c_v as Dictionary
+			if not EventRunner.is_leaf(c):
+				continue
+			var outcome: Dictionary = c["outcome"] as Dictionary
+			if String(outcome.get("kind", "")) != "battle":
+				continue
+			count += 1
+			# 驗證 battle dict 內容
+			var bd: Dictionary = outcome.get("battle", {}) as Dictionary
+			var enemy_id: String = String(bd.get("enemy_id", ""))
+			var enemy: EnemyData = GameData.enemy_by_id(enemy_id)
+			assert(enemy != null, "battle outcome references unknown enemy '%s'" % enemy_id)
+			var hp_mult: float = float(bd.get("enemy_hp_mult", 1.0))
+			assert(hp_mult > 0.0, "enemy_hp_mult should be > 0, got %f for enemy %s" % [hp_mult, enemy_id])
+			# victory_effects / defeat_effects 可空但必須是 Array
+			assert(bd.get("victory_effects", []) is Array, "victory_effects must be Array for enemy %s" % enemy_id)
+			assert(bd.get("defeat_effects", []) is Array, "defeat_effects must be Array for enemy %s" % enemy_id)
+	return count
