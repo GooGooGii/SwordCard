@@ -18,10 +18,31 @@ var _hovered_index: int = -1
 var _draw_animation_id: int = 0
 var _hover_tweens: Dictionary = {}
 var _selected_index: int = -1
+var _drag_locked: bool = false
 
 func _ready() -> void:
 	clip_contents = false
 	resized.connect(_layout)
+
+# 主控檔在 drag 啟動時呼叫，鎖住其他卡的 hover/select：
+# - exempt_button：正在被拖的那張，維持原 mouse_filter
+# - 其餘卡 mouse_filter 改 IGNORE，避免手指劃過時鄰卡抬升抖動
+# 釋放時傳 locked=false 還原
+func set_drag_locked(locked: bool, exempt_button: Button = null) -> void:
+	_drag_locked = locked
+	if locked:
+		# 把當下 hover 中、且不是被拖的那張，強制降回
+		if _hovered_index >= 0 and _hovered_index < _card_buttons.size():
+			var hovered_btn: Button = _card_buttons[_hovered_index]
+			if hovered_btn != exempt_button:
+				_force_unhover(_hovered_index)
+		for btn: Button in _card_buttons:
+			if btn != exempt_button and is_instance_valid(btn):
+				btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	else:
+		for btn: Button in _card_buttons:
+			if is_instance_valid(btn):
+				btn.mouse_filter = Control.MOUSE_FILTER_STOP
 
 func set_cards(buttons: Array[Button], animate: bool = false, animate_from: Vector2 = Vector2.ZERO) -> void:
 	_draw_animation_id += 1
@@ -161,6 +182,8 @@ func _kill_hover_tween(index: int) -> void:
 		_hover_tweens.erase(index)
 
 func _on_hover(index: int) -> void:
+	if _drag_locked:
+		return  # 拖拉中：鄰近卡不可被 hover 觸發抬升
 	if index < 0 or index >= _card_buttons.size():
 		return
 	if index == _selected_index:

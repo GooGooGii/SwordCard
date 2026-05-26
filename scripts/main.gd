@@ -4653,9 +4653,12 @@ func _on_card_button_down(card: CardData, button: Button) -> void:
 
 func _on_card_button_up(card: CardData, button: Button) -> void:
 	_cancel_card_long_press()
-	if _card_drag_button == button and _card_drag_active:
+	var was_drag_active: bool = _card_drag_button == button and _card_drag_active
+	if was_drag_active:
 		_evaluate_card_drop(card, button)
 		_suppress_next_card_play = true
+	if _card_drag_active and hand_row != null and is_instance_valid(hand_row):
+		hand_row.set_drag_locked(false)
 	_card_drag_button = null
 	_card_drag_card = null
 	_card_drag_active = false
@@ -4673,6 +4676,9 @@ func _on_card_button_gui_input(card: CardData, button: Button, event: InputEvent
 		if current_global.distance_to(_card_drag_start_global) >= CARD_DRAG_THRESHOLD:
 			_card_drag_active = true
 			_cancel_card_long_press()  # 拖拉開始就取消長按預覽 timer
+			# 鎖住其他手牌的 hover，避免手指劃過鄰卡時觸發抬升抖動
+			if hand_row != null and is_instance_valid(hand_row):
+				hand_row.set_drag_locked(true, button)
 	if _card_drag_active:
 		var parent: Node = button.get_parent()
 		if parent is Control:
