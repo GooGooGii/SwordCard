@@ -75,6 +75,12 @@ var _potion_overlay: HBoxContainer = null
 var _potion_overlay_buttons: Array[Button] = []
 var _selected_hand_button: Button = null
 
+# 畫面切換淡入淡出 — _clear_root 截舊畫面當 overlay，新畫面建在下方，再淡出 overlay
+var _transition_layer: CanvasLayer = null
+var _transition_snapshot: TextureRect = null
+var _transition_tween: Tween = null
+const SCREEN_FADE_DURATION: float = 0.22
+
 var title_bar: PanelContainer = null
 var title_bar_name_label: Label = null
 var title_bar_hp_bar: ProgressBar = null
@@ -451,6 +457,7 @@ func _clear_root() -> void:
 	close_deck_view()
 	_hide_card_preview()
 	_cancel_end_turn_warning()
+	_capture_transition_snapshot()
 	active_map_scroll = null
 	_map_drag_candidate = false
 	_map_dragging = false
@@ -463,6 +470,48 @@ func _clear_root() -> void:
 	if _potion_overlay != null:
 		_potion_overlay.visible = true
 		_refresh_potion_overlay_buttons()
+	call_deferred("_start_transition_fade_in")
+
+func _ensure_transition_layer() -> void:
+	if _transition_layer != null and is_instance_valid(_transition_layer):
+		return
+	_transition_layer = CanvasLayer.new()
+	_transition_layer.layer = 100  # 蓋在所有 UI 之上
+	add_child(_transition_layer)
+	_transition_snapshot = TextureRect.new()
+	_transition_snapshot.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_transition_snapshot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_transition_snapshot.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_transition_snapshot.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_transition_snapshot.modulate.a = 0.0
+	_transition_layer.add_child(_transition_snapshot)
+
+func _capture_transition_snapshot() -> void:
+	_ensure_transition_layer()
+	if _transition_tween != null and _transition_tween.is_valid():
+		_transition_tween.kill()
+	var vp_tex: ViewportTexture = get_viewport().get_texture()
+	if vp_tex == null:
+		return
+	var image: Image = vp_tex.get_image()
+	if image == null or image.is_empty():
+		# 首次啟動：尚無畫面可截 — 用純黑取代，反正是首幕沒「淡出」可言
+		_transition_snapshot.texture = null
+		_transition_snapshot.self_modulate = Color(0, 0, 0, 1)
+		_transition_snapshot.modulate.a = 1.0
+		return
+	var tex: ImageTexture = ImageTexture.create_from_image(image)
+	_transition_snapshot.self_modulate = Color.WHITE
+	_transition_snapshot.texture = tex
+	_transition_snapshot.modulate.a = 1.0
+
+func _start_transition_fade_in() -> void:
+	if _transition_snapshot == null or not is_instance_valid(_transition_snapshot):
+		return
+	if _transition_tween != null and _transition_tween.is_valid():
+		_transition_tween.kill()
+	_transition_tween = create_tween()
+	_transition_tween.tween_property(_transition_snapshot, "modulate:a", 0.0, SCREEN_FADE_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 func _set_background(path: String) -> void:
 	if background_rect == null:
