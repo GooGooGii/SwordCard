@@ -1389,6 +1389,10 @@ func _map_view_sts() -> Control:
 	map_area.custom_minimum_size = content_size
 	map_area.size = content_size
 	map_area.clip_contents = false
+	# 預設 MOUSE_FILTER_STOP 會吞掉 ScrollContainer 偵測 drag 所需的觸控事件，
+	# 導致 Android 上「只有右側空白能滑動、地圖內容區域滑不動」。
+	# IGNORE = 讓事件直接穿過 map_area，子節點 (map_node_button) 仍能自己處理點擊。
+	map_area.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	scroll.add_child(map_area)
 	# 地圖底紙由 show_progress_screen() 的全域 background_rect 提供
 	# （透過半透明的 panel 透出來），不在這裡再疊一張同樣的圖，避免捲動時前後兩張錯位
