@@ -1,0 +1,83 @@
+name: Build & Deploy Web
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-web:
+    name: Export HTML5 and publish to GitHub Pages
+    runs-on: ubuntu-22.04
+    container:
+      image: barichello/godot-ci:4.6
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Install Godot export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TEMPLATE_VERSION="4.6.stable"
+          TEMPLATE_DIR=$(find /root /github/home -path "*/godot/export_templates/$TEMPLATE_VERSION" -type d 2>/dev/null | head -1)
+
+          if [ -z "$TEMPLATE_DIR" ]; then
+            echo "::error::Godot export templates not found"
+            find / -path "*godot/export_templates*" -type d 2>/dev/null || true
+            exit 1
+          fi
+
+          mkdir -p "$HOME/.local/share/godot/export_templates"
+          cp -R "$TEMPLATE_DIR" "$HOME/.local/share/godot/export_templates/$TEMPLATE_VERSION"
+          ls -la "$HOME/.local/share/godot/export_templates/$TEMPLATE_VERSION"/web_*
+
+      - name: Pre-import project
+        run: godot --headless --import || true
+
+      - name: Run smoke tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . -s scripts/smoke_test.gd 2>&1 | tee smoke.log
+          grep -q "SwordCard smoke test passed." smoke.log || { echo "::error::smoke test did not report success"; exit 1; }
+
+      - name: Export Web build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/web
+          rm -f build/web/*
+          godot --headless --verbose --export-release "Web" build/web/index.html 2>&1 | tee build/web/export.log
+          test -f build/web/index.html || { echo "::error::index.html not generated"; exit 1; }
+          ls -lh build/web/
+
+      - name: Add .nojekyll
+        run: touch build/web/.nojekyll
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SwordCard-web
+          path: build/web/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
+          publish_branch: gh-pages
