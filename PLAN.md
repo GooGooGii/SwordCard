@@ -45,11 +45,12 @@ SwordCard 是仙劍奇俠傳 1 粉絲向原型，Godot 4 開發，Windows + Andr
 - **character_outcomes**: 個人化結局文字（baiyue / sword_tomb / xianling / miao_healer / spirit_clan_ruins / tavern_acquaintance 4 chars / drunk_swordsman / jianling 等）
 - **observe_text**: 加長觀察文字，玩家可看完再決定要不要進入
 
-### 遺物系統（56 件）
+### 遺物系統（59 件 = 45 通用 + 8 角色專武 + 6 神器）
 - 稀有度：basic、uncommon、rare、legendary、artifact（Boss 特定掉落）
 - 效果種類：永久 buff（傷害/HP/draw）、觸發型（戰鬥開始/每回合/擊殺/勝利）
 - Boss 擊敗必掉對應神器；無對應神器時隨機掉落；一般戰鬥 25% 機率掉落
 - 戰鬥中「遺物 (N)」按鈕查看說明 popup
+- 6 神器：拜月神符 / 蜈蚣甲 / 噬靈骨 / 赤眼符印 / 鬼將令牌 / 拜月教旨（5 act boss + moon_worshipper 一般敵）
 
 ### 商店
 - 一般商店：隨機角色卡 3 張 + 可選遺物
@@ -115,19 +116,38 @@ SwordCard 是仙劍奇俠傳 1 粉絲向原型，Godot 4 開發，Windows + Andr
 
 ### 主控制器重構（Phase 1 起手，未完成）
 - Screen 基底類別 + BestiaryScreen 已抽出
-- main.gd 仍 4548 行，剩 ~8 個 screen 待抽（main_menu / character_select / progress_screen / battle_scene 等）
+- main.gd 仍 **5237 行**，剩 ~8 個 screen 待抽（main_menu / character_select / progress_screen / battle_scene 等）
 
 ### 測試
-smoke_test.gd 共 32 個測試，涵蓋：
+smoke_test.gd 共 **50 個測試**，涵蓋：
 資料完整性、戰鬥機制、多回合流程、存檔 round-trip、存檔遷移、
 地圖可達性、傷害預測一致性、隊伍系統、圖鑑、難度、Boss 二階段、
-事件多樣性、種子確定性、平衡 regression（基礎 + 中段 + 升級版）
+事件多樣性、種子確定性、平衡 regression（基礎 + 中段 + 升級版）、
+多敵人 (multi-enemy setup / damage routing / AOE / partial kill /
+summon basic+cap+unknown+from_pool / per-enemy phase)、阿奴 multi-enemy passive
+
+### UI 質感 / 動畫精修
+- **螢幕間 crossfade**：所有 `show_*()` 切換時自動截舊畫面 → 透明 overlay → tween fade-in (0.22s sine)，零侵入式設計
+- **地圖節點呼吸動畫**：當前可選層所有節點 scale 1.0↔1.10 緩動，boss ×1.15；移除依狀態變色的 border（改靠 modulate + 之後要替換的 selected/unselected 圖檔表達）
+- **持久 TitleBar**：頂部固定列顯示角色 + HP + 銅錢 + 遺物按鈕（main_menu 以外）
+- **戰鬥背景分幕**：5 幕各自 battle_bg_act_1 ~ 5 圖
+- **手感修正集（Android 觸控）**：
+  - 地圖整片可滑（map_area 設 MOUSE_FILTER_IGNORE，避免左半邊吞觸控）
+  - 卡片拖拉敵將命中範圍：桌面 80 px、手機 160 px
+  - 拖卡時鄰近卡的 hover 自動鎖住（避免抖動）
+  - 卡片拖拉統一桌面 + 手機路徑
+- **角色立繪去背**：portraits/ 4 張 + battle_characters/ 24 張（3 角色 × 6 姿勢 + 阿奴手動）+ enemies/ 19 張全部透明背景
+- **奇遇事件插圖**：31/31 全部完成（每個 variant 各自獨立背景）
+- **遺物美術**：56 張 ink-wash 風格遺物圖
+- **卡片框美術**：attack / power / skill 各自獨立框型升級（原圖備份在 _card_frame_backup/）
 
 ---
 
 ## 待辦 / 下一步
 
-### 進行中（Multi-Enemy Mode 後續 phases）
+### 未開始（Multi-Enemy Mode 後續 phases）
+> Phase 1–4A 已完成（核心 multi-enemy 戰鬥流程 + 召喚機制）；4B 以後尚未動工。
+
 - [ ] **Phase 4B：戰鬥手感 polish**（~170 行）
   - 召喚物 fade-in tween（scale 0.7→1.0、alpha 0→1，0.4s）
   - 敵人死亡淡出（alpha + 灰階）
@@ -136,17 +156,18 @@ smoke_test.gd 共 32 個測試，涵蓋：
   - Damage popup spawn 在正確敵 portrait（不只 active）
   - Compact mode 自動觸發（3 敵時強制 compact）
 - [ ] **Phase 5+8：內容**（~230 行）
-  - MapGenerator encounter 表（act 2+ 加雙弱敵 combos）
-  - 4 個新弱版 EnemyData：山賊小弟 / 妖獸幼獸 / 蠱毒徒弟 / 拜月小卒
-  - 4 個召喚物：red_eye_imp / tower_wisp / centipede_brood / zombie_thrall（每 boss 至少 1 種）
-  - 6 張卡用 `*_all` 改造：萬劍訣 / 御蜂術 / 九龍訣 / 萬蠱蝕天 / 旋風咒 / 乾坤一擲
+  - MapGenerator encounter 表（act 2+ 加雙弱敵 combos）— 0/N 加入
+  - 4 個新弱版 EnemyData：山賊小弟 / 妖獸幼獸 / 蠱毒徒弟 / 拜月小卒 — **0/4 已加**
+  - 4 個召喚物：red_eye_imp / tower_wisp / centipede_brood / zombie_thrall（每 boss 至少 1 種）— **1/5 已加**（只有 water_tentacle）
+  - 6 張卡用 `*_all` 改造：萬劍訣 / 御蜂術 / 九龍訣 / 萬蠱蝕天 / 旋風咒 / 乾坤一擲 — **3 次 damage_all 出現在 game_data**，需逐張驗證
 - [ ] **Phase 6+7：測試 + baseline**（~250 行）
   - balance_matrix 加多敵 scenarios（act 2+ 雙弱敵 vs 4 chars）
   - smoke test 加 AOE 卡命中所有敵測試
   - 更新 BALANCE_BASELINES 含多敵情境
 
-### 進行中（Event Branching — 奇遇分支故事化）
-詳見 [`docs/EVENT_BRANCHING.md`](docs/EVENT_BRANCHING.md)。把 28 個 event 從扁平選單升級為分支故事樹，葉節點分類 reward / punish / battle / gamble / mixed。
+### 未開始（Event Branching — 奇遇分支故事化）
+> **Phase 0 — 設計凍結但 0/11 phase 動工**。現行 code 仍走舊扁平 2 層 schema。
+詳見 [`docs/EVENT_BRANCHING.md`](docs/EVENT_BRANCHING.md)。把 31 個 event 從扁平選單升級為分支故事樹，葉節點分類 reward / punish / battle / gamble / mixed。
 - [ ] **P1 Schema + Runner**（~280 行）— `event_runner.gd`、`tree` 欄位、requires 過濾、UI 徽章
 - [ ] **P2 Event UI 改版**（~220 行）— `show_event_node()` 支援多層樹走訪
 - [ ] **P3 戰鬥回流**（~100 行）— `pending_event_return`、戰敗不結束 run
@@ -163,11 +184,13 @@ smoke_test.gd 共 32 個測試，涵蓋：
 6 個事件分支樹已凍結（spring / yokai_pact / flower_spirit / yangzhou_officer / jiang_waner_grief / baiyue_altar），剩 25 個待 review。
 
 ### 高優先（影響玩法完整度）
-- [x] **Boss 專屬神器** — 已實作
+- [x] **Boss 專屬神器** — 5 act boss + moon_worshipper 共 6 神器全做完
 - [x] **平衡 regression baseline 更新** — 已含 leveled progression + multi-enemy 配套
 - [x] **更多 PAL1 事件** — 已擴至 31 種（含 4 名場面 + 觀察/離開機制）
-- [ ] **Card Art / 肖像** — 4 角色 6 戰鬥姿勢已有，卡片 art 仍是借用既有圖（8 張新 PAL1 卡用 art_id 借）
-- [ ] **奇遇事件插圖 (Event Art)** — 7/31 已有專屬背景，**還缺 24 張**（fallback 用通用 event_bg.png）
+- [x] **奇遇事件插圖 (Event Art)** — 31/31 完成
+- [x] **角色立繪去背** — portraits / battle_characters / enemies 三個資料夾全部透明背景
+- [x] **遺物美術完整集** — 56 張 ink-wash 風格遺物圖到位
+- [ ] **Card Art / 肖像** — 60 張卡片 PNG 已有，但 8 張新 PAL1 卡仍用 art_id 借既有圖
 
 ### 中優先（體驗提升）
 - [x] **Act title 顯示在地圖** — 已實作
