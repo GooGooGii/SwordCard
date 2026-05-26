@@ -94,7 +94,8 @@ var _card_drag_card: CardData = null
 var _card_drag_start_global: Vector2 = Vector2.ZERO
 var _card_drag_active: bool = false
 const CARD_DRAG_THRESHOLD: float = 14.0
-const CARD_DRAG_TARGET_PADDING: float = 80.0  # 拖到敵人附近 N px 都算命中
+const CARD_DRAG_TARGET_PADDING: float = 80.0  # 拖到敵人附近 N px 都算命中（桌面）
+const CARD_DRAG_TARGET_PADDING_MOBILE: float = 160.0  # 手機手指較粗，放寬命中範圍
 
 # Mobile swipe-to-play 狀態（水平滑動選卡，向上滑出手牌區出牌）
 var _hand_buttons_map: Dictionary = {}  # Button → CardData，每次 _refresh_hand 重建
@@ -4711,6 +4712,7 @@ func _is_position_near_enemy(global_pos: Vector2) -> bool:
 func _find_enemy_under_drag(global_pos: Vector2) -> int:
 	if battle == null:
 		return -1
+	var padding: float = CARD_DRAG_TARGET_PADDING_MOBILE if OS.has_feature("mobile") else CARD_DRAG_TARGET_PADDING
 	var best_idx: int = -1
 	var best_dist: float = INF
 	var enemy_slots: Array = battle.state.get("enemies", []) as Array
@@ -4725,7 +4727,7 @@ func _find_enemy_under_drag(global_pos: Vector2) -> int:
 		if wrap == null or not is_instance_valid(wrap):
 			continue
 		var rect: Rect2 = Rect2(wrap.global_position, wrap.size)
-		if not rect.grow(CARD_DRAG_TARGET_PADDING).has_point(global_pos):
+		if not rect.grow(padding).has_point(global_pos):
 			continue
 		var center: Vector2 = rect.position + rect.size / 2.0
 		var d: float = global_pos.distance_to(center)
