@@ -17,7 +17,7 @@ dest_files=["res://.godot/imported/feng_ling_dang.png-245eaa58f89134f7a5643d369c
 
 compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.5
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

@@ -17,7 +17,7 @@ dest_files=["res://.godot/imported/wugong_jia.png-8c6ccb32ba07a4aaae0198d795d89e
 
 compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.5
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

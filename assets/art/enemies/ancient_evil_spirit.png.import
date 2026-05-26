@@ -17,7 +17,7 @@ dest_files=["res://.godot/imported/ancient_evil_spirit.png-2df2b3aca893ba435e5ae
 
 compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.5
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

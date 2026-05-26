@@ -17,7 +17,7 @@ dest_files=["res://.godot/imported/han_shuang_zhu.png-2b6f5b95ac0dffc810cf1aa40d
 
 compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.5
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

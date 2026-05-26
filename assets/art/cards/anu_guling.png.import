@@ -17,7 +17,7 @@ dest_files=["res://.godot/imported/anu_guling.png-cb5a6a9d2d7fee6131b57d41095e5e
 
 compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.5
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

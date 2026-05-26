@@ -17,7 +17,7 @@ dest_files=["res://.godot/imported/chiyan_fuyin.png-458cbef8d7bffd1a08fff961e25e
 
 compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.5
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

@@ -17,7 +17,7 @@ dest_files=["res://.godot/imported/lin_yueru_low_hp.png-c5cb1239f996bf4a6a8a6d7c
 
 compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.5
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

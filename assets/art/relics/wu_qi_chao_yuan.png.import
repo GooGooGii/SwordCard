@@ -17,7 +17,7 @@ dest_files=["res://.godot/imported/wu_qi_chao_yuan.png-19a8efa44cf56c7e5fee27ce5
 
 compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.5
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

@@ -17,7 +17,7 @@ dest_files=["res://.godot/imported/suoyao_yu.png-5525a233c001166d5aa8818a7d3a301
 
 compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.5
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

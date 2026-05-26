@@ -17,7 +17,7 @@ dest_files=["res://.godot/imported/baiyue_jiaozhi.png-bc62f0bbf020697f7d3b86628f
 
 compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.5
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
