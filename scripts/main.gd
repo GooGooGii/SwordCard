@@ -480,6 +480,16 @@ func _set_event_background(event_variant: String = "") -> void:
 		return
 	_set_background("res://assets/art/event_bg.png")
 
+func _battle_background_path() -> String:
+	var fallback_path: String = "res://assets/art/battle_bg.png"
+	if run_state == null:
+		return fallback_path
+	var act_index: int = clamp(int(run_state.act), 1, 5)
+	var act_path: String = "res://assets/art/battle_bg_act_%d.png" % act_index
+	if ResourceLoader.exists(act_path):
+		return act_path
+	return fallback_path
+
 func show_main_menu() -> void:
 	selected_party_ids.clear()  # 進主選單清掉 character_select 的暫存隊伍
 	_hide_title_bar()
@@ -1684,7 +1694,7 @@ func start_next_battle(enemy: EnemyData) -> void:
 	_start_player_turn()
 
 func _build_battle_scene() -> void:
-	_set_background("res://assets/art/battle_bg.png")
+	_set_background(_battle_background_path())
 	_clear_root()
 	_show_title_bar()
 	if _potion_overlay != null:

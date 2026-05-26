@@ -23,7 +23,17 @@ Current generated backgrounds:
 - `main_menu_bg.png`  
   Used by main menu and character select.
 - `battle_bg.png`  
-  Used by the battle scene.
+  Legacy fallback used by the battle scene.
+- `battle_bg_act_1.png`  
+  Used by act 1 battles.
+- `battle_bg_act_2.png`  
+  Used by act 2 battles.
+- `battle_bg_act_3.png`  
+  Used by act 3 battles.
+- `battle_bg_act_4.png`  
+  Used by act 4 battles.
+- `battle_bg_act_5.png`  
+  Used by act 5 battles.
 - `event_bg.png`  
   Used by route, rest, event, reward, and result screens.
 - `map_bg_ink.png`  
