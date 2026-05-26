@@ -2,16 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bop3cercxx5vv"
-valid=false
+uid="uid://bvvb7l48mxw5g"
+path="res://.godot/imported/nian_xiang_lu.png-3bce06e5495b6dda987602e4e8c05278.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/nian_xiang_lu.png"
+dest_files=["res://.godot/imported/nian_xiang_lu.png-3bce06e5495b6dda987602e4e8c05278.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

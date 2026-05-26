@@ -2,16 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dblmijj77je2q"
-valid=false
+uid="uid://b8lbwkg06gp7u"
+path="res://.godot/imported/qing_long_yi.png-9f16e76e50c0f8eaefebbaeed1a991c0.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/qing_long_yi.png"
+dest_files=["res://.godot/imported/qing_long_yi.png-9f16e76e50c0f8eaefebbaeed1a991c0.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -2,16 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b1fc0ccncticr"
-valid=false
+uid="uid://65w6mh5hi4a3"
+path="res://.godot/imported/feng_ling_dang.png-245eaa58f89134f7a5643d369c3b0104.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/feng_ling_dang.png"
+dest_files=["res://.godot/imported/feng_ling_dang.png-245eaa58f89134f7a5643d369c3b0104.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

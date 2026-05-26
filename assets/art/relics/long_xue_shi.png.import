@@ -2,7 +2,7 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ba7ey64drtyn0"
+uid="uid://cgq12e6ay8wi8"
 path="res://.godot/imported/long_xue_shi.png-5012736841ae277a322e4a16ec948cf2.ctex"
 metadata={
 "vram_texture": false
@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/long_xue_shi.png-5012736841ae277a322e4a16ec94
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

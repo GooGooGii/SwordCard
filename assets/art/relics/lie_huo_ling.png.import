@@ -2,16 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dqvslsu2706he"
-valid=false
+uid="uid://7iw6e6ufkl17"
+path="res://.godot/imported/lie_huo_ling.png-26240a48f84d0ca3d2d847244737f41d.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/lie_huo_ling.png"
+dest_files=["res://.godot/imported/lie_huo_ling.png-26240a48f84d0ca3d2d847244737f41d.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

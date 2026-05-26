@@ -2,16 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ic3y2bawo87l"
-valid=false
+uid="uid://duieg0st77766"
+path="res://.godot/imported/e_yun_fu.png-c4c7e050e6ea336b76d038f252f98b49.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/e_yun_fu.png"
+dest_files=["res://.godot/imported/e_yun_fu.png-c4c7e050e6ea336b76d038f252f98b49.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -2,16 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bf4r42rrkby4s"
-valid=false
+uid="uid://bld2flr28iadx"
+path="res://.godot/imported/jiao_long_xian.png-64b1c0cea71865fdb06f29f49e10a826.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/jiao_long_xian.png"
+dest_files=["res://.godot/imported/jiao_long_xian.png-64b1c0cea71865fdb06f29f49e10a826.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

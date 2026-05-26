@@ -2,7 +2,7 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://inkw2hcnm4m6"
+uid="uid://c1xyo1ct7ts10"
 path="res://.godot/imported/hu_xin_jing.png-94b041d833f70feec810921df549b92d.ctex"
 metadata={
 "vram_texture": false
@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/hu_xin_jing.png-94b041d833f70feec810921df549b
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

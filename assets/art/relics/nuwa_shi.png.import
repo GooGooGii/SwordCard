@@ -2,7 +2,7 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://rog0j0fypv16"
+uid="uid://c6q0wv33ccbtt"
 path="res://.godot/imported/nuwa_shi.png-059ba9b533c806967873669dd54ce7ae.ctex"
 metadata={
 "vram_texture": false
@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/nuwa_shi.png-059ba9b533c806967873669dd54ce7ae
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

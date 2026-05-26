@@ -2,16 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://6cugi4jblvsj"
-valid=false
+uid="uid://bf7u52q04k8xm"
+path="res://.godot/imported/xue_hun_fu.png-81b45c362435b072790eb52f7628f8dd.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/xue_hun_fu.png"
+dest_files=["res://.godot/imported/xue_hun_fu.png-81b45c362435b072790eb52f7628f8dd.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

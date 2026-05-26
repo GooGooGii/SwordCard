@@ -2,7 +2,7 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c84dvvmcwkl42"
+uid="uid://eycbhdq25jqj"
 path="res://.godot/imported/longquan_jian.png-4afb30903d3b84be1899566dce2c35cf.ctex"
 metadata={
 "vram_texture": false
@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/longquan_jian.png-4afb30903d3b84be1899566dce2
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

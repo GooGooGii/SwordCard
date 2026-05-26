@@ -2,16 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c3tkc3vchtj70"
-valid=false
+uid="uid://cs8gwbey36mtk"
+path="res://.godot/imported/shi_gu_zhen.png-dfd59f45022222e71c79166ed76265ce.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/shi_gu_zhen.png"
+dest_files=["res://.godot/imported/shi_gu_zhen.png-dfd59f45022222e71c79166ed76265ce.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

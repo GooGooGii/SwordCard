@@ -2,16 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ba2ul5u2kn0lo"
-valid=false
+uid="uid://11cdkvfypqln"
+path="res://.godot/imported/lei_zhen_zi.png-04016a6935e35f9779abde9b31528ccc.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/lei_zhen_zi.png"
+dest_files=["res://.godot/imported/lei_zhen_zi.png-04016a6935e35f9779abde9b31528ccc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
