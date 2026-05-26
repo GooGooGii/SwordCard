@@ -97,10 +97,6 @@ const CARD_DRAG_THRESHOLD: float = 14.0
 const CARD_DRAG_TARGET_PADDING: float = 80.0  # 拖到敵人附近 N px 都算命中
 
 # Mobile swipe-to-play 狀態（水平滑動選卡，向上滑出手牌區出牌）
-var _mobile_swipe_active: bool = false
-var _mobile_swipe_should_play: bool = false
-var _mobile_swipe_selected_card: CardData = null
-var _mobile_swipe_selected_button: Button = null
 var _hand_buttons_map: Dictionary = {}  # Button → CardData，每次 _refresh_hand 重建
 
 var selected_ascension: int = 0
@@ -1728,8 +1724,8 @@ func _build_battle_scene() -> void:
 	_build_left_dock(bottom)
 	hand_row = HandFan.new()
 	hand_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hand_row.custom_minimum_size = Vector2(0, 220 if _battle_compact else 290)
-	hand_row.hand_base_lift = -8.0 if _battle_compact else 72.0
+	hand_row.custom_minimum_size = Vector2(0, 260 if _battle_compact else 320)
+	hand_row.hand_base_lift = 0.0 if _battle_compact else 40.0
 	bottom.add_child(hand_row)
 	_build_right_dock(bottom)
 
@@ -3806,14 +3802,14 @@ func _shop_item_view(item: Dictionary) -> Control:
 				if String(e.get("kind", "")) == "shop_discount":
 					price = max(5, price - int(e.get("amount", 0)))
 	var panel: PanelContainer = UIFactory.make_panel()
-	panel.custom_minimum_size = Vector2(210, 305)
+	panel.custom_minimum_size = Vector2(180, 400)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	panel.add_child(box)
 	if item.get("on_sale", false):
 		box.add_child(UIFactory.card_label("★ 特賣！五折優惠", 12, Color("ff5555"), HORIZONTAL_ALIGNMENT_CENTER))
 	var can_buy: bool = run_state.gold >= price
-	var card_button: Button = _make_card_button(card, card.cost, Vector2(190, 240), can_buy, true)
+	var card_button: Button = _make_card_button(card, card.cost, Vector2(158, 330), can_buy, true)
 	card_button.disabled = not can_buy
 	card_button.pressed.connect(func(): _show_shop_buy_confirm_overlay(card, price))
 	box.add_child(card_button)
@@ -3842,7 +3838,7 @@ func _show_shop_buy_confirm_overlay(card: CardData, price: int) -> void:
 	col.add_theme_constant_override("separation", 18)
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
 	center.add_child(col)
-	var big: Button = _make_card_button(card, card.cost, Vector2(260, 360), true, true)
+	var big: Button = _make_card_button(card, card.cost, Vector2(230, 480), true, true)
 	big.disabled = true
 	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_child(big)
@@ -4181,7 +4177,7 @@ func _duplicate_summary_text(target_cards: Array) -> String:
 func _deck_view_card(card: CardData, mode: String = "view", count: int = 1) -> Control:
 	var selectable: bool = mode == "remove" or mode == "shop_remove" or ((mode == "upgrade" or mode == "shop_upgrade") and not card.upgraded)
 	var visually_enabled: bool = (mode != "upgrade" and mode != "shop_upgrade") or not card.upgraded
-	var button: Button = _make_card_button(card, card.cost, Vector2(190, 260), true, visually_enabled)
+	var button: Button = _make_card_button(card, card.cost, Vector2(158, 330), true, visually_enabled)
 	button.disabled = not selectable
 	if mode == "remove":
 		button.pressed.connect(func(): remove_card_from_deck(card))
@@ -4242,7 +4238,7 @@ func _show_upgrade_confirm_overlay(card: CardData, on_confirm: Callable) -> void
 	stack.add_theme_constant_override("separation", 24)
 	stack.alignment = BoxContainer.ALIGNMENT_CENTER
 	col.add_child(stack)
-	var big: Button = _make_card_button(card, card.cost, Vector2(260, 360), true, true)
+	var big: Button = _make_card_button(card, card.cost, Vector2(230, 480), true, true)
 	big.disabled = true
 	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(big)
@@ -4253,7 +4249,7 @@ func _show_upgrade_confirm_overlay(card: CardData, on_confirm: Callable) -> void
 	arrow.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
 	stack.add_child(arrow)
 	var upgraded: CardData = card.upgraded_copy()
-	var up_btn: Button = _make_card_button(upgraded, upgraded.cost, Vector2(260, 360), true, true)
+	var up_btn: Button = _make_card_button(upgraded, upgraded.cost, Vector2(230, 480), true, true)
 	up_btn.disabled = true
 	up_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(up_btn)
@@ -4641,7 +4637,7 @@ func _refresh_combatant_hp(bar: ProgressBar, value_label: Label, hp: int, max_hp
 
 func _card_button(card: CardData) -> Button:
 	var affordable: bool = int(battle.state["energy"]) >= battle.effective_card_cost(card)
-	var card_size: Vector2 = Vector2(148, 200) if _battle_compact else Vector2(172, 238)
+	var card_size: Vector2 = Vector2(124, 260) if _battle_compact else Vector2(144, 300)
 	var button: Button = _make_card_button(card, card.cost, card_size, affordable, true)
 	button.disabled = not affordable
 	button.pressed.connect(func() -> void: _on_card_button_pressed(card, button))
@@ -4658,33 +4654,9 @@ func _on_card_button_down(card: CardData, button: Button) -> void:
 	_card_drag_start_global = button.get_global_mouse_position()
 	_card_drag_active = false
 	_start_card_long_press(card, button)
-	if OS.has_feature("mobile"):
-		_mobile_swipe_active = true
-		_mobile_swipe_should_play = false
-		_mobile_set_selected_card(card, button)
 
 func _on_card_button_up(card: CardData, button: Button) -> void:
 	_cancel_card_long_press()
-	if OS.has_feature("mobile"):
-		_mobile_swipe_active = false
-		_card_drag_button = null
-		_card_drag_card = null
-		_card_drag_active = false
-		if _mobile_swipe_should_play and _mobile_swipe_selected_card != null and is_instance_valid(_mobile_swipe_selected_button):
-			var c: CardData = _mobile_swipe_selected_card
-			var b: Button = _mobile_swipe_selected_button
-			_mobile_swipe_selected_card = null
-			_mobile_swipe_selected_button = null
-			_mobile_swipe_should_play = false
-			_suppress_next_card_play = true
-			_clear_drag_target_highlight()
-			play_card(c, b)
-		else:
-			# 不清除選取狀態，讓最後滑到的卡保持高亮
-			_mobile_swipe_selected_card = null
-			_mobile_swipe_selected_button = null
-			_mobile_swipe_should_play = false
-		return
 	if _card_drag_button == button and _card_drag_active:
 		_evaluate_card_drop(card, button)
 		_suppress_next_card_play = true
@@ -4701,27 +4673,6 @@ func _on_card_button_gui_input(card: CardData, button: Button, event: InputEvent
 		return
 	var current_global: Vector2 = button.get_global_mouse_position()
 
-	if OS.has_feature("mobile") and _mobile_swipe_active:
-		# 有任何移動就取消長按預覽
-		if current_global.distance_to(_card_drag_start_global) >= CARD_DRAG_THRESHOLD:
-			_cancel_card_long_press()
-		if _is_position_outside_hand(current_global):
-			# 手指移出手牌區 → 標記為出牌，等 button_up 觸發
-			if not _mobile_swipe_should_play:
-				_mobile_swipe_should_play = true
-				_update_drag_target_highlight(_mobile_swipe_selected_card if _mobile_swipe_selected_card != null else card, current_global)
-		else:
-			_mobile_swipe_should_play = false  # 手指縮回手牌區 → 取消出牌意圖
-			_clear_drag_target_highlight()
-			# 水平滑動：找最近的可打卡片並高亮
-			var nearest: Button = _find_nearest_card_at_x(current_global.x)
-			if nearest != null and nearest != _mobile_swipe_selected_button:
-				var nc: CardData = _hand_buttons_map.get(nearest, null) as CardData
-				if nc != null:
-					_mobile_set_selected_card(nc, nearest)
-		return
-
-	# Desktop drag-to-play
 	if not _card_drag_active:
 		if current_global.distance_to(_card_drag_start_global) >= CARD_DRAG_THRESHOLD:
 			_card_drag_active = true
@@ -4787,28 +4738,6 @@ func _is_position_outside_hand(global_pos: Vector2) -> bool:
 	var card_h: float = 200.0 if _battle_compact else 238.0
 	var visual_card_top: float = hand_row.global_position.y + hand_row.size.y - card_h - hand_row.hand_base_lift
 	return global_pos.y < visual_card_top + card_h * 0.35
-
-func _mobile_set_selected_card(card: CardData, button: Button) -> void:
-	_mobile_swipe_selected_card = card
-	_mobile_swipe_selected_button = button
-	_selected_hand_card = card
-	_selected_hand_button = button
-	if hand_row != null:
-		hand_row.set_selected_button(button)
-
-func _find_nearest_card_at_x(global_x: float) -> Button:
-	var best: Button = null
-	var best_dist: float = INF
-	for btn_v: Variant in _hand_buttons_map.keys():
-		var b: Button = btn_v as Button
-		if b == null or not is_instance_valid(b) or b.disabled:
-			continue
-		var center_x: float = b.global_position.x + b.size.x * 0.5
-		var dist: float = abs(center_x - global_x)
-		if dist < best_dist:
-			best_dist = dist
-			best = b
-	return best
 
 func _update_drag_target_highlight(card: CardData, global_pos: Vector2) -> void:
 	# Multi-Enemy：拖到敵人卡時，找最近的活敵 → 切 active + 該敵金光；其他敵 dim；無命中時 reset
@@ -4895,7 +4824,7 @@ func _show_card_preview(card: CardData) -> void:
 	stack.add_theme_constant_override("separation", 24)
 	stack.alignment = BoxContainer.ALIGNMENT_CENTER
 	center.add_child(stack)
-	var big: Button = _make_card_button(card, card.cost, Vector2(260, 360), true, true)
+	var big: Button = _make_card_button(card, card.cost, Vector2(230, 480), true, true)
 	big.disabled = true
 	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(big)
@@ -4907,13 +4836,13 @@ func _show_card_preview(card: CardData) -> void:
 		arrow.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
 		stack.add_child(arrow)
 		var upgraded: CardData = card.upgraded_copy()
-		var up_btn: Button = _make_card_button(upgraded, upgraded.cost, Vector2(260, 360), true, true)
+		var up_btn: Button = _make_card_button(upgraded, upgraded.cost, Vector2(230, 480), true, true)
 		up_btn.disabled = true
 		up_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		stack.add_child(up_btn)
 
 func _reward_card_button(card: CardData) -> Button:
-	return _make_card_button(card, card.cost, Vector2(230, 300), true, true)
+	return _make_card_button(card, card.cost, Vector2(192, 400), true, true)
 
 func _card_frame_texture_path(card_type: String) -> String:
 	match card_type:
@@ -4925,17 +4854,17 @@ func _card_frame_texture_path(card_type: String) -> String:
 			return "res://assets/ui/card_frame_attack.png"
 
 func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: bool, selectable: bool) -> Button:
-	var is_small: bool = size.y < 220.0
-	var title_font_size: int = 13 if is_small else 18
-	var cost_font_size: int = 18 if is_small else 24
-	var type_font_size: int = 10 if is_small else 11
-	var desc_font_size: int = 11 if is_small else 14
-	
-	var rules_margin_left: int = 12 if is_small else 18
-	var rules_margin_right: int = 12 if is_small else 18
-	var rules_margin_top: int = 12 if is_small else 18
-	var rules_margin_bottom: int = 8 if is_small else 14
-	var rules_separation: int = 4 if is_small else 7
+	# 全部用 anchor 百分比定位，元素位置 / 字體大小皆依卡片尺寸比例縮放。
+	# 卡套版面參考（百分比座標 vs 卡片整體大小）：
+	#   靈力圓 中心 ≈ (13%, 11%)
+	#   透明放卡圖區  y 11%~45%, x 14%~88%
+	#   標題裝飾帶    y 46%~54%
+	#   描述卷軸區    y 55%~92%
+	var title_font_size: int = int(clamp(size.y * 0.060, 12, 26))
+	var cost_font_size: int = int(clamp(size.y * 0.085, 18, 38))
+	var type_font_size: int = int(clamp(size.y * 0.035, 9, 16))
+	var desc_font_size: int = int(clamp(size.y * 0.042, 10, 18))
+	var outline_size: int = max(2, int(round(size.y * 0.012)))
 
 	var button: Button = Button.new()
 	button.text = ""
@@ -4944,52 +4873,17 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	button.clip_contents = true
 	_style_card_button(button, card, affordable)
 
-	var frame_layer_root: Control = Control.new()
-	frame_layer_root.name = "FrameLayer"
-	frame_layer_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	frame_layer_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	button.add_child(frame_layer_root)
-
-	var content_layer_root: Control = Control.new()
-	content_layer_root.name = "ContentLayer"
-	content_layer_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	content_layer_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	button.add_child(content_layer_root)
-
-	var outer: MarginContainer = MarginContainer.new()
-	outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	outer.add_theme_constant_override("margin_left", int(round(size.x * 0.09)))
-	outer.add_theme_constant_override("margin_top", int(round(size.y * 0.07)))
-	outer.add_theme_constant_override("margin_right", int(round(size.x * 0.09)))
-	outer.add_theme_constant_override("margin_bottom", int(round(size.y * 0.06)))
-	content_layer_root.add_child(outer)
-	var box: VBoxContainer = VBoxContainer.new()
-	box.add_theme_constant_override("separation", 0)
-	outer.add_child(box)
-	var art_frame: PanelContainer = PanelContainer.new()
-	# 只指定最小高度；寬度跟著 outer margin 計算過的 box 內寬走，避免硬寫 (size.x - 22)
-	# 超過 outer margin 真正留下的空間（2 * 11% = 22% > 22 像素）導致 art_frame 溢出右側
-	art_frame.custom_minimum_size = Vector2(0, 72.0 if is_small else max(88.0, size.y * 0.39))
-	art_frame.add_theme_stylebox_override("panel", UIFactory.style_box(Color(0, 0, 0, 0), Color(1, 1, 1, 0), 0, 6))
-	box.add_child(art_frame)
-	# Inside the art window we keep a local stack: art -> ornaments -> text.
-	var art_layer: Control = Control.new()
-	art_layer.name = "CardArtLayer"
-	art_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	art_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	art_frame.add_child(art_layer)
-	var art_ornament_layer: Control = Control.new()
-	art_ornament_layer.name = "CardOrnamentLayer"
-	art_ornament_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	art_ornament_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	art_frame.add_child(art_ornament_layer)
-	var art_text_layer: Control = Control.new()
-	art_text_layer.name = "CardTextLayer"
-	art_text_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	art_text_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	art_frame.add_child(art_text_layer)
+	# 1) 卡圖：略大於卡套透明圖窗，從 y 7%~48%、x 9%~92%
 	var art: TextureRect = TextureRect.new()
-	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art.name = "CardArt"
+	art.anchor_left = 0.09
+	art.anchor_top = 0.07
+	art.anchor_right = 0.92
+	art.anchor_bottom = 0.48
+	art.offset_left = 0
+	art.offset_top = 0
+	art.offset_right = 0
+	art.offset_bottom = 0
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -4998,9 +4892,11 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 		art.texture = texture
 	if not affordable or not selectable:
 		art.modulate = Color(0.72, 0.72, 0.72, 0.62)
-	art_layer.add_child(art)
+	button.add_child(art)
 
+	# 2) 卡套：蓋在卡圖上層，透明區會讓卡圖透出
 	var frame: TextureRect = TextureRect.new()
+	frame.name = "CardFrame"
 	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	frame.stretch_mode = TextureRect.STRETCH_SCALE
@@ -5008,61 +4904,69 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	frame.texture = UIFactory.load_texture(_card_frame_texture_path(card.card_type))
 	if not affordable or not selectable:
 		frame.modulate = Color(0.82, 0.82, 0.82, 0.78)
-	frame_layer_root.add_child(frame)
+	button.add_child(frame)
 
-	var top_overlay: Control = Control.new()
-	top_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	top_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content_layer_root.add_child(top_overlay)
-	var cost_badge: PanelContainer = PanelContainer.new()
-	cost_badge.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	var badge_size: float = 36.0 if is_small else 54.0
-	cost_badge.offset_left = 8.0 if is_small else 12.0
-	cost_badge.offset_top = 8.0 if is_small else 12.0
-	cost_badge.offset_right = cost_badge.offset_left + badge_size
-	cost_badge.offset_bottom = cost_badge.offset_top + badge_size
-	cost_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var cost_style: StyleBoxFlat = StyleBoxFlat.new()
-	cost_style.bg_color = Color(0, 0, 0, 0)
-	cost_style.border_color = Color(0, 0, 0, 0)
-	cost_badge.add_theme_stylebox_override("panel", cost_style)
-	top_overlay.add_child(cost_badge)
+	# 3) 靈力數字：對齊卡套左上圓圈中心 (13%, 11%)，label box 取 (3%~23%, 3%~19%) 以容納字
 	var cost_label: Label = UIFactory.card_label(str(cost), cost_font_size, Color("f7f0dc"), HORIZONTAL_ALIGNMENT_CENTER)
-	cost_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	cost_label.name = "CardCost"
+	cost_label.anchor_left = 0.03
+	cost_label.anchor_top = 0.03
+	cost_label.anchor_right = 0.23
+	cost_label.anchor_bottom = 0.19
+	cost_label.offset_left = 0
+	cost_label.offset_top = 0
+	cost_label.offset_right = 0
+	cost_label.offset_bottom = 0
 	cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cost_label.add_theme_color_override("font_outline_color", Color("1b150f", 0.9))
-	cost_label.add_theme_constant_override("outline_size", 2 if is_small else 3)
-	cost_badge.add_child(cost_label)
-	var name_wrap: MarginContainer = MarginContainer.new()
-	name_wrap.custom_minimum_size = Vector2(0, 28.0 if is_small else 40.0)
-	name_wrap.add_theme_constant_override("margin_left", 18 if is_small else 28)
-	name_wrap.add_theme_constant_override("margin_right", 18 if is_small else 28)
-	box.add_child(name_wrap)
+	cost_label.add_theme_constant_override("outline_size", outline_size)
+	cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(cost_label)
+
+	# 4) 卡名：對齊卡套標題帶 y 46%~54%
 	var title: Label = UIFactory.card_label(card.display_title(), title_font_size, Color("2e2318"), HORIZONTAL_ALIGNMENT_CENTER)
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.name = "CardTitle"
+	title.anchor_left = 0.12
+	title.anchor_top = 0.465
+	title.anchor_right = 0.88
+	title.anchor_bottom = 0.545
+	title.offset_left = 0
+	title.offset_top = 0
+	title.offset_right = 0
+	title.offset_bottom = 0
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_wrap.add_child(title)
-	var rules_panel: PanelContainer = PanelContainer.new()
-	rules_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	rules_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, 10))
-	box.add_child(rules_panel)
-	var rules_margin: MarginContainer = MarginContainer.new()
-	rules_margin.add_theme_constant_override("margin_left", rules_margin_left)
-	rules_margin.add_theme_constant_override("margin_top", rules_margin_top)
-	rules_margin.add_theme_constant_override("margin_right", rules_margin_right)
-	rules_margin.add_theme_constant_override("margin_bottom", rules_margin_bottom)
-	rules_panel.add_child(rules_margin)
+	title.clip_text = true
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(title)
+
+	# 5) 類型 + 描述：對齊卡套描述卷軸 y 56%~92%
+	var rules_container: Control = Control.new()
+	rules_container.name = "CardRules"
+	rules_container.anchor_left = 0.10
+	rules_container.anchor_top = 0.56
+	rules_container.anchor_right = 0.90
+	rules_container.anchor_bottom = 0.92
+	rules_container.offset_left = 0
+	rules_container.offset_top = 0
+	rules_container.offset_right = 0
+	rules_container.offset_bottom = 0
+	rules_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(rules_container)
 	var rules_box: VBoxContainer = VBoxContainer.new()
-	rules_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	rules_box.add_theme_constant_override("separation", rules_separation)
-	rules_margin.add_child(rules_box)
+	rules_box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	rules_box.add_theme_constant_override("separation", max(2, int(round(size.y * 0.015))))
+	rules_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rules_container.add_child(rules_box)
 	var type_line: Label = UIFactory.card_label(CardFormat.card_type_name(card.card_type), type_font_size, CardFormat.card_color(card.card_type, true).darkened(0.05), HORIZONTAL_ALIGNMENT_CENTER)
+	type_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rules_box.add_child(type_line)
 	var desc: Label = UIFactory.card_label(card.display_description(), desc_font_size, Color("2d2418"), HORIZONTAL_ALIGNMENT_LEFT)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	desc.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	desc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rules_box.add_child(desc)
+
 	UIFactory.ignore_child_mouse(button)
 	return button
 
