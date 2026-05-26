@@ -86,6 +86,7 @@ var title_bar_name_label: Label = null
 var title_bar_hp_bar: ProgressBar = null
 var title_bar_hp_label: Label = null
 var title_bar_gold_label: Label = null
+var title_bar_observe_label: Label = null
 var title_bar_relics_button: Button = null
 const TITLE_BAR_HEIGHT: float = 52.0
 
@@ -1462,7 +1463,55 @@ func _map_view_sts() -> Control:
 			node_buttons.append({"button": node_button, "row": row_index, "index": node_index})
 	call_deferred("_refresh_map_link_layer", line_layer, node_buttons)
 	call_deferred("_focus_map_row", scroll, _map_focus_anchor(total_rows, content_size), content_size)
+	if not compact_map:
+		map_panel.add_child(_build_map_legend())
 	return map_panel
+
+func _build_map_legend() -> Control:
+	var entries: Array = [
+		{"type": "battle",     "color": Color("e2c486"), "label": "戰鬥"},
+		{"type": "boss",       "color": Color("f8d29c"), "label": "Boss"},
+		{"type": "rest",       "color": Color("f4a13a"), "label": "休息"},
+		{"type": "event",      "color": Color("e2cdff"), "label": "奇遇"},
+		{"type": "shop",       "color": Color("e4c66a"), "label": "商店"},
+		{"type": "black_shop", "color": Color("e2a86b"), "label": "黑店"},
+	]
+	var panel: PanelContainer = PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_TOP_RIGHT, false)
+	panel.offset_left = -148
+	panel.offset_top = 12
+	panel.offset_right = -12
+	panel.offset_bottom = 12 + 22 + entries.size() * 30
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("1d2838", 0.62), Color("c8b46f", 0.45), 1, 8))
+	var vbox: VBoxContainer = VBoxContainer.new()
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_theme_constant_override("separation", 4)
+	panel.add_child(vbox)
+	var title: Label = Label.new()
+	title.text = "圖例"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_color_override("font_color", ThemeColors.HIGHLIGHT_GOLD)
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(title)
+	for entry: Dictionary in entries:
+		var row: HBoxContainer = HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var icon: MapNodeIcon = MapNodeIcon.new()
+		icon.custom_minimum_size = Vector2(26, 26)
+		icon.set_type(String(entry["type"]), entry["color"])
+		row.add_child(icon)
+		var label: Label = Label.new()
+		label.text = String(entry["label"])
+		label.add_theme_font_size_override("font_size", 13)
+		label.add_theme_color_override("font_color", ThemeColors.TEXT_LIGHT)
+		label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(label)
+		vbox.add_child(row)
+	return panel
 
 func _map_content_size(total_rows: int) -> Vector2:
 	return Vector2(1040, max(1180.0, 360.0 + float(total_rows) * 320.0))
@@ -1613,6 +1662,8 @@ func _style_map_node_button(button: Button, node_data: Dictionary, selected: boo
 		var node_type: String = String(node_data.get("type", "battle"))
 		icon.custom_minimum_size = Vector2(72, 72) if node_type == "boss" else Vector2(56, 56)
 		icon.position.y = max(0.0, icon.position.y - 8.0)
+		if icon.has_method("set_highlight"):
+			icon.call("set_highlight", selectable and not selected)
 	var label: Label = null
 	if button.has_meta("route_label"):
 		label = button.get_meta("route_label") as Label
@@ -1621,9 +1672,9 @@ func _style_map_node_button(button: Button, node_data: Dictionary, selected: boo
 		label.custom_minimum_size = Vector2(0, 0)
 		label.visible = false
 	if completed:
-		button.modulate = Color(0.82, 1.0, 0.86, 0.98)
+		button.modulate = Color(0.72, 0.92, 0.78, 0.55)
 	elif not selectable and not selected:
-		button.modulate = Color(0.64, 0.64, 0.64, 0.72)
+		button.modulate = Color(0.45, 0.45, 0.45, 0.42)
 	else:
 		button.modulate = Color.WHITE
 
@@ -2284,6 +2335,11 @@ func _build_title_bar() -> void:
 	title_bar_gold_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	hbox.add_child(title_bar_gold_label)
 
+	title_bar_observe_label = UIFactory.card_label("", 14, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_LEFT)
+	title_bar_observe_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	title_bar_observe_label.tooltip_text = "觀察次數：在奇遇中花 1 點揭露隱藏選項"
+	hbox.add_child(title_bar_observe_label)
+
 	var spacer: Control = Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2342,6 +2398,8 @@ func _refresh_title_bar() -> void:
 	title_bar_hp_bar.value = hp
 	title_bar_hp_label.text = "%d / %d" % [hp, max_hp_v]
 	title_bar_gold_label.text = "銅錢 %d" % run_state.gold
+	if title_bar_observe_label != null:
+		title_bar_observe_label.text = "觀察 %d" % run_state.observe_tokens
 	title_bar_relics_button.text = "遺物 (%d)" % run_state.relics.size()
 
 func _build_potion_overlay() -> void:
@@ -2768,6 +2826,9 @@ func _complete_battle_victory() -> void:
 	var dropped: RelicData = null
 	var was_boss: bool = Ascension.is_boss_id(battle.enemy.id)
 	if was_boss:
+		# Event Branching P5：boss 勝利補 1 個 observe token
+		run_state.grant_observe_tokens(RunState.OBSERVE_TOKEN_BOSS_REWARD)
+		battle.add_log("觀察次數 +%d。" % RunState.OBSERVE_TOKEN_BOSS_REWARD)
 		for a: RelicData in RelicCatalog.artifacts():
 			if a.boss_id == battle.enemy.id and not run_state.has_relic(a.id):
 				dropped = a.clone()
@@ -3058,6 +3119,12 @@ func resolve_rest_heal() -> void:
 	advance_non_battle_node()
 
 func show_event_node(sub_stage: String = "") -> void:
+	# Event Branching P2：若此 variant 有新版 tree schema，走 tree path（_show_event_tree_node）
+	# 否則 fallback 舊扁平 schema（原 sub_stage 分支邏輯）
+	var ed: Dictionary = EventData.for_variant(run_state.current_event_variant)
+	if EventRunner.has_tree(ed):
+		_show_event_tree_node(EventRunner.ROOT_ID if sub_stage.is_empty() else sub_stage)
+		return
 	# sub_stage 非空 = 從某個主選項進入的次階段（sub-menu）
 	# 渲染 sub_flavors[sub_stage] + sub_choices[sub_stage] 而非預設 flavor / choices
 	_set_event_background()
@@ -3157,6 +3224,148 @@ func show_event_node(sub_stage: String = "") -> void:
 				# 離開：不領任何獎勵或損失，直接過場
 				grid.add_child(_event_choice_button("離開", "繞道離去，不參與此事",
 					false, advance_non_battle_node))
+
+# ────────────────────────────────────────────────────────────────────
+# Event Branching Phase 2：tree path UI
+# ────────────────────────────────────────────────────────────────────
+#
+# 入口由 show_event_node() 在偵測 has_tree(event) 後 dispatch 進來。
+# 走 EventRunner.visible_choices 過濾顯示，葉節點 → _resolve_event_tree_outcome；
+# 非葉節點 → 重新 render 該 sub-node。
+#
+# observe-required 選項在點擊時消費 1 token；EventRunner.eval_requires 已過濾掉
+# 0 token 情形（按鈕直接不顯示）。
+func _show_event_tree_node(node_id: String) -> void:
+	_set_event_background()
+	_clear_root()
+	_show_title_bar()
+	var panel: PanelContainer = UIFactory.make_panel()
+	root.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 16)
+	panel.add_child(box)
+	var ed: Dictionary = EventData.for_variant(run_state.current_event_variant)
+	box.add_child(_title(String(ed["title"]), 32))
+	var node: Dictionary = EventRunner.get_node(ed, node_id)
+	if node.is_empty():
+		push_warning("event tree: missing node '%s' in variant '%s'" % [node_id, run_state.current_event_variant])
+		advance_non_battle_node()
+		return
+	# Prompt：root 用 character_flavors fallback 到 flavor；sub-node 用該 node.prompt
+	var prompt_text: String = String(node.get("prompt", ""))
+	if node_id == EventRunner.ROOT_ID:
+		var active_char_id: String = ""
+		if run_state.characters.size() > run_state.active_character_index:
+			active_char_id = run_state.characters[run_state.active_character_index].id
+		var flavor_text: String = EventData.flavor_for(ed, active_char_id)
+		if not flavor_text.is_empty():
+			prompt_text = flavor_text if prompt_text.is_empty() else (flavor_text + "\n\n" + prompt_text)
+	box.add_child(UIFactory.paragraph(prompt_text))
+	var ctx: Dictionary = _build_event_context()
+	var visible_choices: Array = EventRunner.visible_choices(node, ctx)
+	var grid: GridContainer = GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 16)
+	grid.add_theme_constant_override("v_separation", 14)
+	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(grid)
+	for choice_v: Variant in visible_choices:
+		var choice: Dictionary = choice_v as Dictionary
+		var label: String = String(choice.get("label", choice.get("id", "?")))
+		var kind: String = EventRunner.leaf_kind(choice)
+		var badge: Dictionary = EventRunner.badge_for_kind(kind)
+		var badge_text: String = String(badge.get("text", ""))
+		# 副標：徽章 + observe token 提示（若有）
+		var subtitle_parts: Array[String] = []
+		if not badge_text.is_empty():
+			subtitle_parts.append(badge_text)
+		var requires: Dictionary = choice.get("requires", {}) as Dictionary
+		if bool(requires.get("observe_token", false)):
+			subtitle_parts.append("（消耗 1 觀察）")
+		var subtitle: String = "　".join(subtitle_parts)
+		grid.add_child(_event_choice_button(label, subtitle, false,
+			func() -> void: _on_event_tree_choice_selected(choice)))
+
+func _build_event_context() -> Dictionary:
+	# 包裝 run_state 當下狀態給 EventRunner.eval_requires 用。
+	var active_char_id: String = ""
+	var d_size: int = 0
+	if run_state != null and run_state.characters.size() > run_state.active_character_index:
+		active_char_id = run_state.characters[run_state.active_character_index].id
+		d_size = (run_state.character_decks[run_state.active_character_index] as Array).size()
+	var relic_ids: Array = []
+	if run_state != null:
+		for r: RelicData in run_state.relics:
+			relic_ids.append(r.id)
+	return EventRunner.build_context(
+		active_char_id,
+		run_state.gold if run_state != null else 0,
+		run_state.power_bonus if run_state != null else 0,
+		run_state.observe_tokens if run_state != null else 0,
+		relic_ids,
+		d_size,
+	)
+
+func _on_event_tree_choice_selected(choice: Dictionary) -> void:
+	# 1. 消費 observe token（若 requires 有設）
+	var requires: Dictionary = choice.get("requires", {}) as Dictionary
+	if bool(requires.get("observe_token", false)):
+		if not run_state.consume_observe_token():
+			# UI 上選項本不該出現（eval_requires 已擋）；這裡是 safety net
+			push_warning("event tree: tried to spend observe token but none left")
+			return
+	# 2. 若有 next → 進入子節點；否則處理 outcome（葉節點）
+	if choice.has("next") and not EventRunner.is_leaf(choice):
+		_show_event_tree_node(String(choice["next"]))
+		return
+	if not EventRunner.is_leaf(choice):
+		push_warning("event tree: choice has neither next nor outcome: %s" % str(choice))
+		advance_non_battle_node()
+		return
+	_resolve_event_tree_outcome(choice["outcome"] as Dictionary)
+
+func _resolve_event_tree_outcome(outcome: Dictionary) -> void:
+	# 葉節點結算：依 kind 分派。
+	#   reward / punish / mixed / neutral: 跑 effects[] 後顯示 log + advance
+	#   gamble: 擲骰決定 win/lose effects，跑完後 advance
+	#   battle: 設 pending_event_return（P3 未落地前，直接跳 fight，log 警告）
+	var kind: String = String(outcome.get("kind", "neutral"))
+	var log_text: String = String(outcome.get("log", ""))
+	match kind:
+		"gamble":
+			var gamble: Dictionary = outcome.get("gamble", {}) as Dictionary
+			var win_chance: float = float(gamble.get("win_chance", 0.5))
+			var roll: float = randf()
+			var won: bool = roll < win_chance
+			var effects: Array = (gamble.get("win_effects", []) if won else gamble.get("lose_effects", [])) as Array
+			var summary: String = _resolve_observe_effects(effects)
+			var full_text: String = "%s\n\n[ %s ] %s" % [
+				log_text,
+				"🎲 賭運：" + ("成功" if won else "失敗"),
+				summary,
+			]
+			_show_event_outcome(full_text, advance_non_battle_node)
+		"battle":
+			# P3 戰鬥回流尚未實作 → 退化成 advance + log
+			push_warning("[event tree] battle outcome not yet wired (P3): %s" % str(outcome.get("battle", {})))
+			var b_text: String = "%s\n\n[ ⚔ 戰鬥 ] （戰鬥回流系統尚未實作，本次先跳過）" % log_text
+			_show_event_outcome(b_text, advance_non_battle_node)
+		_:
+			# reward / punish / mixed / neutral：直接跑 effects
+			var effects2: Array = outcome.get("effects", []) as Array
+			var summary2: String = _resolve_observe_effects(effects2)
+			var badge: Dictionary = EventRunner.badge_for_kind(kind)
+			var badge_text: String = String(badge.get("text", ""))
+			var full_text2: String = log_text
+			if not summary2.is_empty():
+				if badge_text.is_empty():
+					full_text2 += "\n\n[ %s ]" % summary2
+				else:
+					full_text2 += "\n\n[ %s ] %s" % [badge_text, summary2]
+			elif not badge_text.is_empty():
+				full_text2 += "\n\n[ %s ]" % badge_text
+			_show_event_outcome(full_text2, advance_non_battle_node)
 
 func _event_choice_passes_filter(event_data: Dictionary, choice_key: String, active_char_id: String) -> bool:
 	# 角色限定：choice_filters[key].if_character = [char_ids]
@@ -3276,9 +3485,101 @@ func _resolve_observe_effects(effects: Array) -> String:
 						var orig: CardData = d[pick] as CardData
 						d[pick] = orig.upgraded_copy()
 						parts.append("領悟「%s」更精妙的招式" % orig.display_name)
+			# ── Event Branching：新 effect kinds（P6 範疇，P2 為了讓 tree 能跑先補基本實作）──
+			"permanent_power":
+				run_state.power_bonus += amount
+				if amount > 0:
+					parts.append("永久攻擊 +%d" % amount)
+				elif amount < 0:
+					parts.append("永久攻擊 %d" % amount)
+			"next_battle_buff":
+				var sub_effects: Array = effect.get("effects", []) as Array
+				if not sub_effects.is_empty():
+					run_state.queue_next_battle_buff(sub_effects)
+					var labels: Array[String] = []
+					for se_v: Variant in sub_effects:
+						if not (se_v is Dictionary):
+							continue
+						labels.append(_describe_next_battle_buff(se_v as Dictionary))
+					if not labels.is_empty():
+						parts.append("下場戰鬥：" + "、".join(labels))
+			"gain_relic_pool":
+				var pool_key: String = String(effect.get("pool", "common"))
+				var picked: RelicData = _pick_random_relic_from_pool(pool_key)
+				if picked != null:
+					run_state.add_relic(picked)
+					parts.append("獲得「%s」" % picked.display_name)
+				else:
+					parts.append("（無新遺物可得）")
+			"gain_card_pool":
+				var pool_key2: String = String(effect.get("pool", "common"))
+				var added_card: CardData = _pick_random_card_from_pool(pool_key2)
+				if added_card != null:
+					var d2: Array = run_state.character_decks[run_state.active_character_index] as Array
+					d2.append(added_card)
+					parts.append("習得「%s」" % added_card.display_name)
+			"gain_curse":
+				# P4 curse 牌系統未落地前 stub
+				push_warning("[event tree] gain_curse not implemented (P4): %s" % str(effect.get("curse_id", "?")))
+				parts.append("（不祥之兆纏身……）")
+			"lose_card":
+				var d3: Array = run_state.character_decks[run_state.active_character_index] as Array
+				if d3.size() > 5:
+					var idx_to_remove: int = randi() % d3.size()
+					var lost: CardData = d3[idx_to_remove] as CardData
+					d3.remove_at(idx_to_remove)
+					if lost != null:
+						parts.append("失去「%s」" % lost.display_name)
+			"act_modifier":
+				push_warning("[event tree] act_modifier not implemented (P6): %s" % str(effect.get("id", "?")))
 	if parts.is_empty():
 		return ""
 	return "、".join(parts)
+
+func _describe_next_battle_buff(effect: Dictionary) -> String:
+	var kind: String = String(effect.get("kind", ""))
+	var amount: int = int(effect.get("amount", 0))
+	match kind:
+		"energy":
+			return "靈力 +%d" % amount
+		"block":
+			return "護體 +%d" % amount
+		"weak":
+			return "虛弱 +%d" % amount
+		"vulnerable":
+			return "破綻 +%d" % amount
+		"poison":
+			return "蠱毒 +%d" % amount
+		_:
+			return "%s %+d" % [kind, amount]
+
+func _pick_random_relic_from_pool(pool_key: String) -> RelicData:
+	# pool_key: "common" / "uncommon" / "rare" → RelicData.rarity 字串
+	var all_relics: Array[RelicData] = RelicCatalog.all()
+	var candidates: Array[RelicData] = []
+	for r: RelicData in all_relics:
+		if run_state.has_relic(r.id):
+			continue
+		if r.slot != "general":
+			continue
+		if r.rarity == pool_key:
+			candidates.append(r)
+	if candidates.is_empty():
+		return null
+	return candidates[randi() % candidates.size()].clone()
+
+func _pick_random_card_from_pool(pool_key: String) -> CardData:
+	# MVP：用 active 角色 reward_pool。pool_key 影響將留給 P6 完整實作。
+	if run_state == null or run_state.characters.is_empty():
+		return null
+	var char_idx: int = run_state.active_character_index
+	if char_idx >= run_state.characters.size():
+		return null
+	var pool: Array[CardData] = run_state.characters[char_idx].reward_pool
+	if pool.is_empty():
+		return null
+	var _unused: String = pool_key
+	return (pool[randi() % pool.size()] as CardData).clone()
 
 func _start_event_fight() -> void:
 	var outcome_text: String = _get_event_outcome(
