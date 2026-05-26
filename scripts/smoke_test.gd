@@ -136,6 +136,11 @@ func _initialize() -> void:
 	_test_event_runner_node_navigation()
 	_test_event_runner_leaf_detection()
 	_test_event_runner_legacy_fallback()
+	# Phase 5：observe token + next_battle_buff 持久化
+	_test_observe_token_init_and_consume(characters)
+	_test_observe_token_save_roundtrip(characters)
+	_test_observe_token_old_save_compat(characters)
+	_test_next_battle_buff_queue_roundtrip(characters)
 	print("SwordCard smoke test passed.")
 	quit(0)
 
@@ -1583,3 +1588,62 @@ func _test_event_runner_legacy_fallback() -> void:
 	assert(EventRunner.eval_requires({"has_relic": "nuwa_shi"}, {"relic_ids": ["nuwa_shi", "other"]}))
 	assert(not EventRunner.eval_requires({"has_relic": "nuwa_shi"}, {"relic_ids": ["other"]}))
 	assert(EventRunner.eval_requires({"has_relic": ["a", "b"]}, {"relic_ids": ["b"]}))
+
+# ──────────────────────────────────────────────────────────────────────
+# Event Branching Phase 5：observe_tokens + next_battle_buffs 資料層
+# ──────────────────────────────────────────────────────────────────────
+
+func _test_observe_token_init_and_consume(characters: Array[CharacterData]) -> void:
+	var state: RunState = RunState.new()
+	state.init_for(characters[0])
+	assert(state.observe_tokens == RunState.OBSERVE_TOKEN_START,
+		"fresh run should start with %d observe tokens, got %d" % [RunState.OBSERVE_TOKEN_START, state.observe_tokens])
+	# 消費 N 次直到 0；之後再消費應失敗
+	for i: int in range(RunState.OBSERVE_TOKEN_START):
+		assert(state.consume_observe_token(), "consume should succeed while tokens > 0 (i=%d)" % i)
+	assert(state.observe_tokens == 0)
+	assert(not state.consume_observe_token(), "consume should fail at 0 tokens")
+	# grant 補回
+	state.grant_observe_tokens(2)
+	assert(state.observe_tokens == 2, "grant +2 should bring tokens to 2, got %d" % state.observe_tokens)
+
+func _test_observe_token_save_roundtrip(characters: Array[CharacterData]) -> void:
+	var state: RunState = RunState.new()
+	state.init_for(characters[0])
+	state.observe_tokens = 5
+	var data: Dictionary = state.to_dict()
+	assert(data.has("observe_tokens"))
+	assert(int(data["observe_tokens"]) == 5)
+	var restored: RunState = RunState.new()
+	var ok: bool = restored.from_dict(data, characters)
+	assert(ok)
+	assert(restored.observe_tokens == 5, "round-trip should preserve observe_tokens; got %d" % restored.observe_tokens)
+
+func _test_observe_token_old_save_compat(characters: Array[CharacterData]) -> void:
+	# 舊存檔無 observe_tokens 欄位 → fallback 起始值
+	var state: RunState = RunState.new()
+	state.init_for(characters[0])
+	var data: Dictionary = state.to_dict()
+	data.erase("observe_tokens")
+	data.erase("next_battle_buffs")
+	var restored: RunState = RunState.new()
+	var ok: bool = restored.from_dict(data, characters)
+	assert(ok, "old save should still load")
+	assert(restored.observe_tokens == RunState.OBSERVE_TOKEN_START,
+		"old save should fallback to %d tokens, got %d" % [RunState.OBSERVE_TOKEN_START, restored.observe_tokens])
+	assert(restored.next_battle_buffs.is_empty())
+
+func _test_next_battle_buff_queue_roundtrip(characters: Array[CharacterData]) -> void:
+	var state: RunState = RunState.new()
+	state.init_for(characters[0])
+	state.queue_next_battle_buff([{"kind": "energy", "amount": 1}, {"kind": "block", "amount": 5}])
+	assert(state.next_battle_buffs.size() == 2)
+	# round-trip
+	var data: Dictionary = state.to_dict()
+	var restored: RunState = RunState.new()
+	assert(restored.from_dict(data, characters))
+	assert(restored.next_battle_buffs.size() == 2, "round-trip should preserve next_battle_buffs size")
+	# consume 清空
+	var consumed: Array[Dictionary] = restored.consume_next_battle_buffs()
+	assert(consumed.size() == 2)
+	assert(restored.next_battle_buffs.is_empty(), "after consume, queue should be empty")
