@@ -36,6 +36,13 @@ func set_drag_locked(locked: bool, exempt_button: Button = null) -> void:
 			var hovered_btn: Button = _card_buttons[_hovered_index]
 			if hovered_btn != exempt_button:
 				_force_unhover(_hovered_index)
+		# 被拖的那張：殺掉 hover tween，避免抬升動畫和 drag 寫位置打架（Android 上快速 tap→drag 會閃爍）
+		if exempt_button != null:
+			var exempt_idx: int = _card_buttons.find(exempt_button)
+			if exempt_idx >= 0:
+				_kill_hover_tween(exempt_idx)
+				if _hovered_index == exempt_idx:
+					_hovered_index = -1
 		for btn: Button in _card_buttons:
 			if btn != exempt_button and is_instance_valid(btn):
 				btn.mouse_filter = Control.MOUSE_FILTER_IGNORE

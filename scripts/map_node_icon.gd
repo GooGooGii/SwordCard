@@ -1,9 +1,14 @@
 class_name MapNodeIcon
 extends Control
 
+const COMPLETED_BRUSH_RING_TEXTURE: Texture2D = preload("res://assets/ui/map_node_completed_brush_ring.svg")
+const COMPLETED_BRUSH_RING_TINT: Color = Color("1b2731", 0.94)
+
 var node_type: String = "battle"
 var icon_color: Color = ThemeColors.ACCENT_GOLD
 var icon_texture: Texture2D
+var highlighted: bool = false
+var state_mode: String = "locked"
 
 func _ready() -> void:
 	if custom_minimum_size == Vector2.ZERO:
@@ -16,14 +21,48 @@ func set_type(type: String, color: Color = ThemeColors.ACCENT_GOLD) -> void:
 	icon_texture = _load_node_texture(type)
 	queue_redraw()
 
+func set_highlight(value: bool) -> void:
+	if highlighted == value:
+		return
+	highlighted = value
+	queue_redraw()
+
+func set_visual_state(value: String) -> void:
+	if state_mode == value:
+		return
+	state_mode = value
+	queue_redraw()
+
 func _draw() -> void:
+	var s: float = min(size.x, size.y)
+	var c: Vector2 = size / 2.0
+	var base_fill: Color = _base_fill_color()
+	var base_ring: Color = _base_ring_color()
+	var core_radius: float = s * 0.34
+	var ring_radius: float = s * 0.43
+	if state_mode == "completed":
+		_draw_completed_brush_ring(c, s)
+	if state_mode == "selectable" or highlighted:
+		draw_circle(c, ring_radius + 6.0, Color("f5d27a", 0.12))
+		draw_circle(c, ring_radius + 1.5, Color("f7df9c", 0.16))
+	if state_mode == "selected":
+		draw_circle(c, ring_radius + 8.0, Color("f5d27a", 0.22))
+		draw_arc(c, ring_radius + 3.0, 0.0, TAU, 64, Color("ffe6a0", 0.95), 3.2, true)
+	if highlighted:
+		draw_arc(c, ring_radius + 0.5, 0.0, TAU, 48, Color("f8d878", 0.7), 1.8, true)
+	if state_mode == "completed":
+		draw_circle(c, core_radius + 4.0, Color("14202b", 0.10))
+	else:
+		draw_circle(c, ring_radius, Color("16202b", 0.52))
+		draw_circle(c, core_radius + 7.0, base_fill.darkened(0.45))
+		draw_circle(c, core_radius + 3.0, base_fill)
+		draw_arc(c, ring_radius, 0.0, TAU, 64, base_ring, 2.6, true)
+		draw_arc(c, core_radius + 3.0, 0.0, TAU, 48, Color.WHITE.lerp(base_ring, 0.72), 1.2, true)
 	if icon_texture != null:
-		var draw_size: Vector2 = Vector2.ONE * min(size.x, size.y)
+		var draw_size: Vector2 = Vector2.ONE * (s * (0.64 if state_mode == "completed" else 0.72))
 		var draw_pos: Vector2 = (size - draw_size) * 0.5
 		draw_texture_rect(icon_texture, Rect2(draw_pos, draw_size), false)
 		return
-	var s: float = min(size.x, size.y)
-	var c: Vector2 = size / 2.0
 	match node_type:
 		"battle":
 			_draw_swords(c, s)
@@ -43,6 +82,48 @@ func _load_node_texture(type: String) -> Texture2D:
 	if ResourceLoader.exists(texture_path):
 		return load(texture_path) as Texture2D
 	return null
+
+func _base_fill_color() -> Color:
+	match state_mode:
+		"selected":
+			return Color("f0dfb2")
+		"selectable":
+			return Color("e4d3a4")
+		"completed":
+			return Color("96b79f")
+		"locked":
+			return Color("48525d")
+		_:
+			return Color("cfbe90")
+
+func _base_ring_color() -> Color:
+	match state_mode:
+		"selected":
+			return Color("f7df9c")
+		"selectable":
+			return Color("efe2b7")
+		"completed":
+			return Color("bfe5c4")
+		"locked":
+			return Color("6d7882", 0.7)
+		_:
+			return Color("c8b46f")
+
+func _draw_completed_brush_ring(c: Vector2, s: float) -> void:
+	if COMPLETED_BRUSH_RING_TEXTURE == null:
+		return
+	var ring_size: float = s * 1.42
+	var ring_rect: Rect2 = Rect2(
+		c - Vector2(ring_size * 0.5, ring_size * 0.5) + Vector2(-1.5, 2.0),
+		Vector2.ONE * ring_size
+	)
+	var texture_size: Vector2 = COMPLETED_BRUSH_RING_TEXTURE.get_size()
+	draw_texture_rect_region(
+		COMPLETED_BRUSH_RING_TEXTURE,
+		ring_rect,
+		Rect2(Vector2.ZERO, texture_size),
+		COMPLETED_BRUSH_RING_TINT
+	)
 
 func _draw_swords(c: Vector2, s: float) -> void:
 	var r: float = s * 0.36

@@ -89,6 +89,7 @@ var title_bar_hp_label: Label = null
 var title_bar_gold_label: Label = null
 var title_bar_observe_label: Label = null
 var title_bar_relics_button: Button = null
+var map_legend_panel: Control = null
 const TITLE_BAR_HEIGHT: float = 52.0
 
 var _temporary_player_pose: String = ""
@@ -480,6 +481,9 @@ func _clear_root() -> void:
 	animating_cards.clear()
 	for child: Node in root.get_children():
 		child.queue_free()
+	if map_legend_panel != null and is_instance_valid(map_legend_panel):
+		map_legend_panel.queue_free()
+		map_legend_panel = null
 	if _potion_overlay != null:
 		_potion_overlay.visible = true
 		_refresh_potion_overlay_buttons()
@@ -1383,10 +1387,18 @@ func _build_streamlined_progress_screen(compact_map: bool) -> void:
 	var map_panel: Control = _map_view_sts()
 	map_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(map_panel)
+	if map_legend_panel != null and is_instance_valid(map_legend_panel):
+		map_legend_panel.queue_free()
+		map_legend_panel = null
+	print("[LEGEND] compact_map=%s viewport=%s" % [compact_map, get_viewport_rect().size])
 	if not compact_map:
-		var legend: Control = _build_map_legend()
-		legend.z_index = 220
-		layer.add_child(legend)
+		map_legend_panel = _build_map_legend()
+		map_legend_panel.z_index = 220
+		add_child(map_legend_panel)
+		var top_offset: float = 8.0 + TITLE_BAR_HEIGHT + 16.0
+		map_legend_panel.offset_top = top_offset
+		map_legend_panel.offset_bottom = top_offset + map_legend_panel.custom_minimum_size.y
+		print("[LEGEND] built panel size=%s rect=%s parent=%s" % [map_legend_panel.custom_minimum_size, map_legend_panel.get_rect(), map_legend_panel.get_parent()])
 	
 	# 在地圖上方顯示當前幕名稱，例如「第一幕 餘杭山間」
 	var act_label: Label = Label.new()
@@ -1742,7 +1754,7 @@ func _style_map_node_button(button: Button, node_data: Dictionary, selected: boo
 		label.custom_minimum_size = Vector2(0, 0)
 		label.visible = false
 	if completed:
-		button.modulate = Color(0.72, 0.92, 0.78, 0.55)
+		button.modulate = Color(0.92, 0.94, 0.95, 0.88)
 	elif not selectable and not selected:
 		button.modulate = Color(0.62, 0.64, 0.68, 0.40)
 	else:
