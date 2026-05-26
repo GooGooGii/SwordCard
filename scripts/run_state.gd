@@ -35,6 +35,11 @@ var map_seed: int = 0
 # 戰鬥 start_turn 時消費並清空。儲存格式：[{kind:"energy",amount:1}, {kind:"block",amount:5}, ...]
 var observe_tokens: int = 3
 var next_battle_buffs: Array[Dictionary] = []
+# pending_event_return：若非空表示當前進行的戰鬥是事件樹觸發的，戰鬥結束時要
+# 結算 victory_effects / defeat_effects 並回地圖，而非走標準 victory 流程。
+# 結構：{victory_effects: Array, defeat_effects: Array}
+# 不存檔（戰鬥中途離開不保留 in-flight 事件戰鬥）
+var pending_event_return: Dictionary = {}
 
 const MAX_POTION_SLOTS: int = 3
 const OBSERVE_TOKEN_START: int = 3
@@ -138,6 +143,7 @@ func init_for(chars: Variant) -> void:
 	potions.clear()
 	observe_tokens = OBSERVE_TOKEN_START
 	next_battle_buffs.clear()
+	pending_event_return = {}
 	# 每人各拿自己的 starter weapon
 	for c: CharacterData in party:
 		var weapons: Array[RelicData] = RelicCatalog.weapons_for_character(c.id)

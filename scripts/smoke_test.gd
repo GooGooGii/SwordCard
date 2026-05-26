@@ -141,6 +141,9 @@ func _initialize() -> void:
 	_test_observe_token_save_roundtrip(characters)
 	_test_observe_token_old_save_compat(characters)
 	_test_next_battle_buff_queue_roundtrip(characters)
+	# Phase 3：戰鬥回流（pending_event_return）
+	_test_pending_event_return_init(characters)
+	_test_pending_event_return_not_persisted(characters)
 	print("SwordCard smoke test passed.")
 	quit(0)
 
@@ -1647,3 +1650,33 @@ func _test_next_battle_buff_queue_roundtrip(characters: Array[CharacterData]) ->
 	var consumed: Array[Dictionary] = restored.consume_next_battle_buffs()
 	assert(consumed.size() == 2)
 	assert(restored.next_battle_buffs.is_empty(), "after consume, queue should be empty")
+
+func _test_pending_event_return_init(characters: Array[CharacterData]) -> void:
+	# 新 run 不應有 pending_event_return
+	var state: RunState = RunState.new()
+	state.init_for(characters[0])
+	assert(state.pending_event_return.is_empty(), "fresh run should have empty pending_event_return")
+	# 設值後應能讀回
+	state.pending_event_return = {
+		"victory_effects": [{"kind": "gold", "amount": 20}],
+		"defeat_effects": [{"kind": "damage", "amount": 10}],
+	}
+	assert(state.pending_event_return.has("victory_effects"))
+	assert((state.pending_event_return["victory_effects"] as Array).size() == 1)
+
+func _test_pending_event_return_not_persisted(characters: Array[CharacterData]) -> void:
+	# pending_event_return 不存檔（in-flight 戰鬥不該跨 save 保留）
+	var state: RunState = RunState.new()
+	state.init_for(characters[0])
+	state.pending_event_return = {
+		"victory_effects": [{"kind": "gold", "amount": 20}],
+		"defeat_effects": [],
+	}
+	var data: Dictionary = state.to_dict()
+	assert(not data.has("pending_event_return"),
+		"pending_event_return should not be persisted (in-flight only)")
+	# 載回後也是空（不存在欄位 → 物件初始化時是 {}）
+	var restored: RunState = RunState.new()
+	assert(restored.from_dict(data, characters))
+	assert(restored.pending_event_return.is_empty(),
+		"restored RunState should have empty pending_event_return")

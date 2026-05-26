@@ -140,7 +140,8 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if pause_button == null:
 		return
-	var should_show: bool = run_state != null and run_state.character != null
+	var title_bar_visible: bool = title_bar != null and title_bar.visible
+	var should_show: bool = run_state != null and run_state.character != null and not title_bar_visible
 	if pause_button.visible != should_show:
 		pause_button.visible = should_show
 
@@ -2302,7 +2303,7 @@ func _build_title_bar() -> void:
 	title_bar.set_anchors_preset(Control.PRESET_TOP_WIDE, false)
 	title_bar.offset_left = 12
 	title_bar.offset_top = 8
-	title_bar.offset_right = -PAUSE_BUTTON_SIZE.x - 20
+	title_bar.offset_right = -12
 	title_bar.offset_bottom = 8 + TITLE_BAR_HEIGHT
 	title_bar.visible = false
 	title_bar.z_index = 50
@@ -2349,6 +2350,12 @@ func _build_title_bar() -> void:
 	hbox.add_child(title_bar_relics_button)
 	hbox.add_child(_title_bar_button("查看牌組", func() -> void: show_deck_view()))
 	hbox.add_child(_title_bar_button("查看地圖", _show_map_overview_popup))
+
+	var gear: Button = _title_bar_button("⚙", _toggle_pause_menu)
+	gear.custom_minimum_size = Vector2(36, 30)
+	gear.add_theme_font_size_override("font_size", 18)
+	gear.tooltip_text = "暫停 / 設定"
+	hbox.add_child(gear)
 
 func _title_bar_button(text: String, action: Callable) -> Button:
 	var btn: Button = Button.new()
@@ -2770,6 +2777,10 @@ func _check_battle_end() -> bool:
 		_complete_battle_victory()
 		return true
 	if battle.is_defeat():
+		# Event Branching P3：tree-triggered battle 不直接 game over
+		if not run_state.pending_event_return.is_empty():
+			_finish_event_tree_battle(false)
+			return true
 		show_result(false)
 		return true
 	return false
@@ -2786,6 +2797,10 @@ func _finish_battle_after_delay() -> bool:
 		_complete_battle_victory()
 		return true
 	if battle.is_defeat():
+		# Event Branching P3：tree-triggered battle 不直接 game over
+		if not run_state.pending_event_return.is_empty():
+			_finish_event_tree_battle(false)
+			return true
 		show_result(false)
 		return true
 	return false
@@ -2798,6 +2813,10 @@ func _set_battle_input_enabled(enabled: bool) -> void:
 			button.disabled = not enabled
 
 func _complete_battle_victory() -> void:
+	# Event Branching P3：tree-triggered battle → 走簡化勝利流程，跑 victory_effects 後回地圖
+	if not run_state.pending_event_return.is_empty():
+		_finish_event_tree_battle(true)
+		return
 	if _event_battle_on_win.is_valid():
 		var cb: Callable = _event_battle_on_win
 		_event_battle_on_win = Callable()
@@ -3347,10 +3366,18 @@ func _resolve_event_tree_outcome(outcome: Dictionary) -> void:
 			]
 			_show_event_outcome(full_text, advance_non_battle_node)
 		"battle":
-			# P3 戰鬥回流尚未實作 → 退化成 advance + log
-			push_warning("[event tree] battle outcome not yet wired (P3): %s" % str(outcome.get("battle", {})))
-			var b_text: String = "%s\n\n[ ⚔ 戰鬥 ] （戰鬥回流系統尚未實作，本次先跳過）" % log_text
-			_show_event_outcome(b_text, advance_non_battle_node)
+			# Phase 3：開戰、勝利跑 victory_effects、戰敗跑 defeat_effects 後回地圖
+			var battle_dict: Dictionary = outcome.get("battle", {}) as Dictionary
+			var enemy_id: String = String(battle_dict.get("enemy_id", ""))
+			var hp_mult: float = float(battle_dict.get("enemy_hp_mult", 1.0))
+			var v_effects: Array = battle_dict.get("victory_effects", []) as Array
+			var d_effects: Array = battle_dict.get("defeat_effects", []) as Array
+			# 先閃一張過場顯示玩家的選擇文字，再開戰
+			if log_text.is_empty():
+				start_event_tree_battle(enemy_id, hp_mult, v_effects, d_effects)
+			else:
+				_show_event_outcome(log_text, func() -> void:
+					start_event_tree_battle(enemy_id, hp_mult, v_effects, d_effects))
 		_:
 			# reward / punish / mixed / neutral：直接跑 effects
 			var effects2: Array = outcome.get("effects", []) as Array
@@ -3580,6 +3607,70 @@ func _pick_random_card_from_pool(pool_key: String) -> CardData:
 		return null
 	var _unused: String = pool_key
 	return (pool[randi() % pool.size()] as CardData).clone()
+
+# ─────────────────────────────────────────────────────────────
+# Event Branching Phase 3：戰鬥回流（tree 葉節點 kind="battle" 路徑）
+# ─────────────────────────────────────────────────────────────
+# 流程：
+#   1. _resolve_event_tree_outcome 看到 outcome.kind == "battle" → 呼叫 start_event_tree_battle
+#   2. start_event_tree_battle 設 run_state.pending_event_return + 開戰
+#   3. 戰鬥結束（_complete_battle_victory / _check_battle_end / _finish_battle_after_delay）
+#      偵測到 pending_event_return 非空 → 走 _finish_event_tree_battle 而非標準流程
+#   4. _finish_event_tree_battle：勝利跑 victory_effects、戰敗 revive party + 跑 defeat_effects
+#      （若 defeat_effects 跑完仍全員 0 HP → 真正 game over；否則 advance）
+
+func start_event_tree_battle(enemy_id: String, hp_mult: float, victory_effects: Array, defeat_effects: Array) -> void:
+	var template: EnemyData = GameData.enemy_by_id(enemy_id)
+	if template == null:
+		push_warning("event tree battle: unknown enemy id '%s' — running defeat_effects as fallback" % enemy_id)
+		# 不開戰，直接跑 defeat_effects 當作 fallback
+		var summary: String = _resolve_observe_effects(defeat_effects)
+		var fallback_text: String = "（戰鬥未能展開，敵人 '%s' 不存在）\n\n%s" % [enemy_id, summary]
+		_show_event_outcome(fallback_text, advance_non_battle_node)
+		return
+	var clone: EnemyData = template.clone()
+	if hp_mult > 0.0 and not is_equal_approx(hp_mult, 1.0):
+		clone.max_hp = max(1, int(round(float(clone.max_hp) * hp_mult)))
+	run_state.pending_event_return = {
+		"victory_effects": victory_effects.duplicate(),
+		"defeat_effects": defeat_effects.duplicate(),
+	}
+	start_next_battle(clone)
+
+func _finish_event_tree_battle(victory: bool) -> void:
+	# 取出並清空 pending（避免之後的戰鬥結束又跑一次）
+	var pending: Dictionary = run_state.pending_event_return
+	run_state.pending_event_return = {}
+	# 共同：把戰鬥內 HP / status 寫回 run_state（複用 complete_victory 的同步邏輯）
+	if battle != null:
+		# 把每個角色的 HP 從 battle.state 同步回 run_state（即使戰敗也要同步）
+		var players: Array = battle.state.get("players", []) as Array
+		for i: int in range(min(players.size(), run_state.character_hps.size())):
+			var p: Dictionary = players[i] as Dictionary
+			run_state.character_hps[i] = max(0, int(p.get("hp", 0)))
+	if victory:
+		Bestiary.mark_defeated(battle.enemy.id)
+		var v_effects: Array = pending.get("victory_effects", []) as Array
+		var summary: String = _resolve_observe_effects(v_effects)
+		var text: String = "戰勝了 %s。\n\n[ ⚔ 戰鬥勝利 ]" % battle.enemy.display_name
+		if not summary.is_empty():
+			text += " " + summary
+		_show_event_outcome(text, advance_non_battle_node)
+		return
+	# 戰敗：先把全隊 HP 抬到 1（不直接 game over），再跑 defeat_effects
+	for i: int in range(run_state.character_hps.size()):
+		if run_state.character_hps[i] <= 0:
+			run_state.character_hps[i] = 1
+	var d_effects: Array = pending.get("defeat_effects", []) as Array
+	var d_summary: String = _resolve_observe_effects(d_effects)
+	# 若 defeat_effects 自身造成全滅，才是真正的 game over
+	if run_state.is_all_dead():
+		show_result(false)
+		return
+	var d_text: String = "敗給了 %s。\n\n[ ⚔ 戰鬥失敗 ]" % battle.enemy.display_name
+	if not d_summary.is_empty():
+		d_text += " " + d_summary
+	_show_event_outcome(d_text, advance_non_battle_node)
 
 func _start_event_fight() -> void:
 	var outcome_text: String = _get_event_outcome(
