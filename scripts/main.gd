@@ -481,9 +481,7 @@ func _clear_root() -> void:
 	animating_cards.clear()
 	for child: Node in root.get_children():
 		child.queue_free()
-	if map_legend_panel != null and is_instance_valid(map_legend_panel):
-		map_legend_panel.queue_free()
-		map_legend_panel = null
+	_clear_map_legend()
 	if _potion_overlay != null:
 		_potion_overlay.visible = true
 		_refresh_potion_overlay_buttons()
@@ -1387,18 +1385,16 @@ func _build_streamlined_progress_screen(compact_map: bool) -> void:
 	var map_panel: Control = _map_view_sts()
 	map_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(map_panel)
-	if map_legend_panel != null and is_instance_valid(map_legend_panel):
-		map_legend_panel.queue_free()
-		map_legend_panel = null
-	print("[LEGEND] compact_map=%s viewport=%s" % [compact_map, get_viewport_rect().size])
-	if not compact_map:
-		map_legend_panel = _build_map_legend()
-		map_legend_panel.z_index = 220
-		add_child(map_legend_panel)
-		var top_offset: float = 8.0 + TITLE_BAR_HEIGHT + 16.0
-		map_legend_panel.offset_top = top_offset
-		map_legend_panel.offset_bottom = top_offset + map_legend_panel.custom_minimum_size.y
-		print("[LEGEND] built panel size=%s rect=%s parent=%s" % [map_legend_panel.custom_minimum_size, map_legend_panel.get_rect(), map_legend_panel.get_parent()])
+	_clear_map_legend()
+	var legend_layer: CanvasLayer = CanvasLayer.new()
+	legend_layer.layer = 5
+	legend_layer.name = "MapLegendLayer"
+	add_child(legend_layer)
+	map_legend_panel = _build_map_legend(compact_map)
+	legend_layer.add_child(map_legend_panel)
+	var top_offset: float = 8.0 + TITLE_BAR_HEIGHT + (8.0 if compact_map else 16.0)
+	map_legend_panel.offset_top = top_offset
+	map_legend_panel.offset_bottom = top_offset + map_legend_panel.custom_minimum_size.y
 	
 	# 在地圖上方顯示當前幕名稱，例如「第一幕 餘杭山間」
 	var act_label: Label = Label.new()
@@ -1495,7 +1491,16 @@ func _map_view_sts() -> Control:
 	call_deferred("_focus_map_row", scroll, _map_focus_anchor(total_rows, content_size), content_size)
 	return map_panel
 
-func _build_map_legend() -> Control:
+func _clear_map_legend() -> void:
+	if map_legend_panel != null and is_instance_valid(map_legend_panel):
+		var legend_parent: Node = map_legend_panel.get_parent()
+		if legend_parent is CanvasLayer:
+			legend_parent.queue_free()
+		else:
+			map_legend_panel.queue_free()
+	map_legend_panel = null
+
+func _build_map_legend(compact: bool = false) -> Control:
 	var entries: Array = [
 		{"type": "battle",     "color": Color("e2c486"), "label": "戰鬥"},
 		{"type": "boss",       "color": Color("f8d29c"), "label": "Boss"},
@@ -1504,8 +1509,9 @@ func _build_map_legend() -> Control:
 		{"type": "shop",       "color": Color("e4c66a"), "label": "商店"},
 		{"type": "black_shop", "color": Color("e2a86b"), "label": "黑店"},
 	]
-	var legend_width: float = 164.0
-	var legend_height: float = 28.0 + entries.size() * 32.0
+	var legend_width: float = 132.0 if compact else 164.0
+	var row_h: float = 26.0 if compact else 32.0
+	var legend_height: float = (22.0 if compact else 28.0) + entries.size() * row_h
 	var panel: PanelContainer = PanelContainer.new()
 	panel.anchor_left = 1.0
 	panel.anchor_top = 0.0

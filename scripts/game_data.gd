@@ -86,8 +86,8 @@ static func _li_xiaoyao() -> CharacterData:
 		make_card("lxy_jiulong", "九龍訣", "李逍遙", 3, "attack", "御劍三式如九龍出海，造成 12 點傷害三次。", [{"kind": "damage", "amount": 12}, {"kind": "damage", "amount": 12}, {"kind": "damage", "amount": 12}], "rare"),
 		make_card("lxy_zuilong", "醉龍翻江", "李逍遙", 2, "attack", "造成 18 點傷害，自身承受 5 點反噬，抽 1 張牌。", [{"kind": "damage", "amount": 18}, {"kind": "self_damage", "amount": 5}, {"kind": "draw", "amount": 1}], "rare"),
 		# PAL1 初登場新增（art 暫借既有卡片，未來再補正式插圖）
-		make_card("lxy_qiliao", "氣療術", "李逍遙", 1, "skill", "回復 8 點生命。", [{"kind": "heal", "amount": 8}], "basic", "lxy_qingfeng"),
-		make_card("lxy_bingxin", "冰心訣", "李逍遙", 1, "skill", "清除自身全部負面狀態，獲得 3 點護體。", [{"kind": "cure_debuff"}, {"kind": "block", "amount": 3}], "basic", "lxy_xianfeng"),
+		make_card("lxy_qiliao", "氣療術", "李逍遙", 1, "skill", "回復 8 點生命。", [{"kind": "heal", "amount": 8}], "basic"),
+		make_card("lxy_bingxin", "冰心訣", "李逍遙", 1, "skill", "清除自身全部負面狀態，獲得 3 點護體。", [{"kind": "cure_debuff"}, {"kind": "block", "amount": 3}], "basic"),
 	]
 	var character: CharacterData = _character("li_xiaoyao", "李逍遙", 74, "劍仙風流，禦劍、偷取與酒神系高風險高傷害。", cards)
 	# PAL1 對齊：9 basic + 3 uncommon + 0 rare
@@ -126,10 +126,10 @@ static func _zhao_linger() -> CharacterData:
 		make_card("zl_lingxi", "靈息術", "趙靈兒", 1, "skill", "抽 2 張牌並回復 4 點生命。", [{"kind": "draw", "amount": 2}, {"kind": "heal", "amount": 4}], "uncommon"),
 		make_card("zl_shenlei", "神雷降世", "趙靈兒", 3, "attack", "天降神雷，造成 30 點傷害。", [{"kind": "damage", "amount": 30}], "rare"),
 		# PAL1 初登場新增（art 暫借既有卡片）
-		make_card("zl_jingang", "金剛咒", "趙靈兒", 1, "skill", "獲得 10 點護體（道家護身咒術）。", [{"kind": "block", "amount": 10}], "basic", "zl_lingguang"),
-		make_card("zl_bingzhou", "冰咒", "趙靈兒", 1, "attack", "初級冰系仙術，造成 6 點傷害並使敵人虛弱 1 層。", [{"kind": "damage", "amount": 6}, {"kind": "weak", "amount": 1}], "basic", "zl_xuanbing"),
-		make_card("zl_yanzhou", "炎咒", "趙靈兒", 1, "attack", "初級火系仙術，造成 8 點傷害並施加 1 層破綻。", [{"kind": "damage", "amount": 8}, {"kind": "vulnerable", "amount": 1}], "basic", "zl_shenlei"),
-		make_card("zl_bingxin", "冰心訣", "趙靈兒", 1, "skill", "清除自身全部負面狀態，獲得 3 點護體。", [{"kind": "cure_debuff"}, {"kind": "block", "amount": 3}], "basic", "zl_huanyu"),
+		make_card("zl_jingang", "金剛咒", "趙靈兒", 1, "skill", "獲得 10 點護體（道家護身咒術）。", [{"kind": "block", "amount": 10}], "basic"),
+		make_card("zl_bingzhou", "冰咒", "趙靈兒", 1, "attack", "初級冰系仙術，造成 6 點傷害並使敵人虛弱 1 層。", [{"kind": "damage", "amount": 6}, {"kind": "weak", "amount": 1}], "basic"),
+		make_card("zl_yanzhou", "炎咒", "趙靈兒", 1, "attack", "初級火系仙術，造成 8 點傷害並施加 1 層破綻。", [{"kind": "damage", "amount": 8}, {"kind": "vulnerable", "amount": 1}], "basic"),
+		make_card("zl_bingxin", "冰心訣", "趙靈兒", 1, "skill", "清除自身全部負面狀態，獲得 3 點護體。", [{"kind": "cure_debuff"}, {"kind": "block", "amount": 3}], "basic"),
 	]
 	var character: CharacterData = _character("zhao_linger", "趙靈兒", 68, "五靈仙術、治療、護盾、解狀態與長戰持續。", cards)
 	# PAL1 對齊：9 basic + 3 uncommon + 0 rare
@@ -169,7 +169,7 @@ static func _lin_yueru() -> CharacterData:
 		make_card("lyr_tianv", "飛花亂舞", "林月如", 1, "attack", "造成 4 點傷害，施加 1 層破綻，抽 1 張牌。", [{"kind": "damage", "amount": 4}, {"kind": "vulnerable", "amount": 1}, {"kind": "draw", "amount": 1}], "uncommon"),
 		make_card("lyr_tieyi", "鐵衣功", "林月如", 2, "skill", "獲得 18 點護體。", [{"kind": "block", "amount": 18}], "rare"),
 		# PAL1 初登場新增（她原作 Lv1 就會凝神歸元 HP 220 治療，是她的特色；art 暫借）
-		make_card("lyr_ningshen", "凝神歸元", "林月如", 1, "skill", "凝神運氣，回復 12 點生命。", [{"kind": "heal", "amount": 12}], "basic", "lyr_shenfa"),
+		make_card("lyr_ningshen", "凝神歸元", "林月如", 1, "skill", "凝神運氣，回復 12 點生命。", [{"kind": "heal", "amount": 12}], "basic"),
 	]
 	var character: CharacterData = _character("lin_yueru", "林月如", 72, "鞭劍武學、連擊、反擊與內勁治療。", cards)
 	# PAL1 對齊：10 basic + 2 uncommon + 0 rare
@@ -206,7 +206,7 @@ static func _anu() -> CharacterData:
 		make_card("anu_sanmao", "三毛蠱", "阿奴", 2, "skill", "施加 5 層蠱毒，使敵人虛弱 2 層。", [{"kind": "poison", "amount": 5}, {"kind": "weak", "amount": 2}], "uncommon"),
 		make_card("anu_gushen", "蠱神附體", "阿奴", 3, "power", "本場戰鬥傷害提升 3，施加 4 層蠱毒。", [{"kind": "power", "amount": 3}, {"kind": "poison", "amount": 4}], "rare"),
 		# PAL1 初登場新增（art 暫借既有卡片）
-		make_card("anu_guijiang", "鬼降", "阿奴", 1, "skill", "苗疆咒術，使敵人陷入瘋魔狀態（虛弱 3 層）。", [{"kind": "weak", "amount": 3}], "basic", "anu_mihun"),
+		make_card("anu_guijiang", "鬼降", "阿奴", 1, "skill", "苗疆咒術，使敵人陷入瘋魔狀態（虛弱 3 層）。", [{"kind": "weak", "amount": 3}], "basic"),
 	]
 	var character: CharacterData = _character("anu", "阿奴", 66, "蠱毒、咒術、削弱與長戰持續傷害。", cards)
 	# PAL1 對齊：10 basic + 2 uncommon + 0 rare
