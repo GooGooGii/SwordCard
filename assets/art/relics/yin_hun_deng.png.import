@@ -3,15 +3,19 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://co842aemws7ir"
-valid=false
+path="res://.godot/imported/yin_hun_deng.png-b738ecc5d4c02e30080fd1608566da33.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/yin_hun_deng.png"
+dest_files=["res://.godot/imported/yin_hun_deng.png-b738ecc5d4c02e30080fd1608566da33.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

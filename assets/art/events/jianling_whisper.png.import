@@ -2,16 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://evjianlingwhisper"
-valid=false
+uid="uid://bqxwjwqfeglw4"
+path="res://.godot/imported/jianling_whisper.png-48b158dbc32bfb911bc045ce68136a55.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/events/jianling_whisper.png"
+dest_files=["res://.godot/imported/jianling_whisper.png-48b158dbc32bfb911bc045ce68136a55.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

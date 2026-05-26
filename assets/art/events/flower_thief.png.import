@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/flower_thief.png-8109609652a2c4309b3ce3f75120
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

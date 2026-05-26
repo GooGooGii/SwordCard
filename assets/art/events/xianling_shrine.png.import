@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/xianling_shrine.png-2b16bde31cff5335ddc897fd6
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

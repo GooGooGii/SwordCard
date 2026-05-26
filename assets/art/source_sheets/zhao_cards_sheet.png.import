@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/zhao_cards_sheet.png-c687d31847c6c8559f64c976
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

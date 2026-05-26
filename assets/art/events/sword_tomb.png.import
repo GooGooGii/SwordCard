@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/sword_tomb.png-9fd9f7eab368f8109a621593c52dc8
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/moonlit_pool.png-6cbe27f12c569a0dd0c5562a2a70
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

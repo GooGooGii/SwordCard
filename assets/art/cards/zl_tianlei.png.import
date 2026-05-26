@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/zl_tianlei.png-1d961eb71ae391157ccd98b8413cbb
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/anu_baizu.png-c3e2b935231fbfa25259d8edc238c1f
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

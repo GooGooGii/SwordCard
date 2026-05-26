@@ -3,15 +3,19 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bjf7wpcbaw8l5"
-valid=false
+path="res://.godot/imported/zhao_hun_fan.png-007300b87f1766a880a0c9679efc3508.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/zhao_hun_fan.png"
+dest_files=["res://.godot/imported/zhao_hun_fan.png-007300b87f1766a880a0c9679efc3508.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

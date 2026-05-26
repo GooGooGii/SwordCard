@@ -3,15 +3,19 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c08h2ki2pcdgt"
-valid=false
+path="res://.godot/imported/baiyue_guard.png-9090868e156ef8a5165cde8321177fdf.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/enemies/baiyue_guard.png"
+dest_files=["res://.godot/imported/baiyue_guard.png-9090868e156ef8a5165cde8321177fdf.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

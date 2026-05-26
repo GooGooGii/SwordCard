@@ -3,15 +3,19 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://kev7cr718sou"
-valid=false
+path="res://.godot/imported/yu_qi_lin.png-f99ed883f1e5f4a00d129e43ece14605.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/yu_qi_lin.png"
+dest_files=["res://.godot/imported/yu_qi_lin.png-f99ed883f1e5f4a00d129e43ece14605.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/map_bg.png-442282478a79d3e5407c0d4dc1ce2113.c
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

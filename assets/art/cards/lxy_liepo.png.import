@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/lxy_liepo.png-7d8491be322319a703655f7acbca269
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

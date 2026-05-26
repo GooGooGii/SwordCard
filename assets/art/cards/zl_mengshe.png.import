@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/zl_mengshe.png-0efb85db9bbf40376fc1e0f685dce6
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

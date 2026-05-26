@@ -3,15 +3,19 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b7t16xbc4r6ah"
-valid=false
+path="res://.godot/imported/zhu_que_huo.png-e70437c7f149c07f22dcba8a6faf8985.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/zhu_que_huo.png"
+dest_files=["res://.godot/imported/zhu_que_huo.png-e70437c7f149c07f22dcba8a6faf8985.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

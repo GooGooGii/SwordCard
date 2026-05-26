@@ -3,15 +3,19 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dmm16iv2lqdfo"
-valid=false
+path="res://.godot/imported/zhen_shan_fan.png-fc08f692a5d04229d582911631fa2b67.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/zhen_shan_fan.png"
+dest_files=["res://.godot/imported/zhen_shan_fan.png-fc08f692a5d04229d582911631fa2b67.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

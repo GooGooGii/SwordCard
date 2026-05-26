@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/ghost_forest.png-2e8106a33389e504b7c56d3c37da
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

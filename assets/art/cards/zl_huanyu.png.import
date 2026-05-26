@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/zl_huanyu.png-306cc285c51a595c9e6b9614258a429
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

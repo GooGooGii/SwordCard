@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/lxy_linghuo.png-a0dae1b01c3e75f67377bdf60e692
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

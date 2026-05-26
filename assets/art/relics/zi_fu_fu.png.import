@@ -3,15 +3,19 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cg00sov7lx1s3"
-valid=false
+path="res://.godot/imported/zi_fu_fu.png-8ab3fa226ae833d575937fef076514d5.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/zi_fu_fu.png"
+dest_files=["res://.godot/imported/zi_fu_fu.png-8ab3fa226ae833d575937fef076514d5.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

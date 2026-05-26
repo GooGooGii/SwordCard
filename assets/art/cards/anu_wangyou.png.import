@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/anu_wangyou.png-4ad5315c68b7b7e9b95a5473fbb25
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

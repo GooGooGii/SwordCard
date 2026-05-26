@@ -3,15 +3,19 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://evaqireunion"
-valid=false
+path="res://.godot/imported/aqi_reunion.png-e4cc9c8fb9c716e7f12929dc763b4765.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/events/aqi_reunion.png"
+dest_files=["res://.godot/imported/aqi_reunion.png-e4cc9c8fb9c716e7f12929dc763b4765.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

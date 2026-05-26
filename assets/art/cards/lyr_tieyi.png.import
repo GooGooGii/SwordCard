@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/lyr_tieyi.png-e57de2b4c353fb3d00be5464806c471
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
