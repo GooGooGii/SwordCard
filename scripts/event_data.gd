@@ -24,7 +24,136 @@ const VARIANTS: Dictionary = {
 			"heal": "清泉水氣滌盡倦意，傷口悄然合攏。清冽的涼意從掌心漫上胸口，比任何藥草都要久久不散。",
 			"gain_card": "你伸手探入泉底，指尖觸到一縷泠冽靈韻——新的招式如泉湧而出，澄澈而自然，不帶一絲雜念。",
 			"power": "泉聲入耳如磬，靈台一清。你閉目聆聽良久，劍意在水聲中無形地凝練，變得更堅實，也更沉靜。"
-		}
+		},
+		# ── tree schema (Phase 1 schema demonstration) ────────────────
+		# 對應 docs/EVENT_BRANCHING.md「已凍結的 6 個事件分支樹」之 spring。
+		# UI 接 tree 走訪在 P2；effects 結算在 P6 加 kinds（gain_relic_pool /
+		# next_battle_buff / permanent_power）。目前此 tree 只給 EventRunner
+		# + smoke test 走訪用，舊扁平 schema 仍是 runtime fallback。
+		"tree": {
+			"root": {
+				"prompt": "山壁後一眼清泉，水氣溫潤。你蹲下身——",
+				"choices": [
+					{
+						"id": "drink",
+						"label": "掬水而飲",
+						"kind_hint": "reward",
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "heal", "amount": 12},
+								{"kind": "next_battle_buff", "effects": [{"kind": "energy", "amount": 1}]},
+							],
+							"log": "清冽入喉，靈氣自丹田緩緩升起。下一場戰鬥開場將多 1 點靈力。",
+						},
+					},
+					{
+						"id": "bathe",
+						"label": "入水沐浴",
+						"kind_hint": "mixed",
+						"next": "node_bathe",
+					},
+					{
+						"id": "observe_pool",
+						"label": "觀察泉底",
+						"kind_hint": "reward",
+						"requires": {"observe_token": true},
+						"next": "node_observe",
+					},
+					{
+						"id": "lxy_meditate",
+						"label": "以「以身合水」打坐",
+						"kind_hint": "reward",
+						"requires": {"character": ["li_xiaoyao"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "permanent_power", "amount": 1},
+								{"kind": "heal", "amount": 10},
+							],
+							"log": "逍遙想起師叔的話，泉水的靈氣順著經脈走了一圈。",
+						},
+					},
+					{
+						"id": "leave",
+						"label": "離去",
+						"kind_hint": "neutral",
+						"outcome": {"kind": "neutral", "effects": [], "log": "你向泉水拱手，繼續前行。"},
+					},
+				],
+			},
+			"nodes": {
+				"node_bathe": {
+					"prompt": "水深及腰，你閉眼浸入——感到水底有什麼在動。",
+					"choices": [
+						{
+							"id": "relax",
+							"label": "繼續放鬆",
+							"kind_hint": "gamble",
+							"outcome": {
+								"kind": "gamble",
+								"gamble": {
+									"win_chance": 0.6,
+									"win_effects": [
+										{"kind": "power", "amount": 1},
+										{"kind": "max_hp", "amount": 2},
+									],
+									"lose_effects": [
+										{"kind": "next_battle_buff", "effects": [{"kind": "weak", "amount": 2}]},
+										{"kind": "gold", "amount": -8},
+									],
+								},
+								"log": "你閉眼放鬆，把自己交給泉靈。",
+							},
+						},
+						{
+							"id": "alert",
+							"label": "立刻起身警戒",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "heal", "amount": 6},
+									{"kind": "next_battle_buff", "effects": [{"kind": "block", "amount": 5}]},
+								],
+								"log": "你及時起身，泉靈也識相不再試探。",
+							},
+						},
+					],
+				},
+				"node_observe": {
+					"prompt": "水底沉著一塊磨平的玉，刻著上古符紋。",
+					"choices": [
+						{
+							"id": "take_jade",
+							"label": "取玉",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "gain_relic_pool", "pool": "common"},
+									{"kind": "gold", "amount": 5},
+								],
+								"log": "玉入手心，溫潤微熱。",
+							},
+						},
+						{
+							"id": "leave_jade",
+							"label": "留下不取",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "heal", "amount": 8},
+									{"kind": "power", "amount": 1},
+								],
+								"log": "你把玉留在泉底，泉靈在心中低語一句感謝。",
+							},
+						},
+					],
+				},
+			},
+		},
 	},
 	"talisman_cache": {
 		"title": "符匣殘光",

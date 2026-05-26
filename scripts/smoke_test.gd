@@ -128,6 +128,14 @@ func _initialize() -> void:
 	_test_summon_cap(characters, enemies)
 	_test_summon_unknown_id(characters, enemies)
 	_test_summon_from_boss_pool(characters)
+	# Event Branching Phase 1：純樹走訪器（無 UI、無 effect 結算）
+	_test_event_runner_has_tree()
+	_test_event_runner_root_choices()
+	_test_event_runner_requires_character()
+	_test_event_runner_requires_observe_token()
+	_test_event_runner_node_navigation()
+	_test_event_runner_leaf_detection()
+	_test_event_runner_legacy_fallback()
 	print("SwordCard smoke test passed.")
 	quit(0)
 
@@ -1470,3 +1478,108 @@ func _test_summon_from_boss_pool(characters: Array[CharacterData]) -> void:
 	# 新敵應在 summon_pool 內
 	var new_id: String = String((bc.state["enemies"][size_before] as Dictionary)["id"])
 	assert(new_id in moon.summon_pool, "summoned id should be from boss summon_pool; got '%s'" % new_id)
+
+# ──────────────────────────────────────────────────────────────────────
+# Event Branching Phase 1：EventRunner 純走訪器測試
+# 用 spring variant 當測試資料（已有完整 tree schema）。
+# 這些測試完全不碰 UI / 不結算 effects，只驗證走訪器邏輯正確。
+# ──────────────────────────────────────────────────────────────────────
+
+func _test_event_runner_has_tree() -> void:
+	# spring 有 tree；某個還沒做 tree 的事件（如 shrine）沒有
+	var spring: Dictionary = EventData.for_variant("spring")
+	assert(EventRunner.has_tree(spring), "spring should have tree schema")
+	var shrine: Dictionary = EventData.for_variant("shrine")
+	assert(not EventRunner.has_tree(shrine), "shrine should still use legacy flat schema")
+
+func _test_event_runner_root_choices() -> void:
+	var spring: Dictionary = EventData.for_variant("spring")
+	var root: Dictionary = EventRunner.get_node(spring, "root")
+	assert(root.has("prompt"), "root node should have prompt")
+	assert(root.has("choices"), "root node should have choices array")
+	# 用 li_xiaoyao + observe_tokens=3 的 context：應看見全部 5 個 choices
+	var ctx_full: Dictionary = EventRunner.build_context("li_xiaoyao", 50, 0, 3, [], 10)
+	var visible: Array = EventRunner.visible_choices(root, ctx_full)
+	assert(visible.size() == 5, "li_xiaoyao with observe token should see 5 choices, got %d" % visible.size())
+
+func _test_event_runner_requires_character() -> void:
+	var spring: Dictionary = EventData.for_variant("spring")
+	var root: Dictionary = EventRunner.get_node(spring, "root")
+	# zhao_linger（非 li_xiaoyao）+ observe_tokens=3 → 不見 lxy_meditate，剩 4 個
+	var ctx_zhao: Dictionary = EventRunner.build_context("zhao_linger", 50, 0, 3, [], 10)
+	var visible: Array = EventRunner.visible_choices(root, ctx_zhao)
+	assert(visible.size() == 4, "zhao_linger should not see lxy-only choice; expected 4, got %d" % visible.size())
+	# 確認 lxy_meditate 不在列表中
+	for c: Variant in visible:
+		assert(String((c as Dictionary)["id"]) != "lxy_meditate", "lxy_meditate should be filtered for zhao_linger")
+
+func _test_event_runner_requires_observe_token() -> void:
+	var spring: Dictionary = EventData.for_variant("spring")
+	var root: Dictionary = EventRunner.get_node(spring, "root")
+	# zhao_linger + observe_tokens=0 → 看不見 lxy_meditate（角色不對）也看不見 observe_pool（無 token）→ 剩 3 個
+	var ctx_no_token: Dictionary = EventRunner.build_context("zhao_linger", 50, 0, 0, [], 10)
+	var visible: Array = EventRunner.visible_choices(root, ctx_no_token)
+	assert(visible.size() == 3, "zhao_linger w/o observe token should see 3 choices, got %d" % visible.size())
+	for c: Variant in visible:
+		assert(String((c as Dictionary)["id"]) != "observe_pool", "observe_pool should be filtered without token")
+
+func _test_event_runner_node_navigation() -> void:
+	var spring: Dictionary = EventData.for_variant("spring")
+	# 從 root.bathe choice 跳到 node_bathe
+	var node_bathe: Dictionary = EventRunner.get_node(spring, "node_bathe")
+	assert(not node_bathe.is_empty(), "node_bathe should exist")
+	assert(node_bathe.has("prompt"), "node_bathe should have prompt")
+	var bathe_choices: Array = node_bathe.get("choices", []) as Array
+	assert(bathe_choices.size() == 2, "node_bathe should have 2 choices, got %d" % bathe_choices.size())
+	# node_observe 同樣可達
+	var node_observe: Dictionary = EventRunner.get_node(spring, "node_observe")
+	assert(not node_observe.is_empty(), "node_observe should exist")
+	# 不存在的 node_id 回傳空 dict（不 crash）
+	var ghost: Dictionary = EventRunner.get_node(spring, "node_does_not_exist")
+	assert(ghost.is_empty(), "missing node should return empty dict")
+
+func _test_event_runner_leaf_detection() -> void:
+	var spring: Dictionary = EventData.for_variant("spring")
+	var root: Dictionary = EventRunner.get_node(spring, "root")
+	var choices: Array = root.get("choices", []) as Array
+	# drink 是葉 / bathe 不是葉（有 next）
+	for c: Variant in choices:
+		var choice: Dictionary = c as Dictionary
+		var cid: String = String(choice["id"])
+		match cid:
+			"drink":
+				assert(EventRunner.is_leaf(choice), "drink should be leaf")
+				assert(EventRunner.leaf_kind(choice) == "reward", "drink kind should be reward")
+			"bathe":
+				assert(not EventRunner.is_leaf(choice), "bathe should not be leaf (has next)")
+			"observe_pool":
+				assert(not EventRunner.is_leaf(choice), "observe_pool should not be leaf")
+			"leave":
+				assert(EventRunner.is_leaf(choice), "leave should be leaf")
+				assert(EventRunner.leaf_kind(choice) == "neutral", "leave kind should be neutral")
+	# node_bathe.relax 是 gamble 葉節點
+	var node_bathe: Dictionary = EventRunner.get_node(spring, "node_bathe")
+	var relax_choice: Dictionary = ((node_bathe["choices"] as Array)[0]) as Dictionary
+	assert(String(relax_choice["id"]) == "relax")
+	assert(EventRunner.is_leaf(relax_choice))
+	assert(EventRunner.leaf_kind(relax_choice) == "gamble")
+	# badge text 對應
+	assert(String(EventRunner.badge_for_kind("battle")["text"]).contains("戰鬥"))
+	assert(String(EventRunner.badge_for_kind("gamble")["text"]).contains("賭運"))
+
+func _test_event_runner_legacy_fallback() -> void:
+	# 還沒做 tree 的 event：has_tree=false、get_node 回空 dict、不爆炸
+	var shrine: Dictionary = EventData.for_variant("shrine")
+	assert(not EventRunner.has_tree(shrine))
+	assert(EventRunner.get_node(shrine, "root").is_empty())
+	assert(EventRunner.get_node(shrine, "node_anything").is_empty())
+	# eval_requires 空 dict / 缺欄位都應通過
+	assert(EventRunner.eval_requires({}, {}))
+	assert(EventRunner.eval_requires({"character": []}, {"character_id": "anyone"}))
+	# min_gold 不夠應拒
+	assert(not EventRunner.eval_requires({"min_gold": 100}, {"gold": 50}))
+	assert(EventRunner.eval_requires({"min_gold": 100}, {"gold": 100}))
+	# has_relic 接受 string 與 Array
+	assert(EventRunner.eval_requires({"has_relic": "nuwa_shi"}, {"relic_ids": ["nuwa_shi", "other"]}))
+	assert(not EventRunner.eval_requires({"has_relic": "nuwa_shi"}, {"relic_ids": ["other"]}))
+	assert(EventRunner.eval_requires({"has_relic": ["a", "b"]}, {"relic_ids": ["b"]}))
