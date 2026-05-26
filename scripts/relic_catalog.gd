@@ -155,6 +155,9 @@ static func _generals() -> Array[RelicData]:
 		[{"trigger": "permanent", "effects": [{"kind": "event_power_bonus", "amount": 1}]}], Color("76c46a")))
 	l.append(_make("duo_bao_ge", "多寶閣", "卡牌獎勵顯示 4 張（原 3）。", "rare",
 		[{"trigger": "permanent", "effects": [{"kind": "card_reward_count_bonus", "amount": 1}]}], Color("d9c2ff")))
+	# Event Branching P4：淨化符 — 戰鬥勝利時驅散 1 張詛咒
+	l.append(_make("jing_hua_fu", "淨化符", "戰鬥勝利時，從牌組中除去 1 張隨機詛咒牌。", "rare",
+		[{"trigger": "battle_victory", "effects": [{"kind": "remove_random_curse"}]}], Color("c8e4ff"), "star"))
 	return l
 
 static func _weapons() -> Array[RelicData]:

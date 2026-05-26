@@ -434,6 +434,10 @@ func start_turn() -> Dictionary:
 	_apply_bench_heal()
 	var before_tick: Dictionary = snapshot_state()
 	add_logs(resolver.tick_statuses(state))
+	# Event Branching P4：curse 滯留效果在 tick 之後跑 — 新加的 poison 留到下回合 tick
+	if int(state["turn"]) == 1:
+		_apply_curse_retention("battle_start")
+	_apply_curse_retention("turn_start")
 	_sync_state_to_active()
 	if is_battle_over():
 		return {"before_tick": before_tick, "ended": true}
@@ -444,6 +448,48 @@ func start_turn() -> Dictionary:
 		deck.draw(draw_count)
 	add_log("第 %d 回合開始，抽 %d 張牌。" % [int(state["turn"]), draw_count])
 	return {"before_tick": before_tick, "ended": false}
+
+# Event Branching P4：掃 active 角色的整副 deck（draw + hand + discard + exhausted）
+# 對所有 curse 套用對應 trigger 的滯留 effects。trigger ∈ {"turn_start", "battle_start"}.
+func _apply_curse_retention(trigger: String) -> void:
+	if deck == null:
+		return
+	var pools: Array = [deck.draw_pile, deck.hand, deck.discard_pile, deck.exhausted_pile]
+	for pool_v: Variant in pools:
+		var pool: Array = pool_v as Array
+		for card_v: Variant in pool:
+			var card: CardData = card_v as CardData
+			if not CurseCatalog.is_curse(card):
+				continue
+			var retention: Dictionary = CurseCatalog.retention_for(card)
+			if String(retention.get("trigger", "")) != trigger:
+				continue
+			for eff_v: Variant in (retention.get("effects", []) as Array):
+				_apply_curse_effect(eff_v as Dictionary, card.display_name)
+
+# 一個 curse 滯留 effect 套到 state（player_* slot）
+func _apply_curse_effect(effect: Dictionary, curse_name: String) -> void:
+	var kind: String = String(effect.get("kind", ""))
+	var amount: int = int(effect.get("amount", 0))
+	match kind:
+		"damage_self":
+			# 詛咒傷害不可被 block 抵擋（直接扣 HP），最低 1
+			state["player_hp"] = max(1, int(state["player_hp"]) - amount)
+			add_log("「%s」滯留：-%d 生命。" % [curse_name, amount])
+		"weak_self":
+			state["player_weak"] = int(state["player_weak"]) + amount
+			add_log("「%s」滯留：虛弱 +%d。" % [curse_name, amount])
+		"vulnerable_self":
+			state["player_vulnerable"] = int(state["player_vulnerable"]) + amount
+			add_log("「%s」滯留：破綻 +%d。" % [curse_name, amount])
+		"poison_self":
+			state["player_poison"] = int(state["player_poison"]) + amount
+			add_log("「%s」滯留：蠱毒 +%d。" % [curse_name, amount])
+		"energy_drain_chance":
+			var chance: float = float(effect.get("chance", 0.5))
+			if randf() < chance:
+				state["energy"] = max(0, int(state["energy"]) - amount)
+				add_log("「%s」滯留：靈力 -%d。" % [curse_name, amount])
 
 func _apply_bench_heal() -> void:
 	var players: Array = state.get("players", []) as Array
@@ -458,6 +504,10 @@ func _apply_bench_heal() -> void:
 			p["hp"] = min(max_hp_v, hp + BENCH_HEAL_PER_TURN)
 
 func play_card(card: CardData) -> Dictionary:
+	# Event Branching P4：curse 不可主動打
+	if CurseCatalog.is_curse(card):
+		add_log("「%s」是詛咒，不可打出。" % card.display_title())
+		return {"affordable": false, "curse_blocked": true}
 	var cost: int = effective_card_cost(card)
 	if int(state["energy"]) < cost:
 		add_log("靈力不足，無法施放 %s。" % card.display_title())

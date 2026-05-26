@@ -57,6 +57,7 @@ var animating_cards: Array[Button] = []
 var pause_menu: PauseMenu
 var pause_button: Button
 var debug_menu: DebugMenu
+var dbg_test_mode: bool = false
 var battle_end_pending: bool = false
 var active_map_scroll: ScrollContainer = null
 var _map_drag_candidate: bool = false
@@ -329,6 +330,7 @@ func _build_debug_menu() -> void:
 	debug_menu.add_relic_requested.connect(_dbg_add_relic)
 	debug_menu.add_potion_requested.connect(_dbg_add_potion)
 	debug_menu.jump_to_boss_requested.connect(_dbg_jump_to_boss)
+	debug_menu.toggle_test_mode_requested.connect(_dbg_toggle_test_mode)
 	debug_menu.close_requested.connect(func() -> void: debug_menu.visible = false)
 
 func _toggle_debug_menu() -> void:
@@ -407,6 +409,15 @@ func _dbg_jump_to_boss() -> void:
 	debug_menu.visible = false
 	show_progress_screen()
 	print("[DEBUG] jumped to boss row (index %d)" % run_state.encounter_index)
+
+func _dbg_toggle_test_mode() -> void:
+	dbg_test_mode = not dbg_test_mode
+	if debug_menu != null:
+		debug_menu.set_test_mode(dbg_test_mode)
+	debug_menu.visible = false
+	print("[DEBUG] test mode = %s" % dbg_test_mode)
+	if run_state != null and not run_state.encounter_choices.is_empty():
+		show_progress_screen()
 
 func _on_resume_requested() -> void:
 	pause_menu.close()
@@ -1372,6 +1383,10 @@ func _build_streamlined_progress_screen(compact_map: bool) -> void:
 	var map_panel: Control = _map_view_sts()
 	map_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(map_panel)
+	if not compact_map:
+		var legend: Control = _build_map_legend()
+		legend.z_index = 220
+		layer.add_child(legend)
 	
 	# 在地圖上方顯示當前幕名稱，例如「第一幕 餘杭山間」
 	var act_label: Label = Label.new()
@@ -1425,7 +1440,7 @@ func _map_view_sts() -> Control:
 	var map_panel: PanelContainer = PanelContainer.new()
 	map_panel.custom_minimum_size = Vector2(1040, panel_height)
 	map_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	map_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("f4edd8", 0.02), Color("f4edd8", 0.08), 1, 8))
+	map_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("081019", 0.18), Color("f4edd8", 0.10), 1, 8))
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(1040, panel_height)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -1446,6 +1461,8 @@ func _map_view_sts() -> Control:
 	# IGNORE = 讓事件直接穿過 map_area，子節點 (map_node_button) 仍能自己處理點擊。
 	map_area.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	scroll.add_child(map_area)
+	map_area.add_child(_build_map_status_banner())
+	map_area.add_child(_build_map_row_markers(total_rows, content_size))
 	# 地圖底紙由 show_progress_screen() 的全域 background_rect 提供
 	# （透過半透明的 panel 透出來），不在這裡再疊一張同樣的圖，避免捲動時前後兩張錯位
 	var line_layer: Control = preload("res://scripts/map_link_layer.gd").new()
@@ -1464,8 +1481,6 @@ func _map_view_sts() -> Control:
 			node_buttons.append({"button": node_button, "row": row_index, "index": node_index})
 	call_deferred("_refresh_map_link_layer", line_layer, node_buttons)
 	call_deferred("_focus_map_row", scroll, _map_focus_anchor(total_rows, content_size), content_size)
-	if not compact_map:
-		map_panel.add_child(_build_map_legend())
 	return map_panel
 
 func _build_map_legend() -> Control:
@@ -1477,22 +1492,29 @@ func _build_map_legend() -> Control:
 		{"type": "shop",       "color": Color("e4c66a"), "label": "商店"},
 		{"type": "black_shop", "color": Color("e2a86b"), "label": "黑店"},
 	]
+	var legend_width: float = 164.0
+	var legend_height: float = 28.0 + entries.size() * 32.0
 	var panel: PanelContainer = PanelContainer.new()
-	panel.set_anchors_preset(Control.PRESET_TOP_RIGHT, false)
-	panel.offset_left = -148
-	panel.offset_top = 12
-	panel.offset_right = -12
-	panel.offset_bottom = 12 + 22 + entries.size() * 30
+	panel.anchor_left = 1.0
+	panel.anchor_top = 0.0
+	panel.anchor_right = 1.0
+	panel.anchor_bottom = 0.0
+	panel.offset_left = -legend_width - 12.0
+	panel.offset_top = 12.0
+	panel.offset_right = -12.0
+	panel.offset_bottom = 12.0 + legend_height
+	panel.custom_minimum_size = Vector2(legend_width, legend_height)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("1d2838", 0.62), Color("c8b46f", 0.45), 1, 8))
+	panel.z_index = 220
+	panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("12202d", 0.85), Color("c8b46f", 0.6), 2, 10))
 	var vbox: VBoxContainer = VBoxContainer.new()
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_theme_constant_override("separation", 4)
+	vbox.add_theme_constant_override("separation", 6)
 	panel.add_child(vbox)
 	var title: Label = Label.new()
 	title.text = "圖例"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_font_size_override("font_size", 15)
 	title.add_theme_color_override("font_color", ThemeColors.HIGHLIGHT_GOLD)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(title)
@@ -1503,6 +1525,7 @@ func _build_map_legend() -> Control:
 		var icon: MapNodeIcon = MapNodeIcon.new()
 		icon.custom_minimum_size = Vector2(26, 26)
 		icon.set_type(String(entry["type"]), entry["color"])
+		icon.set_visual_state("selectable")
 		row.add_child(icon)
 		var label: Label = Label.new()
 		label.text = String(entry["label"])
@@ -1514,8 +1537,45 @@ func _build_map_legend() -> Control:
 		vbox.add_child(row)
 	return panel
 
+func _build_map_status_banner() -> Control:
+	var panel: PanelContainer = PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_TOP_LEFT, false)
+	panel.offset_left = 20
+	panel.offset_top = 18
+	panel.offset_right = 360
+	panel.offset_bottom = 82
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("12202d", 0.74), Color("d0bf86", 0.32), 1, 14))
+	var box: VBoxContainer = VBoxContainer.new()
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_theme_constant_override("separation", 2)
+	panel.add_child(box)
+	var title: String = "第 %d / %d 層" % [run_state.encounter_index + 1, run_state.encounter_choices.size()]
+	var title_label: Label = UIFactory.card_label(title, 16, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_LEFT)
+	title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(title_label)
+	var hint_text: String = "請選擇發亮節點前進" if run_state.encounter_index < run_state.encounter_choices.size() else "前往下一場遭遇"
+	var hint_label: Label = UIFactory.card_label(hint_text, 12, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_LEFT)
+	hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(hint_label)
+	return panel
+
+func _build_map_row_markers(total_rows: int, area_size: Vector2) -> Control:
+	var layer: Control = Control.new()
+	layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for row_index: int in range(total_rows):
+		var row_label: Label = Label.new()
+		row_label.text = "第 %d 層" % [row_index + 1]
+		row_label.position = Vector2(26, _map_node_position(row_index, 0, 1, total_rows, area_size).y + 26.0)
+		row_label.add_theme_font_size_override("font_size", 12)
+		row_label.add_theme_color_override("font_color", Color("24303c", 0.56))
+		row_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		layer.add_child(row_label)
+	return layer
+
 func _map_content_size(total_rows: int) -> Vector2:
-	return Vector2(1040, max(1180.0, 360.0 + float(total_rows) * 320.0))
+	return Vector2(1080, max(1160.0, 340.0 + float(total_rows) * 270.0))
 
 func _map_focus_anchor(total_rows: int, content_size: Vector2) -> Vector2:
 	var target_row: int = clamp(run_state.encounter_index, 0, max(0, total_rows - 1))
@@ -1551,10 +1611,10 @@ func _focus_map_row(scroll: ScrollContainer, anchor: Vector2, content_size: Vect
 	scroll.scroll_vertical = int(clamp(target_scroll, 0.0, max_scroll))
 
 func _map_node_position(row_index: int, node_index: int, row_size: int, total_rows: int, area_size: Vector2) -> Vector2:
-	var top_margin: float = 72.0
-	var bottom_margin: float = 150.0
-	var left_margin: float = 80.0
-	var right_margin: float = 80.0
+	var top_margin: float = 108.0
+	var bottom_margin: float = 130.0
+	var left_margin: float = 110.0
+	var right_margin: float = 90.0
 	var usable_height: float = max(1.0, area_size.y - top_margin - bottom_margin)
 	var usable_width: float = max(1.0, area_size.x - left_margin - right_margin)
 	var y_ratio: float = 0.0 if total_rows <= 1 else float(row_index) / float(total_rows - 1)
@@ -1572,11 +1632,11 @@ func _map_node_position(row_index: int, node_index: int, row_size: int, total_ro
 		for lane_index: int in range(row_size):
 			pattern.append(float(lane_index + 1) / float(row_size + 1))
 	var normalized_x: float = float(pattern[min(node_index, pattern.size() - 1)])
-	var row_sway: float = sin(float(row_index) * 0.95 + 0.3) * 48.0
-	var node_sway: float = sin(float(row_index) * 1.25 + float(node_index) * 1.55) * 34.0
-	var bend_bias: float = cos(float(row_index + node_index) * 1.1) * 18.0
+	var row_sway: float = sin(float(row_index) * 0.82 + 0.2) * 20.0
+	var node_sway: float = sin(float(row_index) * 1.18 + float(node_index) * 1.35) * 12.0
+	var bend_bias: float = cos(float(row_index + node_index) * 1.05) * 10.0
 	var x: float = left_margin + usable_width * normalized_x + row_sway + node_sway + bend_bias
-	var y_offset: float = cos(float(row_index) * 1.2 + float(node_index) * 0.85) * 14.0
+	var y_offset: float = cos(float(row_index) * 1.08 + float(node_index) * 0.8) * 8.0
 	return Vector2(x - 38.0, y - 46.0 + y_offset)
 
 func _refresh_map_link_layer(line_layer: Control, node_buttons: Array[Dictionary]) -> void:
@@ -1624,7 +1684,7 @@ func _is_map_connection_active(row_index: int, node_index: int, target_index: in
 
 func _map_node_button(node_data: Dictionary, row_index: int) -> Button:
 	var node_index: int = int(node_data.get("index", 0))
-	var button: Button = _route_node_button(node_data)
+	var button: Button = _route_node_button(node_data, row_index)
 	var selectable: bool = _is_map_node_selectable(row_index, node_index)
 	var selected: bool = row_index < run_state.chosen_map_path.size() and run_state.chosen_map_path[row_index] == node_index
 	var completed: bool = row_index < run_state.encounter_index
@@ -1665,6 +1725,15 @@ func _style_map_node_button(button: Button, node_data: Dictionary, selected: boo
 		icon.position.y = max(0.0, icon.position.y - 8.0)
 		if icon.has_method("set_highlight"):
 			icon.call("set_highlight", selectable and not selected)
+		if icon.has_method("set_visual_state"):
+			var visual_state: String = "locked"
+			if completed:
+				visual_state = "completed"
+			elif selected:
+				visual_state = "selected"
+			elif selectable:
+				visual_state = "selectable"
+			icon.call("set_visual_state", visual_state)
 	var label: Label = null
 	if button.has_meta("route_label"):
 		label = button.get_meta("route_label") as Label
@@ -1675,7 +1744,7 @@ func _style_map_node_button(button: Button, node_data: Dictionary, selected: boo
 	if completed:
 		button.modulate = Color(0.72, 0.92, 0.78, 0.55)
 	elif not selectable and not selected:
-		button.modulate = Color(0.45, 0.45, 0.45, 0.42)
+		button.modulate = Color(0.62, 0.64, 0.68, 0.40)
 	else:
 		button.modulate = Color.WHITE
 
@@ -1733,6 +1802,8 @@ func _map_link_text(node_data: Dictionary) -> String:
 	return "通往 " + " / ".join(labels)
 
 func _is_map_node_selectable(row_index: int, node_index: int) -> bool:
+	if dbg_test_mode and row_index >= run_state.encounter_index:
+		return true
 	if row_index != run_state.encounter_index:
 		return false
 	if row_index == 0:
@@ -1747,11 +1818,17 @@ func _is_map_node_selectable(row_index: int, node_index: int) -> bool:
 	var connects: Array = previous_node.get("connects", []) as Array
 	return connects.has(node_index)
 
-func choose_route_node(node_data: Dictionary) -> void:
+func choose_route_node(node_data: Dictionary, target_row: int = -1) -> void:
 	var node_index: int = int(node_data.get("index", 0))
+	if dbg_test_mode and target_row > run_state.encounter_index:
+		while run_state.chosen_map_path.size() < target_row:
+			run_state.chosen_map_path.append(-1)
+		run_state.encounter_index = target_row
 	if run_state.chosen_map_path.size() > run_state.encounter_index:
 		run_state.chosen_map_path[run_state.encounter_index] = node_index
 	else:
+		while run_state.chosen_map_path.size() < run_state.encounter_index:
+			run_state.chosen_map_path.append(-1)
 		run_state.chosen_map_path.append(node_index)
 	var node_type: String = String(node_data.get("type", "battle"))
 	if node_type == "rest":
@@ -2831,14 +2908,19 @@ func _complete_battle_victory() -> void:
 	Bestiary.mark_defeated(battle.enemy.id)
 	_grant_battle_exp()
 	var gold_reward: int = _battle_gold_reward(battle.enemy)
-	# 聚寶盆：勝利額外金錢
+	# 聚寶盆：勝利額外金錢；P4 淨化符：勝利移除 1 張隨機 curse
 	for r: RelicData in run_state.relics:
 		for t: Dictionary in r.triggers:
 			if String(t.get("trigger", "")) != "battle_victory":
 				continue
 			for e: Dictionary in (t.get("effects", []) as Array):
-				if String(e.get("kind", "")) == "gold_bonus":
-					gold_reward += int(e.get("amount", 0))
+				match String(e.get("kind", "")):
+					"gold_bonus":
+						gold_reward += int(e.get("amount", 0))
+					"remove_random_curse":
+						var removed: String = _try_remove_random_curse()
+						if not removed.is_empty():
+							battle.add_log("淨化符：除去詛咒「%s」。" % removed)
 	run_state.gold = run_state.gold + gold_reward
 	battle.add_log("獲得 %d 枚銅錢。" % gold_reward)
 	# Boss 必掉神器；一般戰鬥 25% 機率掉裝備
@@ -2986,7 +3068,7 @@ func _battle_gold_reward(enemy: EnemyData) -> int:
 	return max(0, int(round(float(base) * Ascension.gold_multiplier(run_state.ascension_level))))
 
 
-func _route_node_button(node_data: Dictionary) -> Button:
+func _route_node_button(node_data: Dictionary, row_index: int = -1) -> Button:
 	var node_type: String = String(node_data.get("type", "battle"))
 	var button: Button
 	if node_type == "rest":
@@ -2999,7 +3081,7 @@ func _route_node_button(node_data: Dictionary) -> Button:
 		assert(node_data.has("enemy"), "戰鬥節點缺少 enemy 資料：%s" % node_data)
 		var enemy: EnemyData = node_data["enemy"] as EnemyData
 		button = _route_enemy_button(enemy, node_type == "boss")
-	button.pressed.connect(func(): choose_route_node(node_data))
+	button.pressed.connect(func(): choose_route_node(node_data, row_index))
 	return button
 
 func _build_route_button(text: String, icon_type: String, icon_color: Color, font_color: Color = ThemeColors.TEXT_LIGHT) -> Button:
@@ -3546,9 +3628,15 @@ func _resolve_observe_effects(effects: Array) -> String:
 					d2.append(added_card)
 					parts.append("習得「%s」" % added_card.display_name)
 			"gain_curse":
-				# P4 curse 牌系統未落地前 stub
-				push_warning("[event tree] gain_curse not implemented (P4): %s" % str(effect.get("curse_id", "?")))
-				parts.append("（不祥之兆纏身……）")
+				# P4：從 CurseCatalog 取卡並加入 active 角色 deck
+				var curse_id: String = String(effect.get("curse_id", ""))
+				var curse_card: CardData = CurseCatalog.make_card(curse_id)
+				if curse_card != null:
+					var d_curse: Array = run_state.character_decks[run_state.active_character_index] as Array
+					d_curse.append(curse_card)
+					parts.append("不祥之兆纏身：「%s」" % curse_card.display_name)
+				else:
+					push_warning("[event tree] gain_curse with unknown id: %s" % curse_id)
 			"lose_card":
 				var d3: Array = run_state.character_decks[run_state.active_character_index] as Array
 				if d3.size() > 5:
@@ -4345,8 +4433,39 @@ func upgrade_card_in_deck(card: CardData) -> void:
 func _upgradeable_cards() -> Array[CardData]:
 	var cards: Array[CardData] = []
 	for card: CardData in run_state.deck:
+		# P4：curse 不可升級
+		if CurseCatalog.is_curse(card):
+			continue
 		if not card.upgraded:
 			cards.append(card)
+	return cards
+
+# P4：嘗試從 active 角色 deck 移除 1 張隨機 curse，回傳被移除的名稱（沒有則回空）
+func _try_remove_random_curse() -> String:
+	if run_state == null:
+		return ""
+	var idx: int = run_state.active_character_index
+	if idx >= run_state.character_decks.size():
+		return ""
+	var d: Array = run_state.character_decks[idx] as Array
+	var curse_indices: Array[int] = []
+	for i: int in range(d.size()):
+		if CurseCatalog.is_curse(d[i] as CardData):
+			curse_indices.append(i)
+	if curse_indices.is_empty():
+		return ""
+	var pick: int = curse_indices[randi() % curse_indices.size()]
+	var removed_card: CardData = d[pick] as CardData
+	d.remove_at(pick)
+	return removed_card.display_name
+
+# P4：可被標準 remove 移除的卡（curse 預設不可，除非 jing_hua_fu 觸發 / 黑市驅邪）
+func _removable_cards() -> Array[CardData]:
+	var cards: Array[CardData] = []
+	for card: CardData in run_state.deck:
+		if CurseCatalog.is_curse(card):
+			continue
+		cards.append(card)
 	return cards
 
 func advance_non_battle_node() -> void:
@@ -4613,7 +4732,9 @@ func _duplicate_summary_text(target_cards: Array) -> String:
 	return "重複：" + "，".join(parts)
 
 func _deck_view_card(card: CardData, mode: String = "view", count: int = 1) -> Control:
-	var selectable: bool = mode == "remove" or mode == "shop_remove" or ((mode == "upgrade" or mode == "shop_upgrade") and not card.upgraded)
+	# P4：curse 不可選（remove / upgrade 都不行）
+	var is_curse: bool = CurseCatalog.is_curse(card)
+	var selectable: bool = (not is_curse) and (mode == "remove" or mode == "shop_remove" or ((mode == "upgrade" or mode == "shop_upgrade") and not card.upgraded))
 	var visually_enabled: bool = (mode != "upgrade" and mode != "shop_upgrade") or not card.upgraded
 	var button: Button = _make_card_button(card, card.cost, Vector2(158, 330), true, visually_enabled)
 	button.disabled = not selectable

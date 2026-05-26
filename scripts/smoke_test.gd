@@ -144,6 +144,14 @@ func _initialize() -> void:
 	# Phase 3：戰鬥回流（pending_event_return）
 	_test_pending_event_return_init(characters)
 	_test_pending_event_return_not_persisted(characters)
+	# Phase 4：Curse 牌系統
+	_test_curse_catalog()
+	_test_curse_play_card_rejected(characters[0], enemies[0])
+	_test_curse_not_upgradeable(characters[0])
+	_test_curse_save_roundtrip(characters)
+	_test_curse_retention_turn_start(characters[0], enemies[0])
+	_test_curse_retention_battle_start(characters[0], enemies[0])
+	_test_jing_hua_fu_removes_curse(characters[0])
 	print("SwordCard smoke test passed.")
 	quit(0)
 
@@ -1680,3 +1688,147 @@ func _test_pending_event_return_not_persisted(characters: Array[CharacterData]) 
 	assert(restored.from_dict(data, characters))
 	assert(restored.pending_event_return.is_empty(),
 		"restored RunState should have empty pending_event_return")
+
+# ──────────────────────────────────────────────────────────────────────
+# Event Branching Phase 4：Curse 牌系統
+# ──────────────────────────────────────────────────────────────────────
+
+func _test_curse_catalog() -> void:
+	# 6 張 curse 都齊全，有 id / display_name / description / retention
+	var all_curses: Array[Dictionary] = CurseCatalog.all()
+	assert(all_curses.size() == 6, "expected 6 curses, got %d" % all_curses.size())
+	var expected_ids: Array[String] = ["yao_zhai", "xie_yin", "tong_ji", "hua_zhai", "jiu_zui", "gu_du"]
+	for cid: String in expected_ids:
+		var c: Dictionary = CurseCatalog.by_id(cid)
+		assert(not c.is_empty(), "missing curse: %s" % cid)
+		assert(String(c.get("display_name", "")).length() > 0, "curse %s lacks display_name" % cid)
+		assert(c.has("retention"), "curse %s lacks retention" % cid)
+	# make_card 產出真正 curse 牌
+	var card: CardData = CurseCatalog.make_card("yao_zhai")
+	assert(card != null)
+	assert(card.card_type == "curse", "make_card should produce card_type=curse, got %s" % card.card_type)
+	assert(card.cost == CurseCatalog.CURSE_COST, "curse cost should be CURSE_COST")
+	assert(CurseCatalog.is_curse(card))
+	# 未知 id 回傳 null（無 crash）
+	assert(CurseCatalog.make_card("nonexistent") == null)
+
+func _test_curse_play_card_rejected(character: CharacterData, enemy: EnemyData) -> void:
+	# play_card 對 curse 直接拒絕、不消耗靈力
+	var bc: BattleController = BattleController.new()
+	var party: Array[CharacterData] = [character]
+	var run_state: RunState = RunState.new()
+	run_state.init_for(party)
+	bc.setup(run_state, character, enemy.clone())
+	bc.start_turn()
+	var energy_before: int = int(bc.state["energy"])
+	var curse_card: CardData = CurseCatalog.make_card("yao_zhai")
+	var result: Dictionary = bc.play_card(curse_card)
+	assert(not bool(result.get("affordable", true)), "curse play should not be affordable")
+	assert(bool(result.get("curse_blocked", false)), "result should flag curse_blocked")
+	assert(int(bc.state["energy"]) == energy_before, "curse rejection should not spend energy")
+
+func _test_curse_not_upgradeable(character: CharacterData) -> void:
+	# Deck 內含 curse 不會出現在 _upgradeable_cards 候選裡。
+	# main.gd._upgradeable_cards 是 instance 方法 — 直接從 CurseCatalog + CardData 驗證屬性即可。
+	var curse: CardData = CurseCatalog.make_card("xie_yin")
+	assert(curse != null)
+	# upgrade_card_in_deck 的 mode 過濾邏輯：curse 永遠不可升級
+	assert(CurseCatalog.is_curse(curse))
+	# upgraded_copy 不應改變 card_type
+	# (即使呼叫到也不該炸；驗證 type 仍是 curse 不被破壞)
+	var upgraded: CardData = curse.upgraded_copy()
+	assert(upgraded.card_type == "curse", "upgraded curse must remain curse type")
+
+func _test_curse_save_roundtrip(characters: Array[CharacterData]) -> void:
+	# Curse 進 deck → to_dict/from_dict 後仍是 curse
+	var state: RunState = RunState.new()
+	state.init_for(characters[0])
+	var deck0: Array = state.character_decks[0] as Array
+	deck0.append(CurseCatalog.make_card("yao_zhai"))
+	deck0.append(CurseCatalog.make_card("gu_du"))
+	var data: Dictionary = state.to_dict()
+	var restored: RunState = RunState.new()
+	assert(restored.from_dict(data, characters))
+	var rdeck: Array = restored.character_decks[0] as Array
+	var found_yao: bool = false
+	var found_gu: bool = false
+	for c_v: Variant in rdeck:
+		var c: CardData = c_v as CardData
+		if c == null:
+			continue
+		if c.id == "yao_zhai" and c.card_type == "curse":
+			found_yao = true
+		elif c.id == "gu_du" and c.card_type == "curse":
+			found_gu = true
+	assert(found_yao, "yao_zhai curse should survive round-trip")
+	assert(found_gu, "gu_du curse should survive round-trip")
+
+func _test_curse_retention_turn_start(character: CharacterData, enemy: EnemyData) -> void:
+	# 帶 yao_zhai (turn_start: -2 HP) 進戰鬥
+	var bc: BattleController = BattleController.new()
+	var party: Array[CharacterData] = [character]
+	var run_state: RunState = RunState.new()
+	run_state.init_for(party)
+	# 把 curse 塞進角色 deck（setup 會複製進 BattleController 的 DeckManager）
+	(run_state.character_decks[0] as Array).append(CurseCatalog.make_card("yao_zhai"))
+	bc.setup(run_state, character, enemy.clone())
+	# turn 1 開始：yao_zhai turn_start 應扣 2 HP
+	var hp_before: int = int(bc.state["player_hp"])
+	bc.start_turn()
+	var hp_after: int = int(bc.state["player_hp"])
+	assert(hp_after == hp_before - 2 or hp_after == 1,
+		"yao_zhai should -2 HP at turn_start; got %d → %d" % [hp_before, hp_after])
+
+func _test_curse_retention_battle_start(character: CharacterData, enemy: EnemyData) -> void:
+	# gu_du 是 battle_start 觸發（turn==1 時和 turn_start 一起跑）+2 poison
+	var bc: BattleController = BattleController.new()
+	var party: Array[CharacterData] = [character]
+	var run_state: RunState = RunState.new()
+	run_state.init_for(party)
+	(run_state.character_decks[0] as Array).append(CurseCatalog.make_card("gu_du"))
+	bc.setup(run_state, character, enemy.clone())
+	var poison_before: int = int(bc.state["player_poison"])
+	bc.start_turn()
+	var poison_after: int = int(bc.state["player_poison"])
+	assert(poison_after >= poison_before + 2,
+		"gu_du should +2 poison at battle_start (turn 1); got %d → %d" % [poison_before, poison_after])
+	# turn 2 不該再觸發 battle_start curse（但會結算 poison tick；只驗證沒額外 +2）
+	# 直接驗證 second start_turn 後不再加 2 stack
+	var poison_t1_end: int = int(bc.state["player_poison"])
+	bc.start_turn()
+	# 第二回合 start_turn 觸發 poison tick，poison 會 -1（衰減）
+	# 加上 battle_start 不該觸發 → poison 應該 <= poison_t1_end
+	assert(int(bc.state["player_poison"]) <= poison_t1_end,
+		"gu_du should NOT re-trigger at turn 2 start")
+
+func _test_jing_hua_fu_removes_curse(character: CharacterData) -> void:
+	# 模擬：deck 帶 1 張 curse → 呼叫 _try_remove_random_curse 等效邏輯後 curse 應消失
+	# 因為 _try_remove_random_curse 是 main.gd 的 method，這裡用 catalog level 重現邏輯。
+	var state: RunState = RunState.new()
+	state.init_for(character)
+	var deck0: Array = state.character_decks[0] as Array
+	deck0.append(CurseCatalog.make_card("yao_zhai"))
+	# 找一張 curse 並 remove
+	var curse_count_before: int = 0
+	for c_v: Variant in deck0:
+		if CurseCatalog.is_curse(c_v as CardData):
+			curse_count_before += 1
+	assert(curse_count_before == 1)
+	# 模擬 jing_hua_fu 觸發：找出 curse 並移除
+	var removed_any: bool = false
+	for i: int in range(deck0.size()):
+		if CurseCatalog.is_curse(deck0[i] as CardData):
+			deck0.remove_at(i)
+			removed_any = true
+			break
+	assert(removed_any, "should have removed at least 1 curse")
+	# 驗證 catalog 內確實有 jing_hua_fu relic 定義且 trigger 正確
+	var jhf: RelicData = RelicCatalog.by_id("jing_hua_fu")
+	assert(jhf != null, "jing_hua_fu relic missing from catalog")
+	var has_battle_victory_trigger: bool = false
+	for t: Dictionary in jhf.triggers:
+		if String(t.get("trigger", "")) == "battle_victory":
+			for e: Dictionary in (t.get("effects", []) as Array):
+				if String(e.get("kind", "")) == "remove_random_curse":
+					has_battle_victory_trigger = true
+	assert(has_battle_victory_trigger, "jing_hua_fu should have battle_victory + remove_random_curse")
