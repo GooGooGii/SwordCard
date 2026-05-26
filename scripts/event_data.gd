@@ -173,7 +173,108 @@ const VARIANTS: Dictionary = {
 			"gain_card": "禁制應聲碎裂，靈光中浮現出一道術法的輪廓，烙進了你的記憶。那輪廓很陌生，卻意外地貼合你的習慣，像是為你量身留下的。",
 			"power": "殘符入體，一道灼熱沿著招式的紋路走遍全身，殺意悄悄加深。你感到某處縫隙被填滿了，那裡曾經空著，你自己都沒意識到。",
 			"remove": "你割斷那道殘餘禁制，符灰隨風飄散。雜念跟著一同消散，心中忽然輕了許多，像是卸下了一件穿了太久的厚甲。"
-		}
+		},
+		# Batch A 凍結設計（docs/EVENT_BRANCHING.md §7）
+		"tree": {
+			"root": {
+				"prompt": "破舊符匣半埋土中，靈光未散。鎖鏈鏽蝕，但禁制尚在。",
+				"choices": [
+					{
+						"id": "force_open",
+						"label": "強拆禁制取物",
+						"kind_hint": "gamble",
+						"outcome": {
+							"kind": "gamble",
+							"gamble": {
+								"win_chance": 0.55,
+								"win_effects": [
+									{"kind": "gain_card_pool", "pool": "uncommon"},
+									{"kind": "heal", "amount": 4},
+								],
+								"lose_effects": [
+									{"kind": "damage", "amount": 8},
+									{"kind": "gain_curse", "curse_id": "xie_yin"},
+								],
+							},
+							"log": "你伸手抓向鎖鏈——",
+						},
+					},
+					{
+						"id": "slow_unfold",
+						"label": "順著符紋緩拆",
+						"kind_hint": "reward",
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "next_battle_buff", "effects": [{"kind": "block", "amount": 5}]},
+								{"kind": "heal", "amount": 6},
+							],
+							"log": "符匣在你手中慢慢解開，溫熱的靈氣裹住你的傷口。",
+						},
+					},
+					{
+						"id": "observe_runes",
+						"label": "觀察符紋",
+						"kind_hint": "reward",
+						"requires": {"observe_token": true},
+						"next": "node_inspect",
+					},
+					{
+						"id": "zhao_lineage",
+						"label": "以靈族文字辨識來歷",
+						"kind_hint": "reward",
+						"requires": {"character": ["zhao_linger"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "permanent_power", "amount": 1},
+								{"kind": "max_hp", "amount": 3},
+							],
+							"log": "靈兒讀出符匣是上代修者的遺贈，溫熱沿指尖流入。",
+						},
+					},
+					{
+						"id": "leave",
+						"label": "不動，離去",
+						"kind_hint": "neutral",
+						"outcome": {"kind": "neutral", "effects": [], "log": "你向符匣輕輕拱手，繼續上路。"},
+					},
+				],
+			},
+			"nodes": {
+				"node_inspect": {
+					"prompt": "符紋背面有極淡字跡：『貪者反噬』。",
+					"choices": [
+						{
+							"id": "take_potion_only",
+							"label": "只取藥包不動符",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "gain_potion"},
+									{"kind": "gold", "amount": 8},
+								],
+								"log": "你只取走藥包，符紋繼續沉睡。",
+							},
+						},
+						{
+							"id": "erase_warning",
+							"label": "抹除『貪者反噬』四字後再開",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "permanent_power", "amount": 1},
+									{"kind": "gain_card_pool", "pool": "uncommon"},
+								],
+								"log": "四字隨指輕抹散去，符匣應聲而開。",
+							},
+						},
+					],
+				},
+			},
+		},
 	},
 	"shrine": {
 		"title": "山路異光",
@@ -192,7 +293,144 @@ const VARIANTS: Dictionary = {
 			"heal": "靈痕輕觸肌膚，如同有人將一掌暖意按在背脊，傷口漸漸閉合。那股力量溫和而持久，像是前人最後的善意。",
 			"power": "古人的意念透過石壁注入，你感到某種久遠的殺意悄悄疊加進了自身。那是別人走過的路留下的鋒芒，此刻，卻成了你的。",
 			"upgrade": "沉靜片刻，手中某道招式的謬誤竟自行顯現——你終於明白了它的精髓。前人彷彿就站在你身後，帶著笑，讓你自己看見答案。"
-		}
+		},
+		# Batch A 凍結設計（docs/EVENT_BRANCHING.md §8）
+		"tree": {
+			"root": {
+				"prompt": "石壁間浮現微光，前人留下的靈痕，無戰意只有純粹的存在感。",
+				"choices": [
+					{
+						"id": "stand_quietly",
+						"label": "趨前靜立感應",
+						"kind_hint": "reward",
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "heal", "amount": 8},
+								{"kind": "permanent_power", "amount": 1},
+							],
+							"log": "靈痕的溫度在心口慢慢散開。",
+						},
+					},
+					{
+						"id": "siphon",
+						"label": "試圖汲取靈痕",
+						"kind_hint": "gamble",
+						"outcome": {
+							"kind": "gamble",
+							"gamble": {
+								"win_chance": 0.5,
+								"win_effects": [
+									{"kind": "power", "amount": 2},
+									{"kind": "max_hp", "amount": 2},
+								],
+								"lose_effects": [
+									{"kind": "damage", "amount": 5},
+									{"kind": "next_battle_buff", "effects": [{"kind": "weak", "amount": 1}]},
+								],
+							},
+							"log": "你伸手往光暈中央按下——",
+						},
+					},
+					{
+						"id": "meditate",
+						"label": "在靈痕前打坐悟法",
+						"kind_hint": "reward",
+						"next": "node_meditate",
+					},
+					{
+						"id": "observe_origin",
+						"label": "觀察光痕來歷",
+						"kind_hint": "reward",
+						"requires": {"observe_token": true},
+						"next": "node_origin",
+					},
+					{
+						"id": "lin_salute",
+						"label": "以靈劍山莊禮數行劍致敬",
+						"kind_hint": "reward",
+						"requires": {"character": ["lin_yueru"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "gain_card_pool", "pool": "character"},
+								{"kind": "heal", "amount": 4},
+							],
+							"log": "月如的劍意與壁上殘光共鳴，前輩似乎滿意地點了點頭。",
+						},
+					},
+					{
+						"id": "leave",
+						"label": "離去",
+						"kind_hint": "neutral",
+						"outcome": {"kind": "neutral", "effects": [], "log": "你向石壁低頭一禮，繼續上路。"},
+					},
+				],
+			},
+			"nodes": {
+				"node_meditate": {
+					"prompt": "閉目片刻，靈光在識海中組成一段心法殘篇。",
+					"choices": [
+						{
+							"id": "ascend",
+							"label": "跟隨心法升華某招",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "upgrade_random"},
+									{"kind": "heal", "amount": 4},
+								],
+								"log": "識海一震，那道招式自行重組。",
+							},
+						},
+						{
+							"id": "memorize",
+							"label": "把心法純粹記下不練",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "gain_card_pool", "pool": "common"},
+									{"kind": "gold", "amount": 5},
+								],
+								"log": "你只是記住，不去動。心法在你掌中安靜得像一隻入睡的小獸。",
+							},
+						},
+					],
+				},
+				"node_origin": {
+					"prompt": "光痕的氣息與你熟悉的東西呼應——這位前輩，或與你有源頭關係。",
+					"choices": [
+						{
+							"id": "kneel",
+							"label": "跪拜致意",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "permanent_power", "amount": 2},
+									{"kind": "max_hp", "amount": 3},
+								],
+								"log": "你深深一拜，光暈為你停留片刻才再次隱回石壁。",
+							},
+						},
+						{
+							"id": "respectful_pass",
+							"label": "不領這份情，繞行而過",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "next_battle_buff", "effects": [{"kind": "block", "amount": 8}]},
+								],
+								"log": "你抱拳致謝，沒有收下這份贈與。光暈卻悄悄替你護了一段路。",
+							},
+						},
+					],
+				},
+			},
+		},
 	},
 	"treasure_chest": {
 		"title": "寶箱機關",
@@ -211,7 +449,111 @@ const VARIANTS: Dictionary = {
 			"gain_card": "機關應聲而開，箱底壓著一卷泛黃的功法殘頁，術法輪廓躍然紙上。那字跡略顯潦草，像是主人在某個倉皇的夜裡草草記下的，越看越覺得字裡藏著什麼故事。",
 			"upgrade": "鎖扣喀嗒扣響，一股細微靈氣流過你的雙手。某道招式因此更趨純熟，就好像那股靈氣知道你哪裡還差了一點，精準地補進去了。",
 			"remove": "倒刺擦過掌心，一陣刺痛——但某道雜亂的招式也隨之從腦海中剝落。鮮血滴在落葉上，心卻意外地輕了，雜念隨符灰一同飄散。"
-		}
+		},
+		# Batch A 凍結設計（docs/EVENT_BRANCHING.md §9）
+		"tree": {
+			"root": {
+				"prompt": "倒塌的木箱半埋落葉，鎖鏈鏽蝕但機關未解。",
+				"choices": [
+					{
+						"id": "pry",
+						"label": "直接撬開",
+						"kind_hint": "gamble",
+						"outcome": {
+							"kind": "gamble",
+							"gamble": {
+								"win_chance": 0.5,
+								"win_effects": [
+									{"kind": "gold", "amount": 25},
+									{"kind": "gain_card_pool", "pool": "uncommon"},
+								],
+								"lose_effects": [
+									{"kind": "damage", "amount": 8},
+									{"kind": "gold", "amount": 5},
+								],
+							},
+							"log": "你一刀挑開鎖扣——",
+						},
+					},
+					{
+						"id": "careful",
+						"label": "用劍鞘小心觸發機關",
+						"kind_hint": "reward",
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "gold", "amount": 15},
+								{"kind": "gain_potion"},
+							],
+							"log": "鎖扣應聲而開，毒針只挑斷了劍鞘上一根線。",
+						},
+					},
+					{
+						"id": "observe_trap",
+						"label": "觀察機關",
+						"kind_hint": "reward",
+						"requires": {"observe_token": true},
+						"next": "node_trap",
+					},
+					{
+						"id": "anu_disarm",
+						"label": "以骨針反向解蠱毒機關",
+						"kind_hint": "reward",
+						"requires": {"character": ["anu"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "gold", "amount": 25},
+								{"kind": "gain_potion"},
+								{"kind": "permanent_power", "amount": 1},
+							],
+							"log": "阿奴認出毒針配方是苗疆親戚的手筆，骨針一挑，毒針反封自身。",
+						},
+					},
+					{
+						"id": "leave",
+						"label": "離去",
+						"kind_hint": "neutral",
+						"outcome": {"kind": "neutral", "effects": [], "log": "你掂了掂這個箱子，覺得不如不開。"},
+					},
+				],
+			},
+			"nodes": {
+				"node_trap": {
+					"prompt": "金屬絲在箱蓋下繃緊——這是毒針機關，但設計者留了給識者的旁路。",
+					"choices": [
+						{
+							"id": "bypass",
+							"label": "走旁路安全開鎖",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "gold", "amount": 20},
+									{"kind": "gain_card_pool", "pool": "uncommon"},
+									{"kind": "heal", "amount": 5},
+								],
+								"log": "你順著旁路解開鎖扣，毒針從另一側無聲彈過。",
+							},
+						},
+						{
+							"id": "trigger_grab",
+							"label": "故意觸發毒針後翻箱",
+							"kind_hint": "mixed",
+							"outcome": {
+								"kind": "mixed",
+								"effects": [
+									{"kind": "damage", "amount": 6},
+									{"kind": "gain_relic_pool", "pool": "common"},
+									{"kind": "gold", "amount": 10},
+								],
+								"log": "你受了毒針一刺，但箱底壓著一件不打眼的好物。",
+							},
+						},
+					],
+				},
+			},
+		},
 	},
 	"ancestor_relic": {
 		"title": "先靈遺骨",
@@ -230,7 +572,102 @@ const VARIANTS: Dictionary = {
 			"power": "骨殖微微顫動，一縷殘存的意志悄然融入你的劍意，殺伐之氣更甚從前。那是另一個人走了一輩子才走出來的鋒芒，此刻，傳到了你的手上。",
 			"upgrade": "那意志短暫地附在你手上，某道招式的謬誤就此被先靈之手抹去。你感到有人站在你身後，靜靜地看著，滿意地點了點頭。",
 			"heal": "虔誠供奉，先靈庇佑，傷口癒合的速度比尋常快了幾分。那股暖意不像草藥，更像是一個陌生的老人，把手放在你肩膀上，不說話，只是讓你知道：有人看顧著你。"
-		}
+		},
+		# Batch A 凍結設計（docs/EVENT_BRANCHING.md §10）
+		"tree": {
+			"root": {
+				"prompt": "古老祭壇上一具尚未化盡的骨殖，靈氣濃郁。蜷縮坐化之姿，旁有三朵乾枯小白花。",
+				"choices": [
+					{
+						"id": "venerate",
+						"label": "虔誠供奉 + 行禮",
+						"kind_hint": "reward",
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "heal", "amount": 10},
+								{"kind": "permanent_power", "amount": 1},
+							],
+							"log": "先靈似乎輕輕點了個頭。",
+						},
+					},
+					{
+						"id": "extract_bone",
+						"label": "取走骨殖殘片煉化",
+						"kind_hint": "mixed",
+						"outcome": {
+							"kind": "mixed",
+							"effects": [
+								{"kind": "max_hp", "amount": -3},
+								{"kind": "permanent_power", "amount": 3},
+							],
+							"log": "你感到先靈在你體內留下了一道無形的眼神，從此每次出手，他都看著。",
+						},
+					},
+					{
+						"id": "observe_legacy",
+						"label": "觀察骨殖姿勢",
+						"kind_hint": "reward",
+						"requires": {"observe_token": true},
+						"next": "node_legacy",
+					},
+					{
+						"id": "lin_lineage",
+						"label": "以靈劍山莊弟子禮認師",
+						"kind_hint": "reward",
+						"requires": {"character": ["lin_yueru"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "gain_card_pool", "pool": "character"},
+								{"kind": "permanent_power", "amount": 1},
+							],
+							"log": "月如跪下時聽見了一個從未見過的聲音輕喚她的名字，那是父親也未曾提起的師伯。",
+						},
+					},
+					{
+						"id": "leave",
+						"label": "不打擾，繞行",
+						"kind_hint": "neutral",
+						"outcome": {"kind": "neutral", "effects": [], "log": "你向骨殖低頭一禮，繼續上路。"},
+					},
+				],
+			},
+			"nodes": {
+				"node_legacy": {
+					"prompt": "骨殖周圍刻有極小的字：『接得住者，即吾傳人』。",
+					"choices": [
+						{
+							"id": "kneel_accept",
+							"label": "跪受傳承",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "gain_card_pool", "pool": "rare"},
+									{"kind": "permanent_power", "amount": 2},
+								],
+								"log": "你跪下接住這份傳承，胸口微微一熱。",
+							},
+						},
+						{
+							"id": "decline_take_flowers",
+							"label": "婉拒，只取走三朵乾花作念想",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "gain_relic_pool", "pool": "common"},
+									{"kind": "heal", "amount": 8},
+									{"kind": "max_hp", "amount": 2},
+								],
+								"log": "你把三朵乾花輕輕收進胸口的暗袋。",
+							},
+						},
+					],
+				},
+			},
+		},
 	},
 	"wandering_sage": {
 		"title": "雲遊隱士",
@@ -249,7 +686,136 @@ const VARIANTS: Dictionary = {
 			"heal": "老者拈起一把草葉往你傷口一貼，涼意透入，血色退去大半。他一句話都沒說，就那樣放手，轉身繼續煮茶，好像幫你療傷只是順手的事。",
 			"upgrade": "老者只說了半句話，你便悟透了剩下那半句。那道招式從此不同了——不是更強了，而是更真了，像是終於去掉了最後一層假。",
 			"remove": "老者搖搖頭：『此式有礙根基。』隨手將那頁功法投入爐火，煙散無痕。他端起茶，若無其事，但你感到招式裡確實有什麼東西消失了，而心也隨之輕了。"
-		}
+		},
+		# Batch A 凍結設計（docs/EVENT_BRANCHING.md §11）
+		"tree": {
+			"root": {
+				"prompt": "竹笠下白髮垂胸的老者煮著粗茶。他抬眼掃過你，不發一語。",
+				"choices": [
+					{
+						"id": "seek_teaching",
+						"label": "拱手求教",
+						"kind_hint": "reward",
+						"next": "node_teach",
+					},
+					{
+						"id": "silent_sit",
+						"label": "沉默對坐",
+						"kind_hint": "reward",
+						"outcome": {
+							"kind": "reward",
+							"effects": [{"kind": "permanent_power", "amount": 2}],
+							"log": "老者最後只說了一句：「你的劍會找到答案。」",
+						},
+					},
+					{
+						"id": "observe_master",
+						"label": "觀察老者來歷",
+						"kind_hint": "reward",
+						"requires": {"observe_token": true},
+						"next": "node_recognize",
+					},
+					{
+						"id": "lxy_uncle",
+						"label": "問師叔下落",
+						"kind_hint": "reward",
+						"requires": {"character": ["li_xiaoyao"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "gain_card_pool", "pool": "character"},
+								{"kind": "heal", "amount": 10},
+							],
+							"log": "老者眯眼笑了：「酒劍仙啊……他欠我三壺酒，你見著了替我討。」",
+						},
+					},
+					{
+						"id": "leave",
+						"label": "離去",
+						"kind_hint": "neutral",
+						"outcome": {"kind": "neutral", "effects": [], "log": "你向老者拱手，繼續上路。"},
+					},
+				],
+			},
+			"nodes": {
+				"node_teach": {
+					"prompt": "老者放下茶杯，慢慢說：『我能教你三樣，你只能挑一樣。』",
+					"choices": [
+						{
+							"id": "heal_lesson",
+							"label": "求療傷之術",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "heal", "amount": 18},
+									{"kind": "max_hp", "amount": 2},
+								],
+								"log": "老者拈起草葉一貼，涼意透入。",
+							},
+						},
+						{
+							"id": "refine_lesson",
+							"label": "求精煉招式之竅",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "upgrade_random"},
+									{"kind": "permanent_power", "amount": 1},
+								],
+								"log": "老者只說了半句話，你便悟透了剩下那半句。",
+							},
+						},
+						{
+							"id": "remove_lesson",
+							"label": "求斬除心中雜念",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "lose_card"},
+									{"kind": "heal", "amount": 5},
+								],
+								"log": "老者將你心頭一道雜念投入爐火，煙散無痕。",
+							},
+						},
+					],
+				},
+				"node_recognize": {
+					"prompt": "你細看老者煮茶的動作——精準到像練過幾十年的招式。他是高人。",
+					"choices": [
+						{
+							"id": "apprentice",
+							"label": "拜為一日之師",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "gain_card_pool", "pool": "rare"},
+									{"kind": "permanent_power", "amount": 1},
+									{"kind": "next_battle_buff", "effects": [{"kind": "energy", "amount": 1}]},
+								],
+								"log": "老者收下你這一拜，把一道罕見的心法說與你聽。",
+							},
+						},
+						{
+							"id": "leave_wine",
+							"label": "不打擾，留一壺好酒作謝",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "gold", "amount": -10},
+									{"kind": "heal", "amount": 6},
+								],
+								"log": "老者收下酒，向你抬了抬竹笠。你回頭時，他已不在那裡。",
+							},
+						},
+					],
+				},
+			},
+		},
 	},
 	"moonlit_pool": {
 		"title": "月光浸水潭",
@@ -267,7 +833,109 @@ const VARIANTS: Dictionary = {
 		"outcomes": {
 			"heal": "月光滲入水中，你的舊傷如紙浸軟、輕輕化開，浮上水面的是清澈的倒影。走出潭邊時，你發現身上有些東西不只是傷，也一起淡去了。",
 			"power": "潭面映出你自己的雙眼——那雙眼裡，有什麼東西比昨夜更深了。你說不清那是什麼，只知道它讓你的招式多了一層力量，像是某種本來就在那裡、只是還沒被看見的東西。"
-		}
+		},
+		# Batch A 凍結設計（docs/EVENT_BRANCHING.md §12）
+		"tree": {
+			"root": {
+				"prompt": "夜色凝在潭面，倒映出比山更深的星辰。傳說潭水能洗去俗血，也能引出舊傷。",
+				"choices": [
+					{
+						"id": "bathe",
+						"label": "沐月療養",
+						"kind_hint": "reward",
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "heal", "amount": 15},
+								{"kind": "max_hp", "amount": 2},
+							],
+							"log": "月光滲入水中，你的舊傷如紙浸軟、輕輕化開。",
+						},
+					},
+					{
+						"id": "drink",
+						"label": "仰天飲一口潭水",
+						"kind_hint": "gamble",
+						"outcome": {
+							"kind": "gamble",
+							"gamble": {
+								"win_chance": 0.5,
+								"win_effects": [
+									{"kind": "permanent_power", "amount": 2},
+									{"kind": "gain_card_pool", "pool": "uncommon"},
+								],
+								"lose_effects": [
+									{"kind": "max_hp", "amount": -3},
+									{"kind": "damage", "amount": 4},
+								],
+							},
+							"log": "潭水有兩面——對著光是淨化，對著陰是引誘。",
+						},
+					},
+					{
+						"id": "observe_moons",
+						"label": "觀察潭中倒影",
+						"kind_hint": "reward",
+						"requires": {"observe_token": true},
+						"next": "node_double_moon",
+					},
+					{
+						"id": "zhao_lineage",
+						"label": "以靈族水德沐浴歸宗",
+						"kind_hint": "reward",
+						"requires": {"character": ["zhao_linger"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "heal", "amount": 20},
+								{"kind": "max_hp", "amount": 5},
+								{"kind": "gain_card_pool", "pool": "character"},
+							],
+							"log": "靈兒踏入潭中，月光把水映成銀白，那一刻她聽見了母親的聲音。",
+						},
+					},
+					{
+						"id": "leave",
+						"label": "離去",
+						"kind_hint": "neutral",
+						"outcome": {"kind": "neutral", "effects": [], "log": "你向潭面拱了拱手，留下這份古意給下一個有緣人。"},
+					},
+				],
+			},
+			"nodes": {
+				"node_double_moon": {
+					"prompt": "水中映出的不是天上那輪，是更古老更圓滿的雙月——某個失落仙派的修行之地。",
+					"choices": [
+						{
+							"id": "twin_moon_seal",
+							"label": "以雙月為印起念",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "gain_relic_pool", "pool": "uncommon"},
+									{"kind": "heal", "amount": 5},
+								],
+								"log": "雙月之印在你眉心一點即逝，留下一件不屬於這個時代的物事。",
+							},
+						},
+						{
+							"id": "sit_until_moonset",
+							"label": "不擾古事，靜坐至月偏",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "permanent_power", "amount": 1},
+									{"kind": "heal", "amount": 8},
+								],
+								"log": "你坐到月偏才起身，雙腳發麻，胸中卻異常清明。",
+							},
+						},
+					],
+				},
+			},
+		},
 	},
 	"broken_temple": {
 		"title": "廢棄山神廟",

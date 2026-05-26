@@ -152,6 +152,11 @@ func _initialize() -> void:
 	_test_curse_retention_turn_start(characters[0], enemies[0])
 	_test_curse_retention_battle_start(characters[0], enemies[0])
 	_test_jing_hua_fu_removes_curse(characters[0])
+	# Phase 7-A：Batch A 6 個事件樹
+	_test_batch_a_all_have_tree()
+	_test_batch_a_character_gating()
+	_test_batch_a_observe_gating()
+	_test_batch_a_subnode_navigation()
 	print("SwordCard smoke test passed.")
 	quit(0)
 
@@ -1505,8 +1510,8 @@ func _test_event_runner_has_tree() -> void:
 	# spring 有 tree；某個還沒做 tree 的事件（如 shrine）沒有
 	var spring: Dictionary = EventData.for_variant("spring")
 	assert(EventRunner.has_tree(spring), "spring should have tree schema")
-	var shrine: Dictionary = EventData.for_variant("shrine")
-	assert(not EventRunner.has_tree(shrine), "shrine should still use legacy flat schema")
+	var legacy: Dictionary = EventData.for_variant("forgotten_altar")
+	assert(not EventRunner.has_tree(legacy), "forgotten_altar should still use legacy flat schema")
 
 func _test_event_runner_root_choices() -> void:
 	var spring: Dictionary = EventData.for_variant("spring")
@@ -1585,10 +1590,10 @@ func _test_event_runner_leaf_detection() -> void:
 
 func _test_event_runner_legacy_fallback() -> void:
 	# 還沒做 tree 的 event：has_tree=false、get_node 回空 dict、不爆炸
-	var shrine: Dictionary = EventData.for_variant("shrine")
-	assert(not EventRunner.has_tree(shrine))
-	assert(EventRunner.get_node(shrine, "root").is_empty())
-	assert(EventRunner.get_node(shrine, "node_anything").is_empty())
+	var legacy_ed: Dictionary = EventData.for_variant("forgotten_altar")
+	assert(not EventRunner.has_tree(legacy_ed))
+	assert(EventRunner.get_node(legacy_ed, "root").is_empty())
+	assert(EventRunner.get_node(legacy_ed, "node_anything").is_empty())
 	# eval_requires 空 dict / 缺欄位都應通過
 	assert(EventRunner.eval_requires({}, {}))
 	assert(EventRunner.eval_requires({"character": []}, {"character_id": "anyone"}))
@@ -1832,3 +1837,85 @@ func _test_jing_hua_fu_removes_curse(character: CharacterData) -> void:
 				if String(e.get("kind", "")) == "remove_random_curse":
 					has_battle_victory_trigger = true
 	assert(has_battle_victory_trigger, "jing_hua_fu should have battle_victory + remove_random_curse")
+
+# ──────────────────────────────────────────────────────────────────────
+# Event Branching Phase 7-A：Batch A 6 個事件樹（內容驗證）
+# ──────────────────────────────────────────────────────────────────────
+
+const BATCH_A_VARIANTS: Array[String] = [
+	"talisman_cache", "shrine", "treasure_chest",
+	"ancestor_relic", "wandering_sage", "moonlit_pool",
+]
+
+func _test_batch_a_all_have_tree() -> void:
+	# 全 6 個 variant 都應該有 tree schema、root 至少 3 個選項、含一個 observe-gated 與
+	# 一個 character-gated（設計參數 4+5）
+	for variant: String in BATCH_A_VARIANTS:
+		var ed: Dictionary = EventData.for_variant(variant)
+		assert(EventRunner.has_tree(ed), "%s should have tree schema" % variant)
+		var root: Dictionary = EventRunner.get_node(ed, "root")
+		var choices: Array = root.get("choices", []) as Array
+		assert(choices.size() >= 3, "%s root should have >=3 choices, got %d" % [variant, choices.size()])
+		# 至少一個 observe_token gate
+		var has_observe_gate: bool = false
+		# 至少一個 character gate
+		var has_char_gate: bool = false
+		for c_v: Variant in choices:
+			var c: Dictionary = c_v as Dictionary
+			var req: Dictionary = c.get("requires", {}) as Dictionary
+			if bool(req.get("observe_token", false)):
+				has_observe_gate = true
+			if not (req.get("character", []) as Array).is_empty():
+				has_char_gate = true
+		assert(has_observe_gate, "%s should have at least 1 observe-gated choice" % variant)
+		assert(has_char_gate, "%s should have at least 1 character-gated choice" % variant)
+
+func _test_batch_a_character_gating() -> void:
+	# 切過 4 個角色身分都應正確過濾。預期每個 variant 至少有一個角色 ID 能看到比另一個多的選項。
+	var characters_to_test: Array[String] = ["li_xiaoyao", "zhao_linger", "lin_yueru", "anu"]
+	for variant: String in BATCH_A_VARIANTS:
+		var ed: Dictionary = EventData.for_variant(variant)
+		var root: Dictionary = EventRunner.get_node(ed, "root")
+		# 用 observe_tokens=99 排除 observe gating 影響
+		var ctx_by_char: Dictionary = {}
+		for cid: String in characters_to_test:
+			var ctx: Dictionary = EventRunner.build_context(cid, 999, 0, 99, [], 10)
+			ctx_by_char[cid] = EventRunner.visible_choices(root, ctx)
+		# 至少兩個角色的可見選項數不同 → 確實有 character-gating 在生效
+		var sizes: Array[int] = []
+		for cid: String in characters_to_test:
+			sizes.append((ctx_by_char[cid] as Array).size())
+		var min_size: int = sizes[0]
+		var max_size: int = sizes[0]
+		for s: int in sizes:
+			min_size = min(min_size, s)
+			max_size = max(max_size, s)
+		assert(max_size > min_size, "%s should have character-specific choices (size varies by char), all returned %d" % [variant, min_size])
+
+func _test_batch_a_observe_gating() -> void:
+	# 同一角色 + observe=0 vs observe=3 → observe=3 一定看到 >= observe=0 的選項
+	for variant: String in BATCH_A_VARIANTS:
+		var ed: Dictionary = EventData.for_variant(variant)
+		var root: Dictionary = EventRunner.get_node(ed, "root")
+		var ctx_no: Dictionary = EventRunner.build_context("li_xiaoyao", 999, 0, 0, [], 10)
+		var ctx_yes: Dictionary = EventRunner.build_context("li_xiaoyao", 999, 0, 3, [], 10)
+		var v_no: int = EventRunner.visible_choices(root, ctx_no).size()
+		var v_yes: int = EventRunner.visible_choices(root, ctx_yes).size()
+		assert(v_yes > v_no, "%s should expose more choices with observe tokens; %d (no) vs %d (yes)" % [variant, v_no, v_yes])
+
+func _test_batch_a_subnode_navigation() -> void:
+	# 每個 variant 至少有一個 'next' 連到某 sub-node，且該 sub-node 存在且有 choices
+	for variant: String in BATCH_A_VARIANTS:
+		var ed: Dictionary = EventData.for_variant(variant)
+		var root: Dictionary = EventRunner.get_node(ed, "root")
+		var next_targets: Array[String] = []
+		for c_v: Variant in (root.get("choices", []) as Array):
+			var c: Dictionary = c_v as Dictionary
+			if c.has("next") and not EventRunner.is_leaf(c):
+				next_targets.append(String(c["next"]))
+		assert(not next_targets.is_empty(), "%s should have at least 1 sub-node choice" % variant)
+		for target: String in next_targets:
+			var sub: Dictionary = EventRunner.get_node(ed, target)
+			assert(not sub.is_empty(), "%s next target '%s' should resolve to a node" % [variant, target])
+			var sub_choices: Array = sub.get("choices", []) as Array
+			assert(sub_choices.size() >= 2, "%s sub-node '%s' should have >=2 choices, got %d" % [variant, target, sub_choices.size()])
