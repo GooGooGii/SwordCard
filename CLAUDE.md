@@ -18,6 +18,8 @@
 
 自創內容只在 PAL1 原有資料庫無法滿足需求時使用，並應與仙俠風格一致。
 
+**PAL1 正史速查表見 [`docs/PAL1_CANON.md`](docs/PAL1_CANON.md)**（角色出身/武器、NPC、地點、Boss、法寶、名場面、SwordCard 取用對照）。新增內容前先查。
+
 ## Tech Stack
 
 - **Godot 4.6** (mobile renderer, ETC2/ASTC textures)
