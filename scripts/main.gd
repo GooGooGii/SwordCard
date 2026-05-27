@@ -2532,7 +2532,6 @@ func _update_potion_button(btn: Button, slot: int, in_battle: bool = true) -> vo
 	btn.visible = true
 	var potion: Dictionary = run_state.potions[slot]
 	var name: String = String(potion.get("display_name", "?"))
-	btn.text = name.substr(0, 4) if name.length() > 4 else name
 	var tip_action: String = "（點擊查看 → 確認使用）" if in_battle else "（點擊丟棄）"
 	btn.tooltip_text = "%s\n%s\n%s" % [name, String(potion.get("description", "")), tip_action]
 	btn.disabled = false
@@ -2542,6 +2541,17 @@ func _update_potion_button(btn: Button, slot: int, in_battle: bool = true) -> vo
 	btn.add_theme_stylebox_override("pressed", UIFactory.style_box(Color("0e141e"), rarity_col, 2, 6))
 	btn.add_theme_color_override("font_color", ThemeColors.TEXT_LIGHT)
 	btn.remove_theme_color_override("font_disabled_color")
+	
+	# Load potion texture icon if available
+	var art_path: String = "res://assets/art/potions/%s.png" % potion.get("id", "")
+	var texture: Texture2D = UIFactory.load_texture(art_path)
+	if texture != null:
+		btn.text = ""
+		btn.icon = texture
+		btn.expand_icon = true
+	else:
+		btn.text = name.substr(0, 4) if name.length() > 4 else name
+		btn.icon = null
 
 func _refresh_potion_buttons() -> void:
 	for i: int in range(_potion_buttons.size()):
@@ -2606,6 +2616,19 @@ func _show_use_potion_confirm(slot: int) -> void:
 	# 稀有度標籤（common / uncommon / rare）
 	var rarity_text: String = "%s 藥草" % String(potion.get("rarity", "common")).capitalize()
 	box.add_child(UIFactory.card_label(rarity_text, 12, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	
+	# Icon
+	var art_path: String = "res://assets/art/potions/%s.png" % potion.get("id", "")
+	var texture: Texture2D = UIFactory.load_texture(art_path)
+	if texture != null:
+		var rect: TextureRect = TextureRect.new()
+		rect.texture = texture
+		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		rect.custom_minimum_size = Vector2(72, 72)
+		rect.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		box.add_child(rect)
+		
 	# 描述
 	var desc: Label = UIFactory.card_label(String(potion.get("description", "")), 14, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2643,6 +2666,19 @@ func _discard_potion_prompt(slot: int) -> void:
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	popup.add_child(box)
 	box.add_child(UIFactory.card_label(String(potion.get("display_name", "?")), 20, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER))
+	
+	# Icon
+	var art_path: String = "res://assets/art/potions/%s.png" % potion.get("id", "")
+	var texture: Texture2D = UIFactory.load_texture(art_path)
+	if texture != null:
+		var rect: TextureRect = TextureRect.new()
+		rect.texture = texture
+		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		rect.custom_minimum_size = Vector2(64, 64)
+		rect.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		box.add_child(rect)
+		
 	box.add_child(UIFactory.card_label(String(potion.get("description", "")), 13, Color("d8e0ec"), HORIZONTAL_ALIGNMENT_CENTER))
 	var btn_row: HBoxContainer = HBoxContainer.new()
 	btn_row.add_theme_constant_override("separation", 16)
@@ -3588,11 +3624,19 @@ func _resolve_observe_effects(effects: Array) -> String:
 					if healed_any:
 						parts.append("全隊回復 %d 點生命" % amount)
 			"gain_potion":
-				# 隨機獲得一瓶藥草（背包滿則跳過）
+				# 獲得一瓶藥草（背包滿則跳過）。可選 potion_id 指定特定藥；
+				# 未指定或查無此 id 則退回隨機。
 				if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
-					var pool: Array[Dictionary] = PotionCatalog.all()
-					if not pool.is_empty():
-						var chosen: Dictionary = (pool[randi() % pool.size()] as Dictionary).duplicate()
+					var chosen: Dictionary = {}
+					var pid: String = String(effect.get("potion_id", ""))
+					if not pid.is_empty():
+						chosen = PotionCatalog.by_id(pid)
+					if chosen.is_empty():
+						var pool: Array[Dictionary] = PotionCatalog.all()
+						if not pool.is_empty():
+							chosen = pool[randi() % pool.size()] as Dictionary
+					if not chosen.is_empty():
+						chosen = chosen.duplicate()
 						run_state.potions.append(chosen)
 						parts.append("獲得藥草「%s」" % String(chosen.get("display_name", "?")))
 				else:
@@ -4204,18 +4248,48 @@ func _shop_potion_view(item: Dictionary) -> Control:
 	var full: bool = run_state.potions.size() >= RunState.MAX_POTION_SLOTS
 	var can_buy: bool = run_state.gold >= price and not full
 	var rarity_col: Color = PotionCatalog.rarity_color(potion)
-	var btn: Button = Button.new()
-	btn.custom_minimum_size = Vector2(150, 56)
-	btn.text = "%s\n%d 銅錢" % [String(potion.get("display_name", "?")), price]
-	btn.add_theme_color_override("font_color", rarity_col)
-	btn.add_theme_font_size_override("font_size", 14)
-	btn.disabled = not can_buy
+	
+	var panel: PanelContainer = UIFactory.make_panel()
+	panel.custom_minimum_size = Vector2(170, 250)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_child(box)
+	
+	# Potion Icon
+	var icon_container: Control = Control.new()
+	icon_container.custom_minimum_size = Vector2(64, 64)
+	icon_container.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(icon_container)
+	
+	var art_path: String = "res://assets/art/potions/%s.png" % potion.get("id", "")
+	var texture: Texture2D = UIFactory.load_texture(art_path)
+	if texture != null:
+		var rect: TextureRect = TextureRect.new()
+		rect.texture = texture
+		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		rect.custom_minimum_size = Vector2(64, 64)
+		rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		icon_container.add_child(rect)
+	
+	box.add_child(UIFactory.card_label(String(potion.get("display_name", "?")), 15, rarity_col, HORIZONTAL_ALIGNMENT_CENTER))
+	
+	var desc: Label = UIFactory.card_label(String(potion.get("description", "")), 11, Color("d8e0ec"), HORIZONTAL_ALIGNMENT_CENTER)
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc.custom_minimum_size = Vector2(150, 0)
+	box.add_child(desc)
+	
+	box.add_child(UIFactory.card_label("價格：%d 銅錢" % price, 13, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER))
+	
+	var buy_button: Button = _button("買下藥品")
+	buy_button.disabled = not can_buy
 	if full:
-		btn.tooltip_text = "藥格已滿（%d/%d）" % [run_state.potions.size(), RunState.MAX_POTION_SLOTS]
-	else:
-		btn.tooltip_text = String(potion.get("description", ""))
-	btn.pressed.connect(func(): _show_shop_potion_confirm_overlay(potion, item, price))
-	return btn
+		buy_button.tooltip_text = "藥格已滿（%d/%d）" % [run_state.potions.size(), RunState.MAX_POTION_SLOTS]
+	buy_button.pressed.connect(func(): _show_shop_potion_confirm_overlay(potion, item, price))
+	box.add_child(buy_button)
+	
+	return panel
 
 func _show_shop_potion_confirm_overlay(potion: Dictionary, item: Dictionary, price: int) -> void:
 	_hide_card_preview()

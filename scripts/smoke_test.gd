@@ -1133,7 +1133,7 @@ func _test_deck_pile_views(characters: Array[CharacterData]) -> void:
 
 func _test_potion_catalog() -> void:
 	var all_potions: Array[Dictionary] = PotionCatalog.all()
-	assert(all_potions.size() == 10, "PotionCatalog should have 10 potions, got %d" % all_potions.size())
+	assert(all_potions.size() == 11, "PotionCatalog should have 11 potions, got %d" % all_potions.size())
 	var ids: Array[String] = []
 	for p: Dictionary in all_potions:
 		assert(p.has("id") and String(p["id"]).length() > 0, "potion missing id")

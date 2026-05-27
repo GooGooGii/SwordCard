@@ -2344,10 +2344,10 @@ const VARIANTS: Dictionary = {
 							"outcome": {
 								"kind": "reward",
 								"effects": [
-									{"kind": "gain_relic_pool", "pool": "uncommon"},
+									{"kind": "gain_potion", "potion_id": "baihua_xianniang"},
 									{"kind": "heal_party", "amount": 6},
 								],
-								"log": "你點點頭，什麼都沒問。彩依眼裡閃過感激，往你手裡塞了一小瓶仙釀：『路上……或許用得著。』",
+								"log": "你點點頭，什麼都沒問。彩依眼裡閃過感激，往你手裡塞了一瓶親手煎的百花仙釀：『路上……或許用得著。』",
 							},
 						},
 						{

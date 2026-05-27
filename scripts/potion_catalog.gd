@@ -73,6 +73,14 @@ static func all() -> Array[Dictionary]:
 			"description": "抽 3 張牌並恢復靈力 +1。",
 			"effects": [{"kind": "draw", "amount": 3}, {"kind": "energy", "amount": 1}]
 		},
+		{
+			# PAL1：蝶妖彩依以奇花異草煎製，用以續劉晉元之命的仙釀。
+			"id": "baihua_xianniang",
+			"display_name": "百花仙釀",
+			"rarity": "rare",
+			"description": "回復 25 點生命並清除所有蠱毒。",
+			"effects": [{"kind": "heal", "amount": 25}, {"kind": "cure_poison"}]
+		},
 	]
 
 static func by_id(id: String) -> Dictionary:
