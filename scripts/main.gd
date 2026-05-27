@@ -3018,8 +3018,6 @@ func show_card_reward() -> void:
 	box.add_theme_constant_override("separation", 14)
 	panel.add_child(box)
 	box.add_child(_title("戰鬥勝利", 34))
-	box.add_child(UIFactory.paragraph("%s 擊敗了 %s。選擇 1 張卡加入牌組。" % [selected_character.display_name, battle.enemy.display_name]))
-	box.add_child(UIFactory.paragraph("目前 HP %d/%d，銅錢 %d，牌組 %d 張。" % [run_state.hp, selected_character.max_hp, run_state.gold, run_state.deck.size()]))
 	for lu: Dictionary in _pending_levelups:
 		var lu_lbl: Label = UIFactory.card_label(
 			"✦ %s 升至 Lv %d！" % [String(lu.get("char_name", "")), int(lu.get("new_level", 1))],
@@ -3033,10 +3031,18 @@ func show_card_reward() -> void:
 			box.add_child(uc_lbl)
 	var rewards: Array[CardData] = _make_reward_choices()
 	var reward_row: HBoxContainer = HBoxContainer.new()
+	reward_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	reward_row.add_theme_constant_override("separation", 12)
 	box.add_child(reward_row)
+	# 卡片高度依視窗高度自適應、上限 349：預留標題 / 升級提示 / 兩顆按鈕 / 各層 margin 的空間，
+	# 確保「跳過獎勵」「查看目前牌組」按鈕永遠落在畫面內、點得到。
+	var levelup_lines: int = 0
+	for lu: Dictionary in _pending_levelups:
+		levelup_lines += 1 + (lu.get("unlocked_cards", []) as Array).size()
+	var reserved_h: float = 300.0 + float(levelup_lines) * 26.0
+	var card_h: float = clampf(get_viewport_rect().size.y - reserved_h, 180.0, 349.0)
 	for reward: CardData in rewards:
-		var reward_button: Button = _reward_card_button(reward)
+		var reward_button: Button = _reward_card_button(reward, card_h)
 		reward_button.pressed.connect(func(card: CardData = reward): choose_reward_card(card))
 		reward_row.add_child(reward_button)
 	var skip: Button = _button("跳過獎勵")
@@ -5495,8 +5501,10 @@ func _show_card_preview(card: CardData) -> void:
 		up_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		stack.add_child(up_btn)
 
-func _reward_card_button(card: CardData) -> Button:
-	return _make_card_button(card, card.cost, Vector2(192, 349), true, true)
+func _reward_card_button(card: CardData, card_height: float = 349.0) -> Button:
+	var h: float = clampf(card_height, 180.0, 349.0)
+	var w: float = h * (192.0 / 349.0)
+	return _make_card_button(card, card.cost, Vector2(w, h), true, true)
 
 func _card_frame_texture_path(card_type: String) -> String:
 	match card_type:
