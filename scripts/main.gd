@@ -4649,6 +4649,8 @@ func show_deck_view(mode: String = "view", custom_cards = null, custom_title: St
 	deck_view_mode = mode
 	deck_overlay = PanelContainer.new()
 	deck_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# 手牌 z_index 高達 1100~1200（見 hand_fan.gd / 長按預覽），不墊高的話戰鬥中檢視牌組會被手牌蓋住
+	deck_overlay.z_index = 1500
 	deck_overlay.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.94), ThemeColors.BORDER_GOLD, 2, 8))
 	add_child(deck_overlay)
 	var outer: MarginContainer = MarginContainer.new()
@@ -5522,7 +5524,7 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	#   透明放卡圖區  y 4%~44%, x 9%~92%
 	#   標題裝飾帶    y 48%~56%
 	#   描述卷軸區    y 57%~90%
-	var title_font_size: int = int(clamp(size.y * 0.060, 12, 26))
+	var title_font_size: int = int(clamp(size.y * 0.052, 11, 22))
 	var cost_font_size: int = int(clamp(size.y * 0.085, 18, 38))
 	var type_font_size: int = int(clamp(size.y * 0.035, 9, 16))
 	var desc_font_size: int = int(clamp(size.y * 0.042, 10, 18))
@@ -5568,13 +5570,14 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 		frame.modulate = Color(0.82, 0.82, 0.82, 0.78)
 	button.add_child(frame)
 
-	# 3) 靈力數字：對齊卡套左上圓圈中心 (13%, 11%)，label box 取 (3%~23%, 3%~19%) 以容納字
+	# 3) 靈力數字：對齊卡套左上鑽飾中心。卡框量測（484×880）鑽飾中心 ≈ (15.6%, 7.7%)；
+	# 之前 box (3%~23%) 中心只有 13%，數字偏左出鑽飾。改成 box 中心對準 15.6% / 7.7%。
 	var cost_label: Label = UIFactory.card_label(str(cost), cost_font_size, Color("f7f0dc"), HORIZONTAL_ALIGNMENT_CENTER)
 	cost_label.name = "CardCost"
-	cost_label.anchor_left = 0.03
-	cost_label.anchor_top = 0.01
-	cost_label.anchor_right = 0.23
-	cost_label.anchor_bottom = 0.15
+	cost_label.anchor_left = 0.056
+	cost_label.anchor_top = 0.008
+	cost_label.anchor_right = 0.256
+	cost_label.anchor_bottom = 0.147
 	cost_label.offset_left = 0
 	cost_label.offset_top = 0
 	cost_label.offset_right = 0
@@ -5585,22 +5588,25 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(cost_label)
 
-	# 4) 卡名：對齊卡套標題帶 y 46%~54%
-	# 標題帶是淺米色羊皮紙材質（與描述卷軸同色），用深棕字 + 淺色 outline 才有對比、看得清
+	# 4) 卡名：對齊卡套標題帶「淺色書寫區」y 44%~50%（卡框量測：484×880 的淺羊皮紙帶在 0.444~0.495，
+	# 0.50~0.55 是深色裝飾鑽飾邊）。之前 anchor 0.485~0.565 讓深棕字中心落在 0.525 的深色鑽飾上 → 看不見。
 	var title: Label = UIFactory.card_label(card.display_title(), title_font_size, Color("2d2418"), HORIZONTAL_ALIGNMENT_CENTER)
 	title.name = "CardTitle"
 	title.anchor_left = 0.12
-	title.anchor_top = 0.485
+	title.anchor_top = 0.44
 	title.anchor_right = 0.88
-	title.anchor_bottom = 0.565
+	title.anchor_bottom = 0.50
 	title.offset_left = 0
 	title.offset_top = 0
 	title.offset_right = 0
 	title.offset_bottom = 0
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	# 真正讓卡名隱形的元凶：card_label() 預設 AUTOWRAP_WORD_SMART，與 clip_text=true 在這個只有
+	# ~33px 高的窄名牌框相撞時，整行字會被裁成完全不顯示（實測 A/B 確認）。卡名本就單行，關掉換行即可。
+	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 	title.clip_text = true
-	title.add_theme_color_override("font_outline_color", Color("f3e9cf", 0.85))
-	title.add_theme_constant_override("outline_size", outline_size)
+	title.add_theme_color_override("font_outline_color", Color("1b150f", 0.8))
+	title.add_theme_constant_override("outline_size", 1)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(title)
 
