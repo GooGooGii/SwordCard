@@ -2213,6 +2213,161 @@ const VARIANTS: Dictionary = {
 			"gain_card": "你陪少年練劍直到天黑。臨別時，他從懷裡取出一卷殘破的劍譜：「這是我祖父給我的，但我練不來。前輩拿著吧，總比留在我手裡浪費好。」你接過那卷劍譜，覺得這個少年比他自己以為的，要珍貴得多。"
 		}
 	},
+	# PAL1 名場面：彩依（蝶妖）為救書生劉晉元，散盡千年道行的「蝶戀」典故。
+	# 毒娘子（蜘蛛精）在正史由李逍遙、林月如所斬，此處作 callback 而非開戰。
+	"caiyi_butterfly": {
+		"title": "蝶戀",
+		"flavor": "破舊宅院飄出花草藥香。一名素衣女子正將剛採的奇花投入藥爐，煎著一鍋『百花仙釀』；屋內床上躺著個面色青黑、氣息微弱的書生。女子抬頭，眼神溫柔卻藏著化不開的疲憊。",
+		"character_flavors": {
+			"li_xiaoyao": "逍遙一進門就怔住了——這眉眼，是劉府的丫鬟！當初在劉家莊，這姑娘端茶遞水、寸步不離那位病弱的劉公子。原來她從未離開過。逍遙鼻子一酸，默默走過去，往藥爐裡添了把柴火。",
+			"zhao_linger": "靈兒一眼便看出那女子並非凡人——她的影子，在火光裡是一對舒展的蝶翼。同為非人之身，靈兒心頭一軟。她輕聲開口：「姊姊，他……值得妳這樣嗎？」女子只是笑，沒答。",
+			"lin_yueru": "月如的目光落在書生脖頸的青黑紋路上，臉色一沉——那是纏魂絲，毒娘子的手筆。她握緊了劍：這隻蜘蛛精，她與逍遙曾經交過手。女子卻搖頭：「斬了她，他便再無解藥了。」月如沉默。",
+			"anu": "藥香裡有一縷『活』的氣息，阿奴的眉頭立刻皺了起來。她湊近書生，用骨針挑起一絲青黑的毒絲端詳——這毒會認主、會反噬，和苗疆某些最毒的蠱同源。她蹲下身：「這毒……我見過類似的。」",
+		},
+		"heal": 10, "gain_cost": 6, "power": 1, "power_label": "憐心",
+		"observe_text": "你借著煎藥的火光細看。女子每投一味藥，指尖都微微發顫——她在用自己的元氣餵那鍋仙釀。她的影子落在牆上，竟是一對緩緩開合的蝶翼。她是隻千年蝶妖，為了一個救過她命的書生，散盡道行也甘願。她察覺你的目光，並不躲避，只輕聲說：『我這條命，本就是他給的。』",
+		"observe_effects": [{"kind": "heal", "amount": 6}, {"kind": "power", "amount": 1}],
+		"choices": ["heal", "gain_card", "observe", "leave"],
+		"outcomes": {
+			"heal": "你上山替她採齊缺的幾味奇花。女子煎出新一鍋仙釀，書生的氣息穩了些。她對你深深一禮，藥香沁入你自己的舊傷，竟也緩和了幾分。",
+			"gain_card": "你陪她守了大半夜的爐火。臨別，她往你掌心塞了半卷《百花譜》：『我用不上多久了……你帶著吧。』那一筆一畫，是用一個將盡之人的溫柔寫成的。"
+		},
+		"tree": {
+			"root": {
+				"prompt": "素衣女子守著藥爐與床榻。書生命懸一線，她的眼神卻只有溫柔，沒有半分為自己打算的意思。你能做些什麼？",
+				"choices": [
+					{
+						"id": "gather_herbs",
+						"label": "上山替她採齊草藥",
+						"kind_hint": "reward",
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "heal_party", "amount": 8},
+								{"kind": "gain_card_pool", "pool": "common"},
+							],
+							"log": "你跑遍山谷採回奇花異草。女子煎出新一鍋仙釀，書生的青黑褪了一分。她對你深深一禮，那縷藥香也替你撫平了倦意。",
+						},
+					},
+					{
+						"id": "share_vitality",
+						"label": "分一縷真氣助壓毒性",
+						"kind_hint": "mixed",
+						"outcome": {
+							"kind": "mixed",
+							"effects": [
+								{"kind": "max_hp", "amount": -4},
+								{"kind": "permanent_power", "amount": 2},
+							],
+							"log": "你渡出一縷真氣護住書生心脈。你虛了幾分，卻像看懂了什麼——有些力量，是給出去之後才更強的。",
+						},
+					},
+					{
+						"id": "observe_truth",
+						"label": "細看那女子的來歷",
+						"kind_hint": "reward",
+						"requires": {"observe_token": true},
+						"next": "node_truth",
+					},
+					{
+						"id": "lxy_recall",
+						"label": "（李逍遙）想起劉府那位寸步不離的丫鬟",
+						"kind_hint": "reward",
+						"requires": {"character": ["li_xiaoyao"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "heal", "amount": 12},
+								{"kind": "permanent_power", "amount": 1},
+							],
+							"log": "逍遙默默替她守了一夜爐火。他幫不上更多，但他記得這份情義——人能為人做到這一步，他也想成為那樣的人。心境通透，劍意更沉。",
+						},
+					},
+					{
+						"id": "zhao_unbind",
+						"label": "（趙靈兒）以靈族秘法為書生鬆解纏魂絲",
+						"kind_hint": "reward",
+						"requires": {"character": ["zhao_linger"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "gain_card_pool", "pool": "character"},
+								{"kind": "heal_party", "amount": 10},
+							],
+							"log": "靈兒指尖靈光流轉，纏魂絲一寸寸鬆開。女子睜大眼：『你……也不是凡人。』靈兒笑了笑，沒說自己是誰，只把這份溫柔還給了她。",
+						},
+					},
+					{
+						"id": "lin_recall",
+						"label": "（林月如）認出這是毒娘子的纏魂絲",
+						"kind_hint": "mixed",
+						"requires": {"character": ["lin_yueru"]},
+						"outcome": {
+							"kind": "mixed",
+							"effects": [
+								{"kind": "gain_relic_pool", "pool": "uncommon"},
+								{"kind": "next_battle_buff", "effects": [{"kind": "power", "amount": 1}]},
+							],
+							"log": "月如想起那隻蜘蛛精，眼神一冷。她沒有去尋仇——因為斬了毒娘子，書生便再無解藥。她把這口氣壓進劍裡，留待真正該出手的時候。",
+						},
+					},
+					{
+						"id": "anu_analyze",
+						"label": "（阿奴）以苗疆毒術剖析纏魂絲",
+						"kind_hint": "mixed",
+						"requires": {"character": ["anu"]},
+						"outcome": {
+							"kind": "mixed",
+							"effects": [
+								{"kind": "gain_card_pool", "pool": "character"},
+								{"kind": "heal", "amount": 6},
+							],
+							"log": "阿奴調了一帖苗疆解毒散摻進仙釀，書生的青黑褪了一分。女子怔怔看著她：『妳……懂這個。』阿奴點頭：『毒和情，有時候是同一種東西。』",
+						},
+					},
+					{
+						"id": "leave",
+						"label": "不打擾，悄然離去",
+						"kind_hint": "neutral",
+						"outcome": {"kind": "neutral", "effects": [], "log": "你沒有打擾這一屋的執念，輕輕退了出去。藥香在身後久久不散。"},
+					},
+				],
+			},
+			"nodes": {
+				"node_truth": {
+					"prompt": "火光照清了真相——女子的影子是一對蝶翼。她是千年蝶妖彩依，為救曾搭救她的書生，甘願散盡道行、換他十年陽壽。她迎著你的目光，並不躲避。",
+					"choices": [
+						{
+							"id": "keep_secret",
+							"label": "替她守住這個秘密",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "gain_relic_pool", "pool": "uncommon"},
+									{"kind": "heal_party", "amount": 6},
+								],
+								"log": "你點點頭，什麼都沒問。彩依眼裡閃過感激，往你手裡塞了一小瓶仙釀：『路上……或許用得著。』",
+							},
+						},
+						{
+							"id": "ask_worth",
+							"label": "問她：「值得嗎？」",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "permanent_power", "amount": 2},
+									{"kind": "gain_card_pool", "pool": "uncommon"},
+								],
+								"log": "她想了很久，笑了：『千年修行，換他十年陽壽——若再選一次，我還是會這樣選。』那一刻你像被什麼擊中，招式裡多了一分不顧自身的決絕。",
+							},
+						},
+					],
+				},
+			},
+		},
+	},
 	"jiang_waner_grief": {
 		"title": "婉兒之死",
 		"flavor": "破敗的茅屋裡躺著一具年輕女子的遺體，眉目清秀，身上有拜月教施加的邪術痕跡。一塊染血的玉佩在她手中緊握，刻著「婉」字。地上散落幾頁血書，字跡顫抖卻清晰。",
