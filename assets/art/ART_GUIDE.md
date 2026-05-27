@@ -164,3 +164,23 @@ Card UI should follow a fixed rendering stack so art replacements do not require
 Decorative overlays include the mana badge, rarity badge, name plaque, and rules-panel ornaments. When replacing the three card frames with ink-wash versions, keep those elements as separate overlays unless they must be baked into the frame for a specific visual effect.
 
 ---
+
+## 待補美術 (Art TODO)
+
+> 新增卡牌一律需在 `assets/art/cards/<id>.png` 放圖，或用 `make_card(..., art_id="既有卡id")` 借圖；否則 `smoke_test.gd:14` 的 `assert(ResourceLoader.exists(reward_card.art_path))` 會失敗。
+
+### 卡牌（目前借圖、待補正式插圖）
+
+| 卡 id | 名稱 | 借用的圖 | 正式插圖方向 |
+|---|---|---|---|
+| `anu_cuifeng` | 淬鋒蠱刃 | anu_guxue | 蠱毒淬入刀刃、刀身泛綠毒光（power buff） |
+| `anu_wuyuezhan` | 巫月斬 | anu_duzhen | 巫月神刀月牙形連斬軌跡 |
+| `anu_xuerenwu` | 血刃亂舞 | anu_baozhagu | 亂刀殘影、血光四濺（三段連擊） |
+
+### 遺物（無圖、目前程序繪製 fallback）
+
+| 遺物 id | 名稱 | 待補 |
+|---|---|---|
+| `wuyue_shendao` | 巫月神刀 | `assets/art/relics/wuyue_shendao.png`（阿奴終極刀，月牙刀身 + 苗疆紋飾） |
+
+---

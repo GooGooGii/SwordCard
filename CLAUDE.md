@@ -298,6 +298,9 @@ main.gd
 ## 常見地雷
 
 - **加新 `class_name` 後 Godot 報「identifier not declared」**：跑一次 `godot --headless --path . --import` 重建 global class cache
+- **跑 smoke test 不要鏈 `--import`**：`-s scripts/smoke_test.gd` 直接跑即可。只有「**新增 `class_name`**」才需要先 `--import`。鏈 `--import && smoke` 曾在背景管線下 hang（import 卡住、後續又搶 import lock），白等 20 分鐘
+- **smoke test 的 assert 失敗 = 看起來像「卡死」**：`assert` 失敗會中途 abort `_initialize`、來不及 `quit(0)`，SceneTree 就空轉。若再用 `... | tail` 管線，錯誤訊息會被 buffer 蓋掉、CLI 完全看不到。**改成輸出到檔案**（`-s smoke_test.gd > out.txt 2>&1`）就能看到 `SCRIPT ERROR: Assertion failed. at: ... :行號`。已加 watchdog（abort 後 5 秒 `quit(1)`）避免真的無限空轉
+- **新增卡牌必須有美術**：`smoke_test.gd:14` assert 每張獎勵卡 `art_path` 存在。新卡要嘛放 `assets/art/cards/<id>.png`，要嘛 `make_card(..., art_id="既有卡id")` 借圖，否則 smoke test 直接 abort（見上一條的「假卡死」）
 - **.import 檔不要 .gitignore**：CI 端首次匯入時會找不到對應的 .import 配置、build 直接掛掉。`.gitattributes` 已規範換行
 - **不要把 `assert()` 用在正式邏輯**：release build 會被剝掉，assert 內的副作用會丟失
 - **不要在 `_clear_root()` 後立刻存取舊 UI 變數**：`queue_free()` 是延遲釋放但變數已是 dangling，下一行重建就好

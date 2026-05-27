@@ -1,6 +1,14 @@
 extends SceneTree
 
 func _initialize() -> void:
+	# Watchdog：assert 失敗會中途 abort _initialize、來不及跑到 quit(0)，
+	# 導致 SceneTree 空轉「假卡死」（CLI 端看起來像 hang）。
+	# _initialize 無 await、整段同步執行，故此 timer 在正常執行期間不會 tick；
+	# 一旦 abort、控制權交回主迴圈，timer 幾秒內 fire → 印錯誤 + quit(1)。
+	var watchdog: SceneTreeTimer = create_timer(5.0)
+	watchdog.timeout.connect(func() -> void:
+		push_error("[smoke] 測試在跑完前中止（多半是上方某個 assert 失敗）。以 quit(1) 結束，避免空轉假卡死。")
+		quit(1))
 	var characters: Array[CharacterData] = GameData.characters()
 	var enemies: Array[EnemyData] = GameData.enemies()
 	assert(characters.size() == 4)
