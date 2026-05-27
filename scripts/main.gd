@@ -5389,7 +5389,7 @@ func _find_enemy_under_drag(global_pos: Vector2) -> int:
 func _is_position_outside_hand(global_pos: Vector2) -> bool:
 	if hand_row == null or not is_instance_valid(hand_row):
 		return false
-	var card_h: float = 200.0 if _battle_compact else 238.0
+	var card_h: float = 173.0 if _battle_compact else 208.0
 	var visual_card_top: float = hand_row.global_position.y + hand_row.size.y - card_h - hand_row.hand_base_lift
 	return global_pos.y < visual_card_top + card_h * 0.35
 
@@ -5509,11 +5509,11 @@ func _card_frame_texture_path(card_type: String) -> String:
 
 func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: bool, selectable: bool) -> Button:
 	# 全部用 anchor 百分比定位，元素位置 / 字體大小皆依卡片尺寸比例縮放。
-	# 卡套版面參考（百分比座標 vs 卡片整體大小）：
-	#   靈力圓 中心 ≈ (13%, 11%)
-	#   透明放卡圖區  y 11%~45%, x 14%~88%
-	#   標題裝飾帶    y 46%~54%
-	#   描述卷軸區    y 55%~92%
+	# 卡套版面參考（2026-05 裁掉上下留白後校準；卡框 484×880 比例 0.55）：
+	#   靈力圓 中心 ≈ (13%, 8%)
+	#   透明放卡圖區  y 4%~44%, x 9%~92%
+	#   標題裝飾帶    y 48%~56%
+	#   描述卷軸區    y 57%~90%
 	var title_font_size: int = int(clamp(size.y * 0.060, 12, 26))
 	var cost_font_size: int = int(clamp(size.y * 0.085, 18, 38))
 	var type_font_size: int = int(clamp(size.y * 0.035, 9, 16))
@@ -5531,9 +5531,9 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	var art: TextureRect = TextureRect.new()
 	art.name = "CardArt"
 	art.anchor_left = 0.09
-	art.anchor_top = 0.07
+	art.anchor_top = 0.04
 	art.anchor_right = 0.92
-	art.anchor_bottom = 0.48
+	art.anchor_bottom = 0.44
 	art.offset_left = 0
 	art.offset_top = 0
 	art.offset_right = 0
@@ -5564,9 +5564,9 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	var cost_label: Label = UIFactory.card_label(str(cost), cost_font_size, Color("f7f0dc"), HORIZONTAL_ALIGNMENT_CENTER)
 	cost_label.name = "CardCost"
 	cost_label.anchor_left = 0.03
-	cost_label.anchor_top = 0.03
+	cost_label.anchor_top = 0.01
 	cost_label.anchor_right = 0.23
-	cost_label.anchor_bottom = 0.19
+	cost_label.anchor_bottom = 0.15
 	cost_label.offset_left = 0
 	cost_label.offset_top = 0
 	cost_label.offset_right = 0
@@ -5582,9 +5582,9 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	var title: Label = UIFactory.card_label(card.display_title(), title_font_size, Color("f7f0dc"), HORIZONTAL_ALIGNMENT_CENTER)
 	title.name = "CardTitle"
 	title.anchor_left = 0.12
-	title.anchor_top = 0.465
+	title.anchor_top = 0.485
 	title.anchor_right = 0.88
-	title.anchor_bottom = 0.545
+	title.anchor_bottom = 0.565
 	title.offset_left = 0
 	title.offset_top = 0
 	title.offset_right = 0
@@ -5600,9 +5600,9 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	var rules_container: Control = Control.new()
 	rules_container.name = "CardRules"
 	rules_container.anchor_left = 0.10
-	rules_container.anchor_top = 0.56
+	rules_container.anchor_top = 0.57
 	rules_container.anchor_right = 0.90
-	rules_container.anchor_bottom = 0.92
+	rules_container.anchor_bottom = 0.90
 	rules_container.offset_left = 0
 	rules_container.offset_top = 0
 	rules_container.offset_right = 0
