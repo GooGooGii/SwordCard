@@ -33,10 +33,10 @@ SwordCard 是仙劍奇俠傳 1 粉絲向原型，Godot 4 開發，Windows + Andr
 - 通關畫面：「通關！仙劍成道」（需打完第五幕）
 - 節點類型：戰鬥、事件、商店、休息、Boss
 
-### 事件系統（31 種 variant）
+### 事件系統（32 種 variant）
 - **基礎 (8)**: shrine、spring、talisman_cache、treasure_chest、ancestor_relic、wandering_sage、moonlit_pool、broken_temple
 - **進階 (10)**: yokai_pact、forgotten_altar、ancient_battlefield、alchemy_furnace、ghost_forest、immortal_ruins、spirit_clan_ruins、baiyue_altar、tavern_acquaintance、sword_tomb、miao_healer
-- **PAL1 名場面 (9)**: shilipo_sword_god、drunk_swordsman、yinlong_cave、yangzhou_officer、xianling_shrine、lingmiao、flower_thief、flower_spirit、jianling_whisper、aqi_reunion、tangyu_sparring、jiang_waner_grief
+- **PAL1 名場面 (10)**: shilipo_sword_god、drunk_swordsman、yinlong_cave、yangzhou_officer、xianling_shrine、lingmiao、flower_thief、flower_spirit、jianling_whisper、aqi_reunion、tangyu_sparring、jiang_waner_grief、**caiyi_butterfly（蝶戀）**
 
 每事件可有：
 - choices: heal / power / gain_card / upgrade / remove / view_deck / pact / gamble / tainted_power / fight / **observe / leave**
@@ -58,6 +58,12 @@ SwordCard 是仙劍奇俠傳 1 粉絲向原型，Godot 4 開發，Windows + Andr
 
 ### 休息節點
 - 選項：回復 25% max_hp 或升級 1 張牌
+
+### 藥品系統（Potions）
+- 11 種藥（common/uncommon/rare）：回春丹、靈力丹、護體符、解毒散、靈蛇膽、虎骨酒、金瘡藥、天靈丹、仙人遺血、月魂草、**百花仙釀（蝶戀典故，回血+解毒）**
+- 攜帶上限 `MAX_POTION_SLOTS = 3`；戰鬥中任意時機使用、不耗靈力
+- 商店販售（`current_shop_potions`）、事件可給（`gain_potion` 效果，支援 `potion_id` 指定特定藥）
+- 存檔 round-trip（`RunState.potions`）
 
 ### 組隊系統（Party Mode）
 - 1–3 名角色組隊（主備制，Pokemon 風）
@@ -167,7 +173,7 @@ Event Branching（event_runner tree walk ×7 / observe_token ×3 / curse ×6）
   - 更新 BALANCE_BASELINES 含多敵情境
 
 ### 進行中（Event Branching — 奇遇分支故事化）
-> **核心框架已完成**：13/31 事件已轉成分支故事樹，curse / observe token / 戰鬥回流都上線。
+> **核心框架已完成**：14/32 事件已轉成分支故事樹，curse / observe token / 戰鬥回流都上線。
 詳見 [`docs/EVENT_BRANCHING.md`](docs/EVENT_BRANCHING.md)。
 - [x] **P1 Schema + Runner** — `event_runner.gd`（191 行）tree walker、requires 過濾、UI 徽章（`e0e4ee0`）
 - [x] **P2 Event UI 改版** — `show_event_node()` 多層樹走訪 + 葉節點 resolver（`ec781b7`）
@@ -177,11 +183,11 @@ Event Branching（event_runner tree walk ×7 / observe_token ×3 / curse ×6）
 - [~] **P6 新 effect kinds** — permanent_power / next_battle_buff / gain_relic_pool / gain_card_pool / gain_curse 已做；**`act_modifier` 仍未實作**（main.gd:3667 push_warning）
 - [x] **P7 內容 A（Batch A 6 事件）** — `99ff292`
 - [x] **P8 內容 B（Batch B 6 事件含戰鬥）** — `c43a306`（8 條 battle 葉節點）
-- [ ] **P9 內容 C（剩餘 18 事件轉 tree）** — 目前走 legacy 扁平 fallback
+- [~] **P9 內容 C（剩餘事件轉 tree）** — 已新增 caiyi_butterfly（蝶戀）4 角色獨家路徑樹（`7cb2794`）；尚有 ~18 個走 legacy fallback
 - [ ] **P10 戰鬥用敵人**（event-only enemies）— Batch B 暫借既有敵人
 - [~] **P11 Smoke tests** — 17 個事件相關測試已上（event_runner ×7 / observe ×3 / curse ×6 / variety ×1）
 
-剩餘缺口：`act_modifier` effect kind、P9 的 18 個事件轉 tree、P10 專屬敵人。
+剩餘缺口：`act_modifier` effect kind、P9 剩餘 ~18 個事件轉 tree、P10 專屬敵人。
 
 ### 高優先（影響玩法完整度）
 - [x] **Boss 專屬神器** — 5 act boss + moon_worshipper 共 6 神器全做完
