@@ -94,32 +94,33 @@ WARNING: UID duplicate detected between res://assets/art/cards/zl_shenlei.png an
      at: _process_file_system (editor/file_system/editor_file_system.cpp:1377)
 WARNING: UID duplicate detected between res://assets/art/cards/zl_shuiling.png and res://assets/art/cards/zl_shenlei.png.
      at: _process_file_system (editor/file_system/editor_file_system.cpp:1377)
-[   0% ] [90m[1m_update_scan_actions[22m | Started Scanning actions... (26 steps)[39m[0m
-[   0% ] [90m[1m_update_scan_actions[22m | hugu_jiu.png[39m[0m
-[   3% ] [90m[1m_update_scan_actions[22m | huichun_dan.png[39m[0m
-[   7% ] [90m[1m_update_scan_actions[22m | huti_fu.png[39m[0m
-[  11% ] [90m[1m_update_scan_actions[22m | jiedu_san.png[39m[0m
-[  14% ] [90m[1m_update_scan_actions[22m | jinchuang_yao.png[39m[0m
-[  18% ] [90m[1m_update_scan_actions[22m | lingli_dan.png[39m[0m
-[  22% ] [90m[1m_update_scan_actions[22m | lingshe_dan.png[39m[0m
-[  25% ] [90m[1m_update_scan_actions[22m | tianling_dan.png[39m[0m
-[  29% ] [90m[1m_update_scan_actions[22m | xianren_xue.png[39m[0m
-[  33% ] [90m[1m_update_scan_actions[22m | yuehun_cao.png[39m[0m
-[  37% ] [90m[1m_update_scan_actions[22m | duo_bao_ge.png[39m[0m
-[  40% ] [90m[1m_update_scan_actions[22m | fan_hun_zhou.png[39m[0m
-[  44% ] [90m[1m_update_scan_actions[22m | gui_jia_fu.png[39m[0m
-[  48% ] [90m[1m_update_scan_actions[22m | hu_fa_zhou.png[39m[0m
-[  51% ] [90m[1m_update_scan_actions[22m | long_lin_jia.png[39m[0m
-[  55% ] [90m[1m_update_scan_actions[22m | nu_huo_ling.png[39m[0m
-[  59% ] [90m[1m_update_scan_actions[22m | nu_mu_zhu.png[39m[0m
-[  62% ] [90m[1m_update_scan_actions[22m | suo_hun_huan.png[39m[0m
-[  66% ] [90m[1m_update_scan_actions[22m | tai_ji_zhu.png[39m[0m
-[  70% ] [90m[1m_update_scan_actions[22m | tie_gu_dan.png[39m[0m
-[  74% ] [90m[1m_update_scan_actions[22m | tie_xue_ling.png[39m[0m
-[  77% ] [90m[1m_update_scan_actions[22m | wu_cai_shi.png[39m[0m
-[  81% ] [90m[1m_update_scan_actions[22m | yao_qian_shu.png[39m[0m
+[   0% ] [90m[1m_update_scan_actions[22m | Started Scanning actions... (27 steps)[39m[0m
+[   0% ] [90m[1m_update_scan_actions[22m | baihua_xianniang.png[39m[0m
+[   3% ] [90m[1m_update_scan_actions[22m | hugu_jiu.png[39m[0m
+[   7% ] [90m[1m_update_scan_actions[22m | huichun_dan.png[39m[0m
+[  10% ] [90m[1m_update_scan_actions[22m | huti_fu.png[39m[0m
+[  14% ] [90m[1m_update_scan_actions[22m | jiedu_san.png[39m[0m
+[  17% ] [90m[1m_update_scan_actions[22m | jinchuang_yao.png[39m[0m
+[  21% ] [90m[1m_update_scan_actions[22m | lingli_dan.png[39m[0m
+[  25% ] [90m[1m_update_scan_actions[22m | lingshe_dan.png[39m[0m
+[  28% ] [90m[1m_update_scan_actions[22m | tianling_dan.png[39m[0m
+[  32% ] [90m[1m_update_scan_actions[22m | xianren_xue.png[39m[0m
+[  35% ] [90m[1m_update_scan_actions[22m | yuehun_cao.png[39m[0m
+[  39% ] [90m[1m_update_scan_actions[22m | duo_bao_ge.png[39m[0m
+[  42% ] [90m[1m_update_scan_actions[22m | fan_hun_zhou.png[39m[0m
+[  46% ] [90m[1m_update_scan_actions[22m | gui_jia_fu.png[39m[0m
+[  50% ] [90m[1m_update_scan_actions[22m | hu_fa_zhou.png[39m[0m
+[  53% ] [90m[1m_update_scan_actions[22m | long_lin_jia.png[39m[0m
+[  57% ] [90m[1m_update_scan_actions[22m | nu_huo_ling.png[39m[0m
+[  60% ] [90m[1m_update_scan_actions[22m | nu_mu_zhu.png[39m[0m
+[  64% ] [90m[1m_update_scan_actions[22m | suo_hun_huan.png[39m[0m
+[  67% ] [90m[1m_update_scan_actions[22m | tai_ji_zhu.png[39m[0m
+[  71% ] [90m[1m_update_scan_actions[22m | tie_gu_dan.png[39m[0m
+[  75% ] [90m[1m_update_scan_actions[22m | tie_xue_ling.png[39m[0m
+[  78% ] [90m[1m_update_scan_actions[22m | wu_cai_shi.png[39m[0m
+[  82% ] [90m[1m_update_scan_actions[22m | yao_qian_shu.png[39m[0m
 [  85% ] [90m[1m_update_scan_actions[22m | yin_hun_die.png[39m[0m
-[  88% ] [90m[1m_update_scan_actions[22m | zhen_hun_yu.png[39m[0m
+[  89% ] [90m[1m_update_scan_actions[22m | zhen_hun_yu.png[39m[0m
 [  92% ] [90m[1m_update_scan_actions[22m | zui_xian_hu.png[39m[0m
 [92m[ DONE ][39m [1m_update_scan_actions[22m
 [0m
@@ -210,8 +211,8 @@ WARNING: UID duplicate detected between res://assets/art/cards/zl_shuiling.png a
 [  15% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/lxy_feilong.png.import[39m[0m
 [  15% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lxy_jianqi.png-a1e10ca8d0bc98ae66c60d770c103384.ctex[39m[0m
 [  15% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/lxy_jianqi.png.import[39m[0m
-[  16% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lxy_jianzhen.png-a7d618423b458eea82683e71de6c216d.ctex[39m[0m
-[  16% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/lxy_jianzhen.png.import[39m[0m
+[  15% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lxy_jianzhen.png-a7d618423b458eea82683e71de6c216d.ctex[39m[0m
+[  15% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/lxy_jianzhen.png.import[39m[0m
 [  16% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lxy_jiulong.png-fe45c4e4e891220fc9ff02e77cde9b5a.ctex[39m[0m
 [  16% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/lxy_jiulong.png.import[39m[0m
 [  16% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lxy_jiushen.png-57f7341cf3b0f3e4c78408b8f274bd57.ctex[39m[0m
@@ -250,14 +251,14 @@ WARNING: UID duplicate detected between res://assets/art/cards/zl_shuiling.png a
 [  22% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/lyr_kuaijian.png.import[39m[0m
 [  22% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lyr_lianhuan.png-baf261d6d118c7281a87ff24d7e52276.ctex[39m[0m
 [  22% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/lyr_lianhuan.png.import[39m[0m
-[  23% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lyr_ningshen.png-a1b1e8ba8f6ce8ecf7ed33ea4dcf52a0.ctex[39m[0m
-[  23% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/lyr_ningshen.png.import[39m[0m
+[  22% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lyr_ningshen.png-a1b1e8ba8f6ce8ecf7ed33ea4dcf52a0.ctex[39m[0m
+[  22% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/lyr_ningshen.png.import[39m[0m
 [  23% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lyr_poqian.png-1069b96a46edbdf658032537769285fd.ctex[39m[0m
 [  23% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/lyr_poqian.png.import[39m[0m
 [  23% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lyr_qiankun.png-7f793b9744bab4c98e7202bffcecf709.ctex[39m[0m
 [  23% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/lyr_qiankun.png.import[39m[0m
-[  24% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lyr_qijianzhi.png-cb9bd9aa3b62b97963d79042ca871492.ctex[39m[0m
-[  24% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/lyr_qijianzhi.png.import[39m[0m
+[  23% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lyr_qijianzhi.png-cb9bd9aa3b62b97963d79042ca871492.ctex[39m[0m
+[  23% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/lyr_qijianzhi.png.import[39m[0m
 [  24% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lyr_shenfa.png-b226fcd6738d3fca89093d025ca96637.ctex[39m[0m
 [  24% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/lyr_shenfa.png.import[39m[0m
 [  24% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lyr_tianv.png-0d94b4208d14f845ed5e2897bb457c53.ctex[39m[0m
@@ -290,14 +291,14 @@ WARNING: UID duplicate detected between res://assets/art/cards/zl_shuiling.png a
 [  29% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/zl_leizhou.png.import[39m[0m
 [  29% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/zl_lingguang.png-3ce50566e2a05c58ea498ae965fbe591.ctex[39m[0m
 [  29% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/zl_lingguang.png.import[39m[0m
-[  30% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/zl_lingxi.png-1148b8b4ff81d8bbb625350935d6af95.ctex[39m[0m
-[  30% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/zl_lingxi.png.import[39m[0m
+[  29% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/zl_lingxi.png-1148b8b4ff81d8bbb625350935d6af95.ctex[39m[0m
+[  29% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/zl_lingxi.png.import[39m[0m
 [  30% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/zl_mengshe.png-0efb85db9bbf40376fc1e0f685dce641.ctex[39m[0m
 [  30% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/zl_mengshe.png.import[39m[0m
 [  30% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/zl_nvwa.png-0605d7f56409e92c6adb3184959bdc5b.ctex[39m[0m
 [  30% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/zl_nvwa.png.import[39m[0m
-[  31% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/zl_shenlei.png-33f16d8105fbfc959c3133eca60547e2.ctex[39m[0m
-[  31% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/zl_shenlei.png.import[39m[0m
+[  30% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/zl_shenlei.png-33f16d8105fbfc959c3133eca60547e2.ctex[39m[0m
+[  30% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/zl_shenlei.png.import[39m[0m
 [  31% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/zl_shuiling.png-9ff346eab9fba85231707f2d2ab22821.ctex[39m[0m
 [  31% ] [90m[1msavepack[22m | Storing File: res://assets/art/cards/zl_shuiling.png.import[39m[0m
 [  31% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/zl_tianlei.png-1d961eb71ae391157ccd98b8413cbbff.ctex[39m[0m
@@ -330,20 +331,20 @@ WARNING: UID duplicate detected between res://assets/art/cards/zl_shuiling.png a
 [  35% ] [90m[1msavepack[22m | Storing File: res://assets/art/enemies/red_eye_demon.png.import[39m[0m
 [  35% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/serpent_demon.png-aef145977ebde9a37ba3cecba40906da.ctex[39m[0m
 [  35% ] [90m[1msavepack[22m | Storing File: res://assets/art/enemies/serpent_demon.png.import[39m[0m
-[  36% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/sword_spirit.png-6f33674be0dbd030a270faaf6719d234.ctex[39m[0m
-[  36% ] [90m[1msavepack[22m | Storing File: res://assets/art/enemies/sword_spirit.png.import[39m[0m
+[  35% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/sword_spirit.png-6f33674be0dbd030a270faaf6719d234.ctex[39m[0m
+[  35% ] [90m[1msavepack[22m | Storing File: res://assets/art/enemies/sword_spirit.png.import[39m[0m
 [  36% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/tower_demon.png-2fbdbdfa397ac4864374cb5b4c6d7805.ctex[39m[0m
 [  36% ] [90m[1msavepack[22m | Storing File: res://assets/art/enemies/tower_demon.png.import[39m[0m
 [  36% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/tower_ghost_soldier.png-0077352fe465550e439e0646731f143b.ctex[39m[0m
 [  36% ] [90m[1msavepack[22m | Storing File: res://assets/art/enemies/tower_ghost_soldier.png.import[39m[0m
-[  37% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/toxic_centipede.png-12fb108205833d03cbb4b4e52379a045.ctex[39m[0m
-[  37% ] [90m[1msavepack[22m | Storing File: res://assets/art/enemies/toxic_centipede.png.import[39m[0m
+[  36% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/toxic_centipede.png-12fb108205833d03cbb4b4e52379a045.ctex[39m[0m
+[  36% ] [90m[1msavepack[22m | Storing File: res://assets/art/enemies/toxic_centipede.png.import[39m[0m
 [  37% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/water_tentacle.png-02f606365b982753ca5f7fac51df2f01.ctex[39m[0m
 [  37% ] [90m[1msavepack[22m | Storing File: res://assets/art/enemies/water_tentacle.png.import[39m[0m
 [  37% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/witch_queen.png-6df6081190bf454ba000e83f701e13ed.ctex[39m[0m
 [  37% ] [90m[1msavepack[22m | Storing File: res://assets/art/enemies/witch_queen.png.import[39m[0m
-[  38% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/zombie_general.png-ff4bf55fa5abd916a839a3d5b29f117b.ctex[39m[0m
-[  38% ] [90m[1msavepack[22m | Storing File: res://assets/art/enemies/zombie_general.png.import[39m[0m
+[  37% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/zombie_general.png-ff4bf55fa5abd916a839a3d5b29f117b.ctex[39m[0m
+[  37% ] [90m[1msavepack[22m | Storing File: res://assets/art/enemies/zombie_general.png.import[39m[0m
 [  38% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/zombie_soldier.png-3fc866abd70eb618d5a5574442cc00e5.ctex[39m[0m
 [  38% ] [90m[1msavepack[22m | Storing File: res://assets/art/enemies/zombie_soldier.png.import[39m[0m
 [  38% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/alchemy_furnace.png-ecfba22d07a45ff2dd59ae933ff3b76f.ctex[39m[0m
@@ -370,26 +371,26 @@ WARNING: UID duplicate detected between res://assets/art/cards/zl_shuiling.png a
 [  42% ] [90m[1msavepack[22m | Storing File: res://assets/art/events/ghost_forest.png.import[39m[0m
 [  42% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/immortal_ruins.png-5269a4ca63ed4f6552540170e1528dd4.ctex[39m[0m
 [  42% ] [90m[1msavepack[22m | Storing File: res://assets/art/events/immortal_ruins.png.import[39m[0m
-[  43% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/jiang_waner_grief.png-310c76769fbfb86343e3f6caebd3443c.ctex[39m[0m
-[  43% ] [90m[1msavepack[22m | Storing File: res://assets/art/events/jiang_waner_grief.png.import[39m[0m
+[  42% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/jiang_waner_grief.png-310c76769fbfb86343e3f6caebd3443c.ctex[39m[0m
+[  42% ] [90m[1msavepack[22m | Storing File: res://assets/art/events/jiang_waner_grief.png.import[39m[0m
 [  43% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/jianling_whisper.png-48b158dbc32bfb911bc045ce68136a55.ctex[39m[0m
 [  43% ] [90m[1msavepack[22m | Storing File: res://assets/art/events/jianling_whisper.png.import[39m[0m
 [  43% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lingmiao.png-baae18a79e87ed79b845b9e945190009.ctex[39m[0m
 [  43% ] [90m[1msavepack[22m | Storing File: res://assets/art/events/lingmiao.png.import[39m[0m
-[  44% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/miao_healer.png-aba5f6f68eec21ec91fa4381dfad8fd4.ctex[39m[0m
-[  44% ] [90m[1msavepack[22m | Storing File: res://assets/art/events/miao_healer.png.import[39m[0m
+[  43% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/miao_healer.png-aba5f6f68eec21ec91fa4381dfad8fd4.ctex[39m[0m
+[  43% ] [90m[1msavepack[22m | Storing File: res://assets/art/events/miao_healer.png.import[39m[0m
 [  44% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/moonlit_pool.png-6cbe27f12c569a0dd0c5562a2a700435.ctex[39m[0m
 [  44% ] [90m[1msavepack[22m | Storing File: res://assets/art/events/moonlit_pool.png.import[39m[0m
 [  44% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/shilipo_sword_god.png-4429e023836e2e286724b9683aeeb7d2.ctex[39m[0m
 [  44% ] [90m[1msavepack[22m | Storing File: res://assets/art/events/shilipo_sword_god.png.import[39m[0m
-[  45% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/shrine.png-e8ad2df3b58cbeacf05a06fcb09524a5.ctex[39m[0m
-[  45% ] [90m[1msavepack[22m | Storing File: res://assets/art/events/shrine.png.import[39m[0m
+[  44% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/shrine.png-e8ad2df3b58cbeacf05a06fcb09524a5.ctex[39m[0m
+[  44% ] [90m[1msavepack[22m | Storing File: res://assets/art/events/shrine.png.import[39m[0m
 [  45% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/spirit_clan_ruins.png-95ba3fe08cfdbcd6f7b04beb31e6bb5b.ctex[39m[0m
 [  45% ] [90m[1msavepack[22m | Storing File: res://assets/art/events/spirit_clan_ruins.png.import[39m[0m
 [  45% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/spring.png-66fce46fef84b5868c083ec9bb0b82e5.ctex[39m[0m
 [  45% ] [90m[1msavepack[22m | Storing File: res://assets/art/events/spring.png.import[39m[0m
-[  46% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/sword_tomb.png-9fd9f7eab368f8109a621593c52dc81e.ctex[39m[0m
-[  46% ] [90m[1msavepack[22m | Storing File: res://assets/art/events/sword_tomb.png.import[39m[0m
+[  45% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/sword_tomb.png-9fd9f7eab368f8109a621593c52dc81e.ctex[39m[0m
+[  45% ] [90m[1msavepack[22m | Storing File: res://assets/art/events/sword_tomb.png.import[39m[0m
 [  46% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/talisman_cache.png-a7fdf077d407576685256ae687343e83.ctex[39m[0m
 [  46% ] [90m[1msavepack[22m | Storing File: res://assets/art/events/talisman_cache.png.import[39m[0m
 [  46% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/tangyu_sparring.png-1ab040ffd9fe6351a8d99516b33bcb37.ctex[39m[0m
@@ -410,12 +411,13 @@ WARNING: UID duplicate detected between res://assets/art/cards/zl_shuiling.png a
 [  49% ] [90m[1msavepack[22m | Storing File: res://assets/art/events/yokai_pact.png.import[39m[0m
 [  49% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/anu.png-e2a580ebab8c776a73f550fafc434b65.ctex[39m[0m
 [  49% ] [90m[1msavepack[22m | Storing File: res://assets/art/portraits/anu.png.import[39m[0m
-[  50% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lin_yueru.png-7ca63d231d0a2775f4737e8a6e9a4782.ctex[39m[0m
-[  50% ] [90m[1msavepack[22m | Storing File: res://assets/art/portraits/lin_yueru.png.import[39m[0m
+[  49% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lin_yueru.png-7ca63d231d0a2775f4737e8a6e9a4782.ctex[39m[0m
+[  49% ] [90m[1msavepack[22m | Storing File: res://assets/art/portraits/lin_yueru.png.import[39m[0m
 [  50% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/li_xiaoyao.png-26b2ac78572fa1c4a77801603ca21010.ctex[39m[0m
 [  50% ] [90m[1msavepack[22m | Storing File: res://assets/art/portraits/li_xiaoyao.png.import[39m[0m
 [  50% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/zhao_linger.png-eeb27c66db0b40c307d92cdc20a2740c.ctex[39m[0m
 [  50% ] [90m[1msavepack[22m | Storing File: res://assets/art/portraits/zhao_linger.png.import[39m[0m
+[  50% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/baihua_xianniang.png.import[39m[0m
 [  51% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/hugu_jiu.png.import[39m[0m
 [  51% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/huichun_dan.png.import[39m[0m
 [  51% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/huti_fu.png.import[39m[0m
@@ -424,22 +426,22 @@ WARNING: UID duplicate detected between res://assets/art/cards/zl_shuiling.png a
 [  52% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/lingli_dan.png.import[39m[0m
 [  53% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/lingshe_dan.png.import[39m[0m
 [  53% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/tianling_dan.png.import[39m[0m
-[  53% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/xianren_xue.png.import[39m[0m
+[  54% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/xianren_xue.png.import[39m[0m
 [  54% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/yuehun_cao.png.import[39m[0m
 [  54% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/baiyue_jiaozhi.png-bc62f0bbf020697f7d3b86628f8a2348.ctex[39m[0m
 [  54% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/baiyue_jiaozhi.png.import[39m[0m
-[  54% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/baiyue_shenfu.png-ef5b4430eaf2df01b4220e67b543908b.ctex[39m[0m
-[  54% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/baiyue_shenfu.png.import[39m[0m
+[  55% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/baiyue_shenfu.png-ef5b4430eaf2df01b4220e67b543908b.ctex[39m[0m
+[  55% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/baiyue_shenfu.png.import[39m[0m
 [  55% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/bai_hu_ya.png-2be1f9b4f496e519ee9ea965591ab647.ctex[39m[0m
 [  55% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/bai_hu_ya.png.import[39m[0m
 [  55% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/chiyan_fuyin.png-458cbef8d7bffd1a08fff961e25e40ea.ctex[39m[0m
 [  55% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/chiyan_fuyin.png.import[39m[0m
-[  55% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/chunjun_jian.png-94ba4314bf2e4c00403d65bd701d1f41.ctex[39m[0m
-[  55% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/chunjun_jian.png.import[39m[0m
+[  56% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/chunjun_jian.png-94ba4314bf2e4c00403d65bd701d1f41.ctex[39m[0m
+[  56% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/chunjun_jian.png.import[39m[0m
 [  56% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/duo_bao_ge.png.import[39m[0m
 [  56% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/e_yun_fu.png-c4c7e050e6ea336b76d038f252f98b49.ctex[39m[0m
 [  56% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/e_yun_fu.png.import[39m[0m
-[  56% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/fan_hun_zhou.png.import[39m[0m
+[  57% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/fan_hun_zhou.png.import[39m[0m
 [  57% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/feng_hun_yu.png-94ef5e974e0f4c6e96ecf29f06618eef.ctex[39m[0m
 [  57% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/feng_hun_yu.png.import[39m[0m
 [  57% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/feng_ling_dang.png-245eaa58f89134f7a5643d369c3b0104.ctex[39m[0m
@@ -464,17 +466,17 @@ WARNING: UID duplicate detected between res://assets/art/cards/zl_shuiling.png a
 [  61% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/longquan_jian.png.import[39m[0m
 [  61% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/longshe_zhang.png-afdab45b6e672accd1fd12ab03c6fe5f.ctex[39m[0m
 [  61% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/longshe_zhang.png.import[39m[0m
-[  61% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/long_lin_jia.png.import[39m[0m
+[  62% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/long_lin_jia.png.import[39m[0m
 [  62% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/long_xue_shi.png-5012736841ae277a322e4a16ec948cf2.ctex[39m[0m
 [  62% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/long_xue_shi.png.import[39m[0m
 [  62% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/nian_xiang_lu.png-3bce06e5495b6dda987602e4e8c05278.ctex[39m[0m
 [  62% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/nian_xiang_lu.png.import[39m[0m
-[  62% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/ning_qi_dan.png-0e710a54104f6460726599ecb0605824.ctex[39m[0m
-[  62% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/ning_qi_dan.png.import[39m[0m
+[  63% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/ning_qi_dan.png-0e710a54104f6460726599ecb0605824.ctex[39m[0m
+[  63% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/ning_qi_dan.png.import[39m[0m
 [  63% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/nuwa_shi.png-059ba9b533c806967873669dd54ce7ae.ctex[39m[0m
 [  63% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/nuwa_shi.png.import[39m[0m
 [  63% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/nu_huo_ling.png.import[39m[0m
-[  63% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/nu_mu_zhu.png.import[39m[0m
+[  64% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/nu_mu_zhu.png.import[39m[0m
 [  64% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/qing_long_yi.png-9f16e76e50c0f8eaefebbaeed1a991c0.ctex[39m[0m
 [  64% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/qing_long_yi.png.import[39m[0m
 [  64% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/she_dan.png-4cee94b9c2e1838a36099a982046dfda.ctex[39m[0m
@@ -502,13 +504,13 @@ WARNING: UID duplicate detected between res://assets/art/cards/zl_shuiling.png a
 [  68% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/wu_qi_chao_yuan.png.import[39m[0m
 [  68% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/xuanshuang_bian.png-0e09f9ee289837994e2f293e54706aa1.ctex[39m[0m
 [  68% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/xuanshuang_bian.png.import[39m[0m
-[  68% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/xuan_wu_hun.png-9713438a2ae9121cf53791ed595d50ff.ctex[39m[0m
-[  68% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/xuan_wu_hun.png.import[39m[0m
+[  69% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/xuan_wu_hun.png-9713438a2ae9121cf53791ed595d50ff.ctex[39m[0m
+[  69% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/xuan_wu_hun.png.import[39m[0m
 [  69% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/xue_hun_fu.png-81b45c362435b072790eb52f7628f8dd.ctex[39m[0m
 [  69% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/xue_hun_fu.png.import[39m[0m
 [  69% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/yao_qian_shu.png.import[39m[0m
-[  69% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/yin_hun_deng.png-b738ecc5d4c02e30080fd1608566da33.ctex[39m[0m
-[  69% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/yin_hun_deng.png.import[39m[0m
+[  70% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/yin_hun_deng.png-b738ecc5d4c02e30080fd1608566da33.ctex[39m[0m
+[  70% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/yin_hun_deng.png.import[39m[0m
 [  70% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/yin_hun_die.png.import[39m[0m
 [  70% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/yu_ling_yu.png-3e1eb770e2d01610ff1f68faf7bdb5d2.ctex[39m[0m
 [  70% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/yu_ling_yu.png.import[39m[0m
@@ -537,10 +539,10 @@ WARNING: UID duplicate detected between res://assets/art/cards/zl_shuiling.png a
 [  75% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/icon_192.png-3529c9a11ab7a45709d304ee34cb3e69.ctex[39m[0m
 [  75% ] [90m[1msavepack[22m | Storing File: res://icon_192.png.import[39m[0m
 [  75% ] [90m[1msavepack[22m | Storing File: res://scripts/theme_colors.gdc[39m[0m
-[  75% ] [90m[1msavepack[22m | Storing File: res://scripts/ui_factory.gdc[39m[0m
+[  76% ] [90m[1msavepack[22m | Storing File: res://scripts/ui_factory.gdc[39m[0m
 [  76% ] [90m[1msavepack[22m | Storing File: res://scripts/settings_manager.gdc[39m[0m
 [  76% ] [90m[1msavepack[22m | Storing File: res://scripts/run_state.gdc[39m[0m
-[  76% ] [90m[1msavepack[22m | Storing File: res://scripts/smoke_test.gdc[39m[0m
+[  77% ] [90m[1msavepack[22m | Storing File: res://scripts/smoke_test.gdc[39m[0m
 [  77% ] [90m[1msavepack[22m | Storing File: res://scripts/shop_inventory.gdc[39m[0m
 [  77% ] [90m[1msavepack[22m | Storing File: res://scripts/relic_icon.gdc[39m[0m
 [  78% ] [90m[1msavepack[22m | Storing File: res://scripts/save_manager.gdc[39m[0m
@@ -576,8 +578,8 @@ WARNING: UID duplicate detected between res://assets/art/cards/zl_shuiling.png a
 [  83% ] [90m[1msavepack[22m | Storing File: res://assets/ui/poems/anu_poem.png.import[39m[0m
 [  83% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lin_yueru_poem.png-db2d6637c928dd6b961602f997f335a7.ctex[39m[0m
 [  83% ] [90m[1msavepack[22m | Storing File: res://assets/ui/poems/lin_yueru_poem.png.import[39m[0m
-[  83% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/li_xiaoyao_poem.png-96d411249b8c958b1e18f3daa512ca43.ctex[39m[0m
-[  83% ] [90m[1msavepack[22m | Storing File: res://assets/ui/poems/li_xiaoyao_poem.png.import[39m[0m
+[  84% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/li_xiaoyao_poem.png-96d411249b8c958b1e18f3daa512ca43.ctex[39m[0m
+[  84% ] [90m[1msavepack[22m | Storing File: res://assets/ui/poems/li_xiaoyao_poem.png.import[39m[0m
 [  84% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/zhao_linger_poem.png-cece02ea03b0ce29be9f5c7d2d4b4b3b.ctex[39m[0m
 [  84% ] [90m[1msavepack[22m | Storing File: res://assets/ui/poems/zhao_linger_poem.png.import[39m[0m
 [  84% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/card_frame_attack.png-0d2310bc663f60c7f1bf9b934f37e7bf.ctex[39m[0m
