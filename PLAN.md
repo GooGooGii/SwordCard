@@ -119,12 +119,13 @@ SwordCard 是仙劍奇俠傳 1 粉絲向原型，Godot 4 開發，Windows + Andr
 - main.gd 仍 **5237 行**，剩 ~8 個 screen 待抽（main_menu / character_select / progress_screen / battle_scene 等）
 
 ### 測試
-smoke_test.gd 共 **50 個測試**，涵蓋：
+smoke_test.gd 共 **78 個測試**，涵蓋：
 資料完整性、戰鬥機制、多回合流程、存檔 round-trip、存檔遷移、
 地圖可達性、傷害預測一致性、隊伍系統、圖鑑、難度、Boss 二階段、
 事件多樣性、種子確定性、平衡 regression（基礎 + 中段 + 升級版）、
 多敵人 (multi-enemy setup / damage routing / AOE / partial kill /
-summon basic+cap+unknown+from_pool / per-enemy phase)、阿奴 multi-enemy passive
+summon basic+cap+unknown+from_pool / per-enemy phase)、阿奴 multi-enemy passive、
+Event Branching（event_runner tree walk ×7 / observe_token ×3 / curse ×6）
 
 ### UI 質感 / 動畫精修
 - **螢幕間 crossfade**：所有 `show_*()` 切換時自動截舊畫面 → 透明 overlay → tween fade-in (0.22s sine)，零侵入式設計
@@ -165,23 +166,22 @@ summon basic+cap+unknown+from_pool / per-enemy phase)、阿奴 multi-enemy passi
   - smoke test 加 AOE 卡命中所有敵測試
   - 更新 BALANCE_BASELINES 含多敵情境
 
-### 未開始（Event Branching — 奇遇分支故事化）
-> **Phase 0 — 設計凍結但 0/11 phase 動工**。現行 code 仍走舊扁平 2 層 schema。
-詳見 [`docs/EVENT_BRANCHING.md`](docs/EVENT_BRANCHING.md)。把 31 個 event 從扁平選單升級為分支故事樹，葉節點分類 reward / punish / battle / gamble / mixed。
-- [ ] **P1 Schema + Runner**（~280 行）— `event_runner.gd`、`tree` 欄位、requires 過濾、UI 徽章
-- [ ] **P2 Event UI 改版**（~220 行）— `show_event_node()` 支援多層樹走訪
-- [ ] **P3 戰鬥回流**（~100 行）— `pending_event_return`、戰敗不結束 run
-- [ ] **P4 Curse 牌系統**（~250 行）— 新 card_type、6 張 curse、淨化符遺物、黑市驅邪
-- [ ] **P5 observe Token**（~120 行）— `RunState.observe_tokens`，全 run 限定資源
-- [ ] **P6 新 effect kinds**（~150 行）— gain_card_pool / lose_card / gain_curse / next_battle_buff / act_modifier / permanent_power
-- [ ] **P7 內容 A**（10 事件，~600 行）
-- [ ] **P8 內容 B**（10 事件，~700 行）
-- [ ] **P9 內容 C**（11 事件含戰鬥，~750 行）
-- [ ] **P10 戰鬥用敵人**（4–6 個 event-only enemies，~180 行）
-- [ ] **P11 Smoke tests**（~280 行）
+### 進行中（Event Branching — 奇遇分支故事化）
+> **核心框架已完成**：13/31 事件已轉成分支故事樹，curse / observe token / 戰鬥回流都上線。
+詳見 [`docs/EVENT_BRANCHING.md`](docs/EVENT_BRANCHING.md)。
+- [x] **P1 Schema + Runner** — `event_runner.gd`（191 行）tree walker、requires 過濾、UI 徽章（`e0e4ee0`）
+- [x] **P2 Event UI 改版** — `show_event_node()` 多層樹走訪 + 葉節點 resolver（`ec781b7`）
+- [x] **P3 戰鬥回流** — 事件戰鬥敗不直接 game over（`01b78a7`）
+- [x] **P4 Curse 牌系統** — `curse_catalog.gd` 6 張 curse + 滯留結算（`3764adc`）
+- [x] **P5 observe Token** — `RunState.observe_tokens` + `next_battle_buffs`（`ef41450`）
+- [~] **P6 新 effect kinds** — permanent_power / next_battle_buff / gain_relic_pool / gain_card_pool / gain_curse 已做；**`act_modifier` 仍未實作**（main.gd:3667 push_warning）
+- [x] **P7 內容 A（Batch A 6 事件）** — `99ff292`
+- [x] **P8 內容 B（Batch B 6 事件含戰鬥）** — `c43a306`（8 條 battle 葉節點）
+- [ ] **P9 內容 C（剩餘 18 事件轉 tree）** — 目前走 legacy 扁平 fallback
+- [ ] **P10 戰鬥用敵人**（event-only enemies）— Batch B 暫借既有敵人
+- [~] **P11 Smoke tests** — 17 個事件相關測試已上（event_runner ×7 / observe ×3 / curse ×6 / variety ×1）
 
-設計凍結：節點密度 3–5、戰鬥分支 10–12 個事件、curse 牌會做、每事件至少 1 條角色獨家路徑、observe 改為全 run 限定 token。
-6 個事件分支樹已凍結（spring / yokai_pact / flower_spirit / yangzhou_officer / jiang_waner_grief / baiyue_altar），剩 25 個待 review。
+剩餘缺口：`act_modifier` effect kind、P9 的 18 個事件轉 tree、P10 專屬敵人。
 
 ### 高優先（影響玩法完整度）
 - [x] **Boss 專屬神器** — 5 act boss + moon_worshipper 共 6 神器全做完
@@ -189,8 +189,9 @@ summon basic+cap+unknown+from_pool / per-enemy phase)、阿奴 multi-enemy passi
 - [x] **更多 PAL1 事件** — 已擴至 31 種（含 4 名場面 + 觀察/離開機制）
 - [x] **奇遇事件插圖 (Event Art)** — 31/31 完成
 - [x] **角色立繪去背** — portraits / battle_characters / enemies 三個資料夾全部透明背景
-- [x] **遺物美術完整集** — 56 張 ink-wash 風格遺物圖到位
-- [ ] **Card Art / 肖像** — 60 張卡片 PNG 已有，但 8 張新 PAL1 卡仍用 art_id 借既有圖
+- [x] **遺物美術完整集** — 59/59 遺物圖到位（補上 16 張原本缺圖的通用遺物 art）
+- [x] **PAL1 starter 卡片美術** — `ef064ac` 補上起始牌組專屬 art
+- [ ] **Card Art 補完** — 60 張卡片 PNG 已有，部分新卡仍用 art_id 借既有圖
 
 ### 中優先（體驗提升）
 - [x] **Act title 顯示在地圖** — 已實作

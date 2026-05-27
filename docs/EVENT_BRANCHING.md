@@ -2,35 +2,33 @@
 
 把現有 28（+3 後續新增）個 event variant 從「扁平選單」升級為**分支故事樹**：每個事件 3–5 個主選項、可進入子節點、葉節點分類為 reward / punish / battle / gamble / mixed。
 
-> **目前實作狀態：Phase 0 — 完全未實作**。所有 Phase 1–11 的 schema / runner / curse / observe / 新 effect kinds / 戰鬥回流 / 31 個事件樹內容都還沒做。
-> 現行 code 走的是**舊扁平 schema**（2 層硬切：root choices + 一層 sub_choices），詳見下方「現況對照」。
-> 設計本身已凍結審稿過，實作時直接照這份文件做。
+> **目前實作狀態：核心框架 + 內容批次 A/B 已完成**（Phase 1-5、7-A、7-B；P6 僅缺 `act_modifier`）。
+> EventRunner tree walker、curse 系統、observe token、戰鬥回流都已上線；13/31 事件已轉成 tree（其餘 18 個走 legacy fallback）。
+> 詳見下方「現況對照」。
 
 ---
 
-## 現況對照（Phase 0）
+## 現況對照（更新於 pull commit ef064ac 後）
 
-對 `docs/EVENT_BRANCHING.md` (設計) vs `scripts/event_data.gd` + `scripts/main.gd` (實作) 的逐項稽核：
+對 `docs/EVENT_BRANCHING.md` (設計) vs 實際 code 的逐項稽核：
 
-| 設計項目 | 實作狀態 | 程式位置 / 缺漏 |
+| 設計項目 | 實作狀態 | 程式位置 |
 |---|---|---|
-| 樹狀 `tree { root, nodes }` schema | ❌ 沒做 | `event_data.gd:9-734` 仍是扁平 `choices[] + sub_choices{} + outcomes{}` |
-| 多層深度（3+ 層） | ❌ 只支援 2 層 | `main.gd:3060-3160` `show_event_node(sub_stage)` — 空字串 = 第一層、有值 = 第二層，無遞迴 |
-| `requires.character` 過濾 | ⚠️ 部分硬寫 | 只有 3 個事件 (immortal_ruins / baiyue_altar / spirit_clan_ruins) 透過 `character_outcomes` 寫死；沒 schema 化條件 |
-| `requires.min_gold` / `has_relic` / `observe_token` 過濾 | ❌ 沒做 | — |
-| 葉節點 kind 徽章（reward/punish/battle/gamble/mixed） | ❌ 沒做 | UI 沒這套分類顯示 |
-| Curse 牌類別（6 張） | ❌ 沒做 | `CardData.card_type` 沒 `"curse"`；無不可打/不可移除/不可升級邏輯 |
-| observe token 系統 | ❌ 沒做 | `RunState` 沒 `observe_tokens` 欄位；observe 仍是免費按鈕（or 不存在） |
-| 戰鬥回流（pending_event_return） | ❌ 沒做 | 事件觸發戰鬥沒設計、defeat 直接 game over |
-| 新 effect kinds (gain_card_pool / lose_card / gain_curse / next_battle_buff / act_modifier / permanent_power 等) | ❌ 沒做 | `effect_resolver.gd` 還是只認舊 kinds |
-| outcome 結算路徑 | ⚠️ 寫死 12 種 key | `main.gd:3484-3542` `resolve_event_heal/gain_card/power` 等硬寫的 handlers，非 schema 驅動 |
-| 31 個事件 tree 內容 | ❌ 0 / 31 | 6 個已凍結設計 (spring/yokai_pact/flower_spirit/yangzhou_officer/jiang_waner_grief/baiyue_altar) 都還是舊 schema |
-| 25 個待設計事件 tree | ❌ 0 / 25 | 連設計都還沒寫 |
+| 樹狀 `tree { root, nodes }` schema | ✅ 完成 | `event_data.gd` 13 個事件有 `tree` 欄位；舊事件走 fallback |
+| EventRunner tree walker | ✅ 完成 | `event_runner.gd`（191 行）：has_tree / visible_choices / eval_requires / is_leaf / leaf_kind / badge_for_kind / build_context |
+| 多層深度（3+ 層） | ✅ 完成 | `EventRunner.get_node()` 支援 root + nodes 遞迴走訪 |
+| `requires`（character / min_gold / has_relic / min_power / observe_token） | ✅ 完成 | `EventRunner.eval_requires()`（多條件 AND） |
+| 葉節點 kind 徽章（reward/punish/battle/gamble/mixed/neutral） | ✅ 完成 | `EventRunner.badge_for_kind()` |
+| Curse 牌類別（6 張） | ✅ 完成 | `curse_catalog.gd`（6 curse + make_card / is_curse / retention_for）；battle_controller 整合滯留結算 |
+| observe token 系統 | ✅ 完成 | `RunState.observe_tokens`（起始 3）+ `next_battle_buffs`；to/from_dict round-trip |
+| 戰鬥回流（pending_event_return） | ✅ 完成 | Phase 3 commit `01b78a7`；事件戰鬥敗不直接 game over |
+| 新 effect kinds | 🟨 大致完成 | `main.gd:3616-3667` 處理 permanent_power / next_battle_buff / gain_relic_pool / gain_card_pool / gain_curse；**`act_modifier` 仍是 push_warning「not implemented (P6)」** |
+| 事件 tree 內容 | 🟨 13 / 31 | Batch A 6 個 (`99ff292`) + Batch B 6 個含戰鬥 (`c43a306`)；其餘 18 個走 legacy 扁平 schema |
+| Smoke test 覆蓋 | ✅ 17 個事件相關 | event_runner ×7 / observe_token ×3 / curse ×6 / event_variety ×1（全 78 個測試通過） |
 
 **現況白話總結**：
-- 玩家現在玩到的奇遇 = **舊版扁平兩層選單**，根本沒走 tree
-- 「分支故事樹」這份文件描述的是**未來目標**，不是現狀
-- 估計距離全部完成 ~3630 行 / 11 commits
+- 核心 tree 系統 + curse + observe + 戰鬥回流**都能跑了**，玩家在 13 個事件能體驗到真正的分支樹
+- 剩餘：`act_modifier` effect、18 個事件轉 tree（P8/P9）、event-only 敵人（P10）、更多測試
 
 ---
 
@@ -224,19 +222,19 @@ observe 從免費變成**全 run 限定資源**。
 
 | Phase | 內容 | 估行數 | 可平行 | 狀態 |
 |---|---|---|---|---|
-| **P1: Schema + Runner** | 新建 `event_runner.gd`，支援 `tree` 欄位 walk；保留舊 schema fallback；requires 過濾；UI 徽章 | ~280 | — | ⬜ 未開始 |
-| **P2: Event UI 改版** | `show_event_node()` 替換 `show_event()`；支援多層回跳、葉節點結果卡片、節點導航 | ~220 | 等 P1 | ⬜ 未開始 |
-| **P3: 戰鬥回流** | `pending_event_return` + `pending_battle_outcome_effects`；`start_next_battle(from_event=true)` 分支 | ~100 | 等 P1 | ⬜ 未開始 |
-| **P4: Curse 牌** | `CardData.card_type = "curse"`；play_card / remove / upgrade 拒絕邏輯；6 張 curse + 滯留 hooks；淨化符遺物；黑市驅邪服務 | ~250 | 與 P1–3 平行 | ⬜ 未開始 |
-| **P5: observe Token** | `RunState.observe_tokens`；UI 左上 icon；事件按鈕灰掉；boss 勝利補充；慧眼遺物 | ~120 | 與 P1–3 平行 | ⬜ 未開始 |
-| **P6: 新 effect kinds** | EffectResolver 加 `gain_card_pool / lose_card / gain_relic_pool / gain_curse / next_battle_buff / act_modifier / permanent_power` | ~150 | 等 P4 | ⬜ 未開始 |
-| **P7: 內容 A（10 事件）** | spring / talisman_cache / shrine / treasure_chest / ancestor_relic / wandering_sage / moonlit_pool / broken_temple / immortal_ruins / spirit_clan_ruins | ~600 | 等 P1–6 | ⬜ 未開始（spring 已凍設計） |
-| **P8: 內容 B（10 事件）** | baiyue_altar / sword_tomb / miao_healer / shilipo / drunk_swordsman / yinlong_cave / yangzhou_officer / lingmiao / xianling_shrine / tavern_acquaintance | ~700 | 等 P7 | ⬜ 未開始（baiyue_altar、yangzhou_officer 已凍設計） |
-| **P9: 內容 C（11 事件含戰鬥）** | yokai_pact / flower_spirit / flower_thief / ancient_battlefield / alchemy_furnace / ghost_forest / forgotten_altar / jianling_whisper / aqi_reunion / tangyu_sparring / jiang_waner_grief | ~750 | 等 P7 | ⬜ 未開始（yokai_pact、flower_spirit、jiang_waner_grief 已凍設計） |
-| **P10: 戰鬥用敵人** | 4–6 個 event-only 敵人（怨妖 / 花妖本體 / 採花賊頭目 / 揚州捕頭 / 蒙面盜匪 / 拜月怨魂） | ~180 | 等 P3 | ⬜ 未開始 |
-| **P11: Smoke tests** | `_test_event_tree_traversal` × 31 / `_test_event_battle_return` / `_test_event_character_gating` / `_test_event_legacy_fallback` / `_test_curse_*` / `_test_observe_token` | ~280 | 等 P7–10 | ⬜ 未開始 |
+| **P1: Schema + Runner** | 新建 `event_runner.gd`，支援 `tree` 欄位 walk；保留舊 schema fallback；requires 過濾；UI 徽章 | ~280 | — | ✅ 完成（`e0e4ee0`） |
+| **P2: Event UI 改版** | `show_event_node()` 替換 `show_event()`；支援多層回跳、葉節點結果卡片、節點導航 | ~220 | 等 P1 | ✅ 完成（`ec781b7`） |
+| **P3: 戰鬥回流** | `pending_event_return` + `pending_battle_outcome_effects`；`start_next_battle(from_event=true)` 分支 | ~100 | 等 P1 | ✅ 完成（`01b78a7`） |
+| **P4: Curse 牌** | `CardData.card_type = "curse"`；play_card / remove / upgrade 拒絕邏輯；6 張 curse + 滯留 hooks；淨化符遺物；黑市驅邪服務 | ~250 | 與 P1–3 平行 | ✅ 完成（`3764adc`；`curse_catalog.gd` 6 curse） |
+| **P5: observe Token** | `RunState.observe_tokens`；UI 左上 icon；事件按鈕灰掉；boss 勝利補充；慧眼遺物 | ~120 | 與 P1–3 平行 | ✅ 完成（`ef41450`） |
+| **P6: 新 effect kinds** | EffectResolver 加 `gain_card_pool / lose_card / gain_relic_pool / gain_curse / next_battle_buff / act_modifier / permanent_power` | ~150 | 等 P4 | 🟨 大致完成；**`act_modifier` 仍未實作**（main.gd:3667 push_warning） |
+| **P7: 內容 A（Batch A 6 事件）** | spring / talisman_cache / shrine / treasure_chest / ancestor_relic / wandering_sage / moonlit_pool / broken_temple / immortal_ruins / spirit_clan_ruins | ~600 | 等 P1–6 | ✅ Batch A 6 個完成（`99ff292`） |
+| **P8: 內容 B（Batch B 6 事件含戰鬥）** | baiyue_altar / sword_tomb / miao_healer / shilipo / drunk_swordsman / yinlong_cave / yangzhou_officer / lingmiao / xianling_shrine / tavern_acquaintance | ~700 | 等 P7 | ✅ Batch B 6 個完成（`c43a306`，含 8 條 battle 葉節點） |
+| **P9: 內容 C（剩餘事件含戰鬥）** | yokai_pact / flower_spirit / flower_thief / ancient_battlefield / alchemy_furnace / ghost_forest / forgotten_altar / jianling_whisper / aqi_reunion / tangyu_sparring / jiang_waner_grief | ~750 | 等 P7 | ⬜ 未開始（剩 18 個事件走 legacy fallback） |
+| **P10: 戰鬥用敵人** | 4–6 個 event-only 敵人（怨妖 / 花妖本體 / 採花賊頭目 / 揚州捕頭 / 蒙面盜匪 / 拜月怨魂） | ~180 | 等 P3 | ⬜ 未開始（Batch B 戰鬥暫借既有敵人） |
+| **P11: Smoke tests** | `_test_event_tree_traversal` / `_test_event_battle_return` / `_test_event_character_gating` / `_test_event_legacy_fallback` / `_test_curse_*` / `_test_observe_token` | ~280 | 等 P7–10 | 🟨 17 個事件相關測試已上（event_runner ×7 / observe ×3 / curse ×6 / variety ×1） |
 
-**總計：~3630 行 / 11 commits。目前進度：0 / 11。**
+**進度：13 個事件已轉 tree（Batch A 6 + Batch B 6 + 1）／ 31。剩餘缺口：`act_modifier` effect、P9 的 18 個事件、P10 event-only 敵人。smoke test 50 → 78。**
 
 ### Phase 進度標記慣例
 
