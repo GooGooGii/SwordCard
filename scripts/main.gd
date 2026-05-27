@@ -2115,9 +2115,7 @@ func _build_player_widget(parent: HBoxContainer) -> void:
 	col.add_theme_constant_override("separation", 2 if _battle_compact else 4)
 	parent.add_child(col)
 	player_feedback_label = UIFactory.feedback_label()
-	if _battle_compact:
-		player_feedback_label.custom_minimum_size = Vector2(0, 0)
-	col.add_child(player_feedback_label)
+	col.add_child(_wrap_feedback_label(player_feedback_label))
 	var portrait_size: Vector2 = Vector2(190, 220) if _battle_compact else Vector2(260, 290)
 	col.add_child(_portrait_with_block_badge(selected_character.portrait_path, portrait_size, true, true))
 	player_name_label = UIFactory.card_label(selected_character.display_name, 14 if _battle_compact else 18, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
@@ -2198,9 +2196,7 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	col.add_theme_constant_override("separation", 2 if _battle_compact else 4)
 	# 浮動 feedback label（傷害數字、狀態提示）
 	var feedback_label: Label = UIFactory.feedback_label()
-	if _battle_compact or total > 1:
-		feedback_label.custom_minimum_size = Vector2(0, 0)
-	col.add_child(feedback_label)
+	col.add_child(_wrap_feedback_label(feedback_label))
 	# portrait wrap（含 block badge）
 	var wrap: Control = Control.new()
 	wrap.custom_minimum_size = portrait_size
@@ -4427,7 +4423,7 @@ func _shop_item_view(item: Dictionary) -> Control:
 	if item.get("on_sale", false):
 		box.add_child(UIFactory.card_label("★ 特賣！五折優惠", 12, Color("ff5555"), HORIZONTAL_ALIGNMENT_CENTER))
 	var can_buy: bool = run_state.gold >= price
-	var card_button: Button = _make_card_button(card, card.cost, Vector2(158, 330), can_buy, true)
+	var card_button: Button = _make_card_button(card, card.cost, Vector2(158, 287), can_buy, true)
 	card_button.disabled = not can_buy
 	card_button.pressed.connect(func(): _show_shop_buy_confirm_overlay(card, price))
 	box.add_child(card_button)
@@ -4456,7 +4452,7 @@ func _show_shop_buy_confirm_overlay(card: CardData, price: int) -> void:
 	col.add_theme_constant_override("separation", 18)
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
 	center.add_child(col)
-	var big: Button = _make_card_button(card, card.cost, Vector2(230, 480), true, true)
+	var big: Button = _make_card_button(card, card.cost, Vector2(230, 418), true, true)
 	big.disabled = true
 	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_child(big)
@@ -4828,7 +4824,7 @@ func _deck_view_card(card: CardData, mode: String = "view", count: int = 1) -> C
 	var is_curse: bool = CurseCatalog.is_curse(card)
 	var selectable: bool = (not is_curse) and (mode == "remove" or mode == "shop_remove" or ((mode == "upgrade" or mode == "shop_upgrade") and not card.upgraded))
 	var visually_enabled: bool = (mode != "upgrade" and mode != "shop_upgrade") or not card.upgraded
-	var button: Button = _make_card_button(card, card.cost, Vector2(158, 330), true, visually_enabled)
+	var button: Button = _make_card_button(card, card.cost, Vector2(158, 287), true, visually_enabled)
 	button.disabled = not selectable
 	if mode == "remove":
 		button.pressed.connect(func(): remove_card_from_deck(card))
@@ -4889,7 +4885,7 @@ func _show_upgrade_confirm_overlay(card: CardData, on_confirm: Callable) -> void
 	stack.add_theme_constant_override("separation", 24)
 	stack.alignment = BoxContainer.ALIGNMENT_CENTER
 	col.add_child(stack)
-	var big: Button = _make_card_button(card, card.cost, Vector2(230, 480), true, true)
+	var big: Button = _make_card_button(card, card.cost, Vector2(230, 418), true, true)
 	big.disabled = true
 	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(big)
@@ -4900,7 +4896,7 @@ func _show_upgrade_confirm_overlay(card: CardData, on_confirm: Callable) -> void
 	arrow.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
 	stack.add_child(arrow)
 	var upgraded: CardData = card.upgraded_copy()
-	var up_btn: Button = _make_card_button(upgraded, upgraded.cost, Vector2(230, 480), true, true)
+	var up_btn: Button = _make_card_button(upgraded, upgraded.cost, Vector2(230, 418), true, true)
 	up_btn.disabled = true
 	up_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(up_btn)
@@ -5288,7 +5284,7 @@ func _refresh_combatant_hp(bar: ProgressBar, value_label: Label, hp: int, max_hp
 
 func _card_button(card: CardData) -> Button:
 	var affordable: bool = int(battle.state["energy"]) >= battle.effective_card_cost(card)
-	var card_size: Vector2 = Vector2(124, 260) if _battle_compact else Vector2(144, 300)
+	var card_size: Vector2 = Vector2(124, 225) if _battle_compact else Vector2(144, 262)
 	var button: Button = _make_card_button(card, card.cost, card_size, affordable, true)
 	button.disabled = not affordable
 	button.pressed.connect(func() -> void: _on_card_button_pressed(card, button))
@@ -5482,7 +5478,7 @@ func _show_card_preview(card: CardData) -> void:
 	stack.add_theme_constant_override("separation", 24)
 	stack.alignment = BoxContainer.ALIGNMENT_CENTER
 	center.add_child(stack)
-	var big: Button = _make_card_button(card, card.cost, Vector2(230, 480), true, true)
+	var big: Button = _make_card_button(card, card.cost, Vector2(230, 418), true, true)
 	big.disabled = true
 	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(big)
@@ -5494,13 +5490,13 @@ func _show_card_preview(card: CardData) -> void:
 		arrow.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
 		stack.add_child(arrow)
 		var upgraded: CardData = card.upgraded_copy()
-		var up_btn: Button = _make_card_button(upgraded, upgraded.cost, Vector2(230, 480), true, true)
+		var up_btn: Button = _make_card_button(upgraded, upgraded.cost, Vector2(230, 418), true, true)
 		up_btn.disabled = true
 		up_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		stack.add_child(up_btn)
 
 func _reward_card_button(card: CardData) -> Button:
-	return _make_card_button(card, card.cost, Vector2(192, 400), true, true)
+	return _make_card_button(card, card.cost, Vector2(192, 349), true, true)
 
 func _card_frame_texture_path(card_type: String) -> String:
 	match card_type:
@@ -5772,6 +5768,23 @@ func _spawn_damage_popup(target: Control, amount: int, kind: String) -> void:
 		return
 	var world_pos: Vector2 = target.global_position + Vector2(target.size.x * 0.5 - 40, target.size.y * 0.35)
 	DamagePopup.spawn(self, world_pos, amount, kind)
+
+# feedback 浮字包在 0 高度的 plain Control 裡：plain Control 不把子節點 min size 算進自己的
+# min size，所以塞文字時不會撐高 arena、把手牌列擠出畫面下緣。label 錨在 slot 上緣往上延伸，
+# 浮字漂在 portrait 上方而非占用欄位高度。
+func _wrap_feedback_label(label: Label) -> Control:
+	var slot: Control = Control.new()
+	slot.custom_minimum_size = Vector2(0, 0)
+	slot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	label.offset_left = 0
+	label.offset_right = 0
+	label.offset_top = -58
+	label.offset_bottom = 0
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	slot.add_child(label)
+	return slot
 
 func _show_feedback(label: Label, lines: Array[String], color: Color) -> void:
 	if label == null:
