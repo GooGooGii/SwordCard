@@ -147,6 +147,7 @@ Event Branching（event_runner tree walk ×7 / observe_token ×3 / curse ×6）
 - **奇遇事件插圖**：31/31 全部完成（每個 variant 各自獨立背景）
 - **遺物美術**：56 張 ink-wash 風格遺物圖
 - **卡片框美術**：attack / power / skill 各自獨立框型升級（原圖備份在 _card_frame_backup/）
+- **藥品美術**：11 張 ink-wash 風格藥品圖
 
 ---
 
@@ -197,6 +198,7 @@ Event Branching（event_runner tree walk ×7 / observe_token ×3 / curse ×6）
 - [x] **角色立繪去背** — portraits / battle_characters / enemies 三個資料夾全部透明背景
 - [x] **遺物美術完整集** — 59/59 遺物圖到位（補上 16 張原本缺圖的通用遺物 art）
 - [x] **PAL1 starter 卡片美術** — `ef064ac` 補上起始牌組專屬 art
+- [x] **藥品美術完整集** — 11/11 藥品圖到位
 - [ ] **Card Art 補完** — 60 張卡片 PNG 已有，部分新卡仍用 art_id 借既有圖
 
 ### 中優先（體驗提升）

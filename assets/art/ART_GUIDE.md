@@ -110,6 +110,28 @@ Target:
 - **強制去背 (Transparent background is REQUIRED)**: 必須是去背透明背景。
 - 角色朝向：面朝右方（StS 戰鬥左側玩家向）。
 
+## Planned Potion Icons
+
+Suggested paths:
+
+- `assets/art/potions/huichun_dan.png` (回春丹)
+- `assets/art/potions/lingli_dan.png` (靈力丹)
+- `assets/art/potions/huti_fu.png` (護體符)
+- `assets/art/potions/jiedu_san.png` (解毒散)
+- `assets/art/potions/lingshe_dan.png` (靈蛇膽)
+- `assets/art/potions/hugu_jiu.png` (虎骨酒)
+- `assets/art/potions/jinchuang_yao.png` (金瘡藥)
+- `assets/art/potions/tianling_dan.png` (天靈丹)
+- `assets/art/potions/xianren_xue.png` (仙人遺血)
+- `assets/art/potions/yuehun_cao.png` (月魂草)
+- `assets/art/potions/baihua_xianniang.png` (百花仙釀)
+
+Target:
+
+- 512 x 512 PNG
+- **強制去背 (Transparent background is REQUIRED)**: 必須是去背透明背景，便於在戰鬥列及商店中渲染。
+- Style: 2D hand-painted Chinese ink-wash style, watercolor texture, clean ink outlines, matching the relic style.
+
 ## Planned UI Assets
 
 Suggested paths:
