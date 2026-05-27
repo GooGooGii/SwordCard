@@ -1,7 +1,7 @@
 class_name RelicCatalog
 extends RefCounted
 
-# 56 件裝備：45 通用 + 8 角色專武 + 3 神器
+# 60 件裝備：45 通用 + 9 角色專武 + 6 神器
 
 static func all() -> Array[RelicData]:
 	var list: Array[RelicData] = []
@@ -182,6 +182,9 @@ static func _weapons() -> Array[RelicData]:
 		[{"trigger": "passive_modifier", "effects": [{"kind": "poison_bonus", "amount": 2}]}], Color("6aa44a")))
 	l.append(_make_weapon("shigu_gu", "蝕骨蠱", "每回合開始敵人 +2 層蠱毒。", "anu", "rare",
 		[{"trigger": "turn_start", "effects": [{"kind": "enemy_poison", "amount": 2}]}], Color("8a4a76")))
+	# 阿奴刀流錨點（巫月神刀）：每出一張攻擊牌本場傷害 +1，連斬越多疊越快
+	l.append(_make_weapon("wuyue_shendao", "巫月神刀", "每出一張攻擊牌，本場戰鬥傷害 +1。", "anu", "rare",
+		[{"trigger": "card_played", "filter": {"card_type": "attack"}, "effects": [{"kind": "self_power", "amount": 1}]}], Color("c0455a")))
 	return l
 
 static func _artifacts() -> Array[RelicData]:

@@ -128,6 +128,9 @@ func _initialize() -> void:
 	_test_summon_cap(characters, enemies)
 	_test_summon_unknown_id(characters, enemies)
 	_test_summon_from_boss_pool(characters)
+	# 連擊 multi-hit（阿奴刀流 / 引擎地基）
+	_test_multi_hit_damage(characters, enemies)
+	_test_anu_blade_cards(characters)
 	# Event Branching Phase 1：純樹走訪器（無 UI、無 effect 結算）
 	_test_event_runner_has_tree()
 	_test_event_runner_root_choices()
@@ -1504,6 +1507,63 @@ func _test_summon_from_boss_pool(characters: Array[CharacterData]) -> void:
 	# 新敵應在 summon_pool 內
 	var new_id: String = String((bc.state["enemies"][size_before] as Dictionary)["id"])
 	assert(new_id in moon.summon_pool, "summoned id should be from boss summon_pool; got '%s'" % new_id)
+
+func _test_multi_hit_damage(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# 連擊 hits 參數：每段各走 power/weak/vulnerable/block 管線
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0]])
+	var s: Dictionary = bc.state
+	# 清成已知乾淨值（避開角色 passive / 專武干擾）
+	s["player_power"] = 0; s["player_weak"] = 0
+	s["enemy_block"] = 0; s["enemy_vulnerable"] = 0
+	s["enemy_hp"] = 100
+
+	# 1) 純連擊：4 傷害 ×3 = 12
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 4, "hits": 3}, s)
+	assert(int(s["enemy_hp"]) == 88, "4x3 multi-hit should deal 12; hp=%d" % int(s["enemy_hp"]))
+
+	# 2) 格擋跨段遞減：block 5、4×3 → 段1 吃光後剩 1 擋、段2 扣3、段3 扣4 = 失 7
+	s["enemy_hp"] = 100; s["enemy_block"] = 5
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 4, "hits": 3}, s)
+	assert(int(s["enemy_hp"]) == 93, "block should deplete across hits → loss 7; hp=%d" % int(s["enemy_hp"]))
+	assert(int(s["enemy_block"]) == 0, "block should be 0 after; got %d" % int(s["enemy_block"]))
+
+	# 3) 力量逐段加成：power 2、5×2 → 每段 7、共 14
+	s["enemy_hp"] = 100; s["enemy_block"] = 0; s["player_power"] = 2
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 5, "hits": 2}, s)
+	assert(int(s["enemy_hp"]) == 86, "power should apply per hit (7x2=14); hp=%d" % int(s["enemy_hp"]))
+
+	# 4) 一致性：hits=3 等同 3 次單擊
+	s["enemy_hp"] = 100; s["player_power"] = 0; s["enemy_block"] = 0
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 4, "hits": 3}, s)
+	var multi_loss: int = 100 - int(s["enemy_hp"])
+	s["enemy_hp"] = 100
+	for _i: int in range(3):
+		bc.resolver._resolve_effect({"kind": "damage", "amount": 4}, s)
+	var single_loss: int = 100 - int(s["enemy_hp"])
+	assert(multi_loss == single_loss, "hits=3 (%d) should equal 3x single (%d)" % [multi_loss, single_loss])
+
+func _test_anu_blade_cards(characters: Array[CharacterData]) -> void:
+	# 阿奴刀流：連擊卡在獎勵池 + 巫月神刀遺物存在
+	var anu: CharacterData = null
+	for c: CharacterData in characters:
+		if c.id == "anu":
+			anu = c
+			break
+	assert(anu != null, "anu character should exist")
+	var found_wuyue: bool = false
+	var found_xueren: bool = false
+	for card: CardData in anu.reward_pool:
+		if card.id == "anu_wuyuezhan":
+			found_wuyue = true
+			assert(int((card.effects[0] as Dictionary).get("hits", 1)) == 2, "巫月斬 should be 2 hits")
+		elif card.id == "anu_xuerenwu":
+			found_xueren = true
+			assert(int((card.effects[0] as Dictionary).get("hits", 1)) == 3, "血刃亂舞 should be 3 hits")
+	assert(found_wuyue and found_xueren, "anu blade cards should be in reward pool")
+	# 巫月神刀遺物
+	var dao: RelicData = RelicCatalog.by_id("wuyue_shendao")
+	assert(dao != null, "巫月神刀 relic should exist")
+	assert(dao.character_id == "anu", "巫月神刀 should belong to anu")
 
 # ──────────────────────────────────────────────────────────────────────
 # Event Branching Phase 1：EventRunner 純走訪器測試

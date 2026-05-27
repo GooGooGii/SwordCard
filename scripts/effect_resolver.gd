@@ -76,13 +76,22 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				state["player_hp"] = max(0, int(state["player_hp"]) - (modified - blocked))
 				log_lines.append("%s 攻擊，造成 %d 點傷害。" % [state["enemy_name"], modified - blocked])
 			else:
-				var modified: int = max(0, amount + int(state["player_power"]) - int(state["player_weak"])) + int(state.get("damage_out_bonus", 0))
-				if int(state["enemy_vulnerable"]) > 0:
-					modified = int(ceil(modified * 1.5))
-				var blocked: int = min(int(state["enemy_block"]), modified)
-				state["enemy_block"] = int(state["enemy_block"]) - blocked
-				state["enemy_hp"] = max(0, int(state["enemy_hp"]) - (modified - blocked))
-				log_lines.append("造成 %d 點傷害。" % (modified - blocked))
+				# 連擊：hits 可選，預設 1。每段各自走 power/weak/vulnerable/block 管線
+				# （block 跨段遞減、vulnerable 為 >0 即 ×1.5 不逐段衰減，與單擊一致）。
+				var hits: int = max(1, int(effect.get("hits", 1)))
+				var total_dealt: int = 0
+				for _h: int in range(hits):
+					var modified: int = max(0, amount + int(state["player_power"]) - int(state["player_weak"])) + int(state.get("damage_out_bonus", 0))
+					if int(state["enemy_vulnerable"]) > 0:
+						modified = int(ceil(modified * 1.5))
+					var blocked: int = min(int(state["enemy_block"]), modified)
+					state["enemy_block"] = int(state["enemy_block"]) - blocked
+					state["enemy_hp"] = max(0, int(state["enemy_hp"]) - (modified - blocked))
+					total_dealt += modified - blocked
+				if hits > 1:
+					log_lines.append("連擊 %d 段，共造成 %d 點傷害。" % [hits, total_dealt])
+				else:
+					log_lines.append("造成 %d 點傷害。" % total_dealt)
 		"block":
 			if from_enemy:
 				state["enemy_block"] = int(state["enemy_block"]) + amount
