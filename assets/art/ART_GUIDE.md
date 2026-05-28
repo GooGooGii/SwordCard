@@ -176,6 +176,7 @@ Decorative overlays include the mana badge, rarity badge, name plaque, and rules
 | `anu_cuifeng` | 淬鋒蠱刃 | anu_guxue | 蠱毒淬入刀刃、刀身泛綠毒光（power buff） |
 | `anu_wuyuezhan` | 巫月斬 | anu_duzhen | 巫月神刀月牙形連斬軌跡 |
 | `anu_xuerenwu` | 血刃亂舞 | anu_baozhagu | 亂刀殘影、血光四濺（三段連擊） |
+| `lxy_wanjianguizong` | 萬劍歸宗 | lxy_wanjian | 御劍千百道凝聚成一束、收尾一閃（三段連擊收勢） |
 
 ### 遺物（無圖、目前程序繪製 fallback）
 
