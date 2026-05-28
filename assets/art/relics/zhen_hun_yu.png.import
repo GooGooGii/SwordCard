@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dnkflk48od313"
-valid=false
+uid="uid://b77yanhmw060n"
+path="res://.godot/imported/zhen_hun_yu.png-936af5f26bd2cbe91e3f25c9d4efda37.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/zhen_hun_yu.png"
+dest_files=["res://.godot/imported/zhen_hun_yu.png-936af5f26bd2cbe91e3f25c9d4efda37.ctex"]
 
 [params]
 

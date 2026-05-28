@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c886vg4sptg2q"
-valid=false
+uid="uid://dv4vdx6nolcg"
+path="res://.godot/imported/hu_fa_zhou.png-9a6b8ee19c78e6c23af30193a4e5618c.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/hu_fa_zhou.png"
+dest_files=["res://.godot/imported/hu_fa_zhou.png-9a6b8ee19c78e6c23af30193a4e5618c.ctex"]
 
 [params]
 

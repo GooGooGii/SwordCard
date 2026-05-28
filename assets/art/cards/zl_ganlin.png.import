@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://da3x73hjrh8uk"
-valid=false
+uid="uid://diqfgbarpkrc4"
+path="res://.godot/imported/zl_ganlin.png-d160e74e5752725884217d0b23cf559a.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/zl_ganlin.png"
+dest_files=["res://.godot/imported/zl_ganlin.png-d160e74e5752725884217d0b23cf559a.ctex"]
 
 [params]
 

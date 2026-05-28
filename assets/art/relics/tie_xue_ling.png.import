@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://1cxk1cxji4hx"
-valid=false
+uid="uid://clyklidmqtoly"
+path="res://.godot/imported/tie_xue_ling.png-c7e580ec3b64fd8106aeedcca11e2e33.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/tie_xue_ling.png"
+dest_files=["res://.godot/imported/tie_xue_ling.png-c7e580ec3b64fd8106aeedcca11e2e33.ctex"]
 
 [params]
 

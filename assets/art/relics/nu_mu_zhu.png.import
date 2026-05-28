@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://taeajk6r6ydg"
-valid=false
+uid="uid://xqe68vcai2sv"
+path="res://.godot/imported/nu_mu_zhu.png-de9270edf321ff10839ae98170deb239.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/nu_mu_zhu.png"
+dest_files=["res://.godot/imported/nu_mu_zhu.png-de9270edf321ff10839ae98170deb239.ctex"]
 
 [params]
 

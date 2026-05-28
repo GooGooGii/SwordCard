@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://jkgw2qrpsdwr"
-valid=false
+uid="uid://cli7s6valy6qs"
+path="res://.godot/imported/lxy_jinchan_ls.png-fff27daf12a844fba3688e3d8ab24443.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/lxy_jinchan_ls.png"
+dest_files=["res://.godot/imported/lxy_jinchan_ls.png-fff27daf12a844fba3688e3d8ab24443.ctex"]
 
 [params]
 

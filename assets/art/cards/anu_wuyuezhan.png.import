@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ci4s0af1gidfv"
-valid=false
+uid="uid://dia4kjrwgga02"
+path="res://.godot/imported/anu_wuyuezhan.png-31ec0a77b79f1b5c4cf480c6fba274bd.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/anu_wuyuezhan.png"
+dest_files=["res://.godot/imported/anu_wuyuezhan.png-31ec0a77b79f1b5c4cf480c6fba274bd.ctex"]
 
 [params]
 

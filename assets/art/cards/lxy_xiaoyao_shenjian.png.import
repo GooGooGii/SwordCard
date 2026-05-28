@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://yxwalhjpotm8"
-valid=false
+uid="uid://becuwf33peo07"
+path="res://.godot/imported/lxy_xiaoyao_shenjian.png-b881b07f7456820e681705d8900a6f2b.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/lxy_xiaoyao_shenjian.png"
+dest_files=["res://.godot/imported/lxy_xiaoyao_shenjian.png-b881b07f7456820e681705d8900a6f2b.ctex"]
 
 [params]
 

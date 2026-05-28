@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d0liumvxh2vby"
-valid=false
+uid="uid://vnlum34wlid2"
+path="res://.godot/imported/anu_xuerenwu.png-d813415618788c0154f9e19f8a627dd8.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/anu_xuerenwu.png"
+dest_files=["res://.godot/imported/anu_xuerenwu.png-d813415618788c0154f9e19f8a627dd8.ctex"]
 
 [params]
 

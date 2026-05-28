@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://brkrwshlsomkn"
-valid=false
+uid="uid://fv6jo5wv5yfl"
+path="res://.godot/imported/lxy_ningyuan_ls.png-2a9f2a68d2dc39f3f108cfec1ab66c8f.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/lxy_ningyuan_ls.png"
+dest_files=["res://.godot/imported/lxy_ningyuan_ls.png-2a9f2a68d2dc39f3f108cfec1ab66c8f.ctex"]
 
 [params]
 

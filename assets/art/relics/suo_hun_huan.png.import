@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://wunwejwutctn"
-valid=false
+uid="uid://dj4e3bmhx1ept"
+path="res://.godot/imported/suo_hun_huan.png-dc9f4abee168235882ee4df3f64274b0.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/suo_hun_huan.png"
+dest_files=["res://.godot/imported/suo_hun_huan.png-dc9f4abee168235882ee4df3f64274b0.ctex"]
 
 [params]
 

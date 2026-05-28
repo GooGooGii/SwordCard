@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://x3a6pbdd61u8"
-valid=false
+uid="uid://b43np6nn0bos1"
+path="res://.godot/imported/anu_cuifeng.png-a775b3e5851e777d02a22550968b3be0.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/anu_cuifeng.png"
+dest_files=["res://.godot/imported/anu_cuifeng.png-a775b3e5851e777d02a22550968b3be0.ctex"]
 
 [params]
 

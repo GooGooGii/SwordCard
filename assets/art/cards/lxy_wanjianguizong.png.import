@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d2pn4tj85yec8"
-valid=false
+uid="uid://bud4xs066xpe7"
+path="res://.godot/imported/lxy_wanjianguizong.png-5003b6f315b078c2124b070138e604d6.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/lxy_wanjianguizong.png"
+dest_files=["res://.godot/imported/lxy_wanjianguizong.png-5003b6f315b078c2124b070138e604d6.ctex"]
 
 [params]
 

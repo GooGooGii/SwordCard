@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bnf0jmp0afl54"
-valid=false
+uid="uid://crlaku0doo3e1"
+path="res://.godot/imported/tie_gu_dan.png-9762e12725fb9284f0c8c15288be2434.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/tie_gu_dan.png"
+dest_files=["res://.godot/imported/tie_gu_dan.png-9762e12725fb9284f0c8c15288be2434.ctex"]
 
 [params]
 

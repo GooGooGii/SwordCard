@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c6y5rr5xnab2f"
-valid=false
+uid="uid://wn0lx0ig8fsg"
+path="res://.godot/imported/zl_shuiyin.png-f88911face33a8d84750ee73c5f3c69d.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/zl_shuiyin.png"
+dest_files=["res://.godot/imported/zl_shuiyin.png-f88911face33a8d84750ee73c5f3c69d.ctex"]
 
 [params]
 

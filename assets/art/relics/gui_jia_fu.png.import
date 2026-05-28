@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d1rmcb034xsgs"
-valid=false
+uid="uid://bib00gps1fejg"
+path="res://.godot/imported/gui_jia_fu.png-58f66ec644cc540ee457d8b800ec880f.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/gui_jia_fu.png"
+dest_files=["res://.godot/imported/gui_jia_fu.png-58f66ec644cc540ee457d8b800ec880f.ctex"]
 
 [params]
 

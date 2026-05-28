@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://e6x8k0548le3"
-valid=false
+uid="uid://b1sg171nkvm7p"
+path="res://.godot/imported/zui_xian_hu.png-521e01abfa1152988819be63af57fc07.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/relics/zui_xian_hu.png"
+dest_files=["res://.godot/imported/zui_xian_hu.png-521e01abfa1152988819be63af57fc07.ctex"]
 
 [params]
 

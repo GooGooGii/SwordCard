@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b0djjnnl0b05v"
-valid=false
+uid="uid://dk50rua2cgloi"
+path="res://.godot/imported/lxy_yuanlinggui.png-c8719c38e4b1e7c0f79634e36811bba3.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/lxy_yuanlinggui.png"
+dest_files=["res://.godot/imported/lxy_yuanlinggui.png-c8719c38e4b1e7c0f79634e36811bba3.ctex"]
 
 [params]
 

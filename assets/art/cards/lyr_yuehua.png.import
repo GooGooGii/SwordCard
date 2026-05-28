@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dn874ap25vrl"
-valid=false
+uid="uid://byu42jeakg4e2"
+path="res://.godot/imported/lyr_yuehua.png-e9ee3d83cff6119819b226c758097c1c.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/lyr_yuehua.png"
+dest_files=["res://.godot/imported/lyr_yuehua.png-e9ee3d83cff6119819b226c758097c1c.ctex"]
 
 [params]
 
