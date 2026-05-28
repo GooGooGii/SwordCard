@@ -4724,7 +4724,13 @@ func show_deck_view(mode: String = "view", custom_cards = null, custom_title: St
 	if deck_view_mode == "upgrade" or deck_view_mode == "shop_upgrade":
 		# 升級畫面：每張卡單獨顯示（不分組、不顯示 xN 徽章避免擋住卡片資訊）。
 		# 有 3 張就直接 show 3 張。依 (id, upgraded) 排序讓同名卡相鄰。
-		var sorted_cards: Array[CardData] = target_cards.duplicate()
+		# NOTE: target_cards 是未型別 Array（L4681 宣告 + filtered 也是 untyped），
+		# 直接 `Array[CardData] = target_cards.duplicate()` 會丟 runtime error
+		# 「Trying to assign an array of type "Array" to a variable of type "Array[CardData]"」，
+		# 整個函式中斷、grid 一張卡都不會被加。改成 typed-local + append 重建。
+		var sorted_cards: Array[CardData] = []
+		for tc: CardData in target_cards:
+			sorted_cards.append(tc)
 		sorted_cards.sort_custom(func(a: CardData, b: CardData) -> bool:
 			if a.id != b.id:
 				return a.id < b.id
