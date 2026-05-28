@@ -167,85 +167,23 @@ Decorative overlays include the mana badge, rarity badge, name plaque, and rules
 
 ## 待補美術 (Art TODO)
 
-> **規則**：新增卡牌必須在 `assets/art/cards/<id>.png` 放圖，或用 `make_card(..., art_id="既有卡id")` 借圖；否則 `smoke_test.gd:14` 的 reward_pool art assert 會失敗。
-> 等級解鎖卡（`scripts/level_system.gd`）目前不過 smoke art 檢查，但缺圖會在玩家手中顯示成空卡圖——所以也都已 art_id 借圖暫代。
+> **規則**：新增卡牌必須在 `assets/art/cards/<id>.png` 放圖，或用 `make_card(..., art_id="既有卡id")` 借圖；否則 `smoke_test.gd:14` 的 reward_pool art assert 會失敗。等級解鎖卡（`scripts/level_system.gd`）目前不過 smoke art 檢查，但缺圖會在玩家手中顯示成空卡圖。
 
-### 現況統計
+### 現況：✅ 全部 37 張原本缺圖已於 2026-05 補齊
 
-| 類別 | 缺圖數 | 暫時方案 | 優先級 |
-|---|---|---|---|
-| 流派 / 新機制卡（CARD_DESIGN ch.3-4） | 8 | 借同角色既有卡 | 🔴 高 — 玩家會撿到、無專屬圖容易誤認 |
-| 等級解鎖卡（LevelSystem） | 27 | 借同角色既有卡 | 🟡 中 — 量大、可批次重生 |
-| 角色專武遺物 | 2 | 程序繪製 fallback | 🟡 中 — 流派錨點稀有遺物 |
-| **合計** | **37** | | |
+| 類別 | 數量 | 狀態 |
+|---|---|---|
+| 流派 / 新機制卡（CARD_DESIGN ch.3-4） | 8 | ✅ 補齊 |
+| 等級解鎖卡（LevelSystem） | 27 | ✅ 補齊 |
+| 角色專武遺物 | 2 | ✅ 補齊（巫月神刀、鳳鳴刀） |
+| **合計** | **37** | **✅ 0 缺圖** |
 
-### 🔴 流派／新機制卡（8 張）— 高優先
+補圖後已移除卡片定義中的 `art_id` 借圖參數（`make_card` 沒有 art_id → 使用 `assets/art/cards/<id>.png` 自家美術）。
 
-| 卡 id | 名稱 | 借圖 | 正式插圖方向 |
-|---|---|---|---|
-| `anu_cuifeng` | 淬鋒蠱刃 | anu_guxue | 蠱毒淬入刀刃、刀身泛綠毒光（power buff） |
-| `anu_wuyuezhan` | 巫月斬 | anu_duzhen | 巫月神刀月牙形連斬軌跡（2 段連擊） |
-| `anu_xuerenwu` | 血刃亂舞 | anu_baozhagu | 亂刀殘影、血光四濺（3 段連擊） |
-| `lxy_wanjianguizong` | 萬劍歸宗 | lxy_wanjian | 御劍千百道凝聚一束、收尾一閃（3 段收勢） |
-| `lyr_fenghuan` | 鳳鳴反擊 | lyr_fanji | 鳳凰虛影張開護身、刺向攻擊者（Thorns） |
-| `lyr_yuehua` | 月華護體 | lyr_jinchan | 月華結界、淡光荊棘環繞（block + thorns） |
-| `zl_shuiyin` | 水靈封印 | zl_huanyu | 水靈圖騰封印目標、debuff 標記發光（debuff 加傷） |
-| `zl_ganlin` | 甘霖咒 | zl_shuiling | 靈雨灑落、身上同時泛起水盾（heal + block 合一） |
+### 下一輪可考慮的美術工作（非阻塞）
 
-### 🟡 等級解鎖卡（27 張）— 中優先
-
-依角色分組，依等級遞增列出。`borrow` 欄是目前借的同角色卡。
-
-**李逍遙（8 張）**
-| 卡 id | 名稱 | borrow | 正式插圖方向 |
-|---|---|---|---|
-| `lxy_tiangangqi` | 天罡戰氣 | lxy_zuimeng | 戰氣纏身、攻防雙增（power+block） |
-| `lxy_ningyuan_ls` | 凝神歸元 | lxy_qiliao | 盤膝運氣、內勁回血+護體 |
-| `lxy_yuanlinggui` | 元靈歸心術 | lxy_qiliao | 高階引氣、大量回血 |
-| `lxy_zhenyuan` | 真元護體 | lxy_jianqi | 真元化甲、護體+傷害提升 |
-| `lxy_tianjian` | 天劍 | lxy_liepo | 人劍合一、單發重劍 |
-| `lxy_jinchan_ls` | 金蟬脫殼 | lxy_qingfeng | 殘影身法、護體+多抽 |
-| `lxy_xiaoyao_shenjian` | 逍遙神劍 | lxy_jiulong | 逍遙絕招、3 段連斬 |
-| `lxy_jianshen` | 劍神 | lxy_jiushen | 召喚劍神、萬劍齊飛+破綻 |
-
-**趙靈兒（8 張）**
-| 卡 id | 名稱 | borrow | 正式插圖方向 |
-|---|---|---|---|
-| `zl_xuanfengzhou` | 旋風咒 | zl_xuanbing | 風刃 AoE、敵全虛弱 |
-| `zl_wuleizhou` | 五雷咒 | zl_leizhou | 中階雷術、單體高傷 |
-| `zl_sanmeizhenhuo` | 三昧真火 | zl_yanzhou | 火系中階、傷害+破綻 |
-| `zl_fengxuebing` | 風雪冰天 | zl_bingzhou | 冰系高階、傷害+虛弱 |
-| `zl_diliebeng` | 地裂天崩 | zl_shenlei | 土系絕招、傷害+破綻 |
-| `zl_mengshe_ls` | 夢蛇 | zl_mengshe | 鎖妖塔變身、power+抽 |
-| `zl_taishan` | 泰山壓頂 | zl_tianlei | 土系大招、單體爆擊 |
-| `zl_kuanglei` | 狂雷 | zl_shenlei | 雷系絕招、單體巨傷 |
-
-**林月如（5 張）**
-| 卡 id | 名稱 | borrow | 正式插圖方向 |
-|---|---|---|---|
-| `lyr_tongqianbiao` | 銅錢鏢 | lyr_kuaijian | 銅錢飛旋、暗器+破綻 |
-| `lyr_qijuejianqi` | 七訣劍氣 | lyr_xuanjian | 指代劍裂地、AoE 雙段 |
-| `lyr_yuanlinggui` | 元靈歸心術 | lyr_ningshen | 林家內勁、中量回血 |
-| `lyr_lielong` | 裂龍式 | lyr_zhanlong | 氣勁橫掃、單體前奏式 |
-| `lyr_wanlikuang` | 萬里狂沙 | lyr_tianv | 林家絕招、雙重 debuff+抽 |
-
-**阿奴（6 張）**
-| 卡 id | 名稱 | borrow | 正式插圖方向 |
-|---|---|---|---|
-| `anu_sanshigu` | 三屍蠱 | anu_wanyi | 三屍蠱蟲鑽體、毒+虛弱 |
-| `anu_yanshazhou` | 炎殺咒 | anu_duzhen | 苗疆火咒、傷害+破綻 |
-| `anu_shuhun` | 贖魂 | anu_jiedu | 苗疆復活術、靈光救人 |
-| `anu_duohun` | 奪魂 | anu_baozhagu | 吸魂攻擊、傷害+蠱毒 |
-| `anu_wanyi_ls` | 萬蟻蝕象 | anu_baizu | 蟻群湧出、高層蠱毒 |
-| `anu_wangushitian` | 萬蠱蝕天 | anu_yufeng | 萬蠱漫天、AoE 蠱毒+破綻 |
-
-### 🟡 遺物（2 件）— 中優先
-
-兩件流派錨點專武，目前無圖、由 `relic_icon.gd` 程序繪製六角形 fallback 顯示。
-
-| 遺物 id | 名稱 | 待補路徑 | 主題 |
-|---|---|---|---|
-| `wuyue_shendao` | 巫月神刀 | `assets/art/relics/wuyue_shendao.png` | 阿奴刀流錨點，月牙刀身+苗疆紋飾 |
-| `fengming_dao` | 鳳鳴刀 | `assets/art/relics/fengming_dao.png` | 林月如刀流錨點，鳳鳴紋路、護體反擊主題 |
+- 替既有卡片重繪（部分早期借圖風格不統一）— 低優先
+- 召喚物 EnemyData (`water_tentacle` 等) 的肖像 — 已有但可重繪
+- 事件背景插圖：31/31 已有，但部分風格不統一可微調
 
 ---

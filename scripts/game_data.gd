@@ -89,7 +89,7 @@ static func _li_xiaoyao() -> CharacterData:
 		make_card("lxy_qiliao", "氣療術", "李逍遙", 1, "skill", "回復 8 點生命。", [{"kind": "heal", "amount": 8}], "basic"),
 		make_card("lxy_bingxin", "冰心訣", "李逍遙", 1, "skill", "清除自身全部負面狀態，獲得 3 點護體。", [{"kind": "cure_debuff"}, {"kind": "block", "amount": 3}], "basic"),
 		# 劍流（御劍術連擊）：與烈火令／純鈞劍／龍泉劍 synergy；每段各吃力量
-		make_card("lxy_wanjianguizong", "萬劍歸宗", "李逍遙", 1, "attack", "御劍齊出歸於一念，造成 4 點傷害三次。", [{"kind": "damage", "amount": 4, "hits": 3}], "uncommon", "lxy_wanjian"),
+		make_card("lxy_wanjianguizong", "萬劍歸宗", "李逍遙", 1, "attack", "御劍齊出歸於一念，造成 4 點傷害三次。", [{"kind": "damage", "amount": 4, "hits": 3}], "uncommon"),
 	]
 	var character: CharacterData = _character("li_xiaoyao", "李逍遙", 74, "劍仙風流，禦劍、偷取與酒神系高風險高傷害。", cards)
 	# PAL1 對齊：9 basic + 3 uncommon + 0 rare
@@ -133,9 +133,9 @@ static func _zhao_linger() -> CharacterData:
 		make_card("zl_yanzhou", "炎咒", "趙靈兒", 1, "attack", "初級火系仙術，造成 8 點傷害並施加 1 層破綻。", [{"kind": "damage", "amount": 8}, {"kind": "vulnerable", "amount": 1}], "basic"),
 		make_card("zl_bingxin", "冰心訣", "趙靈兒", 1, "skill", "清除自身全部負面狀態，獲得 3 點護體。", [{"kind": "cure_debuff"}, {"kind": "block", "amount": 3}], "basic"),
 		# 杖流 payoff：對虛弱/破綻敵加傷（與冰咒/炎咒/玄冰咒/幻雨咒 synergy）
-		make_card("zl_shuiyin", "水靈封印", "趙靈兒", 1, "attack", "造成 5 點傷害；目標每層虛弱或破綻 +2 點傷害。", [{"kind": "damage_debuff_bonus", "amount": 5, "bonus_per_layer": 2}], "uncommon", "zl_huanyu"),
+		make_card("zl_shuiyin", "水靈封印", "趙靈兒", 1, "attack", "造成 5 點傷害；目標每層虛弱或破綻 +2 點傷害。", [{"kind": "damage_debuff_bonus", "amount": 5, "bonus_per_layer": 2}], "uncommon"),
 		# 治療+護體一體（杖流續戰：靈族慈悲化作護身）
-		make_card("zl_ganlin", "甘霖咒", "趙靈兒", 1, "skill", "回復 6 點生命並獲得 6 點護體。", [{"kind": "heal", "amount": 6}, {"kind": "block", "amount": 6}], "uncommon", "zl_shuiling"),
+		make_card("zl_ganlin", "甘霖咒", "趙靈兒", 1, "skill", "回復 6 點生命並獲得 6 點護體。", [{"kind": "heal", "amount": 6}, {"kind": "block", "amount": 6}], "uncommon"),
 	]
 	var character: CharacterData = _character("zhao_linger", "趙靈兒", 68, "五靈仙術、治療、護盾、解狀態與長戰持續。", cards)
 	# PAL1 對齊：9 basic + 3 uncommon + 0 rare
@@ -177,8 +177,8 @@ static func _lin_yueru() -> CharacterData:
 		# PAL1 初登場新增（她原作 Lv1 就會凝神歸元 HP 220 治療，是她的特色；art 暫借）
 		make_card("lyr_ningshen", "凝神歸元", "林月如", 1, "skill", "凝神運氣，回復 12 點生命。", [{"kind": "heal", "amount": 12}], "basic"),
 		# 反擊流（鳳鳴刀／Thorns）：被攻擊時反彈傷害給攻擊者（不衰減，跨回合）
-		make_card("lyr_fenghuan", "鳳鳴反擊", "林月如", 1, "power", "本場戰鬥獲得 3 點荊棘（被攻擊時反彈傷害給攻擊者）。", [{"kind": "thorns", "amount": 3}], "uncommon", "lyr_fanji"),
-		make_card("lyr_yuehua", "月華護體", "林月如", 1, "skill", "獲得 6 點護體與 1 點荊棘。", [{"kind": "block", "amount": 6}, {"kind": "thorns", "amount": 1}], "uncommon", "lyr_jinchan"),
+		make_card("lyr_fenghuan", "鳳鳴反擊", "林月如", 1, "power", "本場戰鬥獲得 3 點荊棘（被攻擊時反彈傷害給攻擊者）。", [{"kind": "thorns", "amount": 3}], "uncommon"),
+		make_card("lyr_yuehua", "月華護體", "林月如", 1, "skill", "獲得 6 點護體與 1 點荊棘。", [{"kind": "block", "amount": 6}, {"kind": "thorns", "amount": 1}], "uncommon"),
 	]
 	var character: CharacterData = _character("lin_yueru", "林月如", 72, "鞭劍武學、連擊、反擊與內勁治療。", cards)
 	# PAL1 對齊：10 basic + 2 uncommon + 0 rare
@@ -218,9 +218,9 @@ static func _anu() -> CharacterData:
 		make_card("anu_guijiang", "鬼降", "阿奴", 1, "skill", "苗疆咒術，使敵人陷入瘋魔狀態（虛弱 3 層）。", [{"kind": "weak", "amount": 3}], "basic"),
 		# 刀流（巫月神刀）：力量 + 連擊軸。淬鋒疊力量，連斬牌每段各吃力量 → 越疊越痛。
 		# art 暫借既有阿奴卡（未來補正式插圖）
-		make_card("anu_cuifeng", "淬鋒蠱刃", "阿奴", 1, "power", "刀刃淬入蠱毒，本場戰鬥傷害提升 2。", [{"kind": "power", "amount": 2}], "uncommon", "anu_guxue"),
-		make_card("anu_wuyuezhan", "巫月斬", "阿奴", 1, "attack", "巫月神刀連斬，造成 5 點傷害兩次。", [{"kind": "damage", "amount": 5, "hits": 2}], "uncommon", "anu_duzhen"),
-		make_card("anu_xuerenwu", "血刃亂舞", "阿奴", 2, "attack", "亂刀狂舞，造成 4 點傷害三次。", [{"kind": "damage", "amount": 4, "hits": 3}], "rare", "anu_baozhagu"),
+		make_card("anu_cuifeng", "淬鋒蠱刃", "阿奴", 1, "power", "刀刃淬入蠱毒，本場戰鬥傷害提升 2。", [{"kind": "power", "amount": 2}], "uncommon"),
+		make_card("anu_wuyuezhan", "巫月斬", "阿奴", 1, "attack", "巫月神刀連斬，造成 5 點傷害兩次。", [{"kind": "damage", "amount": 5, "hits": 2}], "uncommon"),
+		make_card("anu_xuerenwu", "血刃亂舞", "阿奴", 2, "attack", "亂刀狂舞，造成 4 點傷害三次。", [{"kind": "damage", "amount": 4, "hits": 3}], "rare"),
 	]
 	var character: CharacterData = _character("anu", "阿奴", 66, "蠱毒、咒術、削弱與長戰持續傷害。", cards)
 	# PAL1 對齊：10 basic + 2 uncommon + 0 rare
