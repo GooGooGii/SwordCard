@@ -166,6 +166,19 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			# Thorns 荊棘反擊：被攻擊時反彈傷害（不衰減，跨回合保留）
 			state["player_thorns"] = int(state.get("player_thorns", 0)) + amount
 			log_lines.append("獲得 %d 點荊棘。" % amount)
+		"damage_debuff_bonus":
+			# 杖流 payoff：對 debuff 敵加傷。基礎 amount + bonus_per_layer × (weak + vuln 層數)
+			# 計算 base 後走標準傷害管線（power/weak/vuln/block）。
+			var bonus_per: int = int(effect.get("bonus_per_layer", 0))
+			var layers: int = int(state["enemy_weak"]) + int(state["enemy_vulnerable"])
+			var raw: int = amount + bonus_per * layers
+			var modified: int = max(0, raw + int(state["player_power"]) - int(state["player_weak"])) + int(state.get("damage_out_bonus", 0))
+			if int(state["enemy_vulnerable"]) > 0:
+				modified = int(ceil(modified * 1.5))
+			var blocked: int = min(int(state["enemy_block"]), modified)
+			state["enemy_block"] = int(state["enemy_block"]) - blocked
+			state["enemy_hp"] = max(0, int(state["enemy_hp"]) - (modified - blocked))
+			log_lines.append("debuff 加成 +%d，造成 %d 點傷害。" % [bonus_per * layers, modified - blocked])
 		"consume_energy_damage":
 			var spent: int = int(state["energy"])
 			state["energy"] = 0

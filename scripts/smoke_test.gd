@@ -141,6 +141,8 @@ func _initialize() -> void:
 	_test_anu_blade_cards(characters)
 	_test_thorns_reflects_to_attacker(characters, enemies)
 	_test_lin_thorns_cards(characters)
+	_test_damage_debuff_bonus(characters, enemies)
+	_test_zhao_staff_payoff_cards(characters)
 	# Event Branching Phase 1：純樹走訪器（無 UI、無 effect 結算）
 	_test_event_runner_has_tree()
 	_test_event_runner_root_choices()
@@ -1602,6 +1604,47 @@ func _test_lin_thorns_cards(characters: Array[CharacterData]) -> void:
 	var dao: RelicData = RelicCatalog.by_id("fengming_dao")
 	assert(dao != null, "鳳鳴刀遺物存在")
 	assert(dao.character_id == "lin_yueru", "鳳鳴刀屬於 lin")
+
+func _test_damage_debuff_bonus(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# 趙靈兒杖流 payoff：base + bonus_per_layer × (weak + vuln)，再過完整 vuln 1.5 倍管線
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0]])
+	var s: Dictionary = bc.state
+	s["player_power"] = 0; s["player_weak"] = 0; s["enemy_block"] = 0
+	s["enemy_weak"] = 0; s["enemy_vulnerable"] = 0
+	s["enemy_hp"] = 100
+
+	# 1) 無 debuff：5 + 0 = 5
+	bc.resolver._resolve_effect({"kind": "damage_debuff_bonus", "amount": 5, "bonus_per_layer": 2}, s)
+	assert(int(s["enemy_hp"]) == 95, "no debuff: 5 dmg; hp=%d" % int(s["enemy_hp"]))
+
+	# 2) 2 weak + 1 vuln = 3 層 → base 5 + 2*3 = 11；再過 vuln 1.5 倍 = 17（ceil）
+	s["enemy_hp"] = 100; s["enemy_weak"] = 2; s["enemy_vulnerable"] = 1
+	bc.resolver._resolve_effect({"kind": "damage_debuff_bonus", "amount": 5, "bonus_per_layer": 2}, s)
+	assert(int(s["enemy_hp"]) == 83, "with debuff: expected 17; hp=%d (loss %d)" % [int(s["enemy_hp"]), 100 - int(s["enemy_hp"])])
+
+	# 3) 力量加成也吃：power 2、無 debuff → 5+2 = 7
+	s["enemy_hp"] = 100; s["enemy_weak"] = 0; s["enemy_vulnerable"] = 0; s["player_power"] = 2
+	bc.resolver._resolve_effect({"kind": "damage_debuff_bonus", "amount": 5, "bonus_per_layer": 2}, s)
+	assert(int(s["enemy_hp"]) == 93, "with power: expected 7; hp=%d" % int(s["enemy_hp"]))
+
+func _test_zhao_staff_payoff_cards(characters: Array[CharacterData]) -> void:
+	# 水靈封印 / 甘霖咒 在 Zhao 獎勵池
+	var zl: CharacterData = null
+	for c: CharacterData in characters:
+		if c.id == "zhao_linger":
+			zl = c
+			break
+	assert(zl != null, "zhao_linger should exist")
+	var found_shuiyin: bool = false
+	var found_ganlin: bool = false
+	for card: CardData in zl.reward_pool:
+		if card.id == "zl_shuiyin":
+			found_shuiyin = true
+			var eff: Dictionary = card.effects[0] as Dictionary
+			assert(String(eff.get("kind", "")) == "damage_debuff_bonus", "水靈封印 應為 damage_debuff_bonus")
+		elif card.id == "zl_ganlin":
+			found_ganlin = true
+	assert(found_shuiyin and found_ganlin, "zhao 杖流 payoff 卡應在 reward pool")
 
 func _test_anu_blade_cards(characters: Array[CharacterData]) -> void:
 	# 阿奴刀流：連擊卡在獎勵池 + 巫月神刀遺物存在

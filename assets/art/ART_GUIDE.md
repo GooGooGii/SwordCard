@@ -179,6 +179,8 @@ Decorative overlays include the mana badge, rarity badge, name plaque, and rules
 | `lxy_wanjianguizong` | 萬劍歸宗 | lxy_wanjian | 御劍千百道凝聚成一束、收尾一閃（三段連擊收勢） |
 | `lyr_fenghuan` | 鳳鳴反擊 | lyr_fanji | 鳳凰虛影張開護身、刺向攻擊者（Thorns 反擊光環） |
 | `lyr_yuehua` | 月華護體 | lyr_jinchan | 月華結界、淡光荊棘環繞（block + thorns） |
+| `zl_shuiyin` | 水靈封印 | zl_huanyu | 水靈圖騰封印目標、debuff 標記發光（對虛弱/破綻敵加傷） |
+| `zl_ganlin` | 甘霖咒 | zl_shuiling | 靈雨灑落、身上同時泛起水盾（heal + block 合一） |
 
 ### 遺物（無圖、目前程序繪製 fallback）
 
