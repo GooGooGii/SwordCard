@@ -94,20 +94,6 @@ WARNING: UID duplicate detected between res://assets/art/cards/zl_shenlei.png an
      at: _process_file_system (editor/file_system/editor_file_system.cpp:1377)
 WARNING: UID duplicate detected between res://assets/art/cards/zl_shuiling.png and res://assets/art/cards/zl_shenlei.png.
      at: _process_file_system (editor/file_system/editor_file_system.cpp:1377)
-[   0% ] [90m[1m_update_scan_actions[22m | Started Scanning actions... (11 steps)[39m[0m
-[   0% ] [90m[1m_update_scan_actions[22m | baihua_xianniang.png[39m[0m
-[   8% ] [90m[1m_update_scan_actions[22m | hugu_jiu.png[39m[0m
-[  16% ] [90m[1m_update_scan_actions[22m | huichun_dan.png[39m[0m
-[  25% ] [90m[1m_update_scan_actions[22m | huti_fu.png[39m[0m
-[  33% ] [90m[1m_update_scan_actions[22m | jiedu_san.png[39m[0m
-[  41% ] [90m[1m_update_scan_actions[22m | jinchuang_yao.png[39m[0m
-[  50% ] [90m[1m_update_scan_actions[22m | lingli_dan.png[39m[0m
-[  58% ] [90m[1m_update_scan_actions[22m | lingshe_dan.png[39m[0m
-[  66% ] [90m[1m_update_scan_actions[22m | tianling_dan.png[39m[0m
-[  75% ] [90m[1m_update_scan_actions[22m | xianren_xue.png[39m[0m
-[  83% ] [90m[1m_update_scan_actions[22m | yuehun_cao.png[39m[0m
-[92m[ DONE ][39m [1m_update_scan_actions[22m
-[0m
 [   0% ] [90m[1msavepack[22m | Started Packing (102 steps)[39m[0m
 [   1% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/anu_attack.png-575c46323b4656d0a4df78b49b39694e.ctex[39m[0m
 [   1% ] [90m[1msavepack[22m | Storing File: res://assets/art/battle_characters/anu_attack.png.import[39m[0m
@@ -471,16 +457,27 @@ WARNING: UID duplicate detected between res://assets/art/cards/zl_shuiling.png a
 [  55% ] [90m[1msavepack[22m | Storing File: res://assets/art/portraits/li_xiaoyao.png.import[39m[0m
 [  55% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/zhao_linger.png-eeb27c66db0b40c307d92cdc20a2740c.ctex[39m[0m
 [  55% ] [90m[1msavepack[22m | Storing File: res://assets/art/portraits/zhao_linger.png.import[39m[0m
+[  55% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/baihua_xianniang.png-c223b1f4d2fdc23eb8cb0ff722745dea.ctex[39m[0m
 [  55% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/baihua_xianniang.png.import[39m[0m
+[  56% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/hugu_jiu.png-baf1efa71bf0d865f755e837b39f75dc.ctex[39m[0m
 [  56% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/hugu_jiu.png.import[39m[0m
+[  56% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/huichun_dan.png-4602db2802f6b31ca26a2d24c170b0f9.ctex[39m[0m
 [  56% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/huichun_dan.png.import[39m[0m
+[  56% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/huti_fu.png-7c1dc82b2651c3c8c9c5b93371f27e35.ctex[39m[0m
 [  56% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/huti_fu.png.import[39m[0m
+[  57% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/jiedu_san.png-7a3dd0b2df8eedc2142a8a58911f6b3f.ctex[39m[0m
 [  57% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/jiedu_san.png.import[39m[0m
+[  57% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/jinchuang_yao.png-e962b7e2175f06dfedb0ccd62e110559.ctex[39m[0m
 [  57% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/jinchuang_yao.png.import[39m[0m
+[  57% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lingli_dan.png-3f48c72500c7719c16345bdd9e6b7ab6.ctex[39m[0m
 [  57% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/lingli_dan.png.import[39m[0m
+[  58% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/lingshe_dan.png-acee38e2b3f5823bf9f60e9725c6760b.ctex[39m[0m
 [  58% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/lingshe_dan.png.import[39m[0m
+[  58% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/tianling_dan.png-f20b1c17cf67391b920c362dcbd32e20.ctex[39m[0m
 [  58% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/tianling_dan.png.import[39m[0m
+[  58% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/xianren_xue.png-10576ba415d3b86f0a0c8a4ca6832df7.ctex[39m[0m
 [  58% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/xianren_xue.png.import[39m[0m
+[  58% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/yuehun_cao.png-ede40498d9e388ad4bf9a98b69e68c60.ctex[39m[0m
 [  58% ] [90m[1msavepack[22m | Storing File: res://assets/art/potions/yuehun_cao.png.import[39m[0m
 [  59% ] [90m[1msavepack[22m | Storing File: res://.godot/imported/baiyue_jiaozhi.png-bc62f0bbf020697f7d3b86628f8a2348.ctex[39m[0m
 [  59% ] [90m[1msavepack[22m | Storing File: res://assets/art/relics/baiyue_jiaozhi.png.import[39m[0m
