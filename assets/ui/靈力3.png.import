@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://1imlkhtk6cr6"
-path="res://.godot/imported/card_frame_attack.png-0d2310bc663f60c7f1bf9b934f37e7bf.ctex"
+uid="uid://b1w24qy6juosu"
+path="res://.godot/imported/靈力3.png-5fe8676d96db80dd29036e64701ceb71.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/card_frame_attack.png"
-dest_files=["res://.godot/imported/card_frame_attack.png-0d2310bc663f60c7f1bf9b934f37e7bf.ctex"]
+source_file="res://assets/ui/靈力3.png"
+dest_files=["res://.godot/imported/靈力3.png-5fe8676d96db80dd29036e64701ceb71.ctex"]
 
 [params]
 

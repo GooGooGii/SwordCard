@@ -558,6 +558,7 @@ func _battle_background_path() -> String:
 func show_main_menu() -> void:
 	selected_party_ids.clear()  # 進主選單清掉 character_select 的暫存隊伍
 	_hide_title_bar()
+	AudioManager.play_bgm("title")
 	_set_background("res://assets/art/login_background.jpg")
 	_clear_root()
 	var viewport_size: Vector2 = get_viewport_rect().size
@@ -986,6 +987,7 @@ func _build_ascension_picker(compact_layout: bool = false, ultra_compact: bool =
 
 func show_bestiary() -> void:
 	_hide_title_bar()
+	AudioManager.play_bgm("bestiary")
 	_set_background("res://assets/art/main_menu_bg.png")
 	_clear_root()
 	_show(BestiaryScreen.new())
@@ -1326,6 +1328,7 @@ func _make_encounter_choices() -> Array[Array]:
 
 func show_progress_screen() -> void:
 	SaveManager.save(run_state)
+	AudioManager.play_bgm("map_act%d" % max(1, run_state.act))
 	_set_background("res://assets/art/map_bg_ink.png")
 	_clear_root()
 	_show_title_bar()
@@ -1862,6 +1865,7 @@ func choose_route_node(node_data: Dictionary, target_row: int = -1) -> void:
 		start_next_battle(enemy)
 
 func start_next_battle(enemy: EnemyData) -> void:
+	AudioManager.play_bgm("battle_boss" if Ascension.is_boss_id(enemy.id) else "battle_normal")
 	battle = BattleController.new()
 	battle.setup(run_state, selected_character, enemy)
 	# Boss phase 2 變身動畫（如拜月教主 → 水魔獸）
@@ -3247,6 +3251,7 @@ func resolve_rest_node() -> void:
 	show_rest_node()
 
 func show_rest_node() -> void:
+	AudioManager.play_bgm("rest")
 	_set_background("res://assets/art/event_bg.png")
 	_clear_root()
 	var panel: PanelContainer = UIFactory.make_panel()
@@ -3281,6 +3286,7 @@ func resolve_rest_heal() -> void:
 	advance_non_battle_node()
 
 func show_event_node(sub_stage: String = "") -> void:
+	AudioManager.play_bgm("event")
 	# Event Branching P2：若此 variant 有新版 tree schema，走 tree path（_show_event_tree_node）
 	# 否則 fallback 舊扁平 schema（原 sub_stage 分支邏輯）
 	var ed: Dictionary = EventData.for_variant(run_state.current_event_variant)
@@ -4114,6 +4120,7 @@ func open_shop_node(is_black_shop: bool) -> void:
 	show_shop_node()
 
 func show_shop_node() -> void:
+	AudioManager.play_bgm("shop")
 	_set_background("res://assets/art/event_bg.png")
 	_clear_root()
 	_show_title_bar()
@@ -4947,6 +4954,7 @@ func _show_upgrade_confirm_overlay(card: CardData, on_confirm: Callable) -> void
 
 func show_result(victory: bool) -> void:
 	_hide_title_bar()
+	AudioManager.play_bgm("victory" if victory else "defeat")
 	if victory:
 		Ascension.mark_cleared(run_state.ascension_level)
 		SaveManager.clear()
@@ -5532,27 +5540,38 @@ func _reward_card_button(card: CardData, card_height: float = 349.0) -> Button:
 	var w: float = h * (192.0 / 349.0)
 	return _make_card_button(card, card.cost, Vector2(w, h), true, true)
 
-func _card_frame_texture_path(card_type: String) -> String:
-	match card_type:
-		"skill":
-			return "res://assets/ui/card_frame_skill.png"
-		"power":
-			return "res://assets/ui/card_frame_power.png"
+func _card_frame_texture_path(_card_type: String) -> String:
+	# 2026-05 美術改版：三色卡套（紅/綠/紫對應 attack/skill/power）統一成中性黑白水墨 base。
+	# 卡類型現在只透過描述上方的「攻擊/技能/能力」文字標示，視覺上不再用框色區分。
+	return "res://assets/ui/卡套_base.png"
+
+func _cost_gem_texture_path(cost: int) -> String:
+	# 靈力寶石 0~3。cost ≥ 4 不存在於目前卡庫（max=3），fallback 用 3 以防未來資料超出。
+	var clamped: int = clamp(cost, 0, 3)
+	return "res://assets/ui/靈力%d.png" % clamped
+
+func _rarity_gem_texture_path(card: CardData) -> String:
+	# 稀有度寶石：lv1 白(基)、lv2 青(良)、lv3 紫(稀)、lv4 金(升)
+	if card.upgraded:
+		return "res://assets/ui/card_lv4.png"
+	match card.rarity:
+		"rare":
+			return "res://assets/ui/card_lv3.png"
+		"uncommon":
+			return "res://assets/ui/card_lv2.png"
 		_:
-			return "res://assets/ui/card_frame_attack.png"
+			return "res://assets/ui/card_lv1.png"
 
 func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: bool, selectable: bool) -> Button:
 	# 全部用 anchor 百分比定位，元素位置 / 字體大小皆依卡片尺寸比例縮放。
-	# 卡套版面參考（2026-05 裁掉上下留白後校準；卡框 484×880 比例 0.55）：
-	#   靈力圓 中心 ≈ (13%, 8%)
-	#   透明放卡圖區  y 4%~44%, x 9%~92%
-	#   標題裝飾帶    y 48%~56%
-	#   描述卷軸區    y 57%~90%
+	# 卡套版面參考（2026-05 重做：卡套_base 1024×1536 比例 0.667，黑白水墨無類型色）：
+	#   透明放卡圖區  y 5%~48%, x 9%~92%
+	#   標題裝飾帶    y 49%~57%
+	#   描述卷軸區    y 58%~89%
+	# 左上靈力寶石 / 右上稀有度寶石各 ~20% 寬，y 0%~14%。
 	var title_font_size: int = int(clamp(size.y * 0.052, 11, 22))
-	var cost_font_size: int = int(clamp(size.y * 0.085, 18, 38))
 	var type_font_size: int = int(clamp(size.y * 0.035, 9, 16))
 	var desc_font_size: int = int(clamp(size.y * 0.042, 10, 18))
-	var outline_size: int = max(2, int(round(size.y * 0.012)))
 
 	var button: Button = Button.new()
 	button.text = ""
@@ -5561,13 +5580,13 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	button.clip_contents = true
 	_style_card_button(button, card, affordable)
 
-	# 1) 卡圖：略大於卡套透明圖窗，從 y 7%~48%、x 9%~92%
+	# 1) 卡圖：略大於卡套透明圖窗，從 y 5%~48%、x 9%~92%
 	var art: TextureRect = TextureRect.new()
 	art.name = "CardArt"
 	art.anchor_left = 0.09
-	art.anchor_top = 0.04
+	art.anchor_top = 0.05
 	art.anchor_right = 0.92
-	art.anchor_bottom = 0.44
+	art.anchor_bottom = 0.48
 	art.offset_left = 0
 	art.offset_top = 0
 	art.offset_right = 0
@@ -5594,32 +5613,48 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 		frame.modulate = Color(0.82, 0.82, 0.82, 0.78)
 	button.add_child(frame)
 
-	# 3) 靈力數字：對齊卡套左上鑽飾中心。卡框量測（484×880）鑽飾中心 ≈ (15.6%, 7.7%)；
-	# 之前 box (3%~23%) 中心只有 13%，數字偏左出鑽飾。改成 box 中心對準 15.6% / 7.7%。
-	var cost_label: Label = UIFactory.card_label(str(cost), cost_font_size, Color("f7f0dc"), HORIZONTAL_ALIGNMENT_CENTER)
-	cost_label.name = "CardCost"
-	cost_label.anchor_left = 0.056
-	cost_label.anchor_top = 0.008
-	cost_label.anchor_right = 0.256
-	cost_label.anchor_bottom = 0.147
-	cost_label.offset_left = 0
-	cost_label.offset_top = 0
-	cost_label.offset_right = 0
-	cost_label.offset_bottom = 0
-	cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	cost_label.add_theme_color_override("font_outline_color", Color("1b150f", 0.9))
-	cost_label.add_theme_constant_override("outline_size", outline_size)
-	cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	button.add_child(cost_label)
+	# 3) 靈力寶石（左上）：1254×1254 的水墨圓圖，含 0~3 數字。anchor 0.02~0.22 / 0.005~0.135
+	# 是試出來剛好坐在卡套左上角內、不蓋卡圖也不擠標題的位置。
+	var cost_gem: TextureRect = TextureRect.new()
+	cost_gem.name = "CardCostGem"
+	cost_gem.anchor_left = 0.02
+	cost_gem.anchor_top = 0.005
+	cost_gem.anchor_right = 0.22
+	cost_gem.anchor_bottom = 0.135
+	cost_gem.offset_left = 0
+	cost_gem.offset_top = 0
+	cost_gem.offset_right = 0
+	cost_gem.offset_bottom = 0
+	cost_gem.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	cost_gem.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	cost_gem.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cost_gem.texture = UIFactory.load_texture(_cost_gem_texture_path(cost))
+	button.add_child(cost_gem)
 
-	# 4) 卡名：對齊卡套標題帶「淺色書寫區」y 44%~50%（卡框量測：484×880 的淺羊皮紙帶在 0.444~0.495，
-	# 0.50~0.55 是深色裝飾鑽飾邊）。之前 anchor 0.485~0.565 讓深棕字中心落在 0.525 的深色鑽飾上 → 看不見。
+	# 3b) 稀有度寶石（右上）：card_lv1~4 = 基/良/稀/升。鏡像 cost gem 的 x 軸位置。
+	var rarity_gem: TextureRect = TextureRect.new()
+	rarity_gem.name = "CardRarityGem"
+	rarity_gem.anchor_left = 0.78
+	rarity_gem.anchor_top = 0.005
+	rarity_gem.anchor_right = 0.98
+	rarity_gem.anchor_bottom = 0.135
+	rarity_gem.offset_left = 0
+	rarity_gem.offset_top = 0
+	rarity_gem.offset_right = 0
+	rarity_gem.offset_bottom = 0
+	rarity_gem.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rarity_gem.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	rarity_gem.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rarity_gem.texture = UIFactory.load_texture(_rarity_gem_texture_path(card))
+	button.add_child(rarity_gem)
+
+	# 4) 卡名：對齊卡套新標題帶 y 49%~57% 的淺色書寫區
 	var title: Label = UIFactory.card_label(card.display_title(), title_font_size, Color("2d2418"), HORIZONTAL_ALIGNMENT_CENTER)
 	title.name = "CardTitle"
 	title.anchor_left = 0.12
-	title.anchor_top = 0.44
+	title.anchor_top = 0.49
 	title.anchor_right = 0.88
-	title.anchor_bottom = 0.50
+	title.anchor_bottom = 0.56
 	title.offset_left = 0
 	title.offset_top = 0
 	title.offset_right = 0
@@ -5634,13 +5669,15 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(title)
 
-	# 5) 類型 + 描述：對齊卡套描述卷軸 y 56%~92%
+	# 5) 類型 + 描述：對齊卡套描述卷軸 y 60%~85%。
+	# x 內縮到 0.18~0.82：新卡套描述帶左右各有竹葉/石頭裝飾佔 ~15% 寬度，
+	# 之前 0.10/0.13 都會把第一字「抽」「造」的左半部疊在裝飾上看不清。
 	var rules_container: Control = Control.new()
 	rules_container.name = "CardRules"
-	rules_container.anchor_left = 0.10
-	rules_container.anchor_top = 0.57
-	rules_container.anchor_right = 0.90
-	rules_container.anchor_bottom = 0.90
+	rules_container.anchor_left = 0.18
+	rules_container.anchor_top = 0.60
+	rules_container.anchor_right = 0.82
+	rules_container.anchor_bottom = 0.85
 	rules_container.offset_left = 0
 	rules_container.offset_top = 0
 	rules_container.offset_right = 0
