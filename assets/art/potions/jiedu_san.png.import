@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://0kqxnn8rq3lh"
-valid=false
+uid="uid://d1d3wyhlns7a2"
+path="res://.godot/imported/jiedu_san.png-7a3dd0b2df8eedc2142a8a58911f6b3f.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/potions/jiedu_san.png"
+dest_files=["res://.godot/imported/jiedu_san.png-7a3dd0b2df8eedc2142a8a58911f6b3f.ctex"]
 
 [params]
 

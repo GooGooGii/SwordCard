@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dtmdos6j5kr5"
-valid=false
+uid="uid://dq2j7ff5h4fbw"
+path="res://.godot/imported/huichun_dan.png-4602db2802f6b31ca26a2d24c170b0f9.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/potions/huichun_dan.png"
+dest_files=["res://.godot/imported/huichun_dan.png-4602db2802f6b31ca26a2d24c170b0f9.ctex"]
 
 [params]
 

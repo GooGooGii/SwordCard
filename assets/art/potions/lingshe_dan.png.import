@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://3tp2j2nso8bq"
-valid=false
+uid="uid://3w75lrs4845o"
+path="res://.godot/imported/lingshe_dan.png-acee38e2b3f5823bf9f60e9725c6760b.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/potions/lingshe_dan.png"
+dest_files=["res://.godot/imported/lingshe_dan.png-acee38e2b3f5823bf9f60e9725c6760b.ctex"]
 
 [params]
 

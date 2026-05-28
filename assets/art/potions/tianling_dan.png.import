@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://rbp1jxgui720"
-valid=false
+uid="uid://cvd47gkxf3sm5"
+path="res://.godot/imported/tianling_dan.png-f20b1c17cf67391b920c362dcbd32e20.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/potions/tianling_dan.png"
+dest_files=["res://.godot/imported/tianling_dan.png-f20b1c17cf67391b920c362dcbd32e20.ctex"]
 
 [params]
 

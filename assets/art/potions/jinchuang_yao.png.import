@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bljir0ojt40h8"
-valid=false
+uid="uid://d2ygy4dlfsvnr"
+path="res://.godot/imported/jinchuang_yao.png-e962b7e2175f06dfedb0ccd62e110559.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/potions/jinchuang_yao.png"
+dest_files=["res://.godot/imported/jinchuang_yao.png-e962b7e2175f06dfedb0ccd62e110559.ctex"]
 
 [params]
 

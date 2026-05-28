@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dq3w8mxb1n5kv"
-valid=false
+uid="uid://dwxqq5kbapfg"
+path="res://.godot/imported/baihua_xianniang.png-c223b1f4d2fdc23eb8cb0ff722745dea.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/potions/baihua_xianniang.png"
+dest_files=["res://.godot/imported/baihua_xianniang.png-c223b1f4d2fdc23eb8cb0ff722745dea.ctex"]
 
 [params]
 

@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cl6inbkmoi78u"
-valid=false
+uid="uid://cidtaa78kjw5b"
+path="res://.godot/imported/hugu_jiu.png-baf1efa71bf0d865f755e837b39f75dc.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/potions/hugu_jiu.png"
+dest_files=["res://.godot/imported/hugu_jiu.png-baf1efa71bf0d865f755e837b39f75dc.ctex"]
 
 [params]
 

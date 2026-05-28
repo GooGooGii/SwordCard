@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cfrxqh1ac8vv4"
-valid=false
+uid="uid://dyau24hvgl1lo"
+path="res://.godot/imported/huti_fu.png-7c1dc82b2651c3c8c9c5b93371f27e35.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/potions/huti_fu.png"
+dest_files=["res://.godot/imported/huti_fu.png-7c1dc82b2651c3c8c9c5b93371f27e35.ctex"]
 
 [params]
 
