@@ -5564,14 +5564,15 @@ func _rarity_gem_texture_path(card: CardData) -> String:
 
 func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: bool, selectable: bool) -> Button:
 	# 全部用 anchor 百分比定位，元素位置 / 字體大小皆依卡片尺寸比例縮放。
-	# 卡套版面參考（2026-05 重做：卡套_base 1024×1536 比例 0.667，黑白水墨無類型色）：
-	#   透明放卡圖區  y 5%~48%, x 9%~92%
-	#   標題裝飾帶    y 49%~57%
-	#   描述卷軸區    y 58%~89%
+	# 卡套版面參考（2026-05 重做：卡套_base 1024×1536 比例 0.667，黑白水墨無類型色）。
+	# 邊界用 PIL 量過實際 alpha + luminance，內部裝飾（竹葉/石頭）會切進來，所以要內縮：
+	#   art 透明圖窗：x 20%~80%, y 5%~42%（再外就疊到外框竹葉裝飾）
+	#   標題裝飾帶：y 52%~57%（中央 53~66% 有深色菱飾，文字會壓在上面）
+	#   描述卷軸文字安全區：x 24%~76%, y 60%~78%（y >78% 竹葉裝飾從下方夾入吃掉寬度）
 	# 左上靈力寶石 / 右上稀有度寶石各 ~20% 寬，y 0%~14%。
-	var title_font_size: int = int(clamp(size.y * 0.052, 11, 22))
+	var title_font_size: int = int(clamp(size.y * 0.045, 10, 20))
 	var type_font_size: int = int(clamp(size.y * 0.035, 9, 16))
-	var desc_font_size: int = int(clamp(size.y * 0.042, 10, 18))
+	var desc_font_size: int = int(clamp(size.y * 0.035, 9, 15))
 
 	var button: Button = Button.new()
 	button.text = ""
@@ -5580,18 +5581,21 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	button.clip_contents = true
 	_style_card_button(button, card, affordable)
 
-	# 1) 卡圖：略大於卡套透明圖窗，從 y 5%~48%、x 9%~92%
+	# 1) 卡圖：擴到卡套透明圖窗實際邊界（PIL 量過 alpha < 220 區段）
+	# x 17%~85%（透明區頂端最寬可達 17%~86%；底邊有竹葉夾入但 COVER 模式以高度 fit 為主）
+	# y 4.5%~46%（透明區 alpha 從 4.6% 開始到 46.4%）。
 	var art: TextureRect = TextureRect.new()
 	art.name = "CardArt"
-	art.anchor_left = 0.09
-	art.anchor_top = 0.05
-	art.anchor_right = 0.92
-	art.anchor_bottom = 0.48
+	art.anchor_left = 0.17
+	art.anchor_top = 0.045
+	art.anchor_right = 0.85
+	art.anchor_bottom = 0.46
 	art.offset_left = 0
 	art.offset_top = 0
 	art.offset_right = 0
 	art.offset_bottom = 0
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	# KEEP_ASPECT_COVERED：卡圖填滿整個透明圖窗（裁多餘部份），避免 letterbox 黑邊。
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var texture: Texture2D = UIFactory.load_texture(card.art_path)
@@ -5613,14 +5617,13 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 		frame.modulate = Color(0.82, 0.82, 0.82, 0.78)
 	button.add_child(frame)
 
-	# 3) 靈力寶石（左上）：1254×1254 的水墨圓圖，含 0~3 數字。anchor 0.02~0.22 / 0.005~0.135
-	# 是試出來剛好坐在卡套左上角內、不蓋卡圖也不擠標題的位置。
+	# 3) 靈力寶石（左上）
 	var cost_gem: TextureRect = TextureRect.new()
 	cost_gem.name = "CardCostGem"
-	cost_gem.anchor_left = 0.02
-	cost_gem.anchor_top = 0.005
-	cost_gem.anchor_right = 0.22
-	cost_gem.anchor_bottom = 0.135
+	cost_gem.anchor_left = 0.13
+	cost_gem.anchor_top = 0.04
+	cost_gem.anchor_right = 0.33
+	cost_gem.anchor_bottom = 0.175
 	cost_gem.offset_left = 0
 	cost_gem.offset_top = 0
 	cost_gem.offset_right = 0
@@ -5631,12 +5634,12 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	cost_gem.texture = UIFactory.load_texture(_cost_gem_texture_path(cost))
 	button.add_child(cost_gem)
 
-	# 3b) 稀有度寶石（右上）：card_lv1~4 = 基/良/稀/升。鏡像 cost gem 的 x 軸位置。
+	# 3b) 稀有度寶石（右上）：card_lv1~4 = 基/良/稀/升。比 cost gem 略小。
 	var rarity_gem: TextureRect = TextureRect.new()
 	rarity_gem.name = "CardRarityGem"
-	rarity_gem.anchor_left = 0.78
-	rarity_gem.anchor_top = 0.005
-	rarity_gem.anchor_right = 0.98
+	rarity_gem.anchor_left = 0.72
+	rarity_gem.anchor_top = 0.05
+	rarity_gem.anchor_right = 0.85
 	rarity_gem.anchor_bottom = 0.135
 	rarity_gem.offset_left = 0
 	rarity_gem.offset_top = 0
@@ -5648,13 +5651,14 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	rarity_gem.texture = UIFactory.load_texture(_rarity_gem_texture_path(card))
 	button.add_child(rarity_gem)
 
-	# 4) 卡名：對齊卡套新標題帶 y 49%~57% 的淺色書寫區
+	# 4) 卡名：對齊卡套標題帶 y 47.1%~52.5% 的淺色書寫長框（再下方的 y 53~54% 是深色菱飾，
+	# 然後 y 54~56% 是另一條更窄的淺帶——不是寫名字的位置）。
 	var title: Label = UIFactory.card_label(card.display_title(), title_font_size, Color("2d2418"), HORIZONTAL_ALIGNMENT_CENTER)
 	title.name = "CardTitle"
-	title.anchor_left = 0.12
-	title.anchor_top = 0.49
-	title.anchor_right = 0.88
-	title.anchor_bottom = 0.56
+	title.anchor_left = 0.20
+	title.anchor_top = 0.47
+	title.anchor_right = 0.80
+	title.anchor_bottom = 0.525
 	title.offset_left = 0
 	title.offset_top = 0
 	title.offset_right = 0
@@ -5669,15 +5673,14 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(title)
 
-	# 5) 類型 + 描述：對齊卡套描述卷軸 y 60%~85%。
-	# x 內縮到 0.18~0.82：新卡套描述帶左右各有竹葉/石頭裝飾佔 ~15% 寬度，
-	# 之前 0.10/0.13 都會把第一字「抽」「造」的左半部疊在裝飾上看不清。
+	# 5) 類型 + 描述：對齊卡套描述卷軸文字安全區 x 24%~76%, y 60%~78%。
+	# y 78% 以下竹葉裝飾從底邊夾入快速吃掉寬度（y 90% 只剩 16% 可寫），文字會壓在裝飾上。
 	var rules_container: Control = Control.new()
 	rules_container.name = "CardRules"
-	rules_container.anchor_left = 0.18
+	rules_container.anchor_left = 0.24
 	rules_container.anchor_top = 0.60
-	rules_container.anchor_right = 0.82
-	rules_container.anchor_bottom = 0.85
+	rules_container.anchor_right = 0.76
+	rules_container.anchor_bottom = 0.78
 	rules_container.offset_left = 0
 	rules_container.offset_top = 0
 	rules_container.offset_right = 0
@@ -5686,7 +5689,7 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	button.add_child(rules_container)
 	var rules_box: VBoxContainer = VBoxContainer.new()
 	rules_box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	rules_box.add_theme_constant_override("separation", max(2, int(round(size.y * 0.015))))
+	rules_box.add_theme_constant_override("separation", max(1, int(round(size.y * 0.006))))
 	rules_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rules_container.add_child(rules_box)
 	var type_line: Label = UIFactory.card_label(CardFormat.card_type_name(card.card_type), type_font_size, CardFormat.card_color(card.card_type, true).darkened(0.05), HORIZONTAL_ALIGNMENT_CENTER)
@@ -5696,6 +5699,8 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	desc.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	# 行距收緊（預設 Label line_spacing = 3，縮成 -1 讓多行卡片描述列排更緊湊）
+	desc.add_theme_constant_override("line_spacing", -1)
 	desc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rules_box.add_child(desc)
 
