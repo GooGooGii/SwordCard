@@ -859,6 +859,10 @@ func _test_requires_enemy_target() -> void:
 	# 混合：damage + draw → 要丟敵人
 	var c_mix2: Array[Dictionary] = [{"kind": "damage", "amount": 5}, {"kind": "draw", "amount": 1}]
 	_check(CardFormat.requires_enemy_target(GameData.make_card("t12", "test", "P", 1, "attack", "x", c_mix2)))
+	# 能力牌規則：card_type=="power" 一律對自己，即使 effects 裡有 debuff
+	var c_power_mix: Array[Dictionary] = [{"kind": "power", "amount": 1}, {"kind": "poison", "amount": 5}]
+	_check(not CardFormat.requires_enemy_target(GameData.make_card("t13", "test", "P", 1, "power", "x", c_power_mix)),
+		"power card_type 應一律對自己（即使含 poison 等 debuff effect）")
 	# 拿實際遊戲卡片做煙霧驗證（至少不會 crash）
 	var characters: Array[CharacterData] = GameData.characters()
 	for character: CharacterData in characters:
