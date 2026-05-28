@@ -154,6 +154,7 @@ func _initialize() -> void:
 	_test_damage_debuff_bonus(characters, enemies)
 	_test_zhao_staff_payoff_cards(characters)
 	_test_damage_all_multi_hit(characters, enemies)
+	_test_power_card_consumed_on_play(characters, enemies)
 	# Event Branching Phase 1：純樹走訪器（無 UI、無 effect 結算）
 	_test_event_runner_has_tree()
 	_test_event_runner_root_choices()
@@ -907,7 +908,9 @@ const BALANCE_BASELINES: Dictionary = {
 # 真實場景請看 BALANCE_BASELINES_LEVELED。
 # 趙靈兒被動「靈台啟明」(self_power+3) 後勝率拉高到 100%
 const BALANCE_BASELINES_MID: Dictionary = {
-	"li_xiaoyao": 63,
+	# li_xiaoyao 63→90：STS 風能力牌一次性消耗後，醉夢望月不再洗回堆，
+	# 牌組變薄 → 御劍/萬劍/天師等高傷卡抽率提升，對蜈蚣大王勝率躍升（故意調整，commit faffda4 之後改的）
+	"li_xiaoyao": 90,
 	"zhao_linger": 100,
 	"lin_yueru": 100,
 	"anu": 50
@@ -1624,6 +1627,32 @@ func _test_lin_thorns_cards(characters: Array[CharacterData]) -> void:
 	var dao: RelicData = RelicCatalog.by_id("fengming_dao")
 	_check(dao != null, "鳳鳴刀遺物存在")
 	_check(dao.character_id == "lin_yueru", "鳳鳴刀屬於 lin")
+
+func _test_power_card_consumed_on_play(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# 能力牌 STS 規則：打完本場消失，不進任何 pile（draw/hand/discard/exhausted 都沒有）
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0]])
+	# 用一張現成 power card（醉夢望月 power +2）
+	var power_card: CardData = null
+	for c: CardData in characters[0].reward_pool:
+		if c.card_type == "power":
+			power_card = c.clone()
+			break
+	_check(power_card != null, "li_xiaoyao reward_pool 應有 power 卡（醉夢望月等）")
+	if power_card == null:
+		return
+	# 塞進手牌、給足能量
+	bc.deck.hand.append(power_card)
+	bc.state["energy"] = 5
+	var before_power: int = int(bc.state["player_power"])
+	var result: Dictionary = bc.play_card(power_card)
+	_check(bool(result.get("affordable", false)), "power card 應可打出")
+	# 效果生效：力量增加
+	_check(int(bc.state["player_power"]) > before_power, "打完 power 卡力量應提升")
+	# 本場消失：4 個 pile 都不含這張
+	_check(not bc.deck.hand.has(power_card), "power 卡打完後不應在手牌")
+	_check(not bc.deck.discard_pile.has(power_card), "power 卡不應進棄牌堆")
+	_check(not bc.deck.draw_pile.has(power_card), "power 卡不應在抽牌堆")
+	_check(not bc.deck.exhausted_pile.has(power_card), "power 卡也不該進消耗堆（STS 是直接消失）")
 
 func _reset_all_enemy_slots(s: Dictionary, hp: int = 100, block: int = 0) -> void:
 	# 同時重置 slots 與 active alias，避免 _sync_active_slot_from_alias 把 alias 值回寫 slot[0]

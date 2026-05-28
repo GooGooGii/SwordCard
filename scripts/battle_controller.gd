@@ -531,7 +531,12 @@ func play_card(card: CardData) -> Dictionary:
 		"card_effects": card.effects
 	})
 	if deck != null:
-		deck.discard_card(card)
+		# 能力牌 STS 規則：打完本場消失（不進棄牌堆、不會再洗回手裡）；
+		# power 增益已套到 player_power 持續整場，不需卡片本體留下。
+		if card.card_type == "power":
+			deck.consume_card(card)
+		else:
+			deck.discard_card(card)
 	if int(state["pending_draw"]) > 0:
 		if deck != null:
 			deck.draw(int(state["pending_draw"]))
