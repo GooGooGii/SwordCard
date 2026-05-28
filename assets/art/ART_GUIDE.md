@@ -182,6 +182,15 @@ Decorative overlays include the mana badge, rarity badge, name plaque, and rules
 | `zl_shuiyin` | 水靈封印 | zl_huanyu | 水靈圖騰封印目標、debuff 標記發光（對虛弱/破綻敵加傷） |
 | `zl_ganlin` | 甘霖咒 | zl_shuiling | 靈雨灑落、身上同時泛起水盾（heal + block 合一） |
 
+### 等級解鎖卡（27 張全部目前借圖；scripts/level_system.gd）
+
+> 解鎖卡之前沒美術也沒設 art_id → 在 deck 中顯示空卡圖。已全部借既有同角色卡圖暫代。
+
+李逍遙 8 張：天罡戰氣 / 凝神歸元 / 元靈歸心術 / 真元護體 / 天劍 / 金蟬脫殼 / 逍遙神劍 / 劍神
+趙靈兒 8 張：旋風咒 / 五雷咒 / 三昧真火 / 風雪冰天 / 地裂天崩 / 夢蛇 / 泰山壓頂 / 狂雷
+林月如 5 張：銅錢鏢 / 七訣劍氣 / 元靈歸心術 / 裂龍式 / 萬里狂沙
+阿奴 6 張：三屍蠱 / 炎殺咒 / 贖魂 / 奪魂 / 萬蟻蝕象 / 萬蠱蝕天
+
 ### 遺物（無圖、目前程序繪製 fallback）
 
 | 遺物 id | 名稱 | 待補 |
