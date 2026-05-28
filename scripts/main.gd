@@ -2437,6 +2437,13 @@ func _build_title_bar() -> void:
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hbox.add_child(spacer)
 
+	# 藥品條：戰鬥外顯示在 title bar 內；戰鬥場景的 _battle_potion_strip 接手時這條會被隱藏
+	if _potion_overlay != null and is_instance_valid(_potion_overlay):
+		var prev_parent: Node = _potion_overlay.get_parent()
+		if prev_parent != null:
+			prev_parent.remove_child(_potion_overlay)
+		hbox.add_child(_potion_overlay)
+
 	title_bar_relics_button = _title_bar_button("遺物 (0)", _show_battle_relics_popup)
 	hbox.add_child(title_bar_relics_button)
 	hbox.add_child(_title_bar_button("查看牌組", func() -> void: show_deck_view()))
@@ -2501,19 +2508,17 @@ func _refresh_title_bar() -> void:
 	title_bar_relics_button.text = "遺物 (%d)" % run_state.relics.size()
 
 func _build_potion_overlay() -> void:
+	# 藥品按鈕條：由 _build_title_bar 將此 HBox 插入 title bar 內（戰鬥外顯示在頂部、不再卡在畫面左下角）。
+	# 戰鬥中由 left_dock 自己的 _battle_potion_strip 接手，本 overlay 會被隱藏避免重複。
 	_potion_overlay = HBoxContainer.new()
 	_potion_overlay.add_theme_constant_override("separation", 4)
-	_potion_overlay.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	_potion_overlay.offset_left = 12
-	_potion_overlay.offset_bottom = -12
-	_potion_overlay.offset_top = -64
-	_potion_overlay.offset_right = 176
+	_potion_overlay.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_potion_overlay.visible = false
-	add_child(_potion_overlay)
+	# 不在這裡 add_child；由 title bar 決定父節點
 	_potion_overlay_buttons.clear()
 	for i: int in range(RunState.MAX_POTION_SLOTS):
 		var btn: Button = Button.new()
-		btn.custom_minimum_size = Vector2(52, 52)
+		btn.custom_minimum_size = Vector2(40, 40)
 		btn.add_theme_font_size_override("font_size", 10)
 		var idx: int = i
 		btn.pressed.connect(func(): _discard_potion_prompt(idx))
