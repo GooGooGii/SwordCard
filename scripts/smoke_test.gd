@@ -1467,7 +1467,7 @@ func _test_multi_enemy_per_enemy_phase(characters: Array[CharacterData]) -> void
 	bc._sync_active_enemy_to_state()
 	# 觸發 phase check
 	bc._check_phase_transition()
-	_check(bc.enemy_phased[0], "moon should phase after dropping below 50% (hp=%d / max=%d)" % [int(slot0["hp"]), int(slot0["max_hp"])])
+	_check(bc.enemy_phased[0], "moon should phase after dropping below 50%% (hp=%d / max=%d)" % [int(slot0["hp"]), int(slot0["max_hp"])])
 	_check(not bc.enemy_phased[1], "zombie should not phase yet")
 	# 切到 zombie，砍它 hp 也 < 50%
 	bc.set_active_enemy(1)
