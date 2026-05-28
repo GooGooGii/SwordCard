@@ -4716,11 +4716,22 @@ func show_deck_view(mode: String = "view", custom_cards = null, custom_title: St
 	grid.add_theme_constant_override("v_separation", 10)
 	scroll.add_child(grid)
 	
-	var grouped: Array[Dictionary] = _group_and_sort_cards(target_cards)
-	for item in grouped:
-		var card: CardData = item["card"] as CardData
-		var count: int = item["count"]
-		grid.add_child(_deck_view_card(card, deck_view_mode, count))
+	if deck_view_mode == "upgrade" or deck_view_mode == "shop_upgrade":
+		# 升級畫面：每張卡單獨顯示（不分組、不顯示 xN 徽章避免擋住卡片資訊）。
+		# 有 3 張就直接 show 3 張。依 (id, upgraded) 排序讓同名卡相鄰。
+		var sorted_cards: Array[CardData] = target_cards.duplicate()
+		sorted_cards.sort_custom(func(a: CardData, b: CardData) -> bool:
+			if a.id != b.id:
+				return a.id < b.id
+			return (not a.upgraded) and b.upgraded)
+		for c: CardData in sorted_cards:
+			grid.add_child(_deck_view_card(c, deck_view_mode, 1))
+	else:
+		var grouped: Array[Dictionary] = _group_and_sort_cards(target_cards)
+		for item in grouped:
+			var card: CardData = item["card"] as CardData
+			var count: int = item["count"]
+			grid.add_child(_deck_view_card(card, deck_view_mode, count))
 		
 	var close_button: Button = _button("關閉")
 	close_button.pressed.connect(close_deck_view)
