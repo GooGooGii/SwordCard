@@ -143,6 +143,7 @@ func _initialize() -> void:
 	_test_lin_thorns_cards(characters)
 	_test_damage_debuff_bonus(characters, enemies)
 	_test_zhao_staff_payoff_cards(characters)
+	_test_damage_all_multi_hit(characters, enemies)
 	# Event Branching Phase 1：純樹走訪器（無 UI、無 effect 結算）
 	_test_event_runner_has_tree()
 	_test_event_runner_root_choices()
@@ -1604,6 +1605,42 @@ func _test_lin_thorns_cards(characters: Array[CharacterData]) -> void:
 	var dao: RelicData = RelicCatalog.by_id("fengming_dao")
 	assert(dao != null, "鳳鳴刀遺物存在")
 	assert(dao.character_id == "lin_yueru", "鳳鳴刀屬於 lin")
+
+func _reset_all_enemy_slots(s: Dictionary, hp: int = 100, block: int = 0) -> void:
+	# 同時重置 slots 與 active alias，避免 _sync_active_slot_from_alias 把 alias 值回寫 slot[0]
+	s["enemy_hp"] = hp; s["enemy_block"] = block; s["enemy_vulnerable"] = 0; s["enemy_weak"] = 0; s["enemy_poison"] = 0
+	var slots: Array = s["enemies"] as Array
+	for i: int in range(slots.size()):
+		var slot: Dictionary = slots[i] as Dictionary
+		slot["hp"] = hp; slot["block"] = block; slot["vulnerable"] = 0; slot["weak"] = 0; slot["poison"] = 0
+
+func _test_damage_all_multi_hit(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# damage_all 加 hits：N 敵 × M 段，每敵獨立過 block / power / vuln
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0], enemies[1], enemies[2]])
+	var s: Dictionary = bc.state
+	s["player_power"] = 0; s["player_weak"] = 0
+	var slots: Array = s["enemies"] as Array
+
+	# 1) damage_all 4 hits=3 → 每敵失 12
+	_reset_all_enemy_slots(s, 100, 0)
+	bc.resolver._resolve_effect({"kind": "damage_all", "amount": 4, "hits": 3}, s)
+	for i: int in range(slots.size()):
+		var slot: Dictionary = slots[i] as Dictionary
+		assert(int(slot["hp"]) == 88, "enemy[%d] AOE hits=3 expected 12 dmg; hp=%d" % [i, int(slot["hp"])])
+
+	# 2) 跨段格擋遞減：block 5、4×3 對每敵 → 失 7（段1 吃光 5 block + 0 hp；段2 失 3；段3 失 4）
+	_reset_all_enemy_slots(s, 100, 5)
+	bc.resolver._resolve_effect({"kind": "damage_all", "amount": 4, "hits": 3}, s)
+	for i: int in range(slots.size()):
+		var slot: Dictionary = slots[i] as Dictionary
+		assert(int(slot["hp"]) == 93, "enemy[%d] AOE 4x3 block5 expected loss 7; hp=%d" % [i, int(slot["hp"])])
+		assert(int(slot["block"]) == 0, "enemy[%d] block should deplete; got %d" % [i, int(slot["block"])])
+
+	# 3) hits=1（預設）等同舊行為：4 → 每敵 -4
+	_reset_all_enemy_slots(s, 100, 0)
+	bc.resolver._resolve_effect({"kind": "damage_all", "amount": 4}, s)
+	for i: int in range(slots.size()):
+		assert(int((slots[i] as Dictionary)["hp"]) == 96, "default hits=1 should match old behavior; hp=%d" % int((slots[i] as Dictionary)["hp"]))
 
 func _test_damage_debuff_bonus(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
 	# 趙靈兒杖流 payoff：base + bonus_per_layer × (weak + vuln)，再過完整 vuln 1.5 倍管線

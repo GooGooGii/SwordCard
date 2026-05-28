@@ -215,20 +215,33 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				state["player_hp"] = min(int(state["player_max_hp"]), int(state["player_hp"]) + actual_heal)
 				log_lines.append("無人需救，改回復 %d 點生命。" % actual_heal)
 		"damage_all":
-			# 對全部活著的敵人各造成 amount 傷害（套用 power / weak / vulnerable / block）
+			# 對全部活著的敵人各造成 amount 傷害 hits 次（套用 power / weak / vulnerable / block）
+			# 每段對每敵都跑完整管線（block 跨段遞減、vulnerable 為 >0 ×1.5 不衰減）。
 			_sync_active_slot_from_alias(state)
+			var hits: int = max(1, int(effect.get("hits", 1)))
 			var slots: Array = state.get("enemies", []) as Array
+			var totals: Array[int] = []
+			for _i: int in range(slots.size()):
+				totals.append(0)
+			for _h: int in range(hits):
+				for i: int in range(slots.size()):
+					var slot: Dictionary = slots[i] as Dictionary
+					if int(slot["hp"]) <= 0:
+						continue
+					var modified: int = max(0, amount + int(state["player_power"]) - int(state["player_weak"])) + int(state.get("damage_out_bonus", 0))
+					if int(slot["vulnerable"]) > 0:
+						modified = int(ceil(modified * 1.5))
+					var blocked: int = min(int(slot["block"]), modified)
+					slot["block"] = int(slot["block"]) - blocked
+					slot["hp"] = max(0, int(slot["hp"]) - (modified - blocked))
+					totals[i] = int(totals[i]) + (modified - blocked)
 			for i: int in range(slots.size()):
 				var slot: Dictionary = slots[i] as Dictionary
-				if int(slot["hp"]) <= 0:
-					continue
-				var modified: int = max(0, amount + int(state["player_power"]) - int(state["player_weak"])) + int(state.get("damage_out_bonus", 0))
-				if int(slot["vulnerable"]) > 0:
-					modified = int(ceil(modified * 1.5))
-				var blocked: int = min(int(slot["block"]), modified)
-				slot["block"] = int(slot["block"]) - blocked
-				slot["hp"] = max(0, int(slot["hp"]) - (modified - blocked))
-				log_lines.append("對 %s 造成 %d 點傷害。" % [String(slot["name"]), modified - blocked])
+				if int(totals[i]) > 0:
+					if hits > 1:
+						log_lines.append("對 %s 連擊 %d 段，共 %d 點傷害。" % [String(slot["name"]), hits, int(totals[i])])
+					else:
+						log_lines.append("對 %s 造成 %d 點傷害。" % [String(slot["name"]), int(totals[i])])
 			_sync_alias_from_active_slot(state)
 		"poison_all":
 			_sync_active_slot_from_alias(state)
