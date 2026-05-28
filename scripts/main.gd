@@ -4872,7 +4872,8 @@ func _show_upgrade_confirm_overlay(card: CardData, on_confirm: Callable) -> void
 	var overlay: Control = Control.new()
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-	overlay.z_index = 300
+	# 必須 > deck_view 的 1500（commit f5be0c5 拉高的），否則升級確認會開在牌組檢視底下、看似「當掉」
+	overlay.z_index = 1600
 	add_child(overlay)
 	_card_preview_overlay = overlay
 	var backdrop: ColorRect = ColorRect.new()
