@@ -5320,7 +5320,8 @@ func _on_card_button_down(card: CardData, button: Button) -> void:
 	_card_drag_card = card
 	_card_drag_start_global = button.get_global_mouse_position()
 	_card_drag_active = false
-	_start_card_long_press(card, button)
+	# 戰鬥中長按卡片預覽（升級對照）已移除——按下不再啟 0.5s timer。
+	# 拖拉打牌 / 桌面點兩下出牌仍正常運作。
 
 func _on_card_button_up(card: CardData, button: Button) -> void:
 	_cancel_card_long_press()
