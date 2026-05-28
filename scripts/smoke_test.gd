@@ -139,6 +139,8 @@ func _initialize() -> void:
 	# 連擊 multi-hit（阿奴刀流 / 引擎地基）
 	_test_multi_hit_damage(characters, enemies)
 	_test_anu_blade_cards(characters)
+	_test_thorns_reflects_to_attacker(characters, enemies)
+	_test_lin_thorns_cards(characters)
 	# Event Branching Phase 1：純樹走訪器（無 UI、無 effect 結算）
 	_test_event_runner_has_tree()
 	_test_event_runner_root_choices()
@@ -1549,6 +1551,57 @@ func _test_multi_hit_damage(characters: Array[CharacterData], enemies: Array[Ene
 		bc.resolver._resolve_effect({"kind": "damage", "amount": 4}, s)
 	var single_loss: int = 100 - int(s["enemy_hp"])
 	assert(multi_loss == single_loss, "hits=3 (%d) should equal 3x single (%d)" % [multi_loss, single_loss])
+
+func _test_thorns_reflects_to_attacker(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# 林月如反擊流 (Thorns)：被攻擊時反彈 player_thorns 點傷害給攻擊者
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0]])
+	var s: Dictionary = bc.state
+	s["player_thorns"] = 3
+	s["player_block"] = 0; s["player_hp"] = 50; s["player_max_hp"] = 50
+	s["enemy_block"] = 0
+	var enemy_hp_before: int = int(s["enemy_hp"])
+	# 敵人攻擊 5 點（from_enemy=true）
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 5}, s, true)
+	# 玩家失 5 HP（無格擋、無 vuln）
+	assert(int(s["player_hp"]) == 45, "thorns: player should still take damage; hp=%d" % int(s["player_hp"]))
+	# 敵人失 3 HP（thorns 反擊，不過 weak/vuln）
+	assert(int(s["enemy_hp"]) == enemy_hp_before - 3, "thorns: enemy should reflect 3; hp=%d" % int(s["enemy_hp"]))
+	# Thorns 不衰減
+	assert(int(s["player_thorns"]) == 3, "thorns 不衰減")
+
+	# 多次攻擊 → 多次反擊
+	s["enemy_block"] = 0; s["enemy_hp"] = enemy_hp_before
+	for _i: int in range(3):
+		bc.resolver._resolve_effect({"kind": "damage", "amount": 2}, s, true)
+	# 每次攻擊都反 3 → 共 9
+	assert(int(s["enemy_hp"]) == enemy_hp_before - 9, "thorns 應每次攻擊都觸發；hp=%d expected %d" % [int(s["enemy_hp"]), enemy_hp_before - 9])
+
+	# Thorns effect kind：用 thorns 卡可疊層
+	s["player_thorns"] = 0
+	bc.resolver._resolve_effect({"kind": "thorns", "amount": 2}, s)
+	bc.resolver._resolve_effect({"kind": "thorns", "amount": 1}, s)
+	assert(int(s["player_thorns"]) == 3, "thorns 疊層: expected 3 got %d" % int(s["player_thorns"]))
+
+func _test_lin_thorns_cards(characters: Array[CharacterData]) -> void:
+	# 鳳鳴反擊 / 月華護體 卡與 鳳鳴刀 遺物存在且設定正確
+	var lin: CharacterData = null
+	for c: CharacterData in characters:
+		if c.id == "lin_yueru":
+			lin = c
+			break
+	assert(lin != null, "lin_yueru should exist")
+	var found_fenghuan: bool = false
+	var found_yuehua: bool = false
+	for card: CardData in lin.reward_pool:
+		if card.id == "lyr_fenghuan":
+			found_fenghuan = true
+			assert(int((card.effects[0] as Dictionary).get("amount", 0)) == 3, "鳳鳴反擊 thorns 應 3")
+		elif card.id == "lyr_yuehua":
+			found_yuehua = true
+	assert(found_fenghuan and found_yuehua, "lin thorns 卡應在 reward pool")
+	var dao: RelicData = RelicCatalog.by_id("fengming_dao")
+	assert(dao != null, "鳳鳴刀遺物存在")
+	assert(dao.character_id == "lin_yueru", "鳳鳴刀屬於 lin")
 
 func _test_anu_blade_cards(characters: Array[CharacterData]) -> void:
 	# 阿奴刀流：連擊卡在獎勵池 + 巫月神刀遺物存在

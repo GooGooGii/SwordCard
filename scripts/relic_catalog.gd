@@ -1,7 +1,7 @@
 class_name RelicCatalog
 extends RefCounted
 
-# 60 件裝備：45 通用 + 9 角色專武 + 6 神器
+# 61 件裝備：45 通用 + 10 角色專武 + 6 神器
 
 static func all() -> Array[RelicData]:
 	var list: Array[RelicData] = []
@@ -177,6 +177,9 @@ static func _weapons() -> Array[RelicData]:
 		[{"trigger": "battle_start", "effects": [{"kind": "self_power", "amount": 2}]}], ThemeColors.HP_FILL))
 	l.append(_make_weapon("xuanshuang_bian", "玄霜鞭", "每出一張攻擊牌，敵人 +1 層破綻。", "lin_yueru", "rare",
 		[{"trigger": "card_played", "filter": {"card_type": "attack"}, "effects": [{"kind": "enemy_vulnerable", "amount": 1}]}], Color("8edcff")))
+	# 反擊流錨點（鳳鳴刀）：戰鬥開始得 3 點荊棘，搭配 Thorns 卡建反擊流
+	l.append(_make_weapon("fengming_dao", "鳳鳴刀", "戰鬥開始獲得 3 點荊棘（被攻擊時反彈傷害給攻擊者）。", "lin_yueru", "rare",
+		[{"trigger": "battle_start", "effects": [{"kind": "self_thorns", "amount": 3}]}], Color("e89a5f")))
 	# 阿奴 (蠱蟲)
 	l.append(_make_weapon("wanyi_wang", "天蛇靈笛", "笛音催蠱，敵人受到的蠱毒 +2。", "anu", "rare",
 		[{"trigger": "passive_modifier", "effects": [{"kind": "poison_bonus", "amount": 2}]}], Color("6aa44a")))

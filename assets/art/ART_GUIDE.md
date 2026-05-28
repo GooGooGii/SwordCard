@@ -177,11 +177,14 @@ Decorative overlays include the mana badge, rarity badge, name plaque, and rules
 | `anu_wuyuezhan` | 巫月斬 | anu_duzhen | 巫月神刀月牙形連斬軌跡 |
 | `anu_xuerenwu` | 血刃亂舞 | anu_baozhagu | 亂刀殘影、血光四濺（三段連擊） |
 | `lxy_wanjianguizong` | 萬劍歸宗 | lxy_wanjian | 御劍千百道凝聚成一束、收尾一閃（三段連擊收勢） |
+| `lyr_fenghuan` | 鳳鳴反擊 | lyr_fanji | 鳳凰虛影張開護身、刺向攻擊者（Thorns 反擊光環） |
+| `lyr_yuehua` | 月華護體 | lyr_jinchan | 月華結界、淡光荊棘環繞（block + thorns） |
 
 ### 遺物（無圖、目前程序繪製 fallback）
 
 | 遺物 id | 名稱 | 待補 |
 |---|---|---|
 | `wuyue_shendao` | 巫月神刀 | `assets/art/relics/wuyue_shendao.png`（阿奴終極刀，月牙刀身 + 苗疆紋飾） |
+| `fengming_dao` | 鳳鳴刀 | `assets/art/relics/fengming_dao.png`（林月如刀，鳳鳴紋路、護體反擊主題） |
 
 ---

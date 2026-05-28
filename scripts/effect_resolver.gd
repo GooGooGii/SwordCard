@@ -75,6 +75,14 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				state["player_block"] = int(state["player_block"]) - blocked
 				state["player_hp"] = max(0, int(state["player_hp"]) - (modified - blocked))
 				log_lines.append("%s 攻擊，造成 %d 點傷害。" % [state["enemy_name"], modified - blocked])
+				# Thorns 反擊：被攻擊時反彈 player_thorns 點傷害給攻擊者（不過 weak/vuln，
+				# 直接扣血 / 透過 enemy_block）。每次 from_enemy damage 觸發一次。
+				var thorns: int = int(state.get("player_thorns", 0))
+				if thorns > 0:
+					var t_blocked: int = min(int(state["enemy_block"]), thorns)
+					state["enemy_block"] = int(state["enemy_block"]) - t_blocked
+					state["enemy_hp"] = max(0, int(state["enemy_hp"]) - (thorns - t_blocked))
+					log_lines.append("荊棘反彈 %d 點傷害給 %s。" % [thorns - t_blocked, state["enemy_name"]])
 			else:
 				# 連擊：hits 可選，預設 1。每段各自走 power/weak/vulnerable/block 管線
 				# （block 跨段遞減、vulnerable 為 >0 即 ×1.5 不逐段衰減，與單擊一致）。
@@ -154,6 +162,10 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 		"power":
 			state["player_power"] = int(state["player_power"]) + amount
 			log_lines.append("本場戰鬥傷害提升 %d。" % amount)
+		"thorns":
+			# Thorns 荊棘反擊：被攻擊時反彈傷害（不衰減，跨回合保留）
+			state["player_thorns"] = int(state.get("player_thorns", 0)) + amount
+			log_lines.append("獲得 %d 點荊棘。" % amount)
 		"consume_energy_damage":
 			var spent: int = int(state["energy"])
 			state["energy"] = 0

@@ -148,6 +148,7 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"turn": 0,
 		"li_discount_used": false,
 		"lin_block_used": false,
+		"player_thorns": 0,  # 反擊（Thorns）：被攻擊時反彈 N 點傷害給攻擊者，不衰減
 		"damage_taken_reduction": 0,
 		"damage_out_bonus": 0,
 		"block_bonus": 0,
@@ -799,6 +800,9 @@ func _apply_trigger_effects(effects: Array, relic_name: String) -> void:
 			"self_power":
 				state["player_power"] = int(state["player_power"]) + amount
 				add_log("【%s】傷害 +%d。" % [relic_name, amount])
+			"self_thorns":
+				state["player_thorns"] = int(state.get("player_thorns", 0)) + amount
+				add_log("【%s】獲得 %d 點荊棘。" % [relic_name, amount])
 			"enemy_damage":
 				var dmg: int = amount + int(state.get("damage_out_bonus", 0))
 				var blocked: int = min(int(state["enemy_block"]), dmg)
