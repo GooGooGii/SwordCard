@@ -922,12 +922,14 @@ const BALANCE_BASELINES_UPGRADED: Dictionary = {
 	"lin_yueru": 100,
 	"anu": 100
 }
-# 全升級起始牌組 vs 蜈蚣大王（10 回合）。升級後牌組強度足以全 100%。
+# 全升級起始牌組 vs 蜈蚣大王（10 回合）。
+# anu 70%：蜈蚣大王 phase 2 加了召喚蜈蚣幼蟲（1/4 機率），anu 對群體輸出不夠強、受擊壓力上升
+# 而掉到 70%。其他角色憑 AOE 或硬控可解，仍維持 100%。
 const BALANCE_BASELINES_MID_UPGRADED: Dictionary = {
 	"li_xiaoyao": 100,
 	"zhao_linger": 100,
 	"lin_yueru": 100,
-	"anu": 100
+	"anu": 70
 }
 
 # 分級成長 baseline：每幕 boss 對應一個玩家等級（推測自實際 run 經驗值累積）。

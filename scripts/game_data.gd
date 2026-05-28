@@ -29,7 +29,7 @@ static func bosses() -> Array[EnemyData]:
 
 # Multi-Enemy Mode：召喚物（minions）— 由 boss 召喚出來的弱化版敵人
 static func minions() -> Array[EnemyData]:
-	return [_water_tentacle()]
+	return [_water_tentacle(), _red_eye_imp(), _zombie_thrall(), _centipede_brood(), _tower_wisp()]
 
 # 統一 id → EnemyData 查表，給 BattleController.spawn_enemy 與其他系統用
 static func enemy_by_id(id: String) -> EnemyData:
@@ -532,8 +532,10 @@ static func _centipede_lord() -> EnemyData:
 		{"intent": "毒霧 蠱毒 6 + 破綻 2", "effects": [
 			{"kind": "poison", "amount": 6},
 			{"kind": "vulnerable", "amount": 2}
-		]}
+		]},
+		{"intent": "召喚蜈蚣幼蟲", "effects": [{"kind": "summon", "count": 1}]}
 	]
+	enemy.summon_pool = ["centipede_brood"]
 	return enemy
 
 static func _witch_queen() -> EnemyData:
@@ -563,8 +565,10 @@ static func _witch_queen() -> EnemyData:
 		{"intent": "邪音咒 12 + 破綻 3", "effects": [
 			{"kind": "damage", "amount": 12},
 			{"kind": "vulnerable", "amount": 3}
-		]}
+		]},
+		{"intent": "召喚鎖妖塔殘魂", "effects": [{"kind": "summon", "count": 1}]}
 	]
+	enemy.summon_pool = ["tower_wisp"]
 	return enemy
 
 static func _zombie_soldier() -> EnemyData:
@@ -660,8 +664,10 @@ static func _red_eye_demon() -> EnemyData:
 	enemy.phase_2_actions = [
 		{"intent": "赤眼怒火 16 + 虛弱 1", "effects": [{"kind": "damage", "amount": 16}, {"kind": "weak", "amount": 1}]},
 		{"intent": "血月衝擊 20", "effects": [{"kind": "damage", "amount": 20}]},
-		{"intent": "群怪呼嘯 14 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 14}, {"kind": "poison", "amount": 2}]}
+		{"intent": "群怪呼嘯 14 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 14}, {"kind": "poison", "amount": 2}]},
+		{"intent": "召喚赤眼幼魈", "effects": [{"kind": "summon", "count": 1}]}
 	]
+	enemy.summon_pool = ["red_eye_imp"]
 	return enemy
 
 static func _zombie_general() -> EnemyData:
@@ -679,8 +685,10 @@ static func _zombie_general() -> EnemyData:
 	enemy.phase_2_actions = [
 		{"intent": "殭屍狂咒 18", "effects": [{"kind": "damage", "amount": 18}]},
 		{"intent": "毒屍爆炸 蠱毒 6 + 破綻 2", "effects": [{"kind": "poison", "amount": 6}, {"kind": "vulnerable", "amount": 2}]},
-		{"intent": "鬼將斬魂 22", "effects": [{"kind": "damage", "amount": 22}]}
+		{"intent": "鬼將斬魂 22", "effects": [{"kind": "damage", "amount": 22}]},
+		{"intent": "召喚殭屍奴", "effects": [{"kind": "summon", "count": 1}]}
 	]
+	enemy.summon_pool = ["zombie_thrall"]
 	return enemy
 
 static func _baiyue_lord() -> EnemyData:
@@ -719,5 +727,59 @@ static func _water_tentacle() -> EnemyData:
 		{"intent": "鞭打 6", "effects": [{"kind": "damage", "amount": 6}]},
 		{"intent": "防 8", "effects": [{"kind": "block", "amount": 8}]},
 		{"intent": "纏繞 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]},
+	]
+	return enemy
+
+# 召喚物 — 赤眼幼魈（赤眼山魈 phase 2 召出；輕量物理 + 虛弱）
+# TODO(art): 借 red_eye_demon 圖當 placeholder，之後補專屬縮版
+static func _red_eye_imp() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "red_eye_imp"
+	enemy.display_name = "赤眼幼魈"
+	enemy.max_hp = 18
+	enemy.portrait_path = "res://assets/art/enemies/red_eye_demon.png"
+	enemy.actions = [
+		{"intent": "撓擊 5", "effects": [{"kind": "damage", "amount": 5}]},
+		{"intent": "怒吼 虛弱 1", "effects": [{"kind": "weak", "amount": 1}]},
+	]
+	return enemy
+
+# 召喚物 — 殭屍奴（殭屍大帥 phase 2 召出；前排打手）
+# TODO(art): 借 zombie_soldier 圖當 placeholder
+static func _zombie_thrall() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "zombie_thrall"
+	enemy.display_name = "殭屍奴"
+	enemy.max_hp = 20
+	enemy.portrait_path = "res://assets/art/enemies/zombie_soldier.png"
+	enemy.actions = [
+		{"intent": "抓撲 6", "effects": [{"kind": "damage", "amount": 6}]},
+		{"intent": "守 5", "effects": [{"kind": "block", "amount": 5}]},
+	]
+	return enemy
+
+# 召喚物 — 蜈蚣幼蟲（蜈蚣大王 phase 2 召出；毒系群擾）
+# TODO(art): 借 toxic_centipede 圖當 placeholder
+static func _centipede_brood() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "centipede_brood"
+	enemy.display_name = "蜈蚣幼蟲"
+	enemy.max_hp = 14
+	enemy.portrait_path = "res://assets/art/enemies/toxic_centipede.png"
+	enemy.actions = [
+		{"intent": "啃噬 4 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 4}, {"kind": "poison", "amount": 2}]},
+	]
+	return enemy
+
+# 召喚物 — 鎖妖塔殘魂（山靈巫后 phase 2 召出；魂吸下毒）
+# TODO(art): 借 tower_ghost_soldier 圖當 placeholder
+static func _tower_wisp() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "tower_wisp"
+	enemy.display_name = "鎖妖塔殘魂"
+	enemy.max_hp = 16
+	enemy.portrait_path = "res://assets/art/enemies/tower_ghost_soldier.png"
+	enemy.actions = [
+		{"intent": "魂吸 4 + 蠱毒 1", "effects": [{"kind": "damage", "amount": 4}, {"kind": "poison", "amount": 1}]},
 	]
 	return enemy
