@@ -35,6 +35,10 @@ window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/handheld/orientation="sensor_landscape"
 
+[gui]
+
+theme/custom_font="res://assets/fonts/NotoSansTC-VF.ttf"
+
 [rendering]
 
 renderer/rendering_method="mobile"
