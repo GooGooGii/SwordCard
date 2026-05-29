@@ -3306,6 +3306,12 @@ func show_event_node(sub_stage: String = "") -> void:
 	panel.add_child(box)
 	var event_data: Dictionary = EventData.for_variant(run_state.current_event_variant)
 	box.add_child(_title(String(event_data["title"]), 32))
+	# Hero banner（legacy 路徑也享受到同樣的視覺）
+	var legacy_banner: Control = _make_event_illustration_banner(run_state.current_event_variant, 760, 200)
+	if legacy_banner != null:
+		var legacy_banner_wrap: CenterContainer = CenterContainer.new()
+		legacy_banner_wrap.add_child(legacy_banner)
+		box.add_child(legacy_banner_wrap)
 	var _active_char_id: String = run_state.characters[run_state.active_character_index].id if run_state.characters.size() > run_state.active_character_index else ""
 	var flavor_text: String
 	var choices_list: Array
@@ -3411,10 +3417,17 @@ func _show_event_tree_node(node_id: String) -> void:
 	root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 16)
+	box.add_theme_constant_override("separation", 14)
 	panel.add_child(box)
 	var ed: Dictionary = EventData.for_variant(run_state.current_event_variant)
 	box.add_child(_title(String(ed["title"]), 32))
+	# Hero banner：assets/art/events/<variant>.png 直接掛在標題下，
+	# 把背景的同一張圖再放大成主視覺（背景被 panel 罩著看不太清楚）
+	var banner: Control = _make_event_illustration_banner(run_state.current_event_variant, 760, 200)
+	if banner != null:
+		var banner_wrap: CenterContainer = CenterContainer.new()
+		banner_wrap.add_child(banner)
+		box.add_child(banner_wrap)
 	var node: Dictionary = EventRunner.get_node(ed, node_id)
 	if node.is_empty():
 		push_warning("event tree: missing node '%s' in variant '%s'" % [node_id, run_state.current_event_variant])
@@ -3453,7 +3466,7 @@ func _show_event_tree_node(node_id: String) -> void:
 			subtitle_parts.append("（消耗 1 觀察）")
 		var subtitle: String = "　".join(subtitle_parts)
 		grid.add_child(_event_choice_button(label, subtitle, false,
-			func() -> void: _on_event_tree_choice_selected(choice)))
+			func() -> void: _on_event_tree_choice_selected(choice), kind))
 
 func _build_event_context() -> Dictionary:
 	# 包裝 run_state 當下狀態給 EventRunner.eval_requires 用。
@@ -3855,34 +3868,59 @@ func _get_event_outcome(event_data: Dictionary, key: String) -> String:
 			return String(per_char[key])
 	return String((event_data.get("outcomes", {}) as Dictionary).get(key, ""))
 
-func _show_event_outcome(text: String, on_continue: Callable) -> void:
+func _show_event_outcome(text: String, on_continue: Callable, variant: String = "") -> void:
+	# 結算面板：寬版（720px）、上方擺事件插圖小圖（160px banner）、
+	# 文字以 typewriter（~40 字/秒）緩出，繼續按鈕首次點擊跳過 typewriter、
+	# 第二次才真正關閉。沒插圖的事件 fallback 為只有文字。
 	var overlay: PanelContainer = PanelContainer.new()
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.z_index = 10
-	var bg: StyleBoxFlat = UIFactory.style_box(Color(0, 0, 0, 0.68), Color(0, 0, 0, 0), 0, 0)
+	var bg: StyleBoxFlat = UIFactory.style_box(Color(0, 0, 0, 0.72), Color(0, 0, 0, 0), 0, 0)
 	overlay.add_theme_stylebox_override("panel", bg)
 	root.add_child(overlay)
 	var center: CenterContainer = CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.add_child(center)
 	var card: PanelContainer = PanelContainer.new()
-	card.custom_minimum_size = Vector2(440, 0)
+	card.custom_minimum_size = Vector2(720, 0)
 	var card_style: StyleBoxFlat = UIFactory.style_box(ThemeColors.PANEL_NAVY, ThemeColors.BORDER_GOLD, 1, 8)
 	card_style.content_margin_left = 28
 	card_style.content_margin_right = 28
-	card_style.content_margin_top = 24
-	card_style.content_margin_bottom = 24
+	card_style.content_margin_top = 22
+	card_style.content_margin_bottom = 22
 	card.add_theme_stylebox_override("panel", card_style)
 	center.add_child(card)
 	var vbox: VBoxContainer = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 20)
+	vbox.add_theme_constant_override("separation", 16)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	card.add_child(vbox)
+	# 上方插圖（用呼叫方傳入的 variant，或 fallback 到當下 run_state）
+	var resolved_variant: String = variant
+	if resolved_variant.is_empty() and run_state != null:
+		resolved_variant = String(run_state.current_event_variant)
+	var ban: Control = _make_event_illustration_banner(resolved_variant, 660, 160)
+	if ban != null:
+		var ban_wrap: CenterContainer = CenterContainer.new()
+		ban_wrap.add_child(ban)
+		vbox.add_child(ban_wrap)
 	var lbl: Label = UIFactory.paragraph(text)
-	lbl.custom_minimum_size = Vector2(384, 0)
+	lbl.custom_minimum_size = Vector2(660, 0)
 	vbox.add_child(lbl)
+	# Typewriter
+	var char_count: int = text.length()
+	var tw: Tween = null
+	if char_count > 0:
+		lbl.visible_characters = 0
+		var tw_duration: float = clamp(float(char_count) / 40.0, 0.6, 5.0)
+		tw = lbl.create_tween().set_trans(Tween.TRANS_LINEAR)
+		tw.tween_property(lbl, "visible_characters", char_count, tw_duration)
 	var continue_button: Button = _button("繼續")
 	continue_button.pressed.connect(func() -> void:
+		# 首次按下：若 typewriter 還沒跑完，跳過動畫；第二次按下才真正繼續
+		if tw != null and tw.is_valid() and tw.is_running():
+			tw.kill()
+			lbl.visible_characters = char_count
+			return
 		overlay.queue_free()
 		on_continue.call())
 	vbox.add_child(continue_button)
@@ -3971,9 +4009,11 @@ func _event_status_strip() -> PanelContainer:
 		hbox.add_child(pow_lbl)
 	return container
 
-func _event_choice_button(title: String, subtitle: String, disabled: bool, on_press: Callable) -> Button:
+func _event_choice_button(title: String, subtitle: String, disabled: bool, on_press: Callable, kind: String = "") -> Button:
 	# 文青卡片式按鈕：水墨紙底色 + 細金邊 + 標題下細分隔線 + 副標小字
 	# 兩兩排列在 GridContainer 裡，hover 時邊框轉暖、bg 微亮
+	# 若給 kind（reward/punish/battle/gamble/mixed/neutral），左側畫一條彩色 ribbon
+	# 對應 EventRunner.leaf_kind() 的分類，玩家一眼分辨選項屬性
 	var btn: Button = Button.new()
 	btn.custom_minimum_size = Vector2(260, 84)
 	btn.disabled = disabled
@@ -4020,9 +4060,66 @@ func _event_choice_button(title: String, subtitle: String, disabled: bool, on_pr
 	subtitle_label.add_theme_color_override("font_color", Color("574b34") if not disabled else Color("7c7768"))
 	subtitle_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(subtitle_label)
+	# 左側 kind ribbon：6 px 寬、安插在 content margin（左邊 16 px）內側
+	if not kind.is_empty():
+		var ribbon: ColorRect = ColorRect.new()
+		var rc: Color = _event_kind_color(kind)
+		if disabled:
+			rc.a *= 0.35
+		ribbon.color = rc
+		ribbon.set_anchor_and_offset(SIDE_LEFT, 0.0, 4.0)
+		ribbon.set_anchor_and_offset(SIDE_RIGHT, 0.0, 10.0)
+		ribbon.set_anchor_and_offset(SIDE_TOP, 0.0, 8.0)
+		ribbon.set_anchor_and_offset(SIDE_BOTTOM, 1.0, -8.0)
+		ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		btn.add_child(ribbon)
 	if not disabled:
 		btn.pressed.connect(on_press)
 	return btn
+
+func _event_kind_color(kind: String) -> Color:
+	# 對應 EventRunner.badge_for_kind() 的 6 種類別
+	match kind:
+		"reward": return Color("e4c66a")   # 金（機緣）
+		"punish": return Color("c04848")   # 紅（風險）
+		"battle": return Color("4a6480")   # 深藍（戰鬥）
+		"gamble": return Color("d88838")   # 橘（賭運）
+		"mixed":  return Color("8a8576")   # 灰（取捨）
+		_:        return Color("6a6760", 0.55)  # neutral：淡灰
+
+func _make_event_illustration_banner(variant: String, max_width: int, banner_height: int) -> Control:
+	# 把 assets/art/events/<variant>.png 包裝成一條 hero banner，
+	# 中央裁切、帶細金邊框、進場時淡入 + 微縮放。
+	# 沒有對應圖檔就回傳 null，呼叫方應跳過插入。
+	if variant.is_empty():
+		return null
+	var path: String = "res://assets/art/events/%s.png" % variant
+	if not ResourceLoader.exists(path):
+		return null
+	var tex: Texture2D = UIFactory.load_texture(path)
+	if tex == null:
+		return null
+	var wrap: PanelContainer = PanelContainer.new()
+	wrap.clip_contents = true
+	wrap.custom_minimum_size = Vector2(max_width, banner_height)
+	var style: StyleBoxFlat = UIFactory.style_box(Color(0, 0, 0, 0), Color("c8b46f", 0.65), 1, 4)
+	wrap.add_theme_stylebox_override("panel", style)
+	var rect: TextureRect = TextureRect.new()
+	rect.texture = tex
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	rect.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rect.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrap.add_child(rect)
+	# 進場淡入 + 1.04 → 1.0 微微內推；只跑一次（非無限呼吸，避免畫面焦點亂跑）
+	rect.modulate.a = 0.0
+	rect.pivot_offset = Vector2(max_width * 0.5, banner_height * 0.5)
+	rect.scale = Vector2(1.04, 1.04)
+	var enter: Tween = rect.create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	enter.tween_property(rect, "modulate:a", 1.0, 0.45)
+	enter.tween_property(rect, "scale", Vector2(1.0, 1.0), 0.55)
+	return wrap
 
 func _event_card_style(bg: Color, border: Color, width: int) -> StyleBoxFlat:
 	var s: StyleBoxFlat = StyleBoxFlat.new()
