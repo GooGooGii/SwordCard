@@ -148,9 +148,44 @@ Suggested paths:
 
 Target:
 
-- Prefer PNG for painterly frames and icons
-- Keep icon silhouettes simple enough for Android screen sizes (high contrast, readable at 48x48 px, transparent background)
-- Style: 2D Chinese ink-wash brush stroke illustration, clean black lineart with subtle watercolor texture.
+## 美術狀態 (Art Status)
+
+> **現況**：所有新增卡牌與專屬遺物已成功補齊對應的美術資源，並已移除代碼中的「借圖」暫代方案。
+
+### 美術統計
+
+| 類別 | 缺圖數 | 狀態 | 優先級 |
+|---|---|---|---|
+| 流派 / 新機制卡（CARD_DESIGN ch.3-4） | 0 | 已完成專屬插圖 | 🟢 已完成 |
+| 等級解鎖卡（LevelSystem） | 0 | 已完成專屬插圖 | 🟢 已完成 |
+| 角色專武遺物 | 0 | 已補齊專屬圖示 | 🟢 已完成 |
+| **合計** | **0** | | |
+
+### 🔴 流派／新機制卡（8 張）
+
+所有卡片皆已補齊專屬 2D 水墨國風插畫：
+- `anu_cuifeng` (淬鋒蠱刃)
+- `anu_wuyuezhan` (巫月斬)
+- `anu_xuerenwu` (血刃亂舞)
+- `lxy_wanjianguizong` (萬劍歸宗)
+- `lyr_fenghuan` (鳳鳴反擊)
+- `lyr_yuehua` (月華護體)
+- `zl_shuiyin` (水靈封印)
+- `zl_ganlin` (甘霖咒)
+
+### 🟡 等級解鎖卡（27 張）
+
+所有解鎖卡牌皆已擁有專屬卡圖，不再依賴其他卡牌插畫：
+- **李逍遙 (8 張)**: `lxy_tiangangqi` (天罡戰氣)、`lxy_ningyuan_ls` (凝神歸元)、`lxy_yuanlinggui` (元靈歸心術)、`lxy_zhenyuan` (真元護體)、`lxy_tianjian` (天劍)、`lxy_jinchan_ls` (金蟬脫殼)、`lxy_xiaoyao_shenjian` (逍遙神劍)、`lxy_jianshen` (劍神)。
+- **趙靈兒 (8 張)**: `zl_xuanfengzhou` (旋風咒)、`zl_wuleizhou` (五雷咒)、`zl_sanmeizhenhuo` (三昧真火)、`zl_fengxuebing` (風雪冰天)、`zl_diliebeng` (地裂天崩)、`zl_mengshe_ls` (夢蛇)、`zl_taishan` (泰山壓頂)、`zl_kuanglei` (狂雷)。
+- **林月如 (5 張)**: `lyr_tongqianbiao` (銅錢鏢)、`lyr_qijuejianqi` (七訣劍氣)、`lyr_yuanlinggui` (元靈歸心術)、`lyr_lielong` (裂龍式)、`lyr_wanlikuang` (萬里狂沙)。
+- **阿奴 (6 張)**: `anu_sanshigu` (三屍蠱)、`anu_yanshazhou` (炎殺咒)、`anu_shuhun` (贖魂)、`anu_duohun` (奪魂)、`anu_wanyi_ls` (萬蟻蝕象)、`anu_wangushitian` (萬蠱蝕天)。
+
+### 🟡 遺物（2 件）
+
+兩件流派錨點專屬武器已成功配置專屬圖示，並移除了程序繪製 fallback 顯示：
+- `wuyue_shendao` (巫月神刀): 阿奴刀流錨點。
+- `fengming_dao` (鳳鳴刀): 林月如刀流錨點。
 
 ## Card Layering Convention
 
@@ -163,27 +198,3 @@ Card UI should follow a fixed rendering stack so art replacements do not require
 
 Decorative overlays include the mana badge, rarity badge, name plaque, and rules-panel ornaments. When replacing the three card frames with ink-wash versions, keep those elements as separate overlays unless they must be baked into the frame for a specific visual effect.
 
----
-
-## 待補美術 (Art TODO)
-
-> **規則**：新增卡牌必須在 `assets/art/cards/<id>.png` 放圖，或用 `make_card(..., art_id="既有卡id")` 借圖；否則 `smoke_test.gd:14` 的 reward_pool art assert 會失敗。等級解鎖卡（`scripts/level_system.gd`）目前不過 smoke art 檢查，但缺圖會在玩家手中顯示成空卡圖。
-
-### 現況：✅ 全部 37 張原本缺圖已於 2026-05 補齊
-
-| 類別 | 數量 | 狀態 |
-|---|---|---|
-| 流派 / 新機制卡（CARD_DESIGN ch.3-4） | 8 | ✅ 補齊 |
-| 等級解鎖卡（LevelSystem） | 27 | ✅ 補齊 |
-| 角色專武遺物 | 2 | ✅ 補齊（巫月神刀、鳳鳴刀） |
-| **合計** | **37** | **✅ 0 缺圖** |
-
-補圖後已移除卡片定義中的 `art_id` 借圖參數（`make_card` 沒有 art_id → 使用 `assets/art/cards/<id>.png` 自家美術）。
-
-### 下一輪可考慮的美術工作（非阻塞）
-
-- 替既有卡片重繪（部分早期借圖風格不統一）— 低優先
-- 召喚物 EnemyData (`water_tentacle` 等) 的肖像 — 已有但可重繪
-- 事件背景插圖：31/31 已有，但部分風格不統一可微調
-
----
