@@ -1087,7 +1087,148 @@ const VARIANTS: Dictionary = {
 		"outcomes": {
 			"gain_card": "黑霧中遞來一卷黑色符紙，術法的輪廓燒灼在指尖，讓你不舒服卻難以拒絕。那招式有效，但總讓你覺得，它來自某個你最好不要深究的地方。",
 			"pact": "妖女抬手，一縷黑絲穿過你的胸口。你感到生機被悄悄抽走一縷，那份損失是真實的，是永久的——但那股力量確實也湧了進來，像一把借來的刀，鋒利，卻不完全屬於你。"
-		}
+		},
+		"tree": {
+			"root": {
+				"prompt": "黑霧中浮起一張瓜子臉，眼底比夜還黑。「給我一點，我給你十倍。」她伸出一截慘白的手腕，指尖滴落黑色的血珠。",
+				"choices": [
+					{
+						"id": "ask_price",
+						"label": "先問代價",
+						"kind_hint": "mixed",
+						"next": "node_negotiate",
+					},
+					{
+						"id": "observe_chain",
+						"label": "細看她背後那縷黑霧",
+						"kind_hint": "reward",
+						"requires": {"observe_token": true},
+						"next": "node_chain",
+					},
+					{
+						"id": "anu_counter",
+						"label": "（阿奴）以苗疆蠱術反制",
+						"kind_hint": "gamble",
+						"requires": {"character": ["anu"]},
+						"outcome": {
+							"kind": "gamble",
+							"gamble": {
+								"win_chance": 0.65,
+								"win_effects": [
+									{"kind": "gain_card_pool", "pool": "uncommon"},
+									{"kind": "gold", "amount": 10},
+								],
+								"lose_effects": [
+									{"kind": "damage", "amount": 8},
+									{"kind": "gain_curse", "curse_id": "gu_du"},
+								],
+							},
+							"log": "阿奴從袖口抖出一隻紫晶蠱，輕聲念訣——苗疆蠱術與妖契交鋒，要看誰先咬住誰的根。",
+						},
+					},
+					{
+						"id": "leave",
+						"label": "拱手婉拒",
+						"kind_hint": "neutral",
+						"outcome": {"kind": "neutral", "effects": [], "log": "你向那張瓜子臉拱手，繞行而過。黑霧在身後悠悠散去，像是嘆了一口氣。"},
+					},
+				],
+			},
+			"nodes": {
+				"node_negotiate": {
+					"prompt": "「簡單，」她笑得像在數一道甜點，「一滴血、一縷魂、或一段記憶。挑一個。」",
+					"choices": [
+						{
+							"id": "drop_of_blood",
+							"label": "一滴血",
+							"kind_hint": "mixed",
+							"outcome": {
+								"kind": "mixed",
+								"effects": [
+									{"kind": "damage", "amount": 3},
+									{"kind": "power", "amount": 2},
+									{"kind": "gain_card_pool", "pool": "uncommon"},
+								],
+								"log": "她以指尖蘸去你掌心一滴血，舔了舔，笑意更深。一卷黑符落入你懷裡——便宜了你。",
+							},
+						},
+						{
+							"id": "wisp_of_soul",
+							"label": "一縷魂",
+							"kind_hint": "punish",
+							"outcome": {
+								"kind": "mixed",
+								"effects": [
+									{"kind": "max_hp", "amount": -10},
+									{"kind": "permanent_power", "amount": 5},
+									{"kind": "gain_card_pool", "pool": "rare"},
+									{"kind": "gain_curse", "curse_id": "yao_zhai"},
+								],
+								"log": "她伸手在你的胸口輕輕一拉——你聽見自己靈台深處某處『啵』地一聲，那股力量便湧了進來。代價是真實的，妖契也是。",
+							},
+						},
+						{
+							"id": "fragment_of_memory",
+							"label": "一段記憶",
+							"kind_hint": "mixed",
+							"outcome": {
+								"kind": "mixed",
+								"effects": [
+									{"kind": "lose_card", "mode": "random"},
+									{"kind": "gain_relic_pool", "pool": "uncommon"},
+								],
+								"log": "你閉眼任她翻你的記憶。她抽走了什麼，你已經不記得了——只剩掌心一件冰涼的法器，與一陣淡淡的悵然。",
+							},
+						},
+					],
+				},
+				"node_chain": {
+					"prompt": "你瞇眼細看——她背後有一條極細的黑鏈，繞過頸間，沉入更深的黑霧裡。她並非自由的，這場交易也並非她自願。",
+					"choices": [
+						{
+							"id": "cut_chain",
+							"label": "斬斷鎖鏈",
+							"kind_hint": "battle",
+							"outcome": {
+								"kind": "battle",
+								"battle": {
+									"enemy_id": "ancient_evil_spirit",
+									"enemy_hp_mult": 0.8,
+									"victory_effects": [
+										{"kind": "gain_relic_pool", "pool": "rare"},
+										{"kind": "heal", "amount": 10},
+									],
+									"defeat_effects": [
+										{"kind": "damage", "amount": 15},
+										{"kind": "max_hp", "amount": -3},
+									],
+								},
+								"log": "你拔劍劈向那條黑鏈。黑霧瞬間崩塌，鏈子另一端的東西——醒了。",
+							},
+						},
+						{
+							"id": "fake_pact",
+							"label": "假意立契、反手破符",
+							"kind_hint": "gamble",
+							"outcome": {
+								"kind": "gamble",
+								"gamble": {
+									"win_chance": 0.45,
+									"win_effects": [
+										{"kind": "gain_card_pool", "pool": "rare"},
+									],
+									"lose_effects": [
+										{"kind": "damage", "amount": 10},
+										{"kind": "permanent_power", "amount": -1},
+									],
+								},
+								"log": "你伸手與她握住——指尖一翻，反手在符面上劃出破口。妖女的瞳孔縮成一線。",
+							},
+						},
+					],
+				},
+			},
+		},
 	},
 	"forgotten_altar": {
 		"title": "棄祭壇",
@@ -1864,7 +2005,139 @@ const VARIANTS: Dictionary = {
 			"gain_card": "符文在你取閱的瞬間炸裂，一道扭曲卻有效的術法烙印在你的掌心。那招式有效，但你不確定，用的時候，用的究竟是你自己的力量，還是別的什麼。",
 			"tainted_power": "邪法湧入，招式的鋒銳瞬間倍增——代價是胸口一陣灼燒，像是有什麼東西趁機咬了你一口，嚐了嚐你的生機，然後滿意地退去，留下一個印記。",
 			"remove": "你出手破除了一道符文。某道阻礙自身的舊有招式在符光消散中一同化去，心中忽然乾淨了——只是這乾淨，是用一片廢墟換來的。"
-		}
+		},
+		"tree": {
+			"root": {
+				"prompt": "廢棄祭壇，血環缺一塊，黃符反書。月光下符文詭異泛光。你站在血環外緣，腳下一步即是邪氣未散的儀軌之內。",
+				"choices": [
+					{
+						"id": "step_inside",
+						"label": "踏入血環",
+						"kind_hint": "mixed",
+						"next": "node_inside",
+					},
+					{
+						"id": "observe_circle",
+						"label": "細看血環缺口",
+						"kind_hint": "reward",
+						"requires": {"observe_token": true},
+						"next": "node_complete",
+					},
+					{
+						"id": "zhao_dispel",
+						"label": "（趙靈兒）以靈族秘法從外圍破除",
+						"kind_hint": "reward",
+						"requires": {"character": ["zhao_linger"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "heal_party", "amount": 8},
+								{"kind": "max_hp", "amount": 3},
+								{"kind": "gain_card_pool", "pool": "character"},
+							],
+							"log": "靈兒以靈族指訣連點符紋。整座祭壇的邪氣在她血脈中柔柔散去——這不是覆滅，是替它畫上一個遲到了百年的句點。",
+						},
+					},
+					{
+						"id": "leave",
+						"label": "繞道而行",
+						"kind_hint": "neutral",
+						"outcome": {"kind": "neutral", "effects": [], "log": "你向祭壇拱手，繞路而過。背後的符文目送你的背影。"},
+					},
+				],
+			},
+			"nodes": {
+				"node_inside": {
+					"prompt": "腳底脈動，符文發燙。你必須做出選擇——抄錄、汲取，還是破除。",
+					"choices": [
+						{
+							"id": "copy_runes",
+							"label": "冒險抄錄符文",
+							"kind_hint": "gamble",
+							"outcome": {
+								"kind": "gamble",
+								"gamble": {
+									"win_chance": 0.5,
+									"win_effects": [
+										{"kind": "gain_card_pool", "pool": "rare"},
+									],
+									"lose_effects": [
+										{"kind": "damage", "amount": 6},
+										{"kind": "gain_curse", "curse_id": "xie_yin"},
+									],
+								},
+								"log": "你蹲下身，憑記憶把符文一筆一畫抄入隨身的紙卷——當你寫到第三道時，符紙忽然燙起來。",
+							},
+						},
+						{
+							"id": "draw_evil",
+							"label": "強行汲取邪力",
+							"kind_hint": "punish",
+							"outcome": {
+								"kind": "mixed",
+								"effects": [
+									{"kind": "max_hp", "amount": -5},
+									{"kind": "permanent_power", "amount": 5},
+									{"kind": "gain_curse", "curse_id": "xie_yin"},
+								],
+								"log": "你以掌心按上血環中央。邪氣沿著經脈灌入——是力量，也是印記。你知道從此這條路只能走下去，再也不回頭。",
+							},
+						},
+						{
+							"id": "purify",
+							"label": "破除儀軌",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "heal", "amount": 5},
+									{"kind": "lose_card", "mode": "random"},
+								],
+								"log": "你以劍尖挑破中心符文。整個血環在一聲悶響中崩解——胸中某道舊習也隨之碎裂，乾淨得令人微微失重。",
+							},
+						},
+					],
+				},
+				"node_complete": {
+					"prompt": "你瞇眼細看——血環的缺口形狀，正好是一個人形。儀式需要的，是一條人命。",
+					"choices": [
+						{
+							"id": "fill_with_own_blood",
+							"label": "用自己的血補上",
+							"kind_hint": "battle",
+							"outcome": {
+								"kind": "battle",
+								"battle": {
+									"enemy_id": "baiyue_guard",
+									"enemy_hp_mult": 1.2,
+									"victory_effects": [
+										{"kind": "gain_relic_pool", "pool": "rare"},
+										{"kind": "permanent_power", "amount": 3},
+									],
+									"defeat_effects": [
+										{"kind": "max_hp", "amount": -8},
+										{"kind": "gain_curse", "curse_id": "xie_yin"},
+									],
+								},
+								"log": "你割破掌心，血珠落入缺口——整座祭壇活了過來。一道身影從血環中央升起，朝你走來。",
+							},
+						},
+						{
+							"id": "fill_with_old_blood",
+							"label": "翻出陶罐裡舊祭血補上",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "gain_card_pool", "pool": "rare"},
+								],
+								"log": "你在祭壇後翻出一個陶罐——裡面是早年的祭血，黏稠卻仍帶血腥。你用這罐血補上缺口，符文亮起、又熄滅。你沒留下印記。",
+							},
+						},
+					],
+				},
+			},
+		},
 	},
 	"tavern_acquaintance": {
 		"title": "酒館舊識",
@@ -1968,7 +2241,112 @@ const VARIANTS: Dictionary = {
 			"power": "你與少年一同切磋。木劍相交的清脆聲中，那股對劍道最純粹的執著感染了你，體內氣息更添英銳之氣。走時，少年向你揮手，你揮了揮手，覺得今天是個好日子。",
 			"remove": "少年看著你的劍招，天真地問：『大俠，你這招是不是有點多餘？』一語驚醒夢中人。你靜心內省，斬斷了招式中累贅的旁枝末節——能說出這句話的人，才是真正看見了的人。",
 			"gain_card": "月如以靈劍山莊大小姐的身份正式教導少年起手式。少年眼神發亮，把每一個動作都看入眼裡。臨別時，他鞠了個深躬，從懷中取出一卷家傳的劍譜殘頁回贈：「這是我祖父留下的，但他說我練不來這一招。大姐姐，你應該用得上。」她接過殘頁，意外地從中讀出了一道新的劍意。"
-		}
+		},
+		"tree": {
+			"root": {
+				"prompt": "山道旁，一名少年正不厭其煩地對著空氣揮舞木劍。動作笨拙到讓人想笑，每一劍卻認真得要命。「只要練上一萬次，就算是蜂王也打得倒！」他擦了擦汗，向你請教。",
+				"choices": [
+					{
+						"id": "spar",
+						"label": "與他切磋三十回合",
+						"kind_hint": "reward",
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "power", "amount": 1},
+								{"kind": "heal", "amount": 3},
+							],
+							"log": "你陪他過了三十回合木劍。少年的劍法稚嫩，但他的眼神——那股「只要肯練就一定能贏」的傻勁——讓你想起了自己出師之前的某個下午。",
+						},
+					},
+					{
+						"id": "fix_form",
+						"label": "指點他的起手式",
+						"kind_hint": "reward",
+						"next": "node_teach",
+					},
+					{
+						"id": "naive_question",
+						"label": "聽聽他天真的問題",
+						"kind_hint": "reward",
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "upgrade_random"},
+							],
+							"log": "「大俠，你這招是不是有點多餘？」少年眨著眼問。你愣了愣，靜下心一想——他說對了。某道你練了多年的招式，從這個下午起再無冗餘。",
+						},
+					},
+					{
+						"id": "observe_grit",
+						"label": "細看少年揮劍時的細節",
+						"kind_hint": "reward",
+						"requires": {"observe_token": true},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "permanent_power", "amount": 1},
+								{"kind": "heal", "amount": 5},
+							],
+							"log": "你細看了片刻——少年呼吸短促、腕力不穩，但每一劍下落的軌跡都很穩定。這是反覆練到刻進骨頭的執著。劍仙不問師承，問人是否肯死磕。",
+						},
+					},
+					{
+						"id": "lin_teach",
+						"label": "（林月如）以靈劍山莊大小姐身份正式教導",
+						"kind_hint": "reward",
+						"requires": {"character": ["lin_yueru"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "gain_card_pool", "pool": "rare"},
+								{"kind": "heal", "amount": 5},
+							],
+							"log": "月如示範了一套完整的起手式。少年看得眼睛發亮，臨別時雙手奉上一卷家傳劍譜殘頁：『祖父說我練不來這招，大姐姐用得上。』月如收下，當夜便從殘頁中讀出一道新的劍意。",
+						},
+					},
+					{
+						"id": "leave",
+						"label": "微笑離去",
+						"kind_hint": "neutral",
+						"outcome": {"kind": "neutral", "effects": [], "log": "你拱手與他作別。背後揮劍的聲音一下一下，比山風還清晰。"},
+					},
+				],
+			},
+			"nodes": {
+				"node_teach": {
+					"prompt": "少年把木劍收回，認真地聽。你必須選擇要教他什麼——是基本功，還是某種更深的東西？",
+					"choices": [
+						{
+							"id": "teach_basics",
+							"label": "從最基本的握劍教起",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "power", "amount": 2},
+									{"kind": "gold", "amount": 10},
+								],
+								"log": "你從握劍、起手、出鞘一步一步教。少年認真到一句話都不打斷。教完天色已晚，他從懷裡掏出僅有的幾枚銅錢硬塞給你——說是『拜師費』。你沒推辭。",
+							},
+						},
+						{
+							"id": "teach_heart",
+							"label": "告訴他「劍意」的真諦",
+							"kind_hint": "mixed",
+							"outcome": {
+								"kind": "mixed",
+								"effects": [
+									{"kind": "permanent_power", "amount": 2},
+									{"kind": "max_hp", "amount": -2},
+								],
+								"log": "你說了一段你自己也只是半懂的話——關於劍意、關於初心、關於『練劍練到最後練的是自己』。少年若有所思地點頭。回去的路上，你忽然覺得自己也終於懂了那段話。",
+							},
+						},
+					],
+				},
+			},
+		},
 	},
 	"drunk_swordsman": {
 		"title": "醉臥劍仙",
@@ -2001,7 +2379,145 @@ const VARIANTS: Dictionary = {
 			"tainted_power": "你搶過葫蘆灌了一口，喉嚨如烈火灼燒，忍不住劇烈咳嗽，生機受損——但一股狂亂難抑的酒意在體內橫衝直撞，出招更添三分狂氣。那感覺讓你有點明白，為什麼這個道士寧願一直醉著。",
 			"heal": "你退在一旁，看他醉語。清冽的酒香混著松針味，竟讓你的心跳平復，體內的隱疾在平穩的呼吸中有些許好轉。有時候，最好的藥，不是藥，是旁觀別人的放肆。",
 			"gain_card": "你趁他半醉，遞去一壺清茶。他砸砸嘴，醉醺醺地吐出幾句玄妙的口訣，一道新招式在你心頭成型。為此你熬神耗思，氣血翻湧——但那幾句話，值得。"
-		}
+		},
+		"tree": {
+			"root": {
+				"prompt": "石階旁躺著一名渾身酒氣的邋遢道士，腰間橫著個斑駁的朱漆葫蘆，半醉半醒地嘟囔：「酒……給我酒……沒有好酒，渾身沒勁……」",
+				"choices": [
+					{
+						"id": "share_drink",
+						"label": "搶葫蘆喝一口",
+						"kind_hint": "mixed",
+						"next": "node_drink",
+					},
+					{
+						"id": "offer_tea",
+						"label": "遞上一壺清茶",
+						"kind_hint": "reward",
+						"requires": {"min_gold": 10},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "gain_card_pool", "pool": "uncommon"},
+								{"kind": "gold", "amount": -10},
+							],
+							"log": "你蹲下，把方才買的清茶遞給他。他眯眼看了你半天，砸砸嘴，醉醺醺地吐出一段口訣——你閉眼凝聽，一道招式在心中緩緩成型。",
+						},
+					},
+					{
+						"id": "watch_silent",
+						"label": "靜靜在他身旁坐下",
+						"kind_hint": "reward",
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "heal", "amount": 8},
+								{"kind": "max_hp", "amount": 1},
+							],
+							"log": "你在他身旁靜坐了一炷香。他偶爾醉語，偶爾笑——你看著他，呼吸不知不覺平穩，胸口的悶氣散了。最好的藥，是旁觀別人的放肆。",
+						},
+					},
+					{
+						"id": "observe_master",
+						"label": "細看他懷裡那把劍",
+						"kind_hint": "reward",
+						"requires": {"observe_token": true},
+						"next": "node_recognize",
+					},
+					{
+						"id": "lxy_kindred",
+						"label": "（李逍遙）覺得這個道士眼熟",
+						"kind_hint": "reward",
+						"requires": {"character": ["li_xiaoyao"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "gain_card_pool", "pool": "character"},
+								{"kind": "permanent_power", "amount": 1},
+							],
+							"log": "逍遙蹲下盯著道士看了半天——這眉眼、這酒癮、這破葫蘆，他越看越覺得像他師叔（不是親叔，是酒友）的某個老朋友。道士忽然睜眼笑了：『臭小子，老子終於等到你了。』他搶過葫蘆灌了一口，又把一段劍訣塞給逍遙。",
+						},
+					},
+					{
+						"id": "leave",
+						"label": "繞過他繼續趕路",
+						"kind_hint": "neutral",
+						"outcome": {"kind": "neutral", "effects": [], "log": "你拱了拱手，繞過他走過去。背後傳來幾句含糊的醉語，像是某種招式的口訣，又像只是醉話。"},
+					},
+				],
+			},
+			"nodes": {
+				"node_drink": {
+					"prompt": "你搶過葫蘆灌了一口——喉嚨如烈火灼燒，眼淚都被嗆出來。道士半睜開眼，笑得像撿到了什麼：「小子，你體內這口劍仙之氣可以煉，但你得先學會醉。」",
+					"choices": [
+						{
+							"id": "drink_more",
+							"label": "抹了血再灌一口",
+							"kind_hint": "punish",
+							"outcome": {
+								"kind": "mixed",
+								"effects": [
+									{"kind": "damage", "amount": 6},
+									{"kind": "permanent_power", "amount": 3},
+									{"kind": "gain_curse", "curse_id": "jiu_zui"},
+								],
+								"log": "你抹了嘴角的血，又灌一口。酒意在體內橫衝直撞，劍意也跟著狂奔起來——這份力量是真的，這份酒癮也是真的。",
+							},
+						},
+						{
+							"id": "pace_self",
+							"label": "閉眼讓酒意走經脈",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "permanent_power", "amount": 1},
+									{"kind": "heal", "amount": 5},
+								],
+								"log": "你閉眼，讓酒意順著經脈緩緩遊走。道士在旁邊看著，難得地沒有插話——這次，他只是點了點頭。",
+							},
+						},
+					],
+				},
+				"node_recognize": {
+					"prompt": "你細看他懷裡——那是一把刻著古樸劍紋的長劍，劍鞘磨損的方向只有真正以劍為生的人才會有。你想起酒劍仙的傳聞：他從不收徒，但他願意點撥『有緣人』。",
+					"choices": [
+						{
+							"id": "kneel_request",
+							"label": "拱手請教一招",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "gain_card_pool", "pool": "rare"},
+									{"kind": "permanent_power", "amount": 1},
+								],
+								"log": "你深深一揖：『前輩，請賜教。』道士噗哧笑了出來，醉眼朦朧地比劃了一個招式——你看在眼裡，記在心裡，比讀完十本劍譜還要醒目。",
+							},
+						},
+						{
+							"id": "steal_glance",
+							"label": "默記他的劍意便走",
+							"kind_hint": "gamble",
+							"outcome": {
+								"kind": "gamble",
+								"gamble": {
+									"win_chance": 0.45,
+									"win_effects": [
+										{"kind": "gain_card_pool", "pool": "rare"},
+									],
+									"lose_effects": [
+										{"kind": "damage", "amount": 10},
+										{"kind": "gain_curse", "curse_id": "jiu_zui"},
+									],
+								},
+								"log": "你不打擾他，只是把目光鎖在劍上。道士忽然睜眼，眼神比劍還銳——「偷學，要看本事。」",
+							},
+						},
+					],
+				},
+			},
+		},
 	},
 	"yinlong_cave": {
 		"title": "隱龍窟幽怨",
@@ -2049,7 +2565,168 @@ const VARIANTS: Dictionary = {
 			"gamble_lose": "你正要收起包袱，卻被追上的官差人贓並獲！一陣混亂的衝突中，你被一棍重重擊中，狼狽逃脫，包袱也在混亂中被沒收。你跑遠了才停下來，沉默了片刻，繼續上路。",
 			"upgrade": "你高喊一聲，順手指明了黑影的逃跑方向。捕快向你抱拳致謝，並給予短暫的武學指點，讓你的招式更為熟練洗鍊。做了正確的事，有時候不只是心安，還有意外的收穫。",
 			"remove": "你一腳將包袱踢開，雙手一攤撇清關係。看著那包袱上沾染的血跡，你頓時心境空靈，拂去了一身雜念——有些東西，碰了沒好處，不碰，才是真正的聰明。"
-		}
+		},
+		"tree": {
+			"root": {
+				"prompt": "蒙面黑影擦身而過，沉甸甸的包袱掉你腳邊。官差大喊：「站住！」周圍人潮如織，你只剩一個呼吸的時間。",
+				"choices": [
+					{
+						"id": "snatch_and_run",
+						"label": "收起就跑",
+						"kind_hint": "mixed",
+						"next": "node_flee",
+					},
+					{
+						"id": "hand_over",
+						"label": "拾起交給官差",
+						"kind_hint": "reward",
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "gold", "amount": 12},
+								{"kind": "upgrade_random"},
+							],
+							"log": "你抱起包袱迎上去：「人是往那邊跑了。」捕快接過包袱抱拳致意，順帶指點了你幾招——做了該做的事，心安還連帶了實惠。",
+						},
+					},
+					{
+						"id": "kick_away",
+						"label": "一腳踢開撇清",
+						"kind_hint": "neutral",
+						"outcome": {
+							"kind": "mixed",
+							"effects": [
+								{"kind": "lose_card", "mode": "random"},
+							],
+							"log": "你一腳將包袱踢開，雙手一攤。捕快沒看清來歷，揮揮手讓你走——背上某道執念也跟著卸下。",
+						},
+					},
+					{
+						"id": "observe_chase",
+						"label": "細看蒙面人的足跡",
+						"kind_hint": "battle",
+						"requires": {"observe_token": true},
+						"next": "node_chase",
+					},
+					{
+						"id": "anu_track",
+						"label": "（阿奴）以蠱術追蹤包袱主人",
+						"kind_hint": "reward",
+						"requires": {"character": ["anu"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "gain_potion"},
+								{"kind": "gold", "amount": 15},
+								{"kind": "permanent_power", "amount": 1},
+							],
+							"log": "阿奴從袋裡放出一隻追蠱，順著血味直追到一間暗巷的酒窖——裡面藏的東西比包袱還值錢。",
+						},
+					},
+					{
+						"id": "leave",
+						"label": "裝沒看見，徑直走過",
+						"kind_hint": "neutral",
+						"outcome": {"kind": "neutral", "effects": [], "log": "你低頭快步穿過人群。官差從你身旁掠過，喧嘩在背後遠去。"},
+					},
+				],
+			},
+			"nodes": {
+				"node_flee": {
+					"prompt": "巷弄狹窄，呼喝聲越來越近。你必須決定怎麼甩開追兵。",
+					"choices": [
+						{
+							"id": "into_crowd",
+							"label": "衝進人群",
+							"kind_hint": "gamble",
+							"outcome": {
+								"kind": "gamble",
+								"gamble": {
+									"win_chance": 0.55,
+									"win_effects": [
+										{"kind": "gold", "amount": 25},
+										{"kind": "gain_card_pool", "pool": "uncommon"},
+									],
+									"lose_effects": [
+										{"kind": "damage", "amount": 6},
+										{"kind": "gold", "amount": -15},
+										{"kind": "gain_curse", "curse_id": "tong_ji"},
+									],
+								},
+								"log": "你低頭鑽進人群，把包袱貼在懷裡——人群是最好的掩體，也是最壞的陷阱。",
+							},
+						},
+						{
+							"id": "rooftop",
+							"label": "爬上屋頂避追",
+							"kind_hint": "battle",
+							"outcome": {
+								"kind": "battle",
+								"battle": {
+									"enemy_id": "bandit",
+									"enemy_hp_mult": 1.1,
+									"victory_effects": [
+										{"kind": "gold", "amount": 30},
+										{"kind": "gain_card_pool", "pool": "rare"},
+										{"kind": "gain_curse", "curse_id": "tong_ji"},
+									],
+									"defeat_effects": [
+										{"kind": "gold", "amount": -20},
+										{"kind": "lose_card", "mode": "random"},
+									],
+								},
+								"log": "你縱身躍上屋瓦。揚州捕頭也不甘示弱，腳尖一點跟著上來——這場追逐要在屋頂結束。",
+							},
+						},
+					],
+				},
+				"node_chase": {
+					"prompt": "包袱沾血，黑影逃向暗巷。你決定追過去——這事不能就這樣不明不白。",
+					"choices": [
+						{
+							"id": "interrogate",
+							"label": "攔下審問",
+							"kind_hint": "battle",
+							"outcome": {
+								"kind": "battle",
+								"battle": {
+									"enemy_id": "bandit",
+									"enemy_hp_mult": 0.9,
+									"victory_effects": [
+										{"kind": "gain_relic_pool", "pool": "rare"},
+										{"kind": "gold", "amount": 15},
+									],
+									"defeat_effects": [
+										{"kind": "damage", "amount": 10},
+										{"kind": "gold", "amount": -10},
+									],
+								},
+								"log": "你縱身一躍，落在他的去路。對方反手拔出一柄短匕——這人比想像中難纏。",
+							},
+						},
+						{
+							"id": "let_him_go",
+							"label": "放他一馬",
+							"kind_hint": "gamble",
+							"outcome": {
+								"kind": "gamble",
+								"gamble": {
+									"win_chance": 0.4,
+									"win_effects": [
+										{"kind": "gain_card_pool", "pool": "rare"},
+									],
+									"lose_effects": [
+										{"kind": "damage", "amount": 8},
+										{"kind": "gold", "amount": -10},
+									],
+								},
+								"log": "你停下腳步，朝他點了點頭。他怔住，最後也朝你點了點頭——這次的放，是賭他下次的還。",
+							},
+						},
+					],
+				},
+			},
+		},
 	},
 	"lingmiao": {
 		"title": "靈廟顯靈",
@@ -2111,7 +2788,169 @@ const VARIANTS: Dictionary = {
 			"fight_win": "你斬破迷香幻陣，花妖現出原形，最終不敵跌落。散落的花瓣裡藏著幾件寶物，全被你收入囊中。",
 			"gain_card": "你假裝中了迷術，趁花妖放鬆警惕時，把她的一縷靈術輕輕偷了過來。等你回頭，她已消失，只留下滿地落花——和一道嶄新的術法輪廓，在你腦中慢慢成形。",
 			"heal": "你拔腿就跑，狼狽地把花香甩在身後。跑遠了才發現，那香氣雖然迷魂，倒也有幾分療癒之效——胸口幾處舊傷，不知何時輕了幾分。"
-		}
+		},
+		"tree": {
+			"root": {
+				"prompt": "山道旁飄來一縷幽甜的花香，濃得讓人腦子不清醒。霧中走出一個女子，笑意溫柔，衣袖間落著不知名的花瓣——一步一步，越來越近。",
+				"choices": [
+					{
+						"id": "resist_incense",
+						"label": "咬破舌尖屏息對抗",
+						"kind_hint": "mixed",
+						"next": "node_resist",
+					},
+					{
+						"id": "feign_charm",
+						"label": "假裝中招、偷術",
+						"kind_hint": "gamble",
+						"outcome": {
+							"kind": "gamble",
+							"gamble": {
+								"win_chance": 0.5,
+								"win_effects": [
+									{"kind": "gain_card_pool", "pool": "rare"},
+									{"kind": "power", "amount": 1},
+								],
+								"lose_effects": [
+									{"kind": "max_hp", "amount": -5},
+									{"kind": "gain_curse", "curse_id": "hua_zhai"},
+								],
+							},
+							"log": "你閉眼任花香纏住，等她探過手時——指尖一勾，反手取了一縷術法。她瞳孔縮了一下，不確定到底誰被誰偷了。",
+						},
+					},
+					{
+						"id": "observe_pity",
+						"label": "細看她眼底",
+						"kind_hint": "reward",
+						"requires": {"observe_token": true},
+						"next": "node_pity",
+					},
+					{
+						"id": "lin_seal",
+						"label": "（林月如）以靈劍山莊正派劍法封她",
+						"kind_hint": "battle",
+						"requires": {"character": ["lin_yueru"]},
+						"outcome": {
+							"kind": "battle",
+							"battle": {
+								"enemy_id": "flower_spirit",
+								"enemy_hp_mult": 0.6,
+								"victory_effects": [
+									{"kind": "gain_card_pool", "pool": "character"},
+									{"kind": "heal", "amount": 5},
+								],
+								"defeat_effects": [
+									{"kind": "damage", "amount": 8},
+								],
+							},
+							"log": "月如踏出半步，劍尖點在花妖咽喉前一寸。她用靈劍山莊最簡單的封魔式——『以正鎖邪』，連花香都被劍意逼退三尺。",
+						},
+					},
+					{
+						"id": "flee",
+						"label": "拔腿就跑",
+						"kind_hint": "mixed",
+						"outcome": {
+							"kind": "mixed",
+							"effects": [
+								{"kind": "heal", "amount": 5},
+								{"kind": "gold", "amount": -10},
+							],
+							"log": "你頭也不回地衝出花霧。狼狽是狼狽，倒也保住了清醒——只是奔逃中掉了幾枚銅錢。",
+						},
+					},
+				],
+			},
+			"nodes": {
+				"node_resist": {
+					"prompt": "你咬破舌尖強撐清醒。霧散了一瞬——她指尖長著花瓣與骨爪交織的妖體，眼神空虛地盯著你的喉嚨。",
+					"choices": [
+						{
+							"id": "draw_sword",
+							"label": "拔劍直擊",
+							"kind_hint": "battle",
+							"outcome": {
+								"kind": "battle",
+								"battle": {
+									"enemy_id": "flower_spirit",
+									"enemy_hp_mult": 1.0,
+									"victory_effects": [
+										{"kind": "gain_card_pool", "pool": "rare"},
+										{"kind": "gold", "amount": 20},
+										{"kind": "heal", "amount": 5},
+									],
+									"defeat_effects": [
+										{"kind": "damage", "amount": 15},
+										{"kind": "next_battle_buff", "effects": [{"kind": "weak", "amount": 2}]},
+									],
+								},
+								"log": "你毫不遲疑拔劍——花香依舊在腦中糾纏，但劍意比花香更純。",
+							},
+						},
+						{
+							"id": "seal_censer",
+							"label": "點穴封住她腰間的香爐",
+							"kind_hint": "gamble",
+							"outcome": {
+								"kind": "gamble",
+								"gamble": {
+									"win_chance": 0.55,
+									"win_effects": [
+										{"kind": "gain_relic_pool", "pool": "uncommon"},
+										{"kind": "heal", "amount": 8},
+									],
+									"lose_effects": [
+										{"kind": "damage", "amount": 8},
+										{"kind": "max_hp", "amount": -2},
+									],
+								},
+								"log": "你看出花香源頭——她腰間有一只迷你香爐。手指疾如蝶翼，朝那一點封下。",
+							},
+						},
+					],
+				},
+				"node_pity": {
+					"prompt": "你細看她眼底——空虛的飢渴，不像出於本意，更像某個更深的東西在替她殺人。她或許也曾是普通女子。",
+					"choices": [
+						{
+							"id": "purify_qi",
+							"label": "渡她一縷清淨靈氣",
+							"kind_hint": "reward",
+							"requires": {"max_power": 5},
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "heal", "amount": 12},
+									{"kind": "gain_relic_pool", "pool": "common"},
+								],
+								"log": "你閉眼渡氣。她在你的清氣裡僵住，緩緩跪下——花瓣一片片從她身上落盡。她朝你拜了一拜，化作清風散去。",
+							},
+						},
+						{
+							"id": "mercy_strike",
+							"label": "一劍超渡",
+							"kind_hint": "battle",
+							"outcome": {
+								"kind": "battle",
+								"battle": {
+									"enemy_id": "flower_spirit",
+									"enemy_hp_mult": 0.7,
+									"victory_effects": [
+										{"kind": "power", "amount": 3},
+										{"kind": "max_hp", "amount": 3},
+									],
+									"defeat_effects": [
+										{"kind": "damage", "amount": 6},
+									],
+								},
+								"log": "她沒有抵抗，只是看著你舉起劍。你深吸一口氣——『願妳下一世，不再如此。』",
+							},
+						},
+					],
+				},
+			},
+		},
 	},
 	"flower_thief": {
 		"title": "採花賊當道",
@@ -2211,7 +3050,145 @@ const VARIANTS: Dictionary = {
 			"power": "你與少年切磋一場。他的劍意還在萌芽，但勝負之間，那份純粹的鬥志反而讓你血脈共鳴，丹田裡多了幾分當初剛入劍道時的銳意。離別時，他向你深深一禮，連名字都沒問。",
 			"upgrade": "你指點少年的劍法。少年認真地聽，當你示範到第三次時，他忽然反問你一個你也沒想過的問題——你愣了一下，那一刻，你自己手裡某道招式的瑕疵，竟在這個少年笨拙的問題裡，自己揭露了。",
 			"gain_card": "你陪少年練劍直到天黑。臨別時，他從懷裡取出一卷殘破的劍譜：「這是我祖父給我的，但我練不來。前輩拿著吧，總比留在我手裡浪費好。」你接過那卷劍譜，覺得這個少年比他自己以為的，要珍貴得多。"
-		}
+		},
+		"tree": {
+			"root": {
+				"prompt": "山道旁的石壁前，一名瘦弱少年正吃力地揮舞著一把比他高一截的青釭劍，姿勢笨拙，每一劍卻認真得要命。「能否⋯⋯賜教一二？」他抬起頭，眼睛亮得像兩顆星星。",
+				"choices": [
+					{
+						"id": "spar_thirty",
+						"label": "與他過招三十回合",
+						"kind_hint": "reward",
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "power", "amount": 2},
+								{"kind": "heal", "amount": 3},
+							],
+							"log": "你與少年過了三十招。他的劍意還在萌芽，那份純粹的鬥志卻讓你的血脈也跟著熱起來——丹田裡，多了幾分當年剛入劍道時的銳意。",
+						},
+					},
+					{
+						"id": "correct_form",
+						"label": "指點他的姿勢",
+						"kind_hint": "reward",
+						"next": "node_lesson",
+					},
+					{
+						"id": "observe_sword",
+						"label": "細看他手中的青釭劍",
+						"kind_hint": "reward",
+						"requires": {"observe_token": true},
+						"next": "node_legacy",
+					},
+					{
+						"id": "lxy_recognize",
+						"label": "（李逍遙）覺得這眼神似曾相識",
+						"kind_hint": "reward",
+						"requires": {"character": ["li_xiaoyao"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "permanent_power", "amount": 2},
+								{"kind": "gain_card_pool", "pool": "character"},
+							],
+							"log": "「你叫唐鈺對吧？」逍遙停下劍，「記住你今天這一招——這是我師叔教我的時候，反過來教給我的東西。」唐鈺一愣，鄭重地點頭。逍遙笑了：『以後別再亂揮，那把劍配得上你。』",
+						},
+					},
+					{
+						"id": "lin_correct",
+						"label": "（林月如）親自示範靈劍山莊的起手式",
+						"kind_hint": "reward",
+						"requires": {"character": ["lin_yueru"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "upgrade_random"},
+								{"kind": "permanent_power", "amount": 1},
+							],
+							"log": "月如沒有廢話，直接示範了正確的起手式。少年僵硬地照做，月如的眼神難得地溫和：『你有天賦，但別逼自己拿不該拿的劍。』她示範完，自己手裡某道招式也跟著開了竅。",
+						},
+					},
+					{
+						"id": "leave",
+						"label": "婉拒繼續趕路",
+						"kind_hint": "neutral",
+						"outcome": {"kind": "neutral", "effects": [], "log": "你拱手婉拒，繼續上路。背後石壁前，少年揮劍的聲音一下一下，倔強而清晰。"},
+					},
+				],
+			},
+			"nodes": {
+				"node_lesson": {
+					"prompt": "少年把青釭劍收回，認真地聽。你決定要教他什麼？",
+					"choices": [
+						{
+							"id": "teach_grip",
+							"label": "從握劍開始",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "power", "amount": 2},
+									{"kind": "gold", "amount": 12},
+								],
+								"log": "你從握劍、起手、收勢一步一步教。少年認真到一句話都沒打斷。教完，他從懷裡掏出僅有的銅錢硬塞給你——說是『拜師費』。你沒推辭，這是他的禮。",
+							},
+						},
+						{
+							"id": "teach_humility",
+							"label": "告訴他「不要硬扛太重的劍」",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "upgrade_random"},
+									{"kind": "heal", "amount": 5},
+								],
+								"log": "你說：『這把劍對你太重。等你的劍意夠了，它才會輕。』少年愣了片刻，鄭重地點頭。你忽然發現自己手裡某道招式也跟著放下了沉重的執念。",
+							},
+						},
+					],
+				},
+				"node_legacy": {
+					"prompt": "你細看那把青釭劍——劍紋古樸，但對少年來說太重。這應該是別人留給他的，而不是他自己挑的。他堅持用這把劍，是為了某種情感上的理由。",
+					"choices": [
+						{
+							"id": "ask_origin",
+							"label": "問起這把劍的來歷",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "gain_card_pool", "pool": "rare"},
+									{"kind": "max_hp", "amount": 2},
+								],
+								"log": "「這是我祖父留的。」少年低聲說。你聽他講完那段家事，沉默了很久——這個世上沒人能替別人扛劍，但你可以告訴他怎麼讓那把劍配得上他。臨別時，他鄭重地從劍鞘裡掏出半卷舊劍譜：『前輩，您拿著吧。』",
+							},
+						},
+						{
+							"id": "spar_serious",
+							"label": "認真陪他過招一場",
+							"kind_hint": "battle",
+							"outcome": {
+								"kind": "battle",
+								"battle": {
+									"enemy_id": "bandit",
+									"enemy_hp_mult": 0.7,
+									"victory_effects": [
+										{"kind": "gain_card_pool", "pool": "rare"},
+										{"kind": "permanent_power", "amount": 2},
+									],
+									"defeat_effects": [
+										{"kind": "damage", "amount": 6},
+									],
+								},
+								"log": "少年咬牙：『請前輩盡全力。』他舉起青釭劍——這場比劃他輸定了，但他要盡全力輸一次。你深吸口氣，認真起來。",
+							},
+						},
+					],
+				},
+			},
+		},
 	},
 	# PAL1 名場面：彩依（蝶妖）為救書生劉晉元，散盡千年道行的「蝶戀」典故。
 	# 毒娘子（蜘蛛精）在正史由李逍遙、林月如所斬，此處作 callback 而非開戰。
@@ -2393,7 +3370,144 @@ const VARIANTS: Dictionary = {
 		"outcomes": {
 			"power": "你在婉兒身旁立下一個無聲的誓言。怒氣與哀痛在丹田裡凝成一股不退的銳意——以後你出手，會帶著她沒能活下去的那份份量。",
 			"remove": "你在女子身旁靜坐，為她做一場簡單的告別。出來時，胸中某種一直壓著你的雜念變淡了——你終於明白，有些事情不能用慣性對待，必須做出取捨。"
-		}
+		},
+		"tree": {
+			"root": {
+				"prompt": "破茅屋內，年輕女子的遺體尚未冷透。手中緊握刻著「婉」字的玉佩，身旁攤著幾頁血書，字跡顫抖卻清晰。",
+				"choices": [
+					{
+						"id": "read_blood_letter",
+						"label": "讀完血書",
+						"kind_hint": "reward",
+						"next": "node_read",
+					},
+					{
+						"id": "take_jade",
+						"label": "取下她手中的玉佩",
+						"kind_hint": "mixed",
+						"outcome": {
+							"kind": "mixed",
+							"effects": [
+								{"kind": "gain_relic_pool", "pool": "uncommon"},
+								{"kind": "next_battle_buff", "effects": [{"kind": "block", "amount": 3}]},
+							],
+							"log": "你輕輕分開她緊握的手指，取下玉佩。沉甸甸的——不只是玉的重量，是一個沒能活下去的人，把她最後的份量託給了你。",
+						},
+					},
+					{
+						"id": "observe_clue",
+						"label": "細看字跡的中斷處",
+						"kind_hint": "reward",
+						"requires": {"observe_token": true},
+						"next": "node_clue",
+					},
+					{
+						"id": "lxy_cover",
+						"label": "（李逍遙）撕下衣襟為她蓋上",
+						"kind_hint": "reward",
+						"requires": {"character": ["li_xiaoyao"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "permanent_power", "amount": 2},
+								{"kind": "heal", "amount": 10},
+							],
+							"log": "逍遙撕下衣襟，輕輕為她蓋上。他不知道她是誰，但他知道——這樣的事不該再發生。劍意比剛才更沉，也更穩。",
+						},
+					},
+					{
+						"id": "leave_silent",
+						"label": "不打擾、悄然離去",
+						"kind_hint": "punish",
+						"outcome": {
+							"kind": "mixed",
+							"effects": [
+								{"kind": "permanent_power", "amount": -1},
+							],
+							"log": "你回頭看了她一眼，腳步比進門時沉重。沒人會記得你來過——也包括你自己。",
+						},
+					},
+				],
+			},
+			"nodes": {
+				"node_read": {
+					"prompt": "血書記載她被拜月教當作儀式祭品。最後一句寫到一半——『無論誰看到這封信，我求你⋯⋯』",
+					"choices": [
+						{
+							"id": "vow_revenge",
+							"label": "立誓復仇",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "permanent_power", "amount": 4},
+								],
+								"log": "你在血書上按下染血的指印——她那未寫完的請求，從今天起由你替她寫完。劍意如鋼，再無遲疑。",
+							},
+						},
+						{
+							"id": "zhao_send_off",
+							"label": "（趙靈兒）為她超渡",
+							"kind_hint": "reward",
+							"requires": {"character": ["zhao_linger"]},
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "max_hp", "amount": 5},
+									{"kind": "gain_card_pool", "pool": "character"},
+								],
+								"log": "靈兒以靈族祭禮為她引魂。儀式進行到一半，靈兒體內某道一直纏繞她的恐懼，像潮水退去——她不是受害者的延續，她是要終結這一切的人。",
+							},
+						},
+						{
+							"id": "anu_farewell",
+							"label": "（阿奴）以苗疆送別禮相送",
+							"kind_hint": "reward",
+							"requires": {"character": ["anu"]},
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "heal_party", "amount": 15},
+									{"kind": "gain_potion"},
+								],
+								"log": "阿奴從袋中取出一枚小銀鈴，放在女子掌心：『在苗疆，這代表你已經安息。』鈴聲輕響，全隊都覺得呼吸鬆了一寸。",
+							},
+						},
+					],
+				},
+				"node_clue": {
+					"prompt": "字跡中斷處墨跡有明顯的傾斜——指向北方。那是拜月教祭壇的方位。",
+					"choices": [
+						{
+							"id": "remember_direction",
+							"label": "記下方位",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "next_battle_buff", "effects": [{"kind": "power", "amount": 2}]},
+									{"kind": "gold", "amount": 15},
+								],
+								"log": "你蘸了她的血，把方位畫在自己的內襟。下一場該找的人，你已經知道在哪裡了。",
+							},
+						},
+						{
+							"id": "burn_letter",
+							"label": "燒掉血書讓她安息",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "permanent_power", "amount": 2},
+									{"kind": "lose_card", "mode": "random"},
+								],
+								"log": "你在她身旁點火。血書一頁一頁燒成灰，胸中某道你一直擺脫不掉的雜念，也跟著一同化去。",
+							},
+						},
+					],
+				},
+			},
+		},
 	},
 }
 

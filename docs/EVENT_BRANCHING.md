@@ -14,7 +14,7 @@
 
 | 設計項目 | 實作狀態 | 程式位置 |
 |---|---|---|
-| 樹狀 `tree { root, nodes }` schema | ✅ 完成 | `event_data.gd` 13 個事件有 `tree` 欄位；舊事件走 fallback |
+| 樹狀 `tree { root, nodes }` schema | ✅ 完成 | `event_data.gd` 22 個事件有 `tree` 欄位；舊事件走 fallback |
 | EventRunner tree walker | ✅ 完成 | `event_runner.gd`（191 行）：has_tree / visible_choices / eval_requires / is_leaf / leaf_kind / badge_for_kind / build_context |
 | 多層深度（3+ 層） | ✅ 完成 | `EventRunner.get_node()` 支援 root + nodes 遞迴走訪 |
 | `requires`（character / min_gold / has_relic / min_power / observe_token） | ✅ 完成 | `EventRunner.eval_requires()`（多條件 AND） |
@@ -23,12 +23,13 @@
 | observe token 系統 | ✅ 完成 | `RunState.observe_tokens`（起始 3）+ `next_battle_buffs`；to/from_dict round-trip |
 | 戰鬥回流（pending_event_return） | ✅ 完成 | Phase 3 commit `01b78a7`；事件戰鬥敗不直接 game over |
 | 新 effect kinds | 🟨 大致完成 | `main.gd:3616-3667` 處理 permanent_power / next_battle_buff / gain_relic_pool / gain_card_pool / gain_curse；**`act_modifier` 仍是 push_warning「not implemented (P6)」** |
-| 事件 tree 內容 | 🟨 13 / 31 | Batch A 6 個 (`99ff292`) + Batch B 6 個含戰鬥 (`c43a306`)；其餘 18 個走 legacy 扁平 schema |
+| 事件 tree 內容 | 🟨 22 / 32 | Batch A 6 個 (`99ff292`) + Batch B 6 個含戰鬥 (`c43a306`) + caiyi_butterfly + spring + PAL1 名場面批次 8 個（yokai_pact / baiyue_altar / flower_spirit / yangzhou_officer / jiang_waner_grief / shilipo_sword_god / drunk_swordsman / tangyu_sparring）；其餘 10 個走 legacy 扁平 schema |
 | Smoke test 覆蓋 | ✅ 17 個事件相關 | event_runner ×7 / observe_token ×3 / curse ×6 / event_variety ×1（全 78 個測試通過） |
 
 **現況白話總結**：
-- 核心 tree 系統 + curse + observe + 戰鬥回流**都能跑了**，玩家在 13 個事件能體驗到真正的分支樹
-- 剩餘：`act_modifier` effect、18 個事件轉 tree（P8/P9）、event-only 敵人（P10）、更多測試
+- 核心 tree 系統 + curse + observe + 戰鬥回流**都能跑了**，玩家在 22 個事件能體驗到真正的分支樹（68% 覆蓋率）
+- 剩餘 10 個 legacy 事件：spirit_clan_ruins / tavern_acquaintance / sword_tomb / miao_healer / yinlong_cave / lingmiao / xianling_shrine / flower_thief / jianling_whisper / aqi_reunion
+- 其他未竟：`act_modifier` effect、event-only 敵人（P10）、更多測試
 
 ---
 
