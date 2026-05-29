@@ -5,12 +5,22 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# 走 GitHub 官方 Pages API（actions/deploy-pages），不再 push 到 gh-pages branch。
+# 好處：上傳走 artifact API，單檔上限 2 GB，不會撞 git 100 MB 硬限制
+#       （之前 index.pck 101.52 MB 撞牆失敗的根因）。
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+# 同時只跑一個 deploy；新的 push 會取消還在排隊的舊 run，但不會打斷正在 deploy 的。
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
-  build-web:
-    name: Export HTML5 and publish to GitHub Pages
+  build:
+    name: Export HTML5
     runs-on: ubuntu-22.04
     container:
       image: barichello/godot-ci:4.6
@@ -67,7 +77,7 @@ jobs:
       - name: Add .nojekyll
         run: touch build/web/.nojekyll
 
-      - name: Upload web artifact
+      - name: Upload web artifact (downloadable)
         uses: actions/upload-artifact@v4
         with:
           name: SwordCard-web
@@ -75,9 +85,19 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build/web
-          publish_branch: gh-pages
+          path: build/web
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-22.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
