@@ -75,6 +75,20 @@ const VARIANTS: Dictionary = {
 						},
 					},
 					{
+						"id": "siphon_spring_spirit",
+						"label": "強取泉靈精華",
+						"kind_hint": "punish",
+						"outcome": {
+							"kind": "punish",
+							"effects": [
+								{"kind": "gain_card_pool", "pool": "rare"},
+								{"kind": "damage", "amount": 8},
+								{"kind": "gain_curse", "curse_id": "yao_zhai"},
+							],
+							"log": "你把劍鋒插入泉眼，向泉靈索取精華。泉水猛然翻湧，一股冰冷的呵斥順著劍身灌入你的經脈——你勉強拔出劍，掌心發白。泉靈雖被你拿走了一點什麼，也在你身上留下了印記。",
+						},
+					},
+					{
 						"id": "leave",
 						"label": "離去",
 						"kind_hint": "neutral",
@@ -357,6 +371,20 @@ const VARIANTS: Dictionary = {
 								{"kind": "heal", "amount": 4},
 							],
 							"log": "月如的劍意與壁上殘光共鳴，前輩似乎滿意地點了點頭。",
+						},
+					},
+					{
+						"id": "force_inherit",
+						"label": "強行將殘光納入丹田",
+						"kind_hint": "punish",
+						"outcome": {
+							"kind": "punish",
+							"effects": [
+								{"kind": "permanent_power", "amount": 3},
+								{"kind": "damage", "amount": 6},
+								{"kind": "gain_curse", "curse_id": "xie_yin"},
+							],
+							"log": "你不請自取，引那道殘光入體。前輩的劍意冷冷地掃過你的經脈——『不請而取者，自承其患。』那股力量留了下來，但某種你也說不清的東西，從此跟著你走。",
 						},
 					},
 					{
@@ -730,6 +758,20 @@ const VARIANTS: Dictionary = {
 						},
 					},
 					{
+						"id": "demand_destiny",
+						"label": "強求一道天命",
+						"kind_hint": "punish",
+						"outcome": {
+							"kind": "punish",
+							"effects": [
+								{"kind": "gain_card_pool", "pool": "rare"},
+								{"kind": "max_hp", "amount": -6},
+								{"kind": "lose_card", "mode": "random"},
+							],
+							"log": "你跪下不肯起：「請前輩賜一道天命！」老者嘆口氣：『強求之物，皆有代價。』他拈起一片葉子點向你眉心——你看見了，卻也失去了一些原本握在手裡的東西。",
+						},
+					},
+					{
 						"id": "leave",
 						"label": "離去",
 						"kind_hint": "neutral",
@@ -892,6 +934,20 @@ const VARIANTS: Dictionary = {
 								{"kind": "gain_card_pool", "pool": "character"},
 							],
 							"log": "靈兒踏入潭中，月光把水映成銀白，那一刻她聽見了母親的聲音。",
+						},
+					},
+					{
+						"id": "dive_to_bottom",
+						"label": "潛入潭底取那顆古老的東西",
+						"kind_hint": "punish",
+						"outcome": {
+							"kind": "punish",
+							"effects": [
+								{"kind": "gain_relic_pool", "pool": "rare"},
+								{"kind": "damage", "amount": 10},
+								{"kind": "max_hp", "amount": -5},
+							],
+							"log": "你深吸一口氣潛入水中。月光在水下變成黑色，潭底有一塊溫熱的東西——你伸手抓住，瞬間幾股冰冷的氣息湧入肺裡。你勉強浮出水面，咳了好幾口水，掌心是那件古物，胸口卻多了一道揮不去的悶痛。",
 						},
 					},
 					{
@@ -1157,7 +1213,7 @@ const VARIANTS: Dictionary = {
 							"label": "一縷魂",
 							"kind_hint": "punish",
 							"outcome": {
-								"kind": "mixed",
+								"kind": "punish",
 								"effects": [
 									{"kind": "max_hp", "amount": -10},
 									{"kind": "permanent_power", "amount": 5},
@@ -2074,7 +2130,7 @@ const VARIANTS: Dictionary = {
 							"label": "強行汲取邪力",
 							"kind_hint": "punish",
 							"outcome": {
-								"kind": "mixed",
+								"kind": "punish",
 								"effects": [
 									{"kind": "max_hp", "amount": -5},
 									{"kind": "permanent_power", "amount": 5},
@@ -2306,6 +2362,20 @@ const VARIANTS: Dictionary = {
 						},
 					},
 					{
+						"id": "ten_thousand_drill",
+						"label": "陪他練到吐血為止",
+						"kind_hint": "punish",
+						"outcome": {
+							"kind": "punish",
+							"effects": [
+								{"kind": "permanent_power", "amount": 3},
+								{"kind": "damage", "amount": 8},
+								{"kind": "max_hp", "amount": -3},
+							],
+							"log": "你陪他揮了一個下午又一個晚上。少年咬牙撐到天亮，你也咬牙撐到天亮——最後兩人都吐了血，劍意卻刻進了骨頭。回過神時，他朝你拜了三拜：『大俠，我懂了。』你扶著樹幹站著，半天才直起身。",
+						},
+					},
+					{
 						"id": "leave",
 						"label": "微笑離去",
 						"kind_hint": "neutral",
@@ -2455,7 +2525,7 @@ const VARIANTS: Dictionary = {
 							"label": "抹了血再灌一口",
 							"kind_hint": "punish",
 							"outcome": {
-								"kind": "mixed",
+								"kind": "punish",
 								"effects": [
 									{"kind": "damage", "amount": 6},
 									{"kind": "permanent_power", "amount": 3},
@@ -3110,6 +3180,20 @@ const VARIANTS: Dictionary = {
 						},
 					},
 					{
+						"id": "take_his_sword",
+						"label": "強取他祖傳的青釭劍",
+						"kind_hint": "punish",
+						"outcome": {
+							"kind": "punish",
+							"effects": [
+								{"kind": "gain_relic_pool", "pool": "rare"},
+								{"kind": "gain_curse", "curse_id": "tong_ji"},
+								{"kind": "gold", "amount": -15},
+							],
+							"log": "你冷冷說：『這把劍對你太重。』少年咬著嘴唇，雙手交出青釭劍，背過身去——你聽見他壓抑的啜泣。回頭時你發現自己掌心也滲出冷汗。江湖上多了一筆關於你的話頭，你也不在乎了。",
+						},
+					},
+					{
 						"id": "leave",
 						"label": "婉拒繼續趕路",
 						"kind_hint": "neutral",
@@ -3303,6 +3387,20 @@ const VARIANTS: Dictionary = {
 						},
 					},
 					{
+						"id": "siphon_butterfly",
+						"label": "趁她虛弱奪取千年道行",
+						"kind_hint": "punish",
+						"outcome": {
+							"kind": "punish",
+							"effects": [
+								{"kind": "permanent_power", "amount": 4},
+								{"kind": "max_hp", "amount": -8},
+								{"kind": "gain_curse", "curse_id": "yao_zhai"},
+							],
+							"log": "你抬手點向她身後的蝶影。彩依睜大眼，看著你的眼神先是震驚，後是釋然——她沒有抵抗。一縷蝶翼真元順著你的指尖湧入丹田，鋒利而冰冷。屋內最後一聲笛聲響起時，床上的書生也閉上了眼。你帶著力量走出去，誰也沒有看你一眼。",
+						},
+					},
+					{
 						"id": "leave",
 						"label": "不打擾，悄然離去",
 						"kind_hint": "neutral",
@@ -3420,7 +3518,7 @@ const VARIANTS: Dictionary = {
 						"label": "不打擾、悄然離去",
 						"kind_hint": "punish",
 						"outcome": {
-							"kind": "mixed",
+							"kind": "punish",
 							"effects": [
 								{"kind": "permanent_power", "amount": -1},
 							],

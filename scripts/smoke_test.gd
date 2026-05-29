@@ -1774,18 +1774,19 @@ func _test_event_runner_root_choices() -> void:
 	var root: Dictionary = EventRunner.get_node(spring, "root")
 	_check(root.has("prompt"), "root node should have prompt")
 	_check(root.has("choices"), "root node should have choices array")
-	# 用 li_xiaoyao + observe_tokens=3 的 context：應看見全部 5 個 choices
+	# 用 li_xiaoyao + observe_tokens=3 的 context：應看見全部 6 個 choices
+	# （含 2026-05 新增的 siphon_spring_spirit 風險選項）
 	var ctx_full: Dictionary = EventRunner.build_context("li_xiaoyao", 50, 0, 3, [], 10)
 	var visible: Array = EventRunner.visible_choices(root, ctx_full)
-	_check(visible.size() == 5, "li_xiaoyao with observe token should see 5 choices, got %d" % visible.size())
+	_check(visible.size() == 6, "li_xiaoyao with observe token should see 6 choices, got %d" % visible.size())
 
 func _test_event_runner_requires_character() -> void:
 	var spring: Dictionary = EventData.for_variant("spring")
 	var root: Dictionary = EventRunner.get_node(spring, "root")
-	# zhao_linger（非 li_xiaoyao）+ observe_tokens=3 → 不見 lxy_meditate，剩 4 個
+	# zhao_linger（非 li_xiaoyao）+ observe_tokens=3 → 不見 lxy_meditate，剩 5 個
 	var ctx_zhao: Dictionary = EventRunner.build_context("zhao_linger", 50, 0, 3, [], 10)
 	var visible: Array = EventRunner.visible_choices(root, ctx_zhao)
-	_check(visible.size() == 4, "zhao_linger should not see lxy-only choice; expected 4, got %d" % visible.size())
+	_check(visible.size() == 5, "zhao_linger should not see lxy-only choice; expected 5, got %d" % visible.size())
 	# 確認 lxy_meditate 不在列表中
 	for c: Variant in visible:
 		_check(String((c as Dictionary)["id"]) != "lxy_meditate", "lxy_meditate should be filtered for zhao_linger")
@@ -1793,10 +1794,10 @@ func _test_event_runner_requires_character() -> void:
 func _test_event_runner_requires_observe_token() -> void:
 	var spring: Dictionary = EventData.for_variant("spring")
 	var root: Dictionary = EventRunner.get_node(spring, "root")
-	# zhao_linger + observe_tokens=0 → 看不見 lxy_meditate（角色不對）也看不見 observe_pool（無 token）→ 剩 3 個
+	# zhao_linger + observe_tokens=0 → 看不見 lxy_meditate（角色不對）也看不見 observe_pool（無 token）→ 剩 4 個
 	var ctx_no_token: Dictionary = EventRunner.build_context("zhao_linger", 50, 0, 0, [], 10)
 	var visible: Array = EventRunner.visible_choices(root, ctx_no_token)
-	_check(visible.size() == 3, "zhao_linger w/o observe token should see 3 choices, got %d" % visible.size())
+	_check(visible.size() == 4, "zhao_linger w/o observe token should see 4 choices, got %d" % visible.size())
 	for c: Variant in visible:
 		_check(String((c as Dictionary)["id"]) != "observe_pool", "observe_pool should be filtered without token")
 
