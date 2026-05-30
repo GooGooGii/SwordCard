@@ -11,7 +11,6 @@ extends Resource
 @export var effects: Array[Dictionary] = []
 @export var upgraded: bool = false
 @export var art_path: String = ""
-@export var gold_cost: int = 0
 
 func clone() -> CardData:
 	var copy: CardData = CardData.new()
@@ -25,7 +24,6 @@ func clone() -> CardData:
 	copy.effects = effects.duplicate(true)
 	copy.upgraded = upgraded
 	copy.art_path = art_path
-	copy.gold_cost = gold_cost
 	return copy
 
 func display_title() -> String:
@@ -103,8 +101,7 @@ func _should_upgrade_amount(kind: String) -> bool:
 		"power",
 		"consume_energy_damage",
 		"poison_burst",
-		"revive",
-		"status_amp_damage"
+		"revive"
 	]
 
 func to_dict() -> Dictionary:
@@ -118,8 +115,7 @@ func to_dict() -> Dictionary:
 		"rarity": rarity,
 		"effects": effects.duplicate(true),
 		"upgraded": upgraded,
-		"art_path": art_path,
-		"gold_cost": gold_cost
+		"art_path": art_path
 	}
 
 static func from_dict(data: Dictionary) -> CardData:
@@ -133,7 +129,6 @@ static func from_dict(data: Dictionary) -> CardData:
 	card.rarity = String(data.get("rarity", "basic"))
 	card.upgraded = bool(data.get("upgraded", false))
 	card.art_path = String(data.get("art_path", ""))
-	card.gold_cost = int(data.get("gold_cost", 0))
 	var raw_effects: Array = data.get("effects", []) as Array
 	var typed_effects: Array[Dictionary] = []
 	for entry: Variant in raw_effects:
@@ -146,7 +141,7 @@ func _upgraded_amount(kind: String, amount: int) -> int:
 	match kind:
 		"draw", "energy", "vulnerable":
 			return amount + 1
-		"weak", "poison", "power", "status_amp_damage":
+		"weak", "poison", "power":
 			return amount + 1
 		"consume_energy_damage", "poison_burst":
 			return amount + 2

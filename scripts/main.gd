@@ -248,16 +248,13 @@ func _handle_map_pointer_input(event: InputEvent) -> bool:
 		_map_drag_candidate = false
 		_map_dragging = false
 		return false
-	# Use the full viewport rect instead of get_global_rect() which can report an
-	# incorrect (too-narrow) rect on Android before layout stabilises, causing the
-	# left half of the map to be unresponsive.
-	var viewport_rect: Rect2 = Rect2(Vector2.ZERO, get_viewport_rect().size)
+	var scroll_rect: Rect2 = active_map_scroll.get_global_rect()
 	if event is InputEventMouseButton:
 		var mouse_button: InputEventMouseButton = event as InputEventMouseButton
 		if mouse_button.button_index != MOUSE_BUTTON_LEFT:
 			return false
 		if mouse_button.pressed:
-			if not viewport_rect.has_point(mouse_button.position):
+			if not scroll_rect.has_point(mouse_button.position):
 				return false
 			_map_drag_candidate = true
 			_map_dragging = false
@@ -281,6 +278,8 @@ func _handle_map_pointer_input(event: InputEvent) -> bool:
 	if event is InputEventScreenTouch:
 		var touch: InputEventScreenTouch = event as InputEventScreenTouch
 		if touch.pressed:
+			if not scroll_rect.has_point(touch.position):
+				return false
 			_map_drag_candidate = true
 			_map_dragging = false
 			_map_drag_start_pointer = touch.position
@@ -1014,9 +1013,6 @@ func show_character_select(preview_id: String = "") -> void:
 	_hide_title_bar()
 	_set_background("res://assets/art/main_menu_bg.png")
 	_clear_root()
-	# 初次進入（非點頭像切換）且隊伍空 → 預先選入第一個角色
-	if preview_id.is_empty() and selected_party_ids.is_empty() and not characters.is_empty():
-		selected_party_ids.append(characters[0].id)
 	# preview 預設順序：明確 preview_id > 目前隊伍隊長 > characters[0]
 	var preview_character: CharacterData = null
 	if not preview_id.is_empty():
@@ -1418,7 +1414,6 @@ func _build_streamlined_progress_screen(compact_map: bool) -> void:
 	layer.add_child(act_label)
 	
 	layer.add_child(_build_map_toolbar())
-	layer.add_child(_build_map_legend())
 
 
 func _build_map_toolbar() -> Control:
@@ -1432,51 +1427,6 @@ func _build_map_toolbar() -> Control:
 	toolbar.add_theme_constant_override("separation", 8)
 	toolbar.add_child(_map_icon_button("人", "角色狀態", _show_map_status_popup))
 	return toolbar
-
-func _build_map_legend() -> Control:
-	var panel: PanelContainer = PanelContainer.new()
-	panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT, false)
-	panel.offset_left = -132
-	panel.offset_top = -168
-	panel.offset_right = -10
-	panel.offset_bottom = -10
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var bg: StyleBoxFlat = UIFactory.style_box(Color("1a1510", 0.72), Color("c8a96e", 0.50), 1, 6)
-	bg.content_margin_left = 10
-	bg.content_margin_right = 10
-	bg.content_margin_top = 8
-	bg.content_margin_bottom = 8
-	panel.add_theme_stylebox_override("panel", bg)
-	var vbox: VBoxContainer = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 4)
-	panel.add_child(vbox)
-	var title_lbl: Label = UIFactory.card_label("圖例", 12, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-	vbox.add_child(title_lbl)
-	var sep: HSeparator = HSeparator.new()
-	sep.add_theme_color_override("color", Color("c8a96e", 0.35))
-	vbox.add_child(sep)
-	var entries: Array[Array] = [
-		["戰", "戰鬥"],
-		["遇", "奇遇"],
-		["休", "休息"],
-		["店", "商店"],
-		["黑", "黑市"],
-		["王", "頭目"],
-	]
-	for entry: Array in entries:
-		var row: HBoxContainer = HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		vbox.add_child(row)
-		var badge: Label = UIFactory.card_label(String(entry[0]), 13, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-		badge.custom_minimum_size = Vector2(20, 0)
-		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.add_child(badge)
-		var name_lbl: Label = UIFactory.card_label(String(entry[1]), 12, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_LEFT)
-		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.add_child(name_lbl)
-	return panel
 
 func _map_icon_button(symbol: String, tooltip: String, action: Callable) -> Button:
 	var button: Button = Button.new()
@@ -1910,14 +1860,9 @@ func choose_route_node(node_data: Dictionary, target_row: int = -1) -> void:
 	elif node_type == "shop":
 		open_shop_node(bool(node_data.get("black_market", false)))
 	else:
-		var enemies_array: Array[EnemyData] = []
-		if node_data.has("enemies"):
-			for e_v: Variant in (node_data["enemies"] as Array):
-				enemies_array.append(e_v as EnemyData)
-		else:
-			assert(node_data.has("enemy"), "戰鬥節點缺少 enemy 資料：%s" % node_data)
-			enemies_array.append(node_data["enemy"] as EnemyData)
-		start_next_battle(enemies_array)
+		assert(node_data.has("enemy"), "戰鬥節點缺少 enemy 資料：%s" % node_data)
+		var enemy: EnemyData = node_data["enemy"] as EnemyData
+		start_next_battle(enemy)
 
 func start_next_battle(enemy: EnemyData) -> void:
 	AudioManager.play_bgm("battle_boss" if Ascension.is_boss_id(enemy.id) else "battle_normal")
@@ -1927,14 +1872,10 @@ func start_next_battle(enemy: EnemyData) -> void:
 	battle.phase_transitioned.connect(_on_phase_transitioned)
 	var mult: float = Ascension.enemy_hp_multiplier(run_state.ascension_level, Ascension.is_boss_id(enemy.id))
 	if mult != 1.0:
-		var group: Array = battle.state.get("enemy_group", []) as Array
-		for eg_v: Variant in group:
-			var eg: Dictionary = eg_v as Dictionary
-			var scaled_max: int = max(1, int(round(float(eg["max_hp"]) * mult)))
-			eg["max_hp"] = scaled_max
-			eg["hp"] = scaled_max
-		battle._sync_target_to_aliases()
-		battle.enemy.max_hp = max(1, int(round(float(battle.enemy.max_hp) * mult)))
+		var scaled_max: int = max(1, int(round(float(battle.state["enemy_max_hp"]) * mult)))
+		battle.state["enemy_max_hp"] = scaled_max
+		battle.state["enemy_hp"] = scaled_max
+		battle.enemy.max_hp = scaled_max
 	battle_end_pending = false
 	_build_battle_scene()
 	_start_player_turn()
@@ -2939,8 +2880,7 @@ func end_player_turn() -> void:
 func _has_affordable_card_in_hand() -> bool:
 	for card: CardData in battle.deck.hand:
 		if battle.effective_card_cost(card) <= int(battle.state["energy"]):
-			if card.gold_cost == 0 or run_state.gold >= card.gold_cost:
-				return true
+			return true
 	return false
 
 func _show_end_turn_warning() -> void:
@@ -3017,18 +2957,14 @@ func _complete_battle_victory() -> void:
 		var cb: Callable = _event_battle_on_win
 		_event_battle_on_win = Callable()
 		battle.complete_victory()
-		var group_for_event: Array = battle.state.get("enemy_group", []) as Array
-		for eg_v: Variant in group_for_event:
-			Bestiary.mark_defeated(String((eg_v as Dictionary)["id"]))
+		Bestiary.mark_defeated(battle.enemy.id)
 		var gold: int = _battle_gold_reward(battle.enemy)
 		run_state.gold += gold
 		battle.add_log("獲得 %d 枚銅錢。" % gold)
 		cb.call()
 		return
 	battle.complete_victory()
-	var group: Array = battle.state.get("enemy_group", []) as Array
-	for eg_v: Variant in group:
-		Bestiary.mark_defeated(String((eg_v as Dictionary)["id"]))
+	Bestiary.mark_defeated(battle.enemy.id)
 	_grant_battle_exp()
 	var gold_reward: int = _battle_gold_reward(battle.enemy)
 	# 聚寶盆：勝利額外金錢；P4 淨化符：勝利移除 1 張隨機 curse
@@ -3048,6 +2984,7 @@ func _complete_battle_victory() -> void:
 	battle.add_log("獲得 %d 枚銅錢。" % gold_reward)
 	# Boss 必掉神器；一般戰鬥 25% 機率掉裝備
 	var dropped: RelicData = null
+	var was_boss: bool = Ascension.is_boss_id(battle.enemy.id)
 	if was_boss:
 		# Event Branching P5：boss 勝利補 1 個 observe token
 		run_state.grant_observe_tokens(RunState.OBSERVE_TOKEN_BOSS_REWARD)
@@ -3362,8 +3299,7 @@ func show_event_node(sub_stage: String = "") -> void:
 	_clear_root()
 	_show_title_bar()
 	var panel: PanelContainer = UIFactory.make_panel()
-	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	layout.add_child(panel)
+	root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_theme_constant_override("separation", 16)
@@ -3917,7 +3853,7 @@ func _start_event_fight() -> void:
 		EventData.for_variant(run_state.current_event_variant), "fight_win")
 	_event_battle_on_win = func() -> void:
 		_show_event_outcome(outcome_text, advance_non_battle_node)
-	start_next_battle([GameData.flower_spirit_enemy()])
+	start_next_battle(GameData.flower_spirit_enemy())
 
 func _get_event_outcome(event_data: Dictionary, key: String) -> String:
 	# 優先用 character_outcomes[active_char][key]（per-char 個股化結局文字），
@@ -5402,23 +5338,7 @@ func _retry_current_battle() -> void:
 		run_state.character_hps[i] = run_state.character_max_hps[i]
 	run_state.active_character_index = 0  # 重打 = 隊長重上場
 	SaveManager.save(run_state)
-	# 重打時復原原本的群組（若是群戰則重建）
-	var retry_group: Array[EnemyData] = []
-	var prev_group: Array = battle.state.get("enemy_group", []) as Array
-	if prev_group.size() > 1:
-		for eg_v: Variant in prev_group:
-			var eg_e: EnemyData = EnemyData.new()
-			eg_e.id = String((eg_v as Dictionary)["id"])
-			eg_e.display_name = String((eg_v as Dictionary)["name"])
-			eg_e.max_hp = int((eg_v as Dictionary)["max_hp"])
-			eg_e.portrait_path = String((eg_v as Dictionary)["portrait_path"])
-			eg_e.portrait_tint = (eg_v as Dictionary)["portrait_tint"] as Color
-			eg_e.actions = ((eg_v as Dictionary)["actions"] as Array).duplicate(true)
-			eg_e.phase_2_actions = ((eg_v as Dictionary)["phase_2_actions"] as Array).duplicate(true)
-			retry_group.append(eg_e)
-	else:
-		retry_group.append(enemy_to_retry)
-	start_next_battle(retry_group)
+	start_next_battle(enemy_to_retry)
 
 func _refresh_battle(animate_draw: bool = false) -> void:
 	_refresh_title_bar()

@@ -104,14 +104,6 @@ static func action_has_damage(action: Dictionary) -> bool:
 # 任何地方都算打出。
 const ENEMY_TARGETED_KINDS: Array[String] = ["damage", "damage_all", "poison", "poison_all", "weak", "weak_all", "vulnerable", "vulnerable_all", "consume_energy_damage", "poison_burst", "damage_debuff_bonus"]
 
-# 全體牌：含 AoE effect，不需要鎖定特定敵人目標
-static func is_aoe_card(card: CardData) -> bool:
-	for effect: Dictionary in card.effects:
-		if String(effect.get("kind", "")) in AOE_KINDS:
-			return true
-	return false
-
-# 單體牌：需要拖曳到敵人肖像附近才算打出（含 steal，但 AoE 不算）
 static func requires_enemy_target(card: CardData) -> bool:
 	# 能力牌（card_type=="power"）一律對自己：power 增益本就 self，混的 debuff
 	# 自動套到 active 敵，玩家不該被迫拖到敵將才能啟動「自我強化」。

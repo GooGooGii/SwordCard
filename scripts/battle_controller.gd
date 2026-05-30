@@ -167,47 +167,6 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 	_apply_party_battle_start_passives()
 	_fire_relic_triggers("battle_start")
 
-# 把 enemy_group[targeted_enemy_index] 的資料投影到 state["enemy_*"] 平坦別名
-func _sync_target_to_aliases() -> void:
-	var idx: int = int(state.get("targeted_enemy_index", 0))
-	var group: Array = state.get("enemy_group", []) as Array
-	if group.is_empty() or idx >= group.size():
-		return
-	var eg: Dictionary = group[idx] as Dictionary
-	state["enemy_name"] = eg["name"]
-	state["enemy_hp"] = eg["hp"]
-	state["enemy_max_hp"] = eg["max_hp"]
-	state["enemy_block"] = eg["block"]
-	state["enemy_poison"] = eg["poison"]
-	state["enemy_weak"] = eg["weak"]
-	state["enemy_vulnerable"] = eg["vulnerable"]
-	state["enemy_loot_table"] = eg.get("loot_table", [])
-
-# 把 state["enemy_*"] 平坦別名的結果寫回 enemy_group[targeted_enemy_index]
-func _sync_aliases_to_target() -> void:
-	var idx: int = int(state.get("targeted_enemy_index", 0))
-	var group: Array = state.get("enemy_group", []) as Array
-	if group.is_empty() or idx >= group.size():
-		return
-	var eg: Dictionary = group[idx] as Dictionary
-	eg["hp"] = int(state.get("enemy_hp", 0))
-	eg["max_hp"] = int(state.get("enemy_max_hp", 0))
-	eg["block"] = int(state.get("enemy_block", 0))
-	eg["poison"] = int(state.get("enemy_poison", 0))
-	eg["weak"] = int(state.get("enemy_weak", 0))
-	eg["vulnerable"] = int(state.get("enemy_vulnerable", 0))
-
-# 設定目標敵人並同步別名（供 main.gd 點選切換目標）
-func set_targeted_enemy(idx: int) -> void:
-	var group: Array = state.get("enemy_group", []) as Array
-	if idx < 0 or idx >= group.size():
-		return
-	if int((group[idx] as Dictionary)["hp"]) <= 0:
-		return
-	_sync_aliases_to_target()
-	state["targeted_enemy_index"] = idx
-	_sync_target_to_aliases()
-
 # 把 active player slot 的欄位投影到 state["player_*"]，
 # 讓 EffectResolver 的舊 key 路徑繼續適用
 func _sync_active_to_state() -> void:
@@ -554,19 +513,12 @@ func play_card(card: CardData) -> Dictionary:
 	if int(state["energy"]) < cost:
 		add_log("靈力不足，無法施放 %s。" % card.display_title())
 		return {"affordable": false}
-	if card.gold_cost > 0 and run_state.gold < card.gold_cost:
-		add_log("銅錢不足，無法施放 %s（需 %d 枚）。" % [card.display_title(), card.gold_cost])
-		return {"affordable": false}
 	state["energy"] = int(state["energy"]) - cost
-	if card.gold_cost > 0:
-		run_state.gold -= card.gold_cost
-		add_log("花費 %d 枚銅錢。" % card.gold_cost)
 	if character != null and not character.passive_by_trigger("first_attack_cost").is_empty() and card.card_type == "attack" and not bool(state["li_discount_used"]):
 		state["li_discount_used"] = true
 	add_log("施放 %s。" % card.display_title())
 	var before_card: Dictionary = snapshot_state()
 	add_logs(resolver.resolve_card(card, state))
-	_sync_aliases_to_target()  # 單體效果寫回 enemy_group
 	var steal: Dictionary = state.get("steal_result", {}) as Dictionary
 	if not steal.is_empty():
 		state["steal_result"] = {}

@@ -1,7 +1,7 @@
 class_name GameData
 extends RefCounted
 
-static func make_card(id: String, display_name: String, owner: String, cost: int, card_type: String, description: String, effects: Array[Dictionary], rarity: String = "basic", art_id: String = "", gold_cost: int = 0) -> CardData:
+static func make_card(id: String, display_name: String, owner: String, cost: int, card_type: String, description: String, effects: Array[Dictionary], rarity: String = "basic", art_id: String = "") -> CardData:
 	var card: CardData = CardData.new()
 	card.id = id
 	card.display_name = display_name
@@ -11,7 +11,6 @@ static func make_card(id: String, display_name: String, owner: String, cost: int
 	card.description = description
 	card.effects = effects
 	card.rarity = rarity
-	card.gold_cost = gold_cost
 	var image_id: String = id if art_id.is_empty() else art_id
 	card.art_path = "res://assets/art/cards/%s.png" % image_id
 	return card
@@ -55,16 +54,6 @@ static func enemies_for_act(act: int) -> Array[EnemyData]:
 		4: return [_tower_demon(), _tower_ghost_soldier()]
 		5: return [_moon_worshipper(), _baiyue_guard(), _ancient_evil_spirit()]
 	return [_bandit(), _beast()]
-
-# 多敵遭遇：各幕可能出現的雙敵組合
-static func encounter_groups_for_act(act: int) -> Array[Array]:
-	match act:
-		1: return [[_bandit(), _bandit()], [_bandit(), _beast()]]
-		2: return [[_zombie_soldier(), _zombie_soldier()], [_fox_spirit(), _sword_spirit()]]
-		3: return [[_gu_cultist(), _serpent_demon()], [_toxic_centipede(), _gu_cultist()]]
-		4: return [[_tower_demon(), _tower_ghost_soldier()]]
-		5: return [[_baiyue_guard(), _ancient_evil_spirit()]]
-	return [[_bandit(), _bandit()]]
 
 static func boss_for_act(act: int) -> EnemyData:
 	match act:
@@ -162,7 +151,7 @@ static func _zhao_linger() -> CharacterData:
 		cards[6],                          # 1x 天雷破 (uncommon 18dmg) — burst
 		cards[8],                          # 1x 幻雨咒 (uncommon 7block+weak1)
 	]
-	return zl
+	return character
 
 static func _lin_yueru() -> CharacterData:
 	# PAL1 對齊版本：
@@ -173,7 +162,7 @@ static func _lin_yueru() -> CharacterData:
 		make_card("lyr_qijianzhi", "氣劍指", "林月如", 1, "attack", "凝氣為劍，對全體敵人造成 8 點傷害。", [{"kind": "damage_all", "amount": 8}]),
 		make_card("lyr_yiyang", "一陽指", "林月如", 2, "attack", "造成 18 點傷害。", [{"kind": "damage", "amount": 18}], "uncommon"),
 		make_card("lyr_zhanlong", "斬龍訣", "林月如", 3, "attack", "造成 30 點傷害。", [{"kind": "damage", "amount": 30}], "rare"),
-		make_card("lyr_qiankun", "乾坤一指", "林月如", 0, "attack", "花費 30 銅錢，消耗全部靈力，每點造成 9 點傷害。", [{"kind": "consume_energy_damage", "amount": 9}], "rare", "", 30),
+		make_card("lyr_qiankun", "乾坤一擲", "林月如", 0, "attack", "消耗全部靈力，每點造成 9 點傷害。", [{"kind": "consume_energy_damage", "amount": 9}], "rare"),
 		make_card("lyr_fanji", "回身反擊", "林月如", 1, "skill", "獲得 8 點護體並造成 5 點傷害。", [{"kind": "block", "amount": 8}, {"kind": "damage", "amount": 5}]),
 		make_card("lyr_bianying", "鞭影連環", "林月如", 1, "attack", "造成 4 點傷害兩次，施加 1 層破綻。", [{"kind": "damage", "amount": 4}, {"kind": "damage", "amount": 4}, {"kind": "vulnerable", "amount": 1}]),
 		make_card("lyr_shenfa", "月影身法", "林月如", 1, "skill", "獲得 7 點護體，抽 1 張牌。", [{"kind": "block", "amount": 7}, {"kind": "draw", "amount": 1}], "uncommon"),
