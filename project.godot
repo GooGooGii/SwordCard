@@ -37,7 +37,8 @@ window/handheld/orientation="sensor_landscape"
 
 [gui]
 
-theme/custom_font="res://assets/fonts/NotoSansTC-SemiBold.tres"
+theme/custom_font=""
+theme/custom_font.web="res://assets/fonts/NotoSansTC-SemiBold.tres"
 
 [rendering]
 

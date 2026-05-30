@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cr1abdos0f5xn"
-path="res://.godot/imported/靈力0.png-25f9fa4978e5d7bb181655d68000f5e8.ctex"
+uid="uid://cwmf1dcc7iuul"
+path="res://.godot/imported/PowerBase.png-708141ddaeef06f0c321aef3300ec650.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/靈力0.png"
-dest_files=["res://.godot/imported/靈力0.png-25f9fa4978e5d7bb181655d68000f5e8.ctex"]
+source_file="res://assets/ui/PowerBase.png"
+dest_files=["res://.godot/imported/PowerBase.png-708141ddaeef06f0c321aef3300ec650.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
