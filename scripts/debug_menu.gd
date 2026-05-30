@@ -7,7 +7,11 @@ signal add_card_requested
 signal add_relic_requested
 signal add_potion_requested
 signal jump_to_boss_requested
+signal toggle_test_mode_requested
 signal close_requested
+
+var test_mode_enabled: bool = false
+var _test_mode_button: Button = null
 
 func _ready() -> void:
 	layer = 90
@@ -51,9 +55,18 @@ func _build() -> void:
 	_add_action(box, "Add Random Relic", func() -> void: add_relic_requested.emit())
 	_add_action(box, "Add Random Potion", func() -> void: add_potion_requested.emit())
 	_add_action(box, "Jump to Boss", func() -> void: jump_to_boss_requested.emit())
+	_test_mode_button = _add_action(box, _test_mode_label(), func() -> void: toggle_test_mode_requested.emit())
 	_add_action(box, "Close (F1)", func() -> void: close_requested.emit())
 
-func _add_action(parent: VBoxContainer, text: String, on_press: Callable) -> void:
+func set_test_mode(enabled: bool) -> void:
+	test_mode_enabled = enabled
+	if _test_mode_button != null:
+		_test_mode_button.text = _test_mode_label()
+
+func _test_mode_label() -> String:
+	return "Test Mode: ON (任意點地圖)" if test_mode_enabled else "Test Mode: OFF"
+
+func _add_action(parent: VBoxContainer, text: String, on_press: Callable) -> Button:
 	var btn: Button = Button.new()
 	btn.text = text
 	btn.custom_minimum_size = Vector2(0, 38)
@@ -64,3 +77,4 @@ func _add_action(parent: VBoxContainer, text: String, on_press: Callable) -> voi
 	btn.add_theme_stylebox_override("pressed", UIFactory.style_box(ThemeColors.PANEL_NAVY_PRS, ThemeColors.BORDER_GOLD, 1, 6))
 	btn.pressed.connect(on_press)
 	parent.add_child(btn)
+	return btn

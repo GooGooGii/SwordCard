@@ -42,6 +42,13 @@ func exhaust_card(card: CardData) -> void:
 		hand.erase(card)
 	exhausted_pile.append(card)
 
+# 能力牌（STS 風格）：打完即本場消失，不進任何 pile。
+# 不影響 run_state.deck 持久副本（每場 setup() 重新從那邊 clone）。
+func consume_card(card: CardData) -> void:
+	if hand.has(card):
+		hand.erase(card)
+	# 不 append 任何 pile — 本場戰鬥不會再見到
+
 func _reshuffle_discard() -> void:
 	if discard_pile.is_empty():
 		return

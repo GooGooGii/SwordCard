@@ -88,11 +88,16 @@ static func _is_ascii_digit(char_code: int) -> bool:
 func _should_upgrade_amount(kind: String) -> bool:
 	return kind in [
 		"damage",
+		"damage_all",
 		"block",
 		"heal",
+		"heal_party",
 		"poison",
+		"poison_all",
 		"weak",
+		"weak_all",
 		"vulnerable",
+		"vulnerable_all",
 		"draw",
 		"energy",
 		"power",

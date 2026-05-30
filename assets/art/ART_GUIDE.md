@@ -23,7 +23,17 @@ Current generated backgrounds:
 - `main_menu_bg.png`  
   Used by main menu and character select.
 - `battle_bg.png`  
-  Used by the battle scene.
+  Legacy fallback used by the battle scene.
+- `battle_bg_act_1.png`  
+  Used by act 1 battles.
+- `battle_bg_act_2.png`  
+  Used by act 2 battles.
+- `battle_bg_act_3.png`  
+  Used by act 3 battles.
+- `battle_bg_act_4.png`  
+  Used by act 4 battles.
+- `battle_bg_act_5.png`  
+  Used by act 5 battles.
 - `event_bg.png`  
   Used by route, rest, event, reward, and result screens.
 - `map_bg_ink.png`  
@@ -100,6 +110,28 @@ Target:
 - **強制去背 (Transparent background is REQUIRED)**: 必須是去背透明背景。
 - 角色朝向：面朝右方（StS 戰鬥左側玩家向）。
 
+## Planned Potion Icons
+
+Suggested paths:
+
+- `assets/art/potions/huichun_dan.png` (回春丹)
+- `assets/art/potions/lingli_dan.png` (靈力丹)
+- `assets/art/potions/huti_fu.png` (護體符)
+- `assets/art/potions/jiedu_san.png` (解毒散)
+- `assets/art/potions/lingshe_dan.png` (靈蛇膽)
+- `assets/art/potions/hugu_jiu.png` (虎骨酒)
+- `assets/art/potions/jinchuang_yao.png` (金瘡藥)
+- `assets/art/potions/tianling_dan.png` (天靈丹)
+- `assets/art/potions/xianren_xue.png` (仙人遺血)
+- `assets/art/potions/yuehun_cao.png` (月魂草)
+- `assets/art/potions/baihua_xianniang.png` (百花仙釀)
+
+Target:
+
+- 512 x 512 PNG
+- **強制去背 (Transparent background is REQUIRED)**: 必須是去背透明背景，便於在戰鬥列及商店中渲染。
+- Style: 2D hand-painted Chinese ink-wash style, watercolor texture, clean ink outlines, matching the relic style.
+
 ## Planned UI Assets
 
 Suggested paths:
@@ -116,8 +148,53 @@ Suggested paths:
 
 Target:
 
-- Prefer PNG for painterly frames and icons
-- Keep icon silhouettes simple enough for Android screen sizes (high contrast, readable at 48x48 px, transparent background)
-- Style: 2D Chinese ink-wash brush stroke illustration, clean black lineart with subtle watercolor texture.
+## 美術狀態 (Art Status)
 
----
+> **現況**：所有新增卡牌與專屬遺物已成功補齊對應的美術資源，並已移除代碼中的「借圖」暫代方案。
+
+### 美術統計
+
+| 類別 | 缺圖數 | 狀態 | 優先級 |
+|---|---|---|---|
+| 流派 / 新機制卡（CARD_DESIGN ch.3-4） | 0 | 已完成專屬插圖 | 🟢 已完成 |
+| 等級解鎖卡（LevelSystem） | 0 | 已完成專屬插圖 | 🟢 已完成 |
+| 角色專武遺物 | 0 | 已補齊專屬圖示 | 🟢 已完成 |
+| **合計** | **0** | | |
+
+### 🔴 流派／新機制卡（8 張）
+
+所有卡片皆已補齊專屬 2D 水墨國風插畫：
+- `anu_cuifeng` (淬鋒蠱刃)
+- `anu_wuyuezhan` (巫月斬)
+- `anu_xuerenwu` (血刃亂舞)
+- `lxy_wanjianguizong` (萬劍歸宗)
+- `lyr_fenghuan` (鳳鳴反擊)
+- `lyr_yuehua` (月華護體)
+- `zl_shuiyin` (水靈封印)
+- `zl_ganlin` (甘霖咒)
+
+### 🟡 等級解鎖卡（27 張）
+
+所有解鎖卡牌皆已擁有專屬卡圖，不再依賴其他卡牌插畫：
+- **李逍遙 (8 張)**: `lxy_tiangangqi` (天罡戰氣)、`lxy_ningyuan_ls` (凝神歸元)、`lxy_yuanlinggui` (元靈歸心術)、`lxy_zhenyuan` (真元護體)、`lxy_tianjian` (天劍)、`lxy_jinchan_ls` (金蟬脫殼)、`lxy_xiaoyao_shenjian` (逍遙神劍)、`lxy_jianshen` (劍神)。
+- **趙靈兒 (8 張)**: `zl_xuanfengzhou` (旋風咒)、`zl_wuleizhou` (五雷咒)、`zl_sanmeizhenhuo` (三昧真火)、`zl_fengxuebing` (風雪冰天)、`zl_diliebeng` (地裂天崩)、`zl_mengshe_ls` (夢蛇)、`zl_taishan` (泰山壓頂)、`zl_kuanglei` (狂雷)。
+- **林月如 (5 張)**: `lyr_tongqianbiao` (銅錢鏢)、`lyr_qijuejianqi` (七訣劍氣)、`lyr_yuanlinggui` (元靈歸心術)、`lyr_lielong` (裂龍式)、`lyr_wanlikuang` (萬里狂沙)。
+- **阿奴 (6 張)**: `anu_sanshigu` (三屍蠱)、`anu_yanshazhou` (炎殺咒)、`anu_shuhun` (贖魂)、`anu_duohun` (奪魂)、`anu_wanyi_ls` (萬蟻蝕象)、`anu_wangushitian` (萬蠱蝕天)。
+
+### 🟡 遺物（2 件）
+
+兩件流派錨點專屬武器已成功配置專屬圖示，並移除了程序繪製 fallback 顯示：
+- `wuyue_shendao` (巫月神刀): 阿奴刀流錨點。
+- `fengming_dao` (鳳鳴刀): 林月如刀流錨點。
+
+## Card Layering Convention
+
+Card UI should follow a fixed rendering stack so art replacements do not require layout rewrites:
+
+1. Card art at the bottom
+2. Card frame above the art
+3. Decorative overlays above the frame
+4. Text as the topmost layer
+
+Decorative overlays include the mana badge, rarity badge, name plaque, and rules-panel ornaments. When replacing the three card frames with ink-wash versions, keep those elements as separate overlays unless they must be baked into the frame for a specific visual effect.
+

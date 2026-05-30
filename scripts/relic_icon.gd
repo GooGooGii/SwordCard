@@ -66,6 +66,15 @@ func _show_info_popup() -> void:
 func _draw() -> void:
 	if relic == null:
 		return
+	
+	var art_path: String = "res://assets/art/relics/%s.png" % relic.id
+	var texture: Texture2D = UIFactory.load_texture(art_path)
+	if texture != null:
+		# 直接畫遺物美術。稀有度顏色已由 panel_style border / title_label 表達，
+		# 圖上不再疊圓圈（之前的 draw_arc 會擋住美術細節）。
+		draw_texture_rect(texture, Rect2(Vector2.ZERO, size), false)
+		return
+
 	var s: float = min(size.x, size.y)
 	var c: Vector2 = size / 2.0
 	var r: float = s * 0.42

@@ -20,6 +20,10 @@ run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.6")
 config/icon="res://icon.svg"
 
+[autoload]
+
+AudioManager="*res://scripts/audio_manager.gd"
+
 [debug]
 
 gdscript/warnings/treat_warnings_as_errors=false
@@ -30,6 +34,10 @@ window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/handheld/orientation="sensor_landscape"
+
+[gui]
+
+theme/custom_font="res://assets/fonts/NotoSansTC-VF.ttf"
 
 [rendering]
 

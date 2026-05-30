@@ -29,7 +29,21 @@ var potions: Array[Dictionary] = []   # max MAX_POTION_SLOTS 元素，每個是 
 var ascension_level: int = 0
 var map_seed: int = 0
 
+# Event Branching (Phase 5+6)
+# observe_tokens：全 run 限定的「觀察」資源。起始 3，每幕 boss 勝利 +1，遺物「慧眼」+2 起始。
+# next_battle_buffs：下次戰鬥開場注入的 effect 列表（effect kind=next_battle_buff 用）。
+# 戰鬥 start_turn 時消費並清空。儲存格式：[{kind:"energy",amount:1}, {kind:"block",amount:5}, ...]
+var observe_tokens: int = 3
+var next_battle_buffs: Array[Dictionary] = []
+# pending_event_return：若非空表示當前進行的戰鬥是事件樹觸發的，戰鬥結束時要
+# 結算 victory_effects / defeat_effects 並回地圖，而非走標準 victory 流程。
+# 結構：{victory_effects: Array, defeat_effects: Array}
+# 不存檔（戰鬥中途離開不保留 in-flight 事件戰鬥）
+var pending_event_return: Dictionary = {}
+
 const MAX_POTION_SLOTS: int = 3
+const OBSERVE_TOKEN_START: int = 3
+const OBSERVE_TOKEN_BOSS_REWARD: int = 1
 
 # Convenience aliases — 對應 active character。讓單角色時期的 main.gd 程式碼幾乎不用改。
 var character: CharacterData:
@@ -127,6 +141,9 @@ func init_for(chars: Variant) -> void:
 	current_event_variant = "shrine"
 	relics.clear()
 	potions.clear()
+	observe_tokens = OBSERVE_TOKEN_START
+	next_battle_buffs.clear()
+	pending_event_return = {}
 	# 每人各拿自己的 starter weapon
 	for c: CharacterData in party:
 		var weapons: Array[RelicData] = RelicCatalog.weapons_for_character(c.id)
@@ -239,7 +256,9 @@ func to_dict() -> Dictionary:
 		"relics": relics_data,
 		"potions": potions.duplicate(),
 		"ascension_level": ascension_level,
-		"map_seed": map_seed
+		"map_seed": map_seed,
+		"observe_tokens": observe_tokens,
+		"next_battle_buffs": next_battle_buffs.duplicate(),
 	}
 
 func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> bool:
@@ -320,7 +339,39 @@ func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> 
 	ascension_level = int(data.get("ascension_level", 0))
 	map_seed = int(data.get("map_seed", 0))
 	act = int(data.get("act", 1))
+	# Event Branching：舊存檔無欄位 → fallback 起始值 / 空陣列
+	observe_tokens = int(data.get("observe_tokens", OBSERVE_TOKEN_START))
+	next_battle_buffs.clear()
+	for buff_v: Variant in (data.get("next_battle_buffs", []) as Array):
+		if buff_v is Dictionary:
+			next_battle_buffs.append(buff_v as Dictionary)
 	return true
+
+# Event Branching：消費 1 個 observe token。回傳是否成功（0 token 時 false）
+func consume_observe_token() -> bool:
+	if observe_tokens <= 0:
+		return false
+	observe_tokens -= 1
+	return true
+
+# Event Branching：補充 observe token（boss 勝利 / 特定 event）
+func grant_observe_tokens(amount: int = 1) -> void:
+	if amount <= 0:
+		return
+	observe_tokens += amount
+
+# Event Branching：把 effects 加入下場戰鬥開場 buff queue
+# 戰鬥 start_turn 時 BattleController 應消費這個列表並清空
+func queue_next_battle_buff(effects: Array) -> void:
+	for e_v: Variant in effects:
+		if e_v is Dictionary:
+			next_battle_buffs.append(e_v as Dictionary)
+
+# Event Branching：取出並清空 next_battle_buffs（戰鬥開場呼叫）
+func consume_next_battle_buffs() -> Array[Dictionary]:
+	var out: Array[Dictionary] = next_battle_buffs.duplicate()
+	next_battle_buffs.clear()
+	return out
 
 func _serialize_choices() -> Array:
 	var rows_out: Array = []

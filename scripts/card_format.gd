@@ -102,8 +102,7 @@ static func action_has_damage(action: Dictionary) -> bool:
 # 玩家手牌：哪些 effect kind 是「打到敵人身上」（drag 時需要丟到敵人附近才算）。
 # 其餘的（block / heal / draw / energy / power / self_damage）視為非單體，丟到手牌以外
 # 任何地方都算打出。
-const ENEMY_TARGETED_KINDS: Array[String] = ["damage", "poison", "weak", "vulnerable", "consume_energy_damage", "poison_burst", "steal", "status_amp_damage"]
-const AOE_KINDS: Array[String] = ["damage_all", "poison_all", "weak_all", "vulnerable_all"]
+const ENEMY_TARGETED_KINDS: Array[String] = ["damage", "damage_all", "poison", "poison_all", "weak", "weak_all", "vulnerable", "vulnerable_all", "consume_energy_damage", "poison_burst", "damage_debuff_bonus"]
 
 # 全體牌：含 AoE effect，不需要鎖定特定敵人目標
 static func is_aoe_card(card: CardData) -> bool:
@@ -114,7 +113,9 @@ static func is_aoe_card(card: CardData) -> bool:
 
 # 單體牌：需要拖曳到敵人肖像附近才算打出（含 steal，但 AoE 不算）
 static func requires_enemy_target(card: CardData) -> bool:
-	if is_aoe_card(card):
+	# 能力牌（card_type=="power"）一律對自己：power 增益本就 self，混的 debuff
+	# 自動套到 active 敵，玩家不該被迫拖到敵將才能啟動「自我強化」。
+	if card.card_type == "power":
 		return false
 	for effect: Dictionary in card.effects:
 		if String(effect.get("kind", "")) in ENEMY_TARGETED_KINDS:

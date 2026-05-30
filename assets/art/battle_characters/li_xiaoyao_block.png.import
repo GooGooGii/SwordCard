@@ -2,18 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b8jev66t5o6uj"
-valid=false
+uid="uid://cfuiwo2ifx6ww"
+path="res://.godot/imported/li_xiaoyao_block.png-773bdaf0089c9d03d3a5869cbb1f7270.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/battle_characters/li_xiaoyao_block.png"
+dest_files=["res://.godot/imported/li_xiaoyao_block.png-773bdaf0089c9d03d3a5869cbb1f7270.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.5
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

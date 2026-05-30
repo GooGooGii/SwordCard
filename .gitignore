@@ -21,3 +21,6 @@ desktop.ini
 .idea/
 .claude/
 .jdk17/
+
+# Scratch / experimental output
+tmp/

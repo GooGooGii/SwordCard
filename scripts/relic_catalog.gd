@@ -1,7 +1,7 @@
 class_name RelicCatalog
 extends RefCounted
 
-# 56 件裝備：45 通用 + 8 角色專武 + 3 神器
+# 61 件裝備：45 通用 + 10 角色專武 + 6 神器
 
 static func all() -> Array[RelicData]:
 	var list: Array[RelicData] = []
@@ -155,6 +155,9 @@ static func _generals() -> Array[RelicData]:
 		[{"trigger": "permanent", "effects": [{"kind": "event_power_bonus", "amount": 1}]}], Color("76c46a")))
 	l.append(_make("duo_bao_ge", "多寶閣", "卡牌獎勵顯示 4 張（原 3）。", "rare",
 		[{"trigger": "permanent", "effects": [{"kind": "card_reward_count_bonus", "amount": 1}]}], Color("d9c2ff")))
+	# Event Branching P4：淨化符 — 戰鬥勝利時驅散 1 張詛咒
+	l.append(_make("jing_hua_fu", "淨化符", "戰鬥勝利時，從牌組中除去 1 張隨機詛咒牌。", "rare",
+		[{"trigger": "battle_victory", "effects": [{"kind": "remove_random_curse"}]}], Color("c8e4ff"), "star"))
 	return l
 
 static func _weapons() -> Array[RelicData]:
@@ -174,11 +177,17 @@ static func _weapons() -> Array[RelicData]:
 		[{"trigger": "battle_start", "effects": [{"kind": "self_power", "amount": 2}]}], ThemeColors.HP_FILL))
 	l.append(_make_weapon("xuanshuang_bian", "玄霜鞭", "每出一張攻擊牌，敵人 +1 層破綻。", "lin_yueru", "rare",
 		[{"trigger": "card_played", "filter": {"card_type": "attack"}, "effects": [{"kind": "enemy_vulnerable", "amount": 1}]}], Color("8edcff")))
+	# 反擊流錨點（鳳鳴刀）：戰鬥開始得 3 點荊棘，搭配 Thorns 卡建反擊流
+	l.append(_make_weapon("fengming_dao", "鳳鳴刀", "戰鬥開始獲得 3 點荊棘（被攻擊時反彈傷害給攻擊者）。", "lin_yueru", "rare",
+		[{"trigger": "battle_start", "effects": [{"kind": "self_thorns", "amount": 3}]}], Color("e89a5f")))
 	# 阿奴 (蠱蟲)
-	l.append(_make_weapon("wanyi_wang", "萬蟻王", "敵人受到的蠱毒 +2。", "anu", "rare",
+	l.append(_make_weapon("wanyi_wang", "天蛇靈笛", "笛音催蠱，敵人受到的蠱毒 +2。", "anu", "rare",
 		[{"trigger": "passive_modifier", "effects": [{"kind": "poison_bonus", "amount": 2}]}], Color("6aa44a")))
 	l.append(_make_weapon("shigu_gu", "蝕骨蠱", "每回合開始敵人 +2 層蠱毒。", "anu", "rare",
 		[{"trigger": "turn_start", "effects": [{"kind": "enemy_poison", "amount": 2}]}], Color("8a4a76")))
+	# 阿奴刀流錨點（巫月神刀）：每出一張攻擊牌本場傷害 +1，連斬越多疊越快
+	l.append(_make_weapon("wuyue_shendao", "巫月神刀", "每出一張攻擊牌，本場戰鬥傷害 +1。", "anu", "rare",
+		[{"trigger": "card_played", "filter": {"card_type": "attack"}, "effects": [{"kind": "self_power", "amount": 1}]}], Color("c0455a")))
 	return l
 
 static func _artifacts() -> Array[RelicData]:

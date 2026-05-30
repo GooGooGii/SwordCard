@@ -12,6 +12,8 @@ const SEGMENTS: int = 64
 var energy: int = 0
 var max_energy: int = 3
 var _label: Label
+var _last_set_energy: int = -1  # 偵測 set_energy 增減以觸發 pulse；-1 = 首次
+var _pulse_tween: Tween = null
 
 func _ready() -> void:
 	_label = Label.new()
@@ -25,9 +27,29 @@ func _ready() -> void:
 	_refresh_label()
 
 func set_energy(current: int, total: int) -> void:
+	var prior: int = _last_set_energy
+	_last_set_energy = current
 	energy = current
 	max_energy = total
 	_refresh_label()
+	# 第一次設定不觸發動畫（戰鬥開始 fade in 自己會做）
+	if prior == -1 or prior == current:
+		return
+	_pulse(current > prior)
+
+func _pulse(increased: bool) -> void:
+	if _pulse_tween != null and _pulse_tween.is_valid():
+		_pulse_tween.kill()
+	pivot_offset = size / 2.0
+	var peak_scale: Vector2 = Vector2.ONE * (1.18 if increased else 1.10)
+	_pulse_tween = create_tween()
+	_pulse_tween.set_parallel(true)
+	_pulse_tween.tween_property(self, "scale", peak_scale, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_pulse_tween.tween_property(self, "scale", Vector2.ONE, 0.22).set_delay(0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	if increased:
+		# 能量回滿 / 增加：cyan flash 強調獎勵
+		modulate = Color(1.4, 1.4, 1.6)
+		_pulse_tween.tween_property(self, "modulate", Color.WHITE, 0.30)
 
 func _refresh_label() -> void:
 	if _label != null:

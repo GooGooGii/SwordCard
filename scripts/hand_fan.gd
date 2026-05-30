@@ -18,10 +18,38 @@ var _hovered_index: int = -1
 var _draw_animation_id: int = 0
 var _hover_tweens: Dictionary = {}
 var _selected_index: int = -1
+var _drag_locked: bool = false
 
 func _ready() -> void:
 	clip_contents = false
 	resized.connect(_layout)
+
+# 主控檔在 drag 啟動時呼叫，鎖住其他卡的 hover/select：
+# - exempt_button：正在被拖的那張，維持原 mouse_filter
+# - 其餘卡 mouse_filter 改 IGNORE，避免手指劃過時鄰卡抬升抖動
+# 釋放時傳 locked=false 還原
+func set_drag_locked(locked: bool, exempt_button: Button = null) -> void:
+	_drag_locked = locked
+	if locked:
+		# 把當下 hover 中、且不是被拖的那張，強制降回
+		if _hovered_index >= 0 and _hovered_index < _card_buttons.size():
+			var hovered_btn: Button = _card_buttons[_hovered_index]
+			if hovered_btn != exempt_button:
+				_force_unhover(_hovered_index)
+		# 被拖的那張：殺掉 hover tween，避免抬升動畫和 drag 寫位置打架（Android 上快速 tap→drag 會閃爍）
+		if exempt_button != null:
+			var exempt_idx: int = _card_buttons.find(exempt_button)
+			if exempt_idx >= 0:
+				_kill_hover_tween(exempt_idx)
+				if _hovered_index == exempt_idx:
+					_hovered_index = -1
+		for btn: Button in _card_buttons:
+			if btn != exempt_button and is_instance_valid(btn):
+				btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	else:
+		for btn: Button in _card_buttons:
+			if is_instance_valid(btn):
+				btn.mouse_filter = Control.MOUSE_FILTER_STOP
 
 func set_cards(buttons: Array[Button], animate: bool = false, animate_from: Vector2 = Vector2.ZERO) -> void:
 	_draw_animation_id += 1
@@ -161,13 +189,15 @@ func _kill_hover_tween(index: int) -> void:
 		_hover_tweens.erase(index)
 
 func _on_hover(index: int) -> void:
+	if _drag_locked:
+		return  # 拖拉中：鄰近卡不可被 hover 觸發抬升
 	if index < 0 or index >= _card_buttons.size():
 		return
 	if index == _selected_index:
 		return
-	# 先把前一張 hover 的卡動畫降回原位
+	# 先把前一張 hover 的卡動畫降回原位（強制，繞過 base position 重疊檢查）
 	if _hovered_index >= 0 and _hovered_index != index:
-		_on_unhover(_hovered_index)
+		_force_unhover(_hovered_index)
 	_hovered_index = index
 	var button: Button = _card_buttons[index]
 	button.z_index = 1000
@@ -184,6 +214,15 @@ func _on_unhover(index: int) -> void:
 		return
 	if index == _selected_index:
 		return
+	if _is_mouse_really_over(index):
+		return
+	_force_unhover(index)
+
+func _force_unhover(index: int) -> void:
+	if index < 0 or index >= _card_buttons.size():
+		return
+	if index == _selected_index:
+		return
 	if _hovered_index == index:
 		_hovered_index = -1
 	var button: Button = _card_buttons[index]
@@ -195,6 +234,40 @@ func _on_unhover(index: int) -> void:
 	tween.tween_property(button, "scale", Vector2.ONE, ANIM_DURATION)
 	tween.tween_property(button, "position", _base_positions[index], ANIM_DURATION)
 	_hover_tweens[index] = tween
+
+func _is_mouse_really_over(index: int) -> bool:
+	if index < 0 or index >= _card_buttons.size():
+		return false
+	var btn: Button = _card_buttons[index]
+	if btn == null or not is_instance_valid(btn):
+		return false
+	
+	var hand_mouse: Vector2 = get_local_mouse_position()
+	var rect: Rect2 = Rect2(Vector2.ZERO, btn.size)
+	
+	# 1. Check current physical position of the button
+	var local_mouse: Vector2 = btn.get_local_mouse_position()
+	if rect.has_point(local_mouse):
+		return true
+		
+	# 2. Check base position of the button (without the hover lift offset)
+	var base_pos: Vector2 = _base_positions[index]
+	var base_rot: float = _base_rotations[index]
+	var pivot: Vector2 = Vector2(btn.size.x / 2.0, btn.size.y + ARC_RADIUS)
+	var base_local_mouse: Vector2 = (hand_mouse - base_pos - pivot).rotated(-base_rot) + pivot
+	if rect.has_point(base_local_mouse):
+		return true
+		
+	return false
+
+func _process(_delta: float) -> void:
+	if _hovered_index >= 0:
+		var btn: Button = _card_buttons[_hovered_index]
+		if is_instance_valid(btn):
+			if btn.is_pressed() or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+				return
+			if not _is_mouse_really_over(_hovered_index):
+				_on_unhover(_hovered_index)
 
 func _apply_button_rest_state(button: Button, index: int) -> void:
 	if index == _selected_index:

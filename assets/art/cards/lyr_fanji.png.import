@@ -15,9 +15,9 @@ dest_files=["res://.godot/imported/lyr_fanji.png-e9ed0d68f41148090d4dae2fdf8c7aa
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.5
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
