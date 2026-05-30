@@ -98,7 +98,8 @@ func _should_upgrade_amount(kind: String) -> bool:
 		"power",
 		"consume_energy_damage",
 		"poison_burst",
-		"revive"
+		"revive",
+		"status_amp_damage"
 	]
 
 func to_dict() -> Dictionary:
@@ -140,7 +141,7 @@ func _upgraded_amount(kind: String, amount: int) -> int:
 	match kind:
 		"draw", "energy", "vulnerable":
 			return amount + 1
-		"weak", "poison", "power":
+		"weak", "poison", "power", "status_amp_damage":
 			return amount + 1
 		"consume_energy_damage", "poison_burst":
 			return amount + 2

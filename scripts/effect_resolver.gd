@@ -214,6 +214,15 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				var actual_heal: int = amount + int(state.get("heal_bonus", 0))
 				state["player_hp"] = min(int(state["player_max_hp"]), int(state["player_hp"]) + actual_heal)
 				log_lines.append("無人需救，改回復 %d 點生命。" % actual_heal)
+		"status_amp_damage":
+			# 追加傷害 = amount × (enemy_weak + enemy_vulnerable 層數)
+			var stacks: int = int(state["enemy_weak"]) + int(state["enemy_vulnerable"])
+			var bonus: int = amount * stacks + int(state.get("damage_out_bonus", 0))
+			if bonus > 0:
+				var blocked: int = min(int(state["enemy_block"]), bonus)
+				state["enemy_block"] = int(state["enemy_block"]) - blocked
+				state["enemy_hp"] = max(0, int(state["enemy_hp"]) - (bonus - blocked))
+				log_lines.append("狀態加成（%d 層），追加 %d 點傷害。" % [stacks, bonus - blocked])
 		"cure_poison":
 			state["player_poison"] = 0
 			log_lines.append("蠱毒已全數清除。")

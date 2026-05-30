@@ -105,6 +105,7 @@ static func _zhao_linger() -> CharacterData:
 		make_card("zl_shenlei", "神雷降世", "趙靈兒", 3, "attack", "天雷降臨人間，對所有敵人各造成 12 點傷害。", [{"kind": "damage_all", "amount": 12}], "rare"),
 		make_card("zl_leizhen", "天雷陣", "趙靈兒", 2, "attack", "布下雷陣，對所有敵人各造成 7 點傷害。", [{"kind": "damage_all", "amount": 7}], "uncommon"),
 		make_card("zl_xuanbingfeng", "玄冰封", "趙靈兒", 2, "skill", "冰封四方，對所有敵人施加 3 層虛弱。", [{"kind": "weak_all", "amount": 3}], "uncommon"),
+		make_card("zl_shuifeng", "水靈封印", "趙靈兒", 1, "attack", "造成 5 點傷害；目標每層虛弱或破綻 +2 傷害。", [{"kind": "damage", "amount": 5}, {"kind": "status_amp_damage", "amount": 2}], "uncommon"),
 	]
 	var zl: CharacterData = _character("zhao_linger", "趙靈兒", 68, "五靈仙術、治療、護盾與夢蛇爆發。", cards)
 	zl.starting_deck = [
