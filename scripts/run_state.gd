@@ -23,6 +23,10 @@ var pending_rest_heal: int = 0
 var current_shop_inventory: Array[Dictionary] = []
 var current_shop_potions: Array[Dictionary] = []
 var current_shop_is_black: bool = false
+var current_shop_relic_id: String = ""    # 本商店額外販售的遺物 id（買掉後清空）
+var current_shop_node_index: int = -1      # 已開出貨架的 encounter_index；-1 = 尚未開店
+var shop_remove_used: bool = false         # 本商店削牌服務是否用過
+var shop_upgrade_used: bool = false        # 本商店強化服務是否用過
 var current_event_variant: String = "shrine"
 var relics: Array[RelicData] = []
 var potions: Array[Dictionary] = []   # max MAX_POTION_SLOTS 元素，每個是 PotionCatalog 的一筆
@@ -138,6 +142,10 @@ func init_for(chars: Variant) -> void:
 	current_shop_inventory = []
 	current_shop_potions = []
 	current_shop_is_black = false
+	current_shop_relic_id = ""
+	current_shop_node_index = -1
+	shop_remove_used = false
+	shop_upgrade_used = false
 	current_event_variant = "shrine"
 	relics.clear()
 	potions.clear()
@@ -251,7 +259,12 @@ func to_dict() -> Dictionary:
 		"chosen_map_path": chosen_map_path.duplicate(),
 		"pending_rest_heal": pending_rest_heal,
 		"current_shop_inventory": _serialize_shop_inventory(),
+		"current_shop_potions": current_shop_potions.duplicate(true),
 		"current_shop_is_black": current_shop_is_black,
+		"current_shop_relic_id": current_shop_relic_id,
+		"current_shop_node_index": current_shop_node_index,
+		"shop_remove_used": shop_remove_used,
+		"shop_upgrade_used": shop_upgrade_used,
 		"current_event_variant": current_event_variant,
 		"relics": relics_data,
 		"potions": potions.duplicate(),
@@ -326,7 +339,15 @@ func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> 
 		chosen_map_path.append(int(entry))
 	pending_rest_heal = int(data.get("pending_rest_heal", 0))
 	current_shop_inventory = _deserialize_shop_inventory(data.get("current_shop_inventory", []) as Array)
+	current_shop_potions = []
+	for p_v: Variant in (data.get("current_shop_potions", []) as Array):
+		if p_v is Dictionary:
+			current_shop_potions.append((p_v as Dictionary).duplicate(true))
 	current_shop_is_black = bool(data.get("current_shop_is_black", false))
+	current_shop_relic_id = String(data.get("current_shop_relic_id", ""))
+	current_shop_node_index = int(data.get("current_shop_node_index", -1))
+	shop_remove_used = bool(data.get("shop_remove_used", false))
+	shop_upgrade_used = bool(data.get("shop_upgrade_used", false))
 	current_event_variant = String(data.get("current_event_variant", "shrine"))
 	relics.clear()
 	for relic_data: Variant in (data.get("relics", []) as Array):

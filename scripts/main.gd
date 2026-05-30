@@ -4273,11 +4273,16 @@ func resolve_event_power(amount: int = 1) -> void:
 		advance_non_battle_node()
 
 func open_shop_node(is_black_shop: bool) -> void:
-	run_state.current_shop_is_black = is_black_shop
-	run_state.current_shop_inventory = _make_shop_inventory(is_black_shop)
-	run_state.current_shop_potions = ShopInventory.build_potions(is_black_shop)
-	run_state.set_meta("shop_remove_used", false)
-	run_state.set_meta("shop_upgrade_used", false)
+	# 只有「第一次」進這個節點的商店才重抽貨架。之後再進來（含離開程式 / 回主畫面後重載存檔）
+	# 都沿用已存的貨架，避免在同一個商店反覆刷新、無限買遺物。
+	if run_state.current_shop_node_index != run_state.encounter_index:
+		run_state.current_shop_is_black = is_black_shop
+		run_state.current_shop_inventory = _make_shop_inventory(is_black_shop)
+		run_state.current_shop_potions = ShopInventory.build_potions(is_black_shop)
+		run_state.current_shop_relic_id = _pick_shop_relic_id()
+		run_state.shop_remove_used = false
+		run_state.shop_upgrade_used = false
+		run_state.current_shop_node_index = run_state.encounter_index
 	show_shop_node()
 
 func show_shop_node() -> void:
@@ -4307,11 +4312,8 @@ func show_shop_node() -> void:
 	box.add_child(goods_row)
 	for item: Dictionary in run_state.current_shop_inventory:
 		goods_row.add_child(_shop_item_view(item))
-	# 商店多賣 1 件裝備（每次進商店重抽）
-	if not run_state.has_meta("shop_relic_offered_at_index") or int(run_state.get_meta("shop_relic_offered_at_index", -1)) != run_state.encounter_index:
-		run_state.set_meta("shop_relic_offered_at_index", run_state.encounter_index)
-		run_state.set_meta("shop_relic_id", _pick_shop_relic_id())
-	var shop_relic_id: String = String(run_state.get_meta("shop_relic_id", ""))
+	# 商店多賣 1 件裝備（在 open_shop_node 開店時就決定，買掉後清空、不重抽）
+	var shop_relic_id: String = run_state.current_shop_relic_id
 	if not shop_relic_id.is_empty() and not run_state.has_relic(shop_relic_id):
 		var relic: RelicData = RelicCatalog.by_id(shop_relic_id)
 		if relic != null:
@@ -4329,8 +4331,8 @@ func show_shop_node() -> void:
 	box.add_child(services_row)
 	var remove_price: int = _shop_apply_discount(75)
 	var upgrade_price: int = _shop_apply_discount(100)
-	var remove_used: bool = bool(run_state.get_meta("shop_remove_used", false))
-	var upgrade_used: bool = bool(run_state.get_meta("shop_upgrade_used", false))
+	var remove_used: bool = run_state.shop_remove_used
+	var upgrade_used: bool = run_state.shop_upgrade_used
 	services_row.add_child(_shop_service_panel(
 		"削牌服務", "從牌組中移除一張牌", remove_price,
 		remove_used, run_state.deck.size() > 5,
@@ -4414,7 +4416,7 @@ func _buy_shop_relic(relic: RelicData, price: int) -> void:
 		return
 	run_state.gold -= price
 	run_state.add_relic(relic)
-	run_state.set_meta("shop_relic_id", "")  # 清掉這次的商店裝備
+	run_state.current_shop_relic_id = ""  # 買掉這次的商店裝備
 	show_shop_node()
 
 func _shop_potion_view(item: Dictionary) -> Control:
@@ -4562,7 +4564,7 @@ func _shop_deck_remove(card: CardData) -> void:
 		close_deck_view()
 		return
 	run_state.gold -= _deck_view_service_price
-	run_state.set_meta("shop_remove_used", true)
+	run_state.shop_remove_used = true
 	for i: int in range(run_state.deck.size()):
 		if run_state.deck[i] == card:
 			run_state.deck.remove_at(i)
@@ -4575,7 +4577,7 @@ func _shop_deck_upgrade(card: CardData) -> void:
 		close_deck_view()
 		return
 	run_state.gold -= _deck_view_service_price
-	run_state.set_meta("shop_upgrade_used", true)
+	run_state.shop_upgrade_used = true
 	for i: int in range(run_state.deck.size()):
 		if run_state.deck[i] == card:
 			run_state.deck[i] = card.upgraded_copy()
@@ -4751,6 +4753,7 @@ func show_act_complete() -> void:
 		run_state.character_hps[i] = min(run_state.character_max_hps[i], run_state.character_hps[i] + ACT_HEAL_AMOUNT)
 	run_state.act = completed_act + 1
 	run_state.encounter_index = 0
+	run_state.current_shop_node_index = -1  # encounter_index 重置，商店標記也要清，否則新幕同索引商店不重抽
 	run_state.chosen_map_path.clear()
 	run_state.encounter_choices = _make_encounter_choices()
 	SaveManager.save(run_state)
