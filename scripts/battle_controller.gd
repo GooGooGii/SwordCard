@@ -36,9 +36,15 @@ var deck: DeckManager:
 func _active_index() -> int:
 	return int(state.get("active_player_index", 0))
 
-func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: EnemyData) -> void:
+func setup(rs: RunState, _legacy_character: CharacterData, enemies_input) -> void:
+	var enemies: Array[EnemyData] = []
+	if enemies_input is EnemyData:
+		enemies.append((enemies_input as EnemyData).clone())
+	else:
+		for e_v: Variant in (enemies_input as Array):
+			enemies.append((e_v as EnemyData).clone())
 	run_state = rs
-	enemy = chosen_enemy.clone()
+	enemy = enemies[0] if not enemies.is_empty() else EnemyData.new()
 	resolver = EffectResolver.new()
 	action_index = 0
 	phased = false
@@ -65,11 +71,33 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: EnemyDa
 			"vulnerable": 0,
 			"power": run_state.character_power_bonus[i],
 		})
+	# 敵人群組
+	var group_list: Array[Dictionary] = []
+	for e_item: EnemyData in enemies:
+		group_list.append({
+			"id": e_item.id,
+			"name": e_item.display_name,
+			"hp": e_item.max_hp,
+			"max_hp": e_item.max_hp,
+			"block": 0,
+			"poison": 0,
+			"weak": 0,
+			"vulnerable": 0,
+			"portrait_path": e_item.portrait_path,
+			"portrait_tint": e_item.portrait_tint,
+			"action_index": 0,
+			"phased": false,
+			"loot_table": GameData.loot_table_for(e_item.id),
+			"actions": e_item.actions.duplicate(true),
+			"phase_2_actions": e_item.phase_2_actions.duplicate(true),
+		})
 	state = {
 		"players": players,
 		"active_player_index": clamp(run_state.active_character_index, 0, max(0, party_size - 1)),
 		"switched_this_turn": false,
 		"per_turn_energy": per_turn_energy,
+		"enemy_group": group_list,
+		"targeted_enemy_index": 0,
 		"enemy_name": enemy.display_name,
 		"enemy_max_hp": enemy.max_hp,
 		"enemy_hp": enemy.max_hp,
@@ -99,6 +127,47 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: EnemyDa
 	_apply_relic_modifiers()
 	_apply_party_battle_start_passives()
 	_fire_relic_triggers("battle_start")
+
+# 把 enemy_group[targeted_enemy_index] 的資料投影到 state["enemy_*"] 平坦別名
+func _sync_target_to_aliases() -> void:
+	var idx: int = int(state.get("targeted_enemy_index", 0))
+	var group: Array = state.get("enemy_group", []) as Array
+	if group.is_empty() or idx >= group.size():
+		return
+	var eg: Dictionary = group[idx] as Dictionary
+	state["enemy_name"] = eg["name"]
+	state["enemy_hp"] = eg["hp"]
+	state["enemy_max_hp"] = eg["max_hp"]
+	state["enemy_block"] = eg["block"]
+	state["enemy_poison"] = eg["poison"]
+	state["enemy_weak"] = eg["weak"]
+	state["enemy_vulnerable"] = eg["vulnerable"]
+	state["enemy_loot_table"] = eg.get("loot_table", [])
+
+# 把 state["enemy_*"] 平坦別名的結果寫回 enemy_group[targeted_enemy_index]
+func _sync_aliases_to_target() -> void:
+	var idx: int = int(state.get("targeted_enemy_index", 0))
+	var group: Array = state.get("enemy_group", []) as Array
+	if group.is_empty() or idx >= group.size():
+		return
+	var eg: Dictionary = group[idx] as Dictionary
+	eg["hp"] = int(state.get("enemy_hp", 0))
+	eg["max_hp"] = int(state.get("enemy_max_hp", 0))
+	eg["block"] = int(state.get("enemy_block", 0))
+	eg["poison"] = int(state.get("enemy_poison", 0))
+	eg["weak"] = int(state.get("enemy_weak", 0))
+	eg["vulnerable"] = int(state.get("enemy_vulnerable", 0))
+
+# 設定目標敵人並同步別名（供 main.gd 點選切換目標）
+func set_targeted_enemy(idx: int) -> void:
+	var group: Array = state.get("enemy_group", []) as Array
+	if idx < 0 or idx >= group.size():
+		return
+	if int((group[idx] as Dictionary)["hp"]) <= 0:
+		return
+	_sync_aliases_to_target()
+	state["targeted_enemy_index"] = idx
+	_sync_target_to_aliases()
 
 # 把 active player slot 的欄位投影到 state["player_*"]，
 # 讓 EffectResolver 的舊 key 路徑繼續適用
@@ -215,7 +284,13 @@ func snapshot_state() -> Dictionary:
 	}
 
 func is_victory() -> bool:
-	return int(state["enemy_hp"]) <= 0
+	var group: Array = state.get("enemy_group", []) as Array
+	if group.is_empty():
+		return int(state.get("enemy_hp", 0)) <= 0
+	for eg_v: Variant in group:
+		if int((eg_v as Dictionary)["hp"]) > 0:
+			return false
+	return true
 
 func is_defeat() -> bool:
 	var players: Array = state.get("players", []) as Array
@@ -240,16 +315,47 @@ func complete_victory() -> void:
 	run_state.active_character_index = _active_index()
 
 func next_enemy_action() -> Dictionary:
+	var group: Array = state.get("enemy_group", []) as Array
+	var idx: int = int(state.get("targeted_enemy_index", 0))
+	if not group.is_empty() and idx < group.size():
+		var eg: Dictionary = group[idx] as Dictionary
+		var ai: int = int(eg["action_index"])
+		var acts: Array = []
+		if bool(eg["phased"]) and not (eg["phase_2_actions"] as Array).is_empty():
+			acts = eg["phase_2_actions"] as Array
+		else:
+			acts = eg["actions"] as Array
+		if acts.is_empty():
+			return {}
+		return acts[ai % acts.size()] as Dictionary
 	var active: Array[Dictionary] = enemy.phase_2_actions if (phased and not enemy.phase_2_actions.is_empty()) else enemy.actions
 	return active[action_index % active.size()]
 
 func _check_phase_transition() -> void:
-	if phased or enemy.phase_2_actions.is_empty():
+	var idx: int = int(state.get("targeted_enemy_index", 0))
+	_check_phase_transition_for(idx)
+	# 同步 class-level phased 到 enemy[0] 保持向後相容
+	var group: Array = state.get("enemy_group", []) as Array
+	if not group.is_empty():
+		phased = bool((group[0] as Dictionary)["phased"])
+
+func _check_phase_transition_for(idx: int) -> void:
+	var group: Array = state.get("enemy_group", []) as Array
+	if group.is_empty() or idx >= group.size():
+		if phased or enemy.phase_2_actions.is_empty():
+			return
+		if int(state["enemy_hp"]) * 2 < int(state["enemy_max_hp"]):
+			phased = true
+			action_index = 0
+			add_log("%s 怒色暴漲，招式變換！" % enemy.display_name)
 		return
-	if int(state["enemy_hp"]) * 2 < int(state["enemy_max_hp"]):
-		phased = true
-		action_index = 0
-		add_log("%s 怒色暴漲，招式變換！" % enemy.display_name)
+	var eg: Dictionary = group[idx] as Dictionary
+	if bool(eg["phased"]) or (eg["phase_2_actions"] as Array).is_empty():
+		return
+	if int(eg["hp"]) * 2 < int(eg["max_hp"]):
+		eg["phased"] = true
+		eg["action_index"] = 0
+		add_log("%s 怒色暴漲，招式變換！" % String(eg["name"]))
 
 func effective_card_cost(card: CardData) -> int:
 	if character == null:
@@ -276,6 +382,8 @@ func start_turn() -> Dictionary:
 	_apply_bench_heal()
 	var before_tick: Dictionary = snapshot_state()
 	add_logs(resolver.tick_statuses(state))
+	_sync_target_to_aliases()  # enemy_group 毒傷已更新，刷新平坦別名
+	# 同時刷新 start_turn 裡的 enemy_vulnerable / weak 衰減（只對目標敵人；多敵每人各自衰減見 begin_enemy_phase_all）
 	_sync_state_to_active()
 	if is_battle_over():
 		return {"before_tick": before_tick, "ended": true}
@@ -304,12 +412,19 @@ func play_card(card: CardData) -> Dictionary:
 	if int(state["energy"]) < cost:
 		add_log("靈力不足，無法施放 %s。" % card.display_title())
 		return {"affordable": false}
+	if card.gold_cost > 0 and run_state.gold < card.gold_cost:
+		add_log("銅錢不足，無法施放 %s（需 %d 枚）。" % [card.display_title(), card.gold_cost])
+		return {"affordable": false}
 	state["energy"] = int(state["energy"]) - cost
+	if card.gold_cost > 0:
+		run_state.gold -= card.gold_cost
+		add_log("花費 %d 枚銅錢。" % card.gold_cost)
 	if character != null and not character.passive_by_trigger("first_attack_cost").is_empty() and card.card_type == "attack" and not bool(state["li_discount_used"]):
 		state["li_discount_used"] = true
 	add_log("施放 %s。" % card.display_title())
 	var before_card: Dictionary = snapshot_state()
 	add_logs(resolver.resolve_card(card, state))
+	_sync_aliases_to_target()  # 單體效果寫回 enemy_group
 	var steal: Dictionary = state.get("steal_result", {}) as Dictionary
 	if not steal.is_empty():
 		state["steal_result"] = {}
@@ -331,6 +446,13 @@ func play_card(card: CardData) -> Dictionary:
 	return {"affordable": true, "before_card": before_card, "ended": is_battle_over()}
 
 func begin_enemy_phase() -> Dictionary:
+	# 向後相容單敵版本（smoke test 用）
+	var all_actions: Array[Dictionary] = begin_enemy_phase_all()
+	if all_actions.is_empty():
+		return {}
+	return all_actions[0].get("action", {}) as Dictionary
+
+func begin_enemy_phase_all() -> Array[Dictionary]:
 	_fire_relic_triggers("turn_end")
 	if deck != null:
 		deck.discard_hand()
@@ -339,20 +461,50 @@ func begin_enemy_phase() -> Dictionary:
 	if int(state["player_vulnerable"]) > 0:
 		state["player_vulnerable"] = int(state["player_vulnerable"]) - 1
 	_sync_state_to_active()
-	var action: Dictionary = next_enemy_action()
-	action_index = action_index + 1
-	add_log("%s 準備施放：%s。" % [enemy.display_name, String(action["intent"])])
-	return action
+	var action_list: Array[Dictionary] = []
+	var group: Array = state.get("enemy_group", []) as Array
+	for i: int in range(group.size()):
+		var eg: Dictionary = group[i] as Dictionary
+		if int(eg["hp"]) <= 0:
+			continue
+		# 回合開始：每個活著的敵人狀態衰減
+		if int(eg["vulnerable"]) > 0:
+			eg["vulnerable"] = int(eg["vulnerable"]) - 1
+		if int(eg["weak"]) > 0:
+			eg["weak"] = int(eg["weak"]) - 1
+		var acts: Array = []
+		if bool(eg["phased"]) and not (eg["phase_2_actions"] as Array).is_empty():
+			acts = eg["phase_2_actions"] as Array
+		else:
+			acts = eg["actions"] as Array
+		if acts.is_empty():
+			continue
+		var ai: int = int(eg["action_index"])
+		var action: Dictionary = acts[ai % acts.size()] as Dictionary
+		eg["action_index"] = ai + 1
+		add_log("%s 準備施放：%s。" % [String(eg["name"]), String(action["intent"])])
+		action_list.append({"enemy_index": i, "action": action, "enemy_name": String(eg["name"])})
+	# 同步目標別名（vulnerable/weak 已衰減）
+	_sync_target_to_aliases()
+	return action_list
 
-func resolve_enemy_phase(action: Dictionary) -> Dictionary:
-	add_log("%s：%s。" % [enemy.display_name, String(action["intent"])])
+func resolve_single_enemy_action(enemy_index: int, action: Dictionary) -> Dictionary:
+	state["targeted_enemy_index"] = enemy_index
+	_sync_target_to_aliases()
+	add_log("%s：%s。" % [state["enemy_name"], String(action["intent"])])
 	var before_enemy: Dictionary = snapshot_state()
 	add_logs(resolver.resolve_enemy_action(action, state))
+	_sync_aliases_to_target()
+	_check_phase_transition_for(enemy_index)
 	_sync_state_to_active()
-	# active 死了？嘗試強制換人
 	if not _is_active_alive() and not is_defeat():
 		_force_switch_to_first_alive(true)
 	return {"before_enemy": before_enemy, "ended": is_battle_over()}
+
+func resolve_enemy_phase(action: Dictionary) -> Dictionary:
+	# 向後相容（smoke test 用）：以目前 targeted_enemy_index 解算
+	var idx: int = int(state.get("targeted_enemy_index", 0))
+	return resolve_single_enemy_action(idx, action)
 
 func passive_status_text() -> String:
 	if state.is_empty() or character == null:

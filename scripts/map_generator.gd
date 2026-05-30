@@ -105,7 +105,13 @@ static func _make_map_node(node_type: String, node_index: int, normal_enemies: A
 	if node_type == "battle":
 		var pool: Array[EnemyData] = normal_enemies.duplicate()
 		pool.shuffle()
-		node_data["enemy"] = pool[0].clone()
+		# 中後期有 25% 機率變成雙敵群戰
+		if pool.size() >= 2 and randf() < 0.25:
+			var e1: EnemyData = pool[0].clone()
+			var e2: EnemyData = pool[1 if randi() % 2 == 0 else 0].clone()
+			node_data["enemies"] = [e1, e2]
+		else:
+			node_data["enemy"] = pool[0].clone()
 	elif node_type == "event":
 		node_data["event_variant"] = event_pool[randi_range(0, event_pool.size() - 1)]
 	elif node_type == "shop":

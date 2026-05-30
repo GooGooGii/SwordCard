@@ -1,7 +1,7 @@
 class_name GameData
 extends RefCounted
 
-static func make_card(id: String, display_name: String, owner: String, cost: int, card_type: String, description: String, effects: Array[Dictionary], rarity: String = "basic", art_id: String = "") -> CardData:
+static func make_card(id: String, display_name: String, owner: String, cost: int, card_type: String, description: String, effects: Array[Dictionary], rarity: String = "basic", art_id: String = "", gold_cost: int = 0) -> CardData:
 	var card: CardData = CardData.new()
 	card.id = id
 	card.display_name = display_name
@@ -11,6 +11,7 @@ static func make_card(id: String, display_name: String, owner: String, cost: int
 	card.description = description
 	card.effects = effects
 	card.rarity = rarity
+	card.gold_cost = gold_cost
 	var image_id: String = id if art_id.is_empty() else art_id
 	card.art_path = "res://assets/art/cards/%s.png" % image_id
 	return card
@@ -36,6 +37,16 @@ static func enemies_for_act(act: int) -> Array[EnemyData]:
 		5: return [_moon_worshipper(), _baiyue_guard(), _ancient_evil_spirit()]
 	return [_bandit(), _beast()]
 
+# 多敵遭遇：各幕可能出現的雙敵組合
+static func encounter_groups_for_act(act: int) -> Array[Array]:
+	match act:
+		1: return [[_bandit(), _bandit()], [_bandit(), _beast()]]
+		2: return [[_zombie_soldier(), _zombie_soldier()], [_fox_spirit(), _sword_spirit()]]
+		3: return [[_gu_cultist(), _serpent_demon()], [_toxic_centipede(), _gu_cultist()]]
+		4: return [[_tower_demon(), _tower_ghost_soldier()]]
+		5: return [[_baiyue_guard(), _ancient_evil_spirit()]]
+	return [[_bandit(), _bandit()]]
+
 static func boss_for_act(act: int) -> EnemyData:
 	match act:
 		1: return _red_eye_demon()
@@ -48,7 +59,7 @@ static func boss_for_act(act: int) -> EnemyData:
 static func _li_xiaoyao() -> CharacterData:
 	var cards: Array[CardData] = [
 		make_card("lxy_yujian", "御劍術", "李逍遙", 1, "attack", "造成 7 點傷害。", [{"kind": "damage", "amount": 7}]),
-		make_card("lxy_wanjian", "萬劍訣", "李逍遙", 2, "attack", "連續劍氣，造成 5 點傷害三次。", [{"kind": "damage", "amount": 5}, {"kind": "damage", "amount": 5}, {"kind": "damage", "amount": 5}]),
+		make_card("lxy_wanjian", "萬劍訣", "李逍遙", 2, "attack", "萬劍齊發，對所有敵人各造成 4 點傷害兩次。", [{"kind": "damage_all", "amount": 4}, {"kind": "damage_all", "amount": 4}]),
 		make_card("lxy_feilong", "飛龍探雲手", "李逍遙", 1, "skill", "造成 4 點傷害，抽 1 張牌，回復 1 點靈力，並從敵人身上偷取一件物品。", [{"kind": "damage", "amount": 4}, {"kind": "draw", "amount": 1}, {"kind": "energy", "amount": 1}, {"kind": "steal"}]),
 		make_card("lxy_tianshi", "天師符法", "李逍遙", 1, "attack", "造成 9 點法術傷害。", [{"kind": "damage", "amount": 9}]),
 		make_card("lxy_jiushen", "酒神咒", "李逍遙", 3, "attack", "造成 28 點傷害，自身承受 8 點反噬。", [{"kind": "damage", "amount": 28}, {"kind": "self_damage", "amount": 8}], "rare"),
@@ -61,9 +72,19 @@ static func _li_xiaoyao() -> CharacterData:
 		make_card("lxy_liepo", "裂魄斬", "李逍遙", 1, "attack", "造成 10 點傷害，使敵人虛弱 1 層。", [{"kind": "damage", "amount": 10}, {"kind": "weak", "amount": 1}], "uncommon"),
 		make_card("lxy_qingfeng", "清風御劍", "李逍遙", 1, "skill", "獲得 5 點護體，抽 2 張牌。", [{"kind": "block", "amount": 5}, {"kind": "draw", "amount": 2}], "uncommon"),
 		make_card("lxy_jiulong", "九龍訣", "李逍遙", 3, "attack", "御劍九式，造成 12 點傷害三次。", [{"kind": "damage", "amount": 12}, {"kind": "damage", "amount": 12}, {"kind": "damage", "amount": 12}], "rare"),
-		make_card("lxy_zuilong", "醉龍翻江", "李逍遙", 2, "attack", "造成 18 點傷害，自身承受 5 點反噬，抽 1 張牌。", [{"kind": "damage", "amount": 18}, {"kind": "self_damage", "amount": 5}, {"kind": "draw", "amount": 1}], "rare")
+		make_card("lxy_zuilong", "醉龍翻江", "李逍遙", 2, "attack", "造成 18 點傷害，自身承受 5 點反噬，抽 1 張牌。", [{"kind": "damage", "amount": 18}, {"kind": "self_damage", "amount": 5}, {"kind": "draw", "amount": 1}], "rare"),
+		make_card("lxy_xuanfengjian", "旋風劍氣", "李逍遙", 2, "attack", "劍氣橫掃，對所有敵人各造成 6 點傷害。", [{"kind": "damage_all", "amount": 6}], "uncommon"),
+		make_card("lxy_qunying", "群英斬", "李逍遙", 3, "attack", "縱橫四方，對所有敵人各造成 10 點傷害。", [{"kind": "damage_all", "amount": 10}], "rare"),
 	]
-	return _character("li_xiaoyao", "李逍遙", 74, "劍術、爆發、偷取與酒神系高風險高傷害。", cards)
+	var lxy: CharacterData = _character("li_xiaoyao", "李逍遙", 74, "劍術、爆發、偷取與酒神系高風險高傷害。", cards)
+	lxy.starting_deck = [
+		cards[0], cards[0], cards[0],  # 3x 御劍術
+		cards[3], cards[3],            # 2x 天師符法
+		cards[2],                      # 1x 飛龍探雲手
+		cards[7], cards[7],            # 2x 劍氣護身
+		cards[5],                      # 1x 仙風雲體
+	]
+	return lxy
 
 static func _zhao_linger() -> CharacterData:
 	var cards: Array[CardData] = [
@@ -81,25 +102,28 @@ static func _zhao_linger() -> CharacterData:
 		make_card("zl_shuiling", "水靈護罩", "趙靈兒", 2, "skill", "回復 8 點生命並獲得 10 點護體。", [{"kind": "heal", "amount": 8}, {"kind": "block", "amount": 10}], "uncommon"),
 		make_card("zl_leiguang", "雷光連擊", "趙靈兒", 1, "attack", "造成 7 點傷害，使敵人虛弱 1 層。", [{"kind": "damage", "amount": 7}, {"kind": "weak", "amount": 1}]),
 		make_card("zl_lingxi", "靈息術", "趙靈兒", 1, "skill", "抽 2 張牌並回復 4 點生命。", [{"kind": "draw", "amount": 2}, {"kind": "heal", "amount": 4}], "uncommon"),
-		make_card("zl_shenlei", "神雷降世", "趙靈兒", 3, "attack", "天降神雷，造成 30 點傷害。", [{"kind": "damage", "amount": 30}], "rare")
+		make_card("zl_shenlei", "神雷降世", "趙靈兒", 3, "attack", "天雷降臨人間，對所有敵人各造成 12 點傷害。", [{"kind": "damage_all", "amount": 12}], "rare"),
+		make_card("zl_leizhen", "天雷陣", "趙靈兒", 2, "attack", "布下雷陣，對所有敵人各造成 7 點傷害。", [{"kind": "damage_all", "amount": 7}], "uncommon"),
+		make_card("zl_xuanbingfeng", "玄冰封", "趙靈兒", 2, "skill", "冰封四方，對所有敵人施加 3 層虛弱。", [{"kind": "weak_all", "amount": 3}], "uncommon"),
+		make_card("zl_shuifeng", "水靈封印", "趙靈兒", 1, "attack", "造成 5 點傷害；目標每層虛弱或破綻 +2 傷害。", [{"kind": "damage", "amount": 5}, {"kind": "status_amp_damage", "amount": 2}], "uncommon"),
 	]
-	var character: CharacterData = _character("zhao_linger", "趙靈兒", 68, "五靈仙術、治療、護盾與夢蛇爆發。", cards)
-	character.starting_deck = [
-		cards[3], cards[3], cards[3],   # 3x 雷咒 10
-		cards[2], cards[2],              # 2x 玄冰咒 6+虛弱
-		cards[12], cards[12],            # 2x 雷光連擊 7+虛弱
-		cards[7], cards[7],              # 2x 靈光護體 12
-		cards[0], cards[0],              # 2x 觀音咒 治療
-		cards[4],                        # 1x 夢蛇 強化
+	var zl: CharacterData = _character("zhao_linger", "趙靈兒", 68, "五靈仙術、治療、護盾與夢蛇爆發。", cards)
+	zl.starting_deck = [
+		cards[3], cards[3], cards[3],  # 3x 雷咒
+		cards[2], cards[2],            # 2x 玄冰咒
+		cards[12], cards[12],          # 2x 雷光連擊
+		cards[7], cards[7],            # 2x 靈光護體
+		cards[0], cards[0],            # 2x 觀音咒
+		cards[8],                      # 1x 幻雨咒
 	]
-	return character
+	return zl
 
 static func _lin_yueru() -> CharacterData:
 	var cards: Array[CardData] = [
 		make_card("lyr_qijianzhi", "氣劍指", "林月如", 1, "attack", "造成 8 點傷害。", [{"kind": "damage", "amount": 8}]),
 		make_card("lyr_yiyang", "一陽指", "林月如", 2, "attack", "造成 18 點傷害。", [{"kind": "damage", "amount": 18}], "uncommon"),
 		make_card("lyr_zhanlong", "斬龍訣", "林月如", 3, "attack", "造成 30 點傷害。", [{"kind": "damage", "amount": 30}], "rare"),
-		make_card("lyr_qiankun", "乾坤一擲", "林月如", 0, "attack", "消耗全部靈力，每點造成 9 點傷害。", [{"kind": "consume_energy_damage", "amount": 9}], "rare"),
+		make_card("lyr_qiankun", "乾坤一指", "林月如", 0, "attack", "花費 30 銅錢，消耗全部靈力，每點造成 9 點傷害。", [{"kind": "consume_energy_damage", "amount": 9}], "rare", "", 30),
 		make_card("lyr_fanji", "回身反擊", "林月如", 1, "skill", "獲得 8 點護體並造成 5 點傷害。", [{"kind": "block", "amount": 8}, {"kind": "damage", "amount": 5}]),
 		make_card("lyr_bianying", "鞭影連環", "林月如", 1, "attack", "造成 4 點傷害兩次，施加 1 層破綻。", [{"kind": "damage", "amount": 4}, {"kind": "damage", "amount": 4}, {"kind": "vulnerable", "amount": 1}]),
 		make_card("lyr_shenfa", "月影身法", "林月如", 1, "skill", "獲得 7 點護體，抽 1 張牌。", [{"kind": "block", "amount": 7}, {"kind": "draw", "amount": 1}], "uncommon"),
@@ -109,16 +133,26 @@ static func _lin_yueru() -> CharacterData:
 		make_card("lyr_xuanjian", "旋劍花舞", "林月如", 1, "attack", "造成 5 點傷害兩次。", [{"kind": "damage", "amount": 5}, {"kind": "damage", "amount": 5}]),
 		make_card("lyr_kuaijian", "輕劍急刺", "林月如", 0, "attack", "造成 6 點傷害。", [{"kind": "damage", "amount": 6}], "uncommon"),
 		make_card("lyr_poqian", "破千謀", "林月如", 2, "attack", "造成 20 點傷害，抽 1 張牌。", [{"kind": "damage", "amount": 20}, {"kind": "draw", "amount": 1}], "uncommon"),
-		make_card("lyr_tianv", "天女散花", "林月如", 1, "attack", "造成 4 點傷害，施加 1 層破綻，抽 1 張牌。", [{"kind": "damage", "amount": 4}, {"kind": "vulnerable", "amount": 1}, {"kind": "draw", "amount": 1}], "uncommon"),
-		make_card("lyr_tieyi", "鐵衣功", "林月如", 2, "skill", "獲得 18 點護體。", [{"kind": "block", "amount": 18}], "rare")
+		make_card("lyr_tianv", "天女散花", "林月如", 1, "attack", "向四面八方散射，對所有敵人各造成 3 點傷害並施加 1 層破綻。", [{"kind": "damage_all", "amount": 3}, {"kind": "vulnerable_all", "amount": 1}], "uncommon"),
+		make_card("lyr_tieyi", "鐵衣功", "林月如", 2, "skill", "獲得 18 點護體。", [{"kind": "block", "amount": 18}], "rare"),
+		make_card("lyr_xuanfengzhan", "旋風連斬", "林月如", 2, "attack", "旋轉劍斬，對所有敵人各造成 5 點傷害。", [{"kind": "damage_all", "amount": 5}], "uncommon"),
+		make_card("lyr_pojian", "破陣劍勢", "林月如", 1, "skill", "破開架勢，對所有敵人施加 1 層破綻。", [{"kind": "vulnerable_all", "amount": 1}], "uncommon"),
 	]
-	return _character("lin_yueru", "林月如", 72, "鞭劍武學、連擊、反擊與單體爆發。", cards)
+	var lyr: CharacterData = _character("lin_yueru", "林月如", 72, "鞭劍武學、連擊、反擊與單體爆發。", cards)
+	lyr.starting_deck = [
+		cards[0], cards[0],            # 2x 氣劍指
+		cards[4], cards[4],            # 2x 回身反擊
+		cards[10], cards[10],          # 2x 旋劍花舞
+		cards[5], cards[5],            # 2x 鞭影連環
+		cards[6],                      # 1x 月影身法
+	]
+	return lyr
 
 static func _anu() -> CharacterData:
 	var cards: Array[CardData] = [
 		make_card("anu_yufeng", "御蜂術", "阿奴", 1, "attack", "造成 3 點傷害四次。", [{"kind": "damage", "amount": 3}, {"kind": "damage", "amount": 3}, {"kind": "damage", "amount": 3}, {"kind": "damage", "amount": 3}]),
-		make_card("anu_wanyi", "萬蟻蝕象", "阿奴", 1, "skill", "施加 6 層蠱毒。", [{"kind": "poison", "amount": 6}]),
-		make_card("anu_mihun", "迷魂術", "阿奴", 1, "skill", "使敵人虛弱 3 層。", [{"kind": "weak", "amount": 3}]),
+		make_card("anu_wanyi", "萬蟻蝕象", "阿奴", 1, "skill", "萬蟻蔓延，對所有敵人各施加 4 層蠱毒。", [{"kind": "poison_all", "amount": 4}]),
+		make_card("anu_mihun", "迷魂術", "阿奴", 1, "skill", "幻覺漫場，使所有敵人各虛弱 2 層。", [{"kind": "weak_all", "amount": 2}]),
 		make_card("anu_baozhagu", "爆炸蠱", "阿奴", 2, "attack", "引爆全部蠱毒，每層造成 3 點傷害。", [{"kind": "poison_burst", "amount": 3}], "uncommon"),
 		make_card("anu_lingxue", "靈血咒", "阿奴", 0, "skill", "自身承受 4 點反噬，抽 2 張牌並回復 1 點靈力。", [{"kind": "self_damage", "amount": 4}, {"kind": "draw", "amount": 2}, {"kind": "energy", "amount": 1}], "rare"),
 		make_card("anu_jiedu", "解毒咒", "阿奴", 1, "skill", "回復 7 點生命並獲得 5 點護體。", [{"kind": "heal", "amount": 7}, {"kind": "block", "amount": 5}]),
@@ -130,9 +164,18 @@ static func _anu() -> CharacterData:
 		make_card("anu_duzhen", "毒針連射", "阿奴", 1, "attack", "造成 5 點傷害，施加 2 層蠱毒。", [{"kind": "damage", "amount": 5}, {"kind": "poison", "amount": 2}], "uncommon"),
 		make_card("anu_guwang", "蠱王號令", "阿奴", 0, "skill", "使敵人虛弱 2 層。", [{"kind": "weak", "amount": 2}], "uncommon"),
 		make_card("anu_sanmao", "三毛蠱", "阿奴", 2, "skill", "施加 5 層蠱毒，使敵人虛弱 2 層。", [{"kind": "poison", "amount": 5}, {"kind": "weak", "amount": 2}], "uncommon"),
-		make_card("anu_gushen", "蠱神附體", "阿奴", 3, "power", "本場戰鬥傷害提升 3，施加 4 層蠱毒。", [{"kind": "power", "amount": 3}, {"kind": "poison", "amount": 4}], "rare")
+		make_card("anu_gushen", "蠱神附體", "阿奴", 3, "power", "本場戰鬥傷害提升 3，施加 4 層蠱毒。", [{"kind": "power", "amount": 3}, {"kind": "poison", "amount": 4}], "rare"),
+		make_card("anu_duwuman", "毒霧漫天", "阿奴", 2, "skill", "漫天毒霧，對所有敵人各施加 3 層蠱毒。", [{"kind": "poison_all", "amount": 3}], "uncommon"),
+		make_card("anu_qundubao", "群蟲爆", "阿奴", 3, "attack", "引動群蟲，對所有敵人各造成 4 點傷害並施加 2 層蠱毒。", [{"kind": "damage_all", "amount": 4}, {"kind": "poison_all", "amount": 2}], "rare"),
 	]
-	return _character("anu", "阿奴", 66, "蠱毒、召喚、持續傷害、削弱與干擾。", cards)
+	var anu: CharacterData = _character("anu", "阿奴", 66, "蠱毒、召喚、持續傷害、削弱與干擾。", cards)
+	anu.starting_deck = [
+		cards[0], cards[0], cards[0],  # 3x 御蜂術
+		cards[1], cards[1],            # 2x 萬蟻蝕象
+		cards[2], cards[2],            # 2x 迷魂術
+		cards[5], cards[5],            # 2x 解毒咒
+	]
+	return anu
 
 static func _character(id: String, display_name: String, max_hp: int, style: String, cards: Array[CardData]) -> CharacterData:
 	var character: CharacterData = CharacterData.new()
