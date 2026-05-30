@@ -1332,7 +1332,7 @@ func _build_streamlined_progress_screen(compact_map: bool) -> void:
 	add_child(legend_layer)
 	map_legend_panel = _build_map_legend(compact_map)
 	legend_layer.add_child(map_legend_panel)
-	var top_offset: float = 8.0 + TITLE_BAR_HEIGHT + (8.0 if compact_map else 16.0)
+	var top_offset: float = TITLE_BAR_HEIGHT + (12.0 if compact_map else 20.0)
 	map_legend_panel.offset_top = top_offset
 	map_legend_panel.offset_bottom = top_offset + map_legend_panel.custom_minimum_size.y
 	
@@ -1679,7 +1679,11 @@ func _style_map_node_button(button: Button, node_data: Dictionary, selected: boo
 		icon = button.get_meta("route_icon") as Control
 	if icon != null:
 		var node_type: String = String(node_data.get("type", "battle"))
-		icon.custom_minimum_size = Vector2(72, 72) if node_type == "boss" else Vector2(56, 56)
+		var icon_dim: float = 72.0 if node_type == "boss" else 56.0
+		# 當前可前往 / 已選的節點放大一點，更醒目
+		if (selectable or selected) and node_type != "boss":
+			icon_dim = 68.0
+		icon.custom_minimum_size = Vector2(icon_dim, icon_dim)
 		icon.position.y = max(0.0, icon.position.y - 8.0)
 		if icon.has_method("set_highlight"):
 			icon.call("set_highlight", selectable and not selected)
@@ -1702,7 +1706,8 @@ func _style_map_node_button(button: Button, node_data: Dictionary, selected: boo
 	if completed:
 		button.modulate = Color(0.92, 0.94, 0.95, 0.88)
 	elif not selectable and not selected:
-		button.modulate = Color(0.62, 0.64, 0.68, 0.40)
+		# 未抵達節點：不再大幅變暗到看不清，僅略微降低存在感
+		button.modulate = Color(0.84, 0.86, 0.90, 0.86)
 	else:
 		button.modulate = Color.WHITE
 
@@ -2329,14 +2334,27 @@ func _build_right_dock(parent: HBoxContainer) -> void:
 	exhausted_pile_button.pressed.connect(show_exhaust_pile_view)
 	dock.add_child(exhausted_pile_button)
 
+func _title_bar_panel_style() -> StyleBoxFlat:
+	# 不透明深色底 + 僅底邊金線，做成「獨立的一條頂列」而非浮在地圖上的半透明面板
+	var sb: StyleBoxFlat = StyleBoxFlat.new()
+	sb.bg_color = Color("12161f")
+	sb.border_color = ThemeColors.BORDER_GOLD
+	sb.border_width_bottom = 2
+	sb.content_margin_left = 0
+	sb.content_margin_right = 0
+	sb.content_margin_top = 0
+	sb.content_margin_bottom = 0
+	return sb
+
 func _build_title_bar() -> void:
 	title_bar = PanelContainer.new()
-	title_bar.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.78), ThemeColors.BORDER_GOLD, 1, 6))
+	# 獨立的頂部資訊列：不透明、整條貼齊螢幕頂端，與地圖分開（不再半透明浮在地圖上）
+	title_bar.add_theme_stylebox_override("panel", _title_bar_panel_style())
 	title_bar.set_anchors_preset(Control.PRESET_TOP_WIDE, false)
-	title_bar.offset_left = 12
-	title_bar.offset_top = 8
-	title_bar.offset_right = -12
-	title_bar.offset_bottom = 8 + TITLE_BAR_HEIGHT
+	title_bar.offset_left = 0
+	title_bar.offset_top = 0
+	title_bar.offset_right = 0
+	title_bar.offset_bottom = TITLE_BAR_HEIGHT
 	title_bar.visible = false
 	title_bar.z_index = 50
 	title_bar.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -3126,8 +3144,8 @@ func _animate_map_node(button: Button, selected: bool, selectable: bool, is_boss
 		return
 	target.pivot_offset = target.size * 0.5
 	# Boss 振幅稍大一點以強化壓迫感
-	var amplitude: float = 1.15 if is_boss else 1.10
-	var period: float = 0.95   # 單向動畫時長，整個呼吸週期 ≈ 1.9s
+	var amplitude: float = 1.26 if is_boss else 1.20
+	var period: float = 0.55   # 單向動畫時長，整個呼吸週期 ≈ 1.1s（比舊版快一倍）
 	var pulse: Tween = create_tween().set_loops()
 	pulse.tween_property(target, "scale", Vector2(amplitude, amplitude), period).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	pulse.tween_property(target, "scale", Vector2.ONE, period).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)

@@ -36,30 +36,28 @@ func set_visual_state(value: String) -> void:
 func _draw() -> void:
 	var s: float = min(size.x, size.y)
 	var c: Vector2 = size / 2.0
-	var base_fill: Color = _base_fill_color()
-	var base_ring: Color = _base_ring_color()
 	var core_radius: float = s * 0.34
 	var ring_radius: float = s * 0.43
-	if state_mode == "completed":
-		_draw_completed_brush_ring(c, s)
-	if state_mode == "selectable" or highlighted:
-		draw_circle(c, ring_radius + 6.0, Color("f5d27a", 0.12))
-		draw_circle(c, ring_radius + 1.5, Color("f7df9c", 0.16))
-	if state_mode == "selected":
-		draw_circle(c, ring_radius + 8.0, Color("f5d27a", 0.22))
-		draw_arc(c, ring_radius + 3.0, 0.0, TAU, 64, Color("ffe6a0", 0.95), 3.2, true)
-	if highlighted:
-		draw_arc(c, ring_radius + 0.5, 0.0, TAU, 48, Color("f8d878", 0.7), 1.8, true)
-	if state_mode == "completed":
-		draw_circle(c, core_radius + 4.0, Color("14202b", 0.10))
-	else:
-		draw_circle(c, ring_radius, Color("16202b", 0.52))
-		draw_circle(c, core_radius + 7.0, base_fill.darkened(0.45))
-		draw_circle(c, core_radius + 3.0, base_fill)
-		draw_arc(c, ring_radius, 0.0, TAU, 64, base_ring, 2.6, true)
-		draw_arc(c, core_radius + 3.0, 0.0, TAU, 48, Color.WHITE.lerp(base_ring, 0.72), 1.2, true)
+	# 2026-05 改版：未抵達(locked) 不再用暗灰圓盤蓋住 icon；可前往(selectable)/已選(selected)
+	# 只用金光環提示，不蓋實心圓盤，讓原本的節點 icon 直接露出來。
+	match state_mode:
+		"completed":
+			_draw_completed_brush_ring(c, s)
+			draw_circle(c, core_radius + 4.0, Color("14202b", 0.10))
+		"selected":
+			draw_circle(c, ring_radius + 9.0, Color("f5d27a", 0.20))
+			draw_circle(c, ring_radius + 3.0, Color("f7df9c", 0.26))
+			draw_arc(c, ring_radius + 3.0, 0.0, TAU, 64, Color("ffe6a0", 0.96), 3.4, true)
+		"selectable":
+			draw_circle(c, ring_radius + 7.0, Color("f5d27a", 0.16))
+			draw_circle(c, ring_radius + 2.0, Color("f7df9c", 0.20))
+			draw_arc(c, ring_radius + 1.0, 0.0, TAU, 48, Color("f8d878", 0.78), 2.2, true)
+		_:
+			# locked / 其他：完全不畫底盤，只露出原本的 icon
+			if highlighted:
+				draw_arc(c, ring_radius + 0.5, 0.0, TAU, 48, Color("f8d878", 0.7), 1.8, true)
 	if icon_texture != null:
-		var draw_size: Vector2 = Vector2.ONE * (s * (0.64 if state_mode == "completed" else 0.72))
+		var draw_size: Vector2 = Vector2.ONE * (s * (0.64 if state_mode == "completed" else 0.82))
 		var draw_pos: Vector2 = (size - draw_size) * 0.5
 		draw_texture_rect(icon_texture, Rect2(draw_pos, draw_size), false)
 		return
