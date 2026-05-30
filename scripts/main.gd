@@ -639,28 +639,21 @@ func show_main_menu() -> void:
 		var continue_button: Button = UIFactory.main_menu_button("繼續冒險", true, button_height, button_font_size)
 		continue_button.pressed.connect(continue_saved_run)
 		action_box.add_child(continue_button)
-		var summary: String = _saved_run_summary()
-		if not summary.is_empty() and not ultra_compact:
-			var summary_label: Label = Label.new()
-			summary_label.text = summary
-			summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			summary_label.add_theme_font_size_override("font_size", 12 if compact_layout else 13)
-			summary_label.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
-			action_box.add_child(summary_label)
 	var start_button: Button = UIFactory.main_menu_button("開始遊戲", false, button_height, button_font_size)
 	start_button.pressed.connect(_on_start_random_pressed)
 	action_box.add_child(start_button)
-	var daily_button: Button = UIFactory.main_menu_button("每日挑戰", false, button_height, button_font_size)
-	daily_button.pressed.connect(_on_daily_challenge_pressed)
-	action_box.add_child(daily_button)
+	var secondary_row: HBoxContainer = HBoxContainer.new()
+	secondary_row.add_theme_constant_override("separation", 8)
 	var seed_button: Button = UIFactory.main_menu_button("輸入種子", false, button_height, button_font_size)
+	seed_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	seed_button.pressed.connect(_show_seed_input_popup)
-	action_box.add_child(seed_button)
-	action_box.add_child(_build_ascension_picker(compact_layout, ultra_compact))
+	secondary_row.add_child(seed_button)
 	var bestiary_button: Button = UIFactory.main_menu_button("敵將圖鑑", false, button_height, button_font_size)
+	bestiary_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bestiary_button.pressed.connect(show_bestiary)
-	action_box.add_child(bestiary_button)
+	secondary_row.add_child(bestiary_button)
+	action_box.add_child(secondary_row)
+	action_box.add_child(_build_ascension_picker(compact_layout, ultra_compact))
 	var quit_button: Button = UIFactory.main_menu_button("離開遊戲", false, button_height, button_font_size)
 	quit_button.pressed.connect(get_tree().quit)
 	action_box.add_child(quit_button)
@@ -782,92 +775,36 @@ func _build_minimal_main_menu(ultra_compact: bool, compact_layout: bool, viewpor
 		continue_button.custom_minimum_size.x = content_width
 		continue_button.pressed.connect(continue_saved_run)
 		action_box.add_child(continue_button)
-		var summary: String = _saved_run_summary()
-		if not summary.is_empty():
-			var summary_label: Label = Label.new()
-			summary_label.text = summary
-			summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			summary_label.add_theme_font_size_override("font_size", 11 if compact_layout else 12)
-			summary_label.add_theme_color_override("font_color", Color("21303a", 0.92))
-			action_box.add_child(summary_label)
 
 	var start_button: Button = UIFactory.main_menu_button("開始遊戲", false, button_height, button_font_size)
 	start_button.custom_minimum_size.x = content_width
 	start_button.pressed.connect(_on_start_random_pressed)
 	action_box.add_child(start_button)
 
-	var daily_button: Button = UIFactory.main_menu_button("每日挑戰", false, button_height, button_font_size)
-	daily_button.custom_minimum_size.x = content_width
-	daily_button.pressed.connect(_on_daily_challenge_pressed)
-	action_box.add_child(daily_button)
-
+	var secondary_row: HBoxContainer = HBoxContainer.new()
+	secondary_row.add_theme_constant_override("separation", 8)
+	secondary_row.custom_minimum_size.x = content_width
 	var seed_button: Button = UIFactory.main_menu_button("輸入種子", false, button_height, button_font_size)
-	seed_button.custom_minimum_size.x = content_width
+	seed_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	seed_button.pressed.connect(_show_seed_input_popup)
-	action_box.add_child(seed_button)
+	secondary_row.add_child(seed_button)
+	var bestiary_button: Button = UIFactory.main_menu_button("敵將圖鑑", false, button_height, button_font_size)
+	bestiary_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bestiary_button.pressed.connect(show_bestiary)
+	secondary_row.add_child(bestiary_button)
+	action_box.add_child(secondary_row)
 
 	var ascension_picker: Control = _build_ascension_picker(compact_layout, ultra_compact)
 	ascension_picker.custom_minimum_size.x = content_width
 	action_box.add_child(ascension_picker)
-
-	var bestiary_button: Button = UIFactory.main_menu_button("敵將圖鑑", false, button_height, button_font_size)
-	bestiary_button.custom_minimum_size.x = content_width
-	bestiary_button.pressed.connect(show_bestiary)
-	action_box.add_child(bestiary_button)
 
 	var quit_button: Button = UIFactory.main_menu_button("離開遊戲", false, button_height, button_font_size)
 	quit_button.custom_minimum_size.x = content_width
 	quit_button.pressed.connect(get_tree().quit)
 	action_box.add_child(quit_button)
 
-func _saved_run_summary() -> String:
-	if not SaveManager.has_save():
-		return ""
-	var data: Dictionary = SaveManager.load_save()
-	if data.is_empty():
-		return ""
-	# load_save 已經 migrate 到當前版本（v2），所以可以直接讀新欄位
-	var char_ids: Array = data.get("character_ids", []) as Array
-	if char_ids.is_empty():
-		return ""
-	var char_names: Array[String] = []
-	for id_v: Variant in char_ids:
-		var nm: String = String(id_v)
-		for c: CharacterData in characters:
-			if c.id == nm:
-				nm = c.display_name
-				break
-		char_names.append(nm)
-	var hps: Array = data.get("character_hps", []) as Array
-	var max_hps: Array = data.get("character_max_hps", []) as Array
-	var gold: int = int(data.get("gold", 0))
-	var encounter_index: int = int(data.get("encounter_index", 0))
-	var total_rows: int = (data.get("encounter_choices", []) as Array).size()
-	var total_deck: int = 0
-	for cdeck_v: Variant in (data.get("character_decks", []) as Array):
-		total_deck += (cdeck_v as Array).size()
-	var relic_count: int = (data.get("relics", []) as Array).size()
-	# HP 行：每個角色一段「李 30/40」
-	var hp_parts: Array[String] = []
-	for i: int in range(char_names.size()):
-		var hp_i: int = int(hps[i]) if i < hps.size() else 0
-		var max_i: int = int(max_hps[i]) if i < max_hps.size() else 0
-		var status: String = "倒下" if hp_i <= 0 else "%d/%d" % [hp_i, max_i]
-		hp_parts.append("%s %s" % [char_names[i], status])
-	var party_str: String = "  /  ".join(char_names) if char_names.size() > 1 else char_names[0]
-	return "%s  ·  第 %d/%d 層\n%s\n銅錢 %d  ·  牌組共 %d 張  ·  遺物 %d 件" % [
-		party_str, encounter_index + 1, total_rows,
-		"  ·  ".join(hp_parts),
-		gold, total_deck, relic_count
-	]
-
 func _on_start_random_pressed() -> void:
 	pending_seed = 0
-	show_character_select()
-
-func _on_daily_challenge_pressed() -> void:
-	pending_seed = Time.get_date_string_from_system().hash()
 	show_character_select()
 
 func _show_seed_input_popup() -> void:
@@ -923,7 +860,7 @@ func _build_ascension_picker(compact_layout: bool = false, ultra_compact: bool =
 	var font_size: int = 15 if ultra_compact else (16 if compact_layout else 18)
 	var note_font_size: int = 10 if ultra_compact else 11
 	var panel: PanelContainer = PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("f6f1e6", 0.16), Color("f4efe6", 0.0), 0, 18))
+	panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("f6f1e6", 0.92), Color("c8b46f", 0.55), 1, 18))
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4 if ultra_compact else 6)
 	panel.add_child(box)
@@ -5645,10 +5582,9 @@ func _card_frame_texture_path(_card_type: String) -> String:
 	# 卡類型現在只透過描述上方的「攻擊/技能/能力」文字標示，視覺上不再用框色區分。
 	return "res://assets/ui/卡套_base.png"
 
-func _cost_gem_texture_path(cost: int) -> String:
-	# 靈力寶石 0~3。cost ≥ 4 不存在於目前卡庫（max=3），fallback 用 3 以防未來資料超出。
-	var clamped: int = clamp(cost, 0, 3)
-	return "res://assets/ui/靈力%d.png" % clamped
+func _cost_gem_texture_path(_cost: int) -> String:
+	# 2026-05 美術改版：靈力0~3 原圖數字不清楚，改用中性 PowerBase 底圖，數值直接由 Label 疊在上面顯示。
+	return "res://assets/ui/PowerBase.png"
 
 func _rarity_gem_texture_path(card: CardData) -> String:
 	# 稀有度寶石：lv1 白(基)、lv2 青(良)、lv3 紫(稀)、lv4 金(升)
@@ -5720,10 +5656,11 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	# 3) 靈力寶石（左上）
 	var cost_gem: TextureRect = TextureRect.new()
 	cost_gem.name = "CardCostGem"
-	cost_gem.anchor_left = 0.13
-	cost_gem.anchor_top = 0.04
-	cost_gem.anchor_right = 0.33
-	cost_gem.anchor_bottom = 0.175
+	# 放大靈力寶石：寬 0.20→0.27、上移並加高讓數字更顯眼（左上不會撞到卡圖窗 x17%）
+	cost_gem.anchor_left = 0.10
+	cost_gem.anchor_top = 0.025
+	cost_gem.anchor_right = 0.37
+	cost_gem.anchor_bottom = 0.205
 	cost_gem.offset_left = 0
 	cost_gem.offset_top = 0
 	cost_gem.offset_right = 0
@@ -5734,13 +5671,28 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	cost_gem.texture = UIFactory.load_texture(_cost_gem_texture_path(cost))
 	button.add_child(cost_gem)
 
+	# 3a) 靈力數值：直接疊在 PowerBase 底圖上置中顯示
+	var cost_label: Label = Label.new()
+	cost_label.name = "CardCostLabel"
+	cost_label.text = str(cost)
+	cost_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cost_label.add_theme_font_size_override("font_size", int(clamp(size.y * 0.06, 14, 28)))
+	cost_label.add_theme_color_override("font_color", ThemeColors.TEXT_LIGHT)
+	cost_label.add_theme_color_override("font_outline_color", Color("1b150f", 0.9))
+	cost_label.add_theme_constant_override("outline_size", 3)
+	cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cost_gem.add_child(cost_label)
+
 	# 3b) 稀有度寶石（右上）：card_lv1~4 = 基/良/稀/升。比 cost gem 略小。
 	var rarity_gem: TextureRect = TextureRect.new()
 	rarity_gem.name = "CardRarityGem"
-	rarity_gem.anchor_left = 0.72
-	rarity_gem.anchor_top = 0.05
+	# 放大稀有度寶石：寬 0.13→0.19、高 0.085→0.12（右上不超出卡圖窗 x85%）
+	rarity_gem.anchor_left = 0.66
+	rarity_gem.anchor_top = 0.035
 	rarity_gem.anchor_right = 0.85
-	rarity_gem.anchor_bottom = 0.135
+	rarity_gem.anchor_bottom = 0.155
 	rarity_gem.offset_left = 0
 	rarity_gem.offset_top = 0
 	rarity_gem.offset_right = 0
