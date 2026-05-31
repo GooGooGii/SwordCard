@@ -758,13 +758,12 @@ static func _water_tentacle() -> EnemyData:
 	return enemy
 
 # 召喚物 — 赤眼幼魈（赤眼山魈 phase 2 召出；輕量物理 + 虛弱）
-# TODO(art): 借 red_eye_demon 圖當 placeholder，之後補專屬縮版
 static func _red_eye_imp() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "red_eye_imp"
 	enemy.display_name = "赤眼幼魈"
 	enemy.max_hp = 18
-	enemy.portrait_path = "res://assets/art/enemies/red_eye_demon.png"
+	enemy.portrait_path = "res://assets/art/enemies/red_eye_imp.png"
 	enemy.actions = [
 		{"intent": "撓擊 5", "effects": [{"kind": "damage", "amount": 5}]},
 		{"intent": "怒吼 虛弱 1", "effects": [{"kind": "weak", "amount": 1}]},
@@ -772,13 +771,12 @@ static func _red_eye_imp() -> EnemyData:
 	return enemy
 
 # 召喚物 — 殭屍奴（殭屍大帥 phase 2 召出；前排打手）
-# TODO(art): 借 zombie_soldier 圖當 placeholder
 static func _zombie_thrall() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "zombie_thrall"
 	enemy.display_name = "殭屍奴"
 	enemy.max_hp = 20
-	enemy.portrait_path = "res://assets/art/enemies/zombie_soldier.png"
+	enemy.portrait_path = "res://assets/art/enemies/zombie_thrall.png"
 	enemy.actions = [
 		{"intent": "抓撲 6", "effects": [{"kind": "damage", "amount": 6}]},
 		{"intent": "守 5", "effects": [{"kind": "block", "amount": 5}]},
@@ -786,26 +784,24 @@ static func _zombie_thrall() -> EnemyData:
 	return enemy
 
 # 召喚物 — 蜈蚣幼蟲（蜈蚣大王 phase 2 召出；毒系群擾）
-# TODO(art): 借 toxic_centipede 圖當 placeholder
 static func _centipede_brood() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "centipede_brood"
 	enemy.display_name = "蜈蚣幼蟲"
 	enemy.max_hp = 14
-	enemy.portrait_path = "res://assets/art/enemies/toxic_centipede.png"
+	enemy.portrait_path = "res://assets/art/enemies/centipede_brood.png"
 	enemy.actions = [
 		{"intent": "啃噬 4 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 4}, {"kind": "poison", "amount": 2}]},
 	]
 	return enemy
 
 # 召喚物 — 鎖妖塔殘魂（山靈巫后 phase 2 召出；魂吸下毒）
-# TODO(art): 借 tower_ghost_soldier 圖當 placeholder
 static func _tower_wisp() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "tower_wisp"
 	enemy.display_name = "鎖妖塔殘魂"
 	enemy.max_hp = 16
-	enemy.portrait_path = "res://assets/art/enemies/tower_ghost_soldier.png"
+	enemy.portrait_path = "res://assets/art/enemies/tower_wisp.png"
 	enemy.actions = [
 		{"intent": "魂吸 4 + 蠱毒 1", "effects": [{"kind": "damage", "amount": 4}, {"kind": "poison", "amount": 1}]},
 	]
