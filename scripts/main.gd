@@ -5317,6 +5317,9 @@ func _deck_view_card(card: CardData, mode: String = "view", count: int = 1) -> C
 		button.pressed.connect(func(): _show_upgrade_confirm_overlay(card, func(): upgrade_card_in_deck(card)))
 	elif mode == "shop_upgrade" and not card.upgraded:
 		button.pressed.connect(func(): _show_upgrade_confirm_overlay(card, func(): _shop_deck_upgrade(card)))
+	elif mode == "view":
+		button.disabled = false
+		button.pressed.connect(func(): _show_card_detail_overlay(card))
 	else:
 		button.add_theme_stylebox_override("disabled", UIFactory.style_box(CardFormat.card_color(card.card_type, true), Color("e7d38a"), 2, 8))
 		button.add_theme_color_override("font_disabled_color", ThemeColors.TEXT_LIGHT)
@@ -5338,6 +5341,74 @@ func _deck_view_card(card: CardData, mode: String = "view", count: int = 1) -> C
 		badge.add_child(badge_label)
 		button.add_child(badge)
 	return button
+
+func _show_card_detail_overlay(card: CardData) -> void:
+	_hide_card_preview()
+	var overlay: Control = Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.z_index = 1600
+	add_child(overlay)
+	_card_preview_overlay = overlay
+
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0, 0, 0, 0.65)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	backdrop.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+			_hide_card_preview())
+	overlay.add_child(backdrop)
+
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+
+	var col: VBoxContainer = VBoxContainer.new()
+	col.add_theme_constant_override("separation", 16)
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.add_child(col)
+
+	# Card holder: single-child CenterContainer we replace contents in on toggle
+	var card_holder: CenterContainer = CenterContainer.new()
+	col.add_child(card_holder)
+
+	var detail_state: Dictionary = {"btn": null}
+	var update_display: Callable = func(show_upgraded: bool) -> void:
+		var old: Button = detail_state.get("btn") as Button
+		if old != null and is_instance_valid(old):
+			card_holder.remove_child(old)
+			old.queue_free()
+		var display: CardData = card.upgraded_copy() if show_upgraded else card
+		var btn: Button = _make_card_button(display, display.cost, Vector2(260, 360), true, true)
+		btn.disabled = true
+		btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card_holder.add_child(btn)
+		detail_state["btn"] = btn
+	update_display.call(false)
+
+	# Bottom controls row
+	var bottom: HBoxContainer = HBoxContainer.new()
+	bottom.alignment = BoxContainer.ALIGNMENT_CENTER
+	bottom.add_theme_constant_override("separation", 28)
+	col.add_child(bottom)
+
+	var is_curse: bool = CurseCatalog.is_curse(card)
+	if not card.upgraded and not is_curse:
+		var upgrade_toggle: Button = _button("□ 查看升級")
+		upgrade_toggle.toggle_mode = true
+		upgrade_toggle.toggled.connect(func(pressed: bool) -> void:
+			upgrade_toggle.text = "☑ 查看升級" if pressed else "□ 查看升級"
+			update_display.call(pressed))
+		bottom.add_child(upgrade_toggle)
+	elif card.upgraded:
+		var up_label: Label = UIFactory.card_label("★ 已升級", 16, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+		bottom.add_child(up_label)
+
+	var close_btn: Button = _button("關閉")
+	close_btn.pressed.connect(_hide_card_preview)
+	bottom.add_child(close_btn)
 
 func _show_upgrade_confirm_overlay(card: CardData, on_confirm: Callable) -> void:
 	# 升級畫面點卡片時彈出：左原卡 / → / 右升級後卡，下方確認/取消按鈕。
