@@ -4561,7 +4561,7 @@ func _show_event_card_confirm(card: CardData, force_accept: bool, on_accept: Cal
 	# Large card display
 	var card_holder: CenterContainer = CenterContainer.new()
 	col.add_child(card_holder)
-	var big_btn: Button = _make_card_button(card, card.cost, Vector2(240, 360), true, true)
+	var big_btn: Button = _make_card_button(card, card.cost, Vector2(193, 360), true, true)
 	big_btn.disabled = true
 	big_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card_holder.add_child(big_btn)
@@ -4953,7 +4953,7 @@ func _shop_item_view(item: Dictionary) -> Control:
 	if item.get("on_sale", false):
 		box.add_child(UIFactory.card_label("★ 特賣！五折優惠", 12, Color("ff5555"), HORIZONTAL_ALIGNMENT_CENTER))
 	var can_buy: bool = run_state.gold >= price
-	var card_button: Button = _make_card_button(card, card.cost, Vector2(192, 287), can_buy, true)
+	var card_button: Button = _make_card_button(card, card.cost, Vector2(153, 287), can_buy, true)
 	card_button.disabled = not can_buy
 	card_button.pressed.connect(func(): _show_shop_buy_confirm_overlay(card, price))
 	box.add_child(card_button)
@@ -4982,7 +4982,7 @@ func _show_shop_buy_confirm_overlay(card: CardData, price: int) -> void:
 	col.add_theme_constant_override("separation", 18)
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
 	center.add_child(col)
-	var big: Button = _make_card_button(card, card.cost, Vector2(279, 418), true, true)
+	var big: Button = _make_card_button(card, card.cost, Vector2(224, 418), true, true)
 	big.disabled = true
 	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_child(big)
@@ -5408,7 +5408,7 @@ func _deck_view_card(card: CardData, mode: String = "view", count: int = 1) -> C
 	var is_curse: bool = CurseCatalog.is_curse(card)
 	var selectable: bool = (not is_curse) and (mode == "remove" or mode == "shop_remove" or ((mode == "upgrade" or mode == "shop_upgrade") and not card.upgraded))
 	var visually_enabled: bool = (mode != "upgrade" and mode != "shop_upgrade") or not card.upgraded
-	var button: Button = _make_card_button(card, card.cost, Vector2(192, 287), true, visually_enabled)
+	var button: Button = _make_card_button(card, card.cost, Vector2(153, 287), true, visually_enabled)
 	button.disabled = not selectable
 	if mode == "remove":
 		button.pressed.connect(func(): remove_card_from_deck(card))
@@ -5483,7 +5483,7 @@ func _show_card_detail_overlay(card: CardData) -> void:
 			card_holder.remove_child(old)
 			old.queue_free()
 		var display: CardData = card.upgraded_copy() if show_upgraded else card
-		var btn: Button = _make_card_button(display, display.cost, Vector2(240, 360), true, true)
+		var btn: Button = _make_card_button(display, display.cost, Vector2(193, 360), true, true)
 		btn.disabled = true
 		btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card_holder.add_child(btn)
@@ -5541,7 +5541,7 @@ func _show_upgrade_confirm_overlay(card: CardData, on_confirm: Callable) -> void
 	stack.add_theme_constant_override("separation", 24)
 	stack.alignment = BoxContainer.ALIGNMENT_CENTER
 	col.add_child(stack)
-	var big: Button = _make_card_button(card, card.cost, Vector2(279, 418), true, true)
+	var big: Button = _make_card_button(card, card.cost, Vector2(224, 418), true, true)
 	big.disabled = true
 	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(big)
@@ -5552,7 +5552,7 @@ func _show_upgrade_confirm_overlay(card: CardData, on_confirm: Callable) -> void
 	arrow.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
 	stack.add_child(arrow)
 	var upgraded: CardData = card.upgraded_copy()
-	var up_btn: Button = _make_card_button(upgraded, upgraded.cost, Vector2(279, 418), true, true)
+	var up_btn: Button = _make_card_button(upgraded, upgraded.cost, Vector2(224, 418), true, true)
 	up_btn.disabled = true
 	up_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(up_btn)
@@ -5944,7 +5944,7 @@ func _refresh_combatant_hp(bar: ProgressBar, value_label: Label, hp: int, max_hp
 
 func _card_button(card: CardData) -> Button:
 	var affordable: bool = int(battle.state["energy"]) >= battle.effective_card_cost(card)
-	var card_size: Vector2 = Vector2(150, 225) if _battle_compact else Vector2(175, 262)
+	var card_size: Vector2 = Vector2(120, 225) if _battle_compact else Vector2(140, 262)
 	var button: Button = _make_card_button(card, card.cost, card_size, affordable, true)
 	button.disabled = not affordable
 	button.pressed.connect(func() -> void: _on_card_button_pressed(card, button))
@@ -6139,7 +6139,7 @@ func _show_card_preview(card: CardData) -> void:
 	stack.add_theme_constant_override("separation", 24)
 	stack.alignment = BoxContainer.ALIGNMENT_CENTER
 	center.add_child(stack)
-	var big: Button = _make_card_button(card, card.cost, Vector2(279, 418), true, true)
+	var big: Button = _make_card_button(card, card.cost, Vector2(224, 418), true, true)
 	big.disabled = true
 	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(big)
@@ -6151,14 +6151,14 @@ func _show_card_preview(card: CardData) -> void:
 		arrow.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
 		stack.add_child(arrow)
 		var upgraded: CardData = card.upgraded_copy()
-		var up_btn: Button = _make_card_button(upgraded, upgraded.cost, Vector2(279, 418), true, true)
+		var up_btn: Button = _make_card_button(upgraded, upgraded.cost, Vector2(224, 418), true, true)
 		up_btn.disabled = true
 		up_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		stack.add_child(up_btn)
 
 func _reward_card_button(card: CardData, card_height: float = 349.0) -> Button:
 	var h: float = clampf(card_height, 180.0, 349.0)
-	var w: float = h * (2.0 / 3.0)
+	var w: float = h * (784.0 / 1466.0)
 	return _make_card_button(card, card.cost, Vector2(w, h), true, true)
 
 func _card_frame_texture_path(_card_type: String) -> String:
@@ -6184,12 +6184,15 @@ func _rarity_gem_texture_path(card: CardData) -> String:
 
 func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: bool, selectable: bool) -> Button:
 	# 全部用 anchor 百分比定位，元素位置 / 字體大小皆依卡片尺寸比例縮放。
-	# 卡套版面參考（2026-05 重做：卡套_base 1024×1536 比例 0.667，黑白水墨無類型色）。
-	# 邊界用 PIL 量過實際 alpha + luminance，內部裝飾（竹葉/石頭）會切進來，所以要內縮：
-	#   art 透明圖窗：x 20%~80%, y 5%~42%（再外就疊到外框竹葉裝飾）
-	#   標題裝飾帶：y 52%~57%（中央 53~66% 有深色菱飾，文字會壓在上面）
-	#   描述卷軸文字安全區：x 24%~76%, y 60%~78%（y >78% 竹葉裝飾從下方夾入吃掉寬度）
-	# 左上靈力寶石 / 右上稀有度寶石各 ~20% 寬，y 0%~14%。
+	# 卡套版面參考（2026-05 重做後再修：卡套_base 原圖 1024×1536 左右各內建 ~11.7% 透明留白，
+	#   會在 STRETCH_SCALE 鋪滿 Button 時露出背景成「外圍空白」。已把貼圖裁到實際內容
+	#   784×1466（比例 0.535），下方所有 anchor 百分比都是相對「裁切後的卡套」量的。
+	#   卡片 Button 尺寸也統一改成 0.535 比例（見各 _make_card_button 呼叫點）以免變形。
+	# 以下百分比皆相對裁切後卡套（內部竹葉/石頭裝飾仍會切進來，故元素要內縮）：
+	#   art 透明圖窗：x 7%~96%, y 1%~44.5%
+	#   標題名牌帶：y 45.6%~51.3%
+	#   描述卷軸文字安全區：x 16%~84%, y 59%~78%
+	#   左上靈力寶石 / 右上稀有度寶石。
 	var title_font_size: int = int(clamp(size.y * 0.045, 10, 20))
 	var type_font_size: int = int(clamp(size.y * 0.035, 9, 16))
 	var desc_font_size: int = int(clamp(size.y * 0.035, 9, 15))
@@ -6201,15 +6204,13 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	button.clip_contents = true
 	_style_card_button(button, card, affordable)
 
-	# 1) 卡圖：擴到卡套透明圖窗實際邊界（PIL 量過 alpha < 220 區段）
-	# x 17%~85%（透明區頂端最寬可達 17%~86%；底邊有竹葉夾入但 COVER 模式以高度 fit 為主）
-	# y 4.5%~46%（透明區 alpha 從 4.6% 開始到 46.4%）。
+	# 1) 卡圖：擴到裁切後卡套的透明圖窗（x 7%~96%, y 1%~44.5%；COVER 模式以高度 fit 為主）。
 	var art: TextureRect = TextureRect.new()
 	art.name = "CardArt"
-	art.anchor_left = 0.17
-	art.anchor_top = 0.045
-	art.anchor_right = 0.85
-	art.anchor_bottom = 0.46
+	art.anchor_left = 0.069
+	art.anchor_top = 0.010
+	art.anchor_right = 0.957
+	art.anchor_bottom = 0.445
 	art.offset_left = 0
 	art.offset_top = 0
 	art.offset_right = 0
@@ -6241,10 +6242,10 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	var cost_gem: TextureRect = TextureRect.new()
 	cost_gem.name = "CardCostGem"
 	# 放大靈力寶石：寬 0.20→0.27、上移並加高讓數字更顯眼（左上不會撞到卡圖窗 x17%）
-	cost_gem.anchor_left = 0.10
-	cost_gem.anchor_top = 0.025
-	cost_gem.anchor_right = 0.37
-	cost_gem.anchor_bottom = 0.205
+	cost_gem.anchor_left = 0.0
+	cost_gem.anchor_top = 0.0
+	cost_gem.anchor_right = 0.33
+	cost_gem.anchor_bottom = 0.178
 	cost_gem.offset_left = 0
 	cost_gem.offset_top = 0
 	cost_gem.offset_right = 0
@@ -6273,10 +6274,10 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	var rarity_gem: TextureRect = TextureRect.new()
 	rarity_gem.name = "CardRarityGem"
 	# 放大稀有度寶石：寬 0.13→0.19、高 0.085→0.12（右上不超出卡圖窗 x85%）
-	rarity_gem.anchor_left = 0.66
-	rarity_gem.anchor_top = 0.035
-	rarity_gem.anchor_right = 0.85
-	rarity_gem.anchor_bottom = 0.155
+	rarity_gem.anchor_left = 0.709
+	rarity_gem.anchor_top = 0.0
+	rarity_gem.anchor_right = 0.957
+	rarity_gem.anchor_bottom = 0.126
 	rarity_gem.offset_left = 0
 	rarity_gem.offset_top = 0
 	rarity_gem.offset_right = 0
@@ -6291,10 +6292,10 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	# 然後 y 54~56% 是另一條更窄的淺帶——不是寫名字的位置）。
 	var title: Label = UIFactory.card_label(card.display_title(), title_font_size, Color("2d2418"), HORIZONTAL_ALIGNMENT_CENTER)
 	title.name = "CardTitle"
-	title.anchor_left = 0.20
-	title.anchor_top = 0.47
-	title.anchor_right = 0.80
-	title.anchor_bottom = 0.525
+	title.anchor_left = 0.108
+	title.anchor_top = 0.456
+	title.anchor_right = 0.892
+	title.anchor_bottom = 0.513
 	title.offset_left = 0
 	title.offset_top = 0
 	title.offset_right = 0
@@ -6313,10 +6314,10 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	# y 78% 以下竹葉裝飾從底邊夾入快速吃掉寬度（y 90% 只剩 16% 可寫），文字會壓在裝飾上。
 	var rules_container: Control = Control.new()
 	rules_container.name = "CardRules"
-	rules_container.anchor_left = 0.24
-	rules_container.anchor_top = 0.60
-	rules_container.anchor_right = 0.76
-	rules_container.anchor_bottom = 0.78
+	rules_container.anchor_left = 0.160
+	rules_container.anchor_top = 0.592
+	rules_container.anchor_right = 0.840
+	rules_container.anchor_bottom = 0.780
 	rules_container.offset_left = 0
 	rules_container.offset_top = 0
 	rules_container.offset_right = 0
