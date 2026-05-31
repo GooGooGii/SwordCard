@@ -4345,7 +4345,7 @@ func _shop_relic_price(relic: RelicData) -> int:
 			for e: Dictionary in (t.get("effects", []) as Array):
 				if String(e.get("kind", "")) == "shop_discount":
 					base -= int(e.get("amount", 0))
-	return max(10, base)
+	return max(10, int(ceil(float(base) * _shop_curse_surcharge_mult())))
 
 func _buy_shop_relic(relic: RelicData, price: int) -> void:
 	if run_state.gold < price:
@@ -4455,6 +4455,24 @@ func _buy_shop_potion(potion: Dictionary, item: Dictionary, price: int) -> void:
 	run_state.current_shop_potions.erase(item)
 	show_shop_node()
 
+func _shop_curse_surcharge_mult() -> float:
+	var mult: float = 1.0
+	var active_idx: int = run_state.active_character_index
+	if active_idx >= run_state.character_decks.size():
+		return mult
+	for card_v: Variant in (run_state.character_decks[active_idx] as Array):
+		var card: CardData = card_v as CardData
+		if card == null or not CurseCatalog.is_curse(card):
+			continue
+		var ret: Dictionary = CurseCatalog.retention_for(card)
+		if String(ret.get("trigger", "")) != "shop":
+			continue
+		for eff_v: Variant in (ret.get("effects", []) as Array):
+			var eff: Dictionary = eff_v as Dictionary
+			if String(eff.get("kind", "")) == "shop_surcharge":
+				mult += float(eff.get("amount", 0)) / 100.0
+	return mult
+
 func _shop_apply_discount(base_price: int) -> int:
 	var price: int = base_price
 	for r: RelicData in run_state.relics:
@@ -4464,7 +4482,7 @@ func _shop_apply_discount(base_price: int) -> int:
 			for e: Dictionary in (t.get("effects", []) as Array):
 				if String(e.get("kind", "")) == "shop_discount":
 					price -= int(e.get("amount", 0))
-	return max(10, price)
+	return max(10, int(ceil(float(price) * _shop_curse_surcharge_mult())))
 
 func _shop_service_panel(title: String, description: String, price: int, used: bool, available: bool, on_press: Callable) -> Control:
 	var panel: PanelContainer = UIFactory.make_panel()

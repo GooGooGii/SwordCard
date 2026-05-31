@@ -33,9 +33,8 @@ static func all() -> Array[Dictionary]:
 		{
 			"id": "tong_ji",
 			"display_name": "通緝",
-			"description": "官府通緝在身。商店物價 +20%。",
-			# 商店價格 modifier 在 P6 落實，此處只是占牌組欄位用
-			"retention": {"trigger": "shop", "effects": []},
+			"description": "官府通緝在身。商店所有物品價格 +20%（每張疊加）。",
+			"retention": {"trigger": "shop", "effects": [{"kind": "shop_surcharge", "amount": 20}]},
 		},
 		{
 			"id": "hua_zhai",
