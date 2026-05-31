@@ -182,6 +182,7 @@ func _initialize() -> void:
 	_test_jing_hua_fu_removes_curse(characters[0])
 	_test_enemy_curse_infliction(characters[0], enemies[0])
 	_test_artifact_curse_on_acquire()
+	_test_boss_relic_choices(characters[0])
 	# Phase 7-A：Batch A 6 個事件樹
 	_test_batch_a_all_have_tree()
 	_test_batch_a_character_gating()
@@ -2190,6 +2191,57 @@ func _test_artifact_curse_on_acquire() -> void:
 		if relic2 != null:
 			_check(relic2.curse_on_acquire.is_empty(),
 				"%s should NOT have curse_on_acquire" % art_id2)
+
+func _test_boss_relic_choices(character: CharacterData) -> void:
+	# 驗證 _make_boss_relic_choices 邏輯（直接對 catalog 測試，不依賴 main.gd）
+	# 規則：boss 專屬神器排第一（若未持有），剩餘從 generals 補滿 3 個
+	var rs: RunState = RunState.new()
+	rs.init_for(character)
+	# 1. 對 centipede_lord boss：第一個選項應是 wugong_jia（蜈蚣甲），且帶 gu_du curse
+	var boss_id: String = "centipede_lord"
+	var artifact: RelicData = null
+	for a: RelicData in RelicCatalog.artifacts():
+		if a.boss_id == boss_id and not rs.has_relic(a.id):
+			artifact = a.clone()
+			break
+	_check(artifact != null, "centipede_lord should have an artifact in catalog")
+	if artifact != null:
+		_check(artifact.id == "wugong_jia", "centipede_lord artifact should be wugong_jia")
+		_check(artifact.curse_on_acquire == "gu_du",
+			"wugong_jia curse_on_acquire should be gu_du, got: %s" % artifact.curse_on_acquire)
+	# 2. 填滿 3 個選項的邏輯
+	var choices: Array[RelicData] = []
+	if artifact != null:
+		choices.append(artifact)
+	var general_pool: Array[RelicData] = []
+	for r: RelicData in RelicCatalog.generals():
+		if not rs.has_relic(r.id):
+			general_pool.append(r.clone())
+	var needed: int = 3 - choices.size()
+	for i: int in range(min(needed, general_pool.size())):
+		choices.append(general_pool[i])
+	_check(choices.size() == 3, "boss relic choices should be exactly 3, got %d" % choices.size())
+	# 3. 已持有 boss 神器時，全部 3 個都應來自 generals
+	rs.add_relic(artifact.clone() if artifact != null else RelicData.new())
+	var choices2: Array[RelicData] = []
+	var pool2: Array[RelicData] = []
+	for a2: RelicData in RelicCatalog.artifacts():
+		if a2.boss_id == boss_id and not rs.has_relic(a2.id):
+			choices2.append(a2.clone())
+			break
+	for r2: RelicData in RelicCatalog.generals():
+		if not rs.has_relic(r2.id):
+			pool2.append(r2.clone())
+	var needed2: int = 3 - choices2.size()
+	for i2: int in range(min(needed2, pool2.size())):
+		choices2.append(pool2[i2])
+	_check(choices2.size() == 3, "choices2 should still be 3 even when artifact already owned")
+	if artifact != null:
+		var artifact_in_choices2: bool = false
+		for c2: RelicData in choices2:
+			if c2.id == artifact.id:
+				artifact_in_choices2 = true
+		_check(not artifact_in_choices2, "already-owned artifact should not appear in choices2")
 
 # ──────────────────────────────────────────────────────────────────────
 # Event Branching Phase 7-A：Batch A 6 個事件樹（內容驗證）

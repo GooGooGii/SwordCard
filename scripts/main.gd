@@ -113,6 +113,7 @@ var selected_ascension: int = 0
 var pending_seed: int = 0  # 0 = 隨機；非 0 = 下次 start_run 用此 seed 生地圖
 var selected_party_ids: Array[String] = []  # character_select 多選 buffer，1–3 人
 var _event_battle_on_win: Callable  # 非空時表示從事件觸發的戰鬥，勝利後執行 callback 而非正常流程
+var _after_boss_relic_choice: Callable  # boss 遺物選擇後的 continuation（potion drop + 推進地圖）
 const PARTY_MAX_SIZE: int = 3
 
 const BASE_MARGIN_H: int = 28
@@ -2966,39 +2967,43 @@ func _complete_battle_victory() -> void:
 							battle.add_log("淨化符：除去詛咒「%s」。" % removed)
 	run_state.gold = run_state.gold + gold_reward
 	battle.add_log("獲得 %d 枚銅錢。" % gold_reward)
-	# Boss 必掉神器；一般戰鬥 25% 機率掉裝備
-	var dropped: RelicData = null
+	# Boss：三選一遺物；一般戰鬥 25% 機率自動掉裝備
 	var was_boss: bool = false
+	var boss_id_for_drop: String = ""
 	for defeated_e: EnemyData in battle.enemies:
 		if Ascension.is_boss_id(defeated_e.id):
 			was_boss = true
+			boss_id_for_drop = defeated_e.id
 			break
 	if was_boss:
 		# Event Branching P5：boss 勝利補 1 個 observe token
 		run_state.grant_observe_tokens(RunState.OBSERVE_TOKEN_BOSS_REWARD)
-		battle.add_log("觀察次數 +%d。" % RunState.OBSERVE_TOKEN_BOSS_REWARD)
-		for defeated_e: EnemyData in battle.enemies:
-			if dropped != null:
-				break
-			for a: RelicData in RelicCatalog.artifacts():
-				if a.boss_id == defeated_e.id and not run_state.has_relic(a.id):
-					dropped = a.clone()
-					break
-		if dropped == null:
-			dropped = _try_random_relic_drop(1.0)
-	else:
-		dropped = _try_random_relic_drop(0.25)
+		var choices: Array[RelicData] = _make_boss_relic_choices(boss_id_for_drop)
+		# continuation：遺物選完後執行 potion drop + 推進地圖
+		_after_boss_relic_choice = func() -> void:
+			if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
+				if randf() < 0.6:
+					var all_p: Array[Dictionary] = PotionCatalog.all()
+					run_state.potions.append((all_p[randi() % all_p.size()]).duplicate())
+			run_state.encounter_index = run_state.encounter_index + 1
+			if run_state.encounter_index >= run_state.encounter_choices.size():
+				if run_state.act < 5:
+					show_act_complete()
+				else:
+					show_result(true)
+			else:
+				show_card_reward()
+		show_boss_relic_choice(choices)
+		return
+	# 一般戰鬥：自動 25% 掉裝備
+	var dropped: RelicData = _try_random_relic_drop(0.25)
 	if dropped != null:
 		_add_relic_with_curse_effect(dropped)
-		battle.add_log("獲得裝備：%s" % dropped.display_name)
-	# 藥品掉落：一般 20%，boss 60%（揹包未滿時）
+	# 藥品掉落：一般 20%
 	if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
-		var drop_chance: float = 0.6 if was_boss else 0.2
-		if randf() < drop_chance:
+		if randf() < 0.2:
 			var all_potions: Array[Dictionary] = PotionCatalog.all()
-			var dropped_potion: Dictionary = all_potions[randi() % all_potions.size()]
-			run_state.potions.append(dropped_potion.duplicate())
-			battle.add_log("獲得藥品：%s" % String(dropped_potion.get("display_name", "")))
+			run_state.potions.append((all_potions[randi() % all_potions.size()]).duplicate())
 	run_state.encounter_index = run_state.encounter_index + 1
 	if run_state.encounter_index >= run_state.encounter_choices.size():
 		if run_state.act < 5:
@@ -3007,6 +3012,92 @@ func _complete_battle_victory() -> void:
 			show_result(true)
 	else:
 		show_card_reward()
+
+func _make_boss_relic_choices(boss_id: String) -> Array[RelicData]:
+	var choices: Array[RelicData] = []
+	# 優先把 boss 專屬神器排在第一位（若未持有）
+	for a: RelicData in RelicCatalog.artifacts():
+		if a.boss_id == boss_id and not run_state.has_relic(a.id):
+			choices.append(a.clone())
+			break
+	# 用 general pool 補滿 3 個
+	var general_pool: Array[RelicData] = []
+	for r: RelicData in RelicCatalog.generals():
+		if not run_state.has_relic(r.id):
+			general_pool.append(r.clone())
+	general_pool.shuffle()
+	var needed: int = 3 - choices.size()
+	for i: int in range(min(needed, general_pool.size())):
+		choices.append(general_pool[i])
+	return choices
+
+func show_boss_relic_choice(options: Array[RelicData]) -> void:
+	_set_background("res://assets/art/event_bg.png")
+	_clear_root()
+	var panel: PanelContainer = UIFactory.make_panel()
+	root.add_child(panel)
+	var outer: VBoxContainer = VBoxContainer.new()
+	outer.alignment = BoxContainer.ALIGNMENT_CENTER
+	outer.add_theme_constant_override("separation", 18)
+	panel.add_child(outer)
+	outer.add_child(_title("Boss 戰利品", 32))
+	var sub: Label = UIFactory.card_label("選擇一件遺物（共三選一）", 14, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_CENTER)
+	outer.add_child(sub)
+	var row: HBoxContainer = HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 18)
+	outer.add_child(row)
+	for relic: RelicData in options:
+		row.add_child(_boss_relic_choice_panel(relic))
+	# 允許跳過（不強制取遺物）
+	var skip_btn: Button = _button("跳過（不取遺物）")
+	skip_btn.pressed.connect(func() -> void:
+		if _after_boss_relic_choice.is_valid():
+			_after_boss_relic_choice.call()
+	)
+	outer.add_child(skip_btn)
+
+func _boss_relic_choice_panel(relic: RelicData) -> PanelContainer:
+	var panel: PanelContainer = UIFactory.make_panel()
+	panel.custom_minimum_size = Vector2(200, 300)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 8)
+	panel.add_child(box)
+	var icon: RelicIcon = RelicIcon.new()
+	icon.custom_minimum_size = Vector2(90, 90)
+	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(icon)
+	icon.set_relic(relic)
+	var name_lbl: Label = UIFactory.card_label(relic.display_name, 16, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
+	box.add_child(name_lbl)
+	var rarity_color: Color = ThemeColors.TEXT_DIM
+	match relic.rarity:
+		"uncommon": rarity_color = ThemeColors.HIGHLIGHT_GOLD
+		"rare": rarity_color = Color("c87cf0")
+		"legendary": rarity_color = ThemeColors.ACCENT_GOLD
+	box.add_child(UIFactory.card_label("[%s]" % relic.rarity, 11, rarity_color, HORIZONTAL_ALIGNMENT_CENTER))
+	var desc_lbl: Label = UIFactory.card_label(relic.description, 12, Color("c8d8ec"), HORIZONTAL_ALIGNMENT_CENTER)
+	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc_lbl.custom_minimum_size = Vector2(180, 0)
+	box.add_child(desc_lbl)
+	# 詛咒警告
+	if not relic.curse_on_acquire.is_empty():
+		var curse_data: Dictionary = CurseCatalog.by_id(relic.curse_on_acquire)
+		var curse_name: String = String(curse_data.get("display_name", relic.curse_on_acquire))
+		var curse_warn: Label = UIFactory.card_label("⚠ 附帶詛咒：%s" % curse_name, 12, Color("ff6655"), HORIZONTAL_ALIGNMENT_CENTER)
+		curse_warn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		curse_warn.custom_minimum_size = Vector2(180, 0)
+		box.add_child(curse_warn)
+	var pick_btn: Button = _button("選取")
+	pick_btn.pressed.connect(func(_r: RelicData = relic) -> void:
+		_add_relic_with_curse_effect(_r)
+		if _after_boss_relic_choice.is_valid():
+			_after_boss_relic_choice.call()
+	)
+	box.add_child(pick_btn)
+	return panel
 
 func show_card_reward() -> void:
 	_set_background("res://assets/art/event_bg.png")
