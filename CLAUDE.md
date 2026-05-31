@@ -880,3 +880,21 @@ const ACT_ENCOUNTERS: Dictionary = {
 - 召喚物獨立的 phase 2 — 弱化版不需要
 - 玩家「召喚」卡（如召喚劍靈助戰）— 需要新 effect kind `summon_ally`，留給未來
 
+## 美術資源狀況
+
+### 敵人肖像缺圖（暫借 placeholder）
+
+下列敵人尚未有專屬肖像，目前借用其他肖像。補圖時按 `portrait_path` 路徑新增 PNG 即可生效：
+
+| 敵人 ID | 顯示名稱 | 目前借用 | 建議風格 |
+|---|---|---|---|
+| `flower_spirit` | 花妖 | `fox_spirit.png` | 花瓣包裹的妖女，迷幻粉色調 |
+| `red_eye_imp` | 赤眼幼魈 | `red_eye_demon.png` | 赤眼山魈的縮版幼體，較稚嫩 |
+| `zombie_thrall` | 殭屍奴 | `zombie_soldier.png` | 破布纏身、木訥表情的殭屍奴僕 |
+| `centipede_brood` | 蜈蚣幼蟲 | `toxic_centipede.png` | 小型半透明蜈蚣幼蟲 |
+| `tower_wisp` | 鎖妖塔殘魂 | `tower_ghost_soldier.png` | 飄忽藍焰鬼火，無實體形狀 |
+
+### 卡牌美術 `_ls` 後綴說明
+
+`assets/art/cards/` 下帶 `_ls` 後綴的圖（`lxy_jinchan_ls`、`lxy_ningyuan_ls`、`zl_mengshe_ls`、`anu_wanyi_ls`）為「傳說光效版」插圖，對應稀有度 `rare` 的同名強化卡。這些圖已作為獨立 card ID 使用，無需額外 `art_id` 參數。
+
