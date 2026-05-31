@@ -114,6 +114,8 @@ var pending_seed: int = 0  # 0 = 隨機；非 0 = 下次 start_run 用此 seed �
 var selected_party_ids: Array[String] = []  # character_select 多選 buffer，1–3 人
 var _event_battle_on_win: Callable  # 非空時表示從事件觸發的戰鬥，勝利後執行 callback 而非正常流程
 var _after_boss_relic_choice: Callable  # boss 遺物選擇後的 continuation（potion drop + 推進地圖）
+var _boss_card_reward: bool = false  # 下一個 show_card_reward 是否為 boss 獎勵（三張稀有牌）
+var _after_card_reward: Callable  # card reward 選/跳過後的 continuation（預設回 progress screen）
 const PARTY_MAX_SIZE: int = 3
 
 const BASE_MARGIN_H: int = 28
@@ -2979,20 +2981,21 @@ func _complete_battle_victory() -> void:
 		# Event Branching P5：boss 勝利補 1 個 observe token
 		run_state.grant_observe_tokens(RunState.OBSERVE_TOKEN_BOSS_REWARD)
 		var choices: Array[RelicData] = _make_boss_relic_choices(boss_id_for_drop)
-		# continuation：遺物選完後執行 potion drop + 推進地圖
+		# Boss 流程：遺物三選一 → 稀有卡三選一 → potion drop → 推進地圖
+		# （boss 永遠是該幕最後節點，故 card reward 必須在 act 轉場前插入）
 		_after_boss_relic_choice = func() -> void:
 			if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
 				if randf() < 0.6:
 					var all_p: Array[Dictionary] = PotionCatalog.all()
 					run_state.potions.append((all_p[randi() % all_p.size()]).duplicate())
-			run_state.encounter_index = run_state.encounter_index + 1
-			if run_state.encounter_index >= run_state.encounter_choices.size():
+			_boss_card_reward = true
+			_after_card_reward = func() -> void:
+				run_state.encounter_index = run_state.encounter_index + 1
 				if run_state.act < 5:
 					show_act_complete()
 				else:
 					show_result(true)
-			else:
-				show_card_reward()
+			show_card_reward()
 		show_boss_relic_choice(choices)
 		return
 	# 一般戰鬥：自動 25% 掉裝備
@@ -3108,7 +3111,9 @@ func show_card_reward() -> void:
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_theme_constant_override("separation", 14)
 	panel.add_child(box)
-	box.add_child(_title("戰鬥勝利", 34))
+	box.add_child(_title("Boss 招式精粹" if _boss_card_reward else "戰鬥勝利", 34))
+	if _boss_card_reward:
+		box.add_child(UIFactory.card_label("擊敗 Boss！三選一稀有招式。", 14, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER))
 	for lu: Dictionary in _pending_levelups:
 		var lu_lbl: Label = UIFactory.card_label(
 			"✦ %s 升至 Lv %d！" % [String(lu.get("char_name", "")), int(lu.get("new_level", 1))],
@@ -3137,11 +3142,22 @@ func show_card_reward() -> void:
 		reward_button.pressed.connect(func(card: CardData = reward): choose_reward_card(card))
 		reward_row.add_child(reward_button)
 	var skip: Button = _button("跳過獎勵")
-	skip.pressed.connect(show_progress_screen)
+	skip.pressed.connect(_finish_card_reward)
 	box.add_child(skip)
 	var deck_button: Button = _button("查看目前牌組")
 	deck_button.pressed.connect(show_deck_view)
 	box.add_child(deck_button)
+
+# card reward 選卡 / 跳過後的收尾：boss 流程走 _after_card_reward continuation，
+# 一般戰鬥回 progress screen。每次呼叫後清掉 boss 旗標與 continuation。
+func _finish_card_reward() -> void:
+	_boss_card_reward = false
+	if _after_card_reward.is_valid():
+		var cb: Callable = _after_card_reward
+		_after_card_reward = Callable()
+		cb.call()
+	else:
+		show_progress_screen()
 
 func _make_reward_choices() -> Array[CardData]:
 	var pool: Array[CardData] = []
@@ -3166,6 +3182,14 @@ func _make_reward_choices() -> Array[CardData]:
 			for e: Dictionary in (t.get("effects", []) as Array):
 				if String(e.get("kind", "")) == "card_reward_count_bonus":
 					count += int(e.get("amount", 0))
+	# Boss 獎勵：優先 rare，不足再補 uncommon、最後 common（STS：boss 卡三張皆最高稀有）
+	if _boss_card_reward:
+		var ordered: Array[CardData] = []
+		for tier: String in ["rare", "uncommon", "common", "basic"]:
+			for c: CardData in pool:
+				if c.rarity == tier and not ordered.has(c):
+					ordered.append(c)
+		pool = ordered
 	var rewards: Array[CardData] = []
 	for i: int in range(min(count, pool.size())):
 		rewards.append(pool[i])
@@ -3173,7 +3197,7 @@ func _make_reward_choices() -> Array[CardData]:
 
 func choose_reward_card(card: CardData) -> void:
 	run_state.deck.append(card.clone())
-	show_progress_screen()
+	_finish_card_reward()
 
 func _grant_battle_exp() -> void:
 	_pending_levelups.clear()

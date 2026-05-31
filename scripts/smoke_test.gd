@@ -183,6 +183,7 @@ func _initialize() -> void:
 	_test_enemy_curse_infliction(characters[0], enemies[0])
 	_test_artifact_curse_on_acquire()
 	_test_boss_relic_choices(characters[0])
+	_test_boss_card_reward_rarity(characters)
 	# Phase 7-A：Batch A 6 個事件樹
 	_test_batch_a_all_have_tree()
 	_test_batch_a_character_gating()
@@ -2242,6 +2243,35 @@ func _test_boss_relic_choices(character: CharacterData) -> void:
 			if c2.id == artifact.id:
 				artifact_in_choices2 = true
 		_check(not artifact_in_choices2, "already-owned artifact should not appear in choices2")
+
+func _test_boss_card_reward_rarity(characters: Array[CharacterData]) -> void:
+	# Boss 卡獎勵：三張優先 rare。驗證 (1) 每角色 reward_pool 有足夠高稀有牌餵 boss 獎勵，
+	# (2) tier-ordering 邏輯把 rare 排到最前面（複現 main.gd._make_reward_choices 的 boss 分支）。
+	for character: CharacterData in characters:
+		var rare_count: int = 0
+		var high_count: int = 0  # rare + uncommon
+		for c: CardData in character.reward_pool:
+			if c.rarity == "rare":
+				rare_count += 1
+			if c.rarity == "rare" or c.rarity == "uncommon":
+				high_count += 1
+		# boss 獎勵需要 3 張；至少要有 3 張 rare/uncommon 才不會退化成 basic
+		_check(high_count >= 3,
+			"%s reward_pool should have >=3 rare/uncommon cards for boss reward, got %d" % [character.id, high_count])
+	# tier-ordering：用混合稀有度 pool 驗證 rare 排最前
+	var sample_pool: Array[CardData] = []
+	sample_pool.append(GameData.make_card("t_common", "通", "X", 1, "attack", "", [] as Array[Dictionary], "common"))
+	sample_pool.append(GameData.make_card("t_rare", "稀", "X", 1, "attack", "", [] as Array[Dictionary], "rare"))
+	sample_pool.append(GameData.make_card("t_uncommon", "良", "X", 1, "attack", "", [] as Array[Dictionary], "uncommon"))
+	var ordered: Array[CardData] = []
+	for tier: String in ["rare", "uncommon", "common", "basic"]:
+		for c2: CardData in sample_pool:
+			if c2.rarity == tier and not ordered.has(c2):
+				ordered.append(c2)
+	_check(ordered.size() == 3, "tier-ordering should keep all 3 sample cards")
+	_check(ordered[0].rarity == "rare", "tier-ordering first card should be rare")
+	_check(ordered[1].rarity == "uncommon", "tier-ordering second card should be uncommon")
+	_check(ordered[2].rarity == "common", "tier-ordering third card should be common")
 
 # ──────────────────────────────────────────────────────────────────────
 # Event Branching Phase 7-A：Batch A 6 個事件樹（內容驗證）
