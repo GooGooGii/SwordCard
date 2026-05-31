@@ -630,8 +630,12 @@ func resolve_effects_list(effects: Array, state: Dictionary) -> Array[String]:
 
 ## 多敵人系統（Multi-Enemy Mode）
 
-目前**完全未實作**（戰場嚴格 1v1）。下面是設計藍圖；實作時按 Phase 順序來。
-靈感來自 Slay the Spire；Boss 可以**召喚小怪**為核心新機制。
+**核心已完整實作。** 多敵引擎、AOE 卡、召喚機制、召喚物、UI、12 個 smoke test 都已落地。
+**唯一未接的一塊**：地圖普通戰鬥節點仍只生成 1 個敵人（`map_generator.gd` 的 `_make_map_node`
+每個 battle node 只塞 1 隻）；目前多敵戰場只會透過 **boss 召喚** 產生。藍圖規劃的「普通節點
+1–2 敵、後期 act 可 3 敵」地圖遭遇組（`ACT_ENCOUNTERS` / `choose_enemies_for_act`）尚未實作。
+
+下面保留設計藍圖供參考。靈感來自 Slay the Spire；Boss 可以**召喚小怪**為核心新機制。
 
 ### 鎖定的設計決策
 
@@ -825,29 +829,31 @@ const ACT_ENCOUNTERS: Dictionary = {
 | Bestiary | 召喚物各自獨立 entry |
 | Debug menu | 加「Spawn Test Minion」快捷 |
 
-### 實作狀態（規劃，**尚未開始**）
+### 實作狀態
 
 | Phase | 內容 | 狀態 |
 |---|---|---|
-| 1+2. 資料層 + AOE | BattleController state 陣列化、alias 同步、EffectResolver 加 `*_all` kinds | ❌ 未實作 |
-| 3+3.5. 多體回合 + 召喚 | per-enemy `action_index` / `phased` / intent；`summon` effect kind + `spawn_enemy()` + `EnemyData.summon_pool` | ❌ 未實作 |
-| 4. 戰鬥 UI | enemy_row、active 高亮、drag 命中個別敵、AOE 視覺、召喚物 fade-in | ❌ 未實作 |
-| 5+8. 內容 | MapGenerator + 弱版 EnemyData + 5 召喚物 + 改造 5–6 張卡用 `*_all` | ❌ 未實作 |
-| 6+7. 測試 + baseline | smoke test 多敵 round-trip / damage 路由 / 召喚 / 切換 active / AOE；balance_matrix 加多敵 scenarios | ❌ 未實作 |
+| 1+2. 資料層 + AOE | BattleController state 陣列化（`enemies` / `enemy_action_indices` / `enemy_phased`）、alias 同步（`_sync_active_enemy_to_state` / `_sync_state_to_active_enemy`）、EffectResolver 加 `*_all` kinds | ✅ 完成 |
+| 3+3.5. 多體回合 + 召喚 | per-enemy `action_index` / `phased` / intent；`summon` effect kind + `spawn_enemy()` + `_process_pending_summons()` + `EnemyData.summon_pool` + `GameData.enemy_by_id()` | ✅ 完成 |
+| 4. 戰鬥 UI | `enemy_row_container`、active 高亮、`set_active_enemy`、drag 命中個別敵、召喚物加入後 `_rebuild_enemy_row_in_place` | ✅ 完成 |
+| 5+8. 內容 | 5 弱版召喚物 EnemyData（centipede_brood / tower_wisp / red_eye_imp / zombie_thrall / water_tentacle）+ 5 boss `summon_pool` + AOE 卡（萬劍訣 / 氣劍指 / 御蜂術 用 `damage_all`） | ✅ 完成 |
+| 6+7. 測試 | 12 個 smoke test（setup / damage 路由 / AOE / partial kill / set_active / 多體回合 / per-enemy phase / summon basic+cap+unknown+from_pool） | ✅ 完成 |
+| **地圖遭遇組** | **`ACT_ENCOUNTERS` 加權表 + `choose_enemies_for_act()` + 接進 `_make_map_node` / `start_next_battle` + 多敵 balance baseline** | ❌ **未實作（唯一缺口）** |
 
-預估 5 個 commits，~1500 行。
-
-### Smoke test 覆蓋（規劃）
+### Smoke test 覆蓋（已實作 12 個）
 
 - `_test_multi_enemy_setup` — 3 敵 setup → state["enemies"].size() == 3、alias 同步到 enemies[0]
 - `_test_multi_enemy_damage_routing` — 單體 damage 只打 active；切換 active 後再打、原敵 HP 不變
-- `_test_multi_enemy_aoe` — damage_all 5 → 3 敵 HP 都 -5
+- `_test_multi_enemy_aoe_damage` — damage_all → 全敵 HP 同步扣
+- `_test_multi_enemy_aoe_status` — poison_all / weak_all / vulnerable_all → 全敵各加狀態
 - `_test_multi_enemy_partial_kill` — 中間敵死後 → enemies 陣列重組 / active_index 修正
-- `_test_multi_enemy_victory` — 全敵死 → is_victory；boss 死但召喚物還活 → 戰鬥繼續
+- `_test_multi_enemy_set_active` — set_active_enemy 切換 + alias 重新指向
+- `_test_multi_enemy_turn_each_attacks` — 敵人回合按陣列順序逐個結算
+- `_test_multi_enemy_per_enemy_phase` — 每敵獨立 phase_2 觸發
 - `_test_summon_basic` — spawn_enemy → enemies +1、state 同步、log 出現
 - `_test_summon_cap` — 已 3 敵時 spawn → 拒絕，回傳 false
 - `_test_summon_unknown_id` — spawn 不存在 id → 拒絕
-- `_test_anu_passive_multi_enemy` — battle_start → 全敵 poison +5
+- `_test_summon_from_boss_pool` — boss summon_pool 隨機抽召喚物
 
 ### 風險與防呆
 
@@ -867,6 +873,7 @@ const ACT_ENCOUNTERS: Dictionary = {
 
 ### 已知未實作 / 之後再說
 
+- **地圖普通節點多敵遭遇組**（`ACT_ENCOUNTERS` / `choose_enemies_for_act`）— 唯一缺口，見上方實作狀態表。目前普通戰鬥仍 1 敵，多敵只靠 boss 召喚
 - 召喚物可被「魅惑/控制」反過來幫玩家打 boss
 - 多敵戰場的 boss action targeted 指定（boss 打 active vs 打全隊）— MVP 先用既有 player_* alias 套用
 - 多敵 boss（2 boss 同場）— scope 太大，目前一律 1 boss
