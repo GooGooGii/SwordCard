@@ -4561,7 +4561,7 @@ func _show_event_card_confirm(card: CardData, force_accept: bool, on_accept: Cal
 	# Large card display
 	var card_holder: CenterContainer = CenterContainer.new()
 	col.add_child(card_holder)
-	var big_btn: Button = _make_card_button(card, card.cost, Vector2(260, 360), true, true)
+	var big_btn: Button = _make_card_button(card, card.cost, Vector2(240, 360), true, true)
 	big_btn.disabled = true
 	big_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card_holder.add_child(big_btn)
@@ -4953,7 +4953,7 @@ func _shop_item_view(item: Dictionary) -> Control:
 	if item.get("on_sale", false):
 		box.add_child(UIFactory.card_label("★ 特賣！五折優惠", 12, Color("ff5555"), HORIZONTAL_ALIGNMENT_CENTER))
 	var can_buy: bool = run_state.gold >= price
-	var card_button: Button = _make_card_button(card, card.cost, Vector2(158, 287), can_buy, true)
+	var card_button: Button = _make_card_button(card, card.cost, Vector2(192, 287), can_buy, true)
 	card_button.disabled = not can_buy
 	card_button.pressed.connect(func(): _show_shop_buy_confirm_overlay(card, price))
 	box.add_child(card_button)
@@ -4982,7 +4982,7 @@ func _show_shop_buy_confirm_overlay(card: CardData, price: int) -> void:
 	col.add_theme_constant_override("separation", 18)
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
 	center.add_child(col)
-	var big: Button = _make_card_button(card, card.cost, Vector2(230, 418), true, true)
+	var big: Button = _make_card_button(card, card.cost, Vector2(279, 418), true, true)
 	big.disabled = true
 	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_child(big)
@@ -5408,7 +5408,7 @@ func _deck_view_card(card: CardData, mode: String = "view", count: int = 1) -> C
 	var is_curse: bool = CurseCatalog.is_curse(card)
 	var selectable: bool = (not is_curse) and (mode == "remove" or mode == "shop_remove" or ((mode == "upgrade" or mode == "shop_upgrade") and not card.upgraded))
 	var visually_enabled: bool = (mode != "upgrade" and mode != "shop_upgrade") or not card.upgraded
-	var button: Button = _make_card_button(card, card.cost, Vector2(158, 287), true, visually_enabled)
+	var button: Button = _make_card_button(card, card.cost, Vector2(192, 287), true, visually_enabled)
 	button.disabled = not selectable
 	if mode == "remove":
 		button.pressed.connect(func(): remove_card_from_deck(card))
@@ -5483,7 +5483,7 @@ func _show_card_detail_overlay(card: CardData) -> void:
 			card_holder.remove_child(old)
 			old.queue_free()
 		var display: CardData = card.upgraded_copy() if show_upgraded else card
-		var btn: Button = _make_card_button(display, display.cost, Vector2(260, 360), true, true)
+		var btn: Button = _make_card_button(display, display.cost, Vector2(240, 360), true, true)
 		btn.disabled = true
 		btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card_holder.add_child(btn)
@@ -5541,7 +5541,7 @@ func _show_upgrade_confirm_overlay(card: CardData, on_confirm: Callable) -> void
 	stack.add_theme_constant_override("separation", 24)
 	stack.alignment = BoxContainer.ALIGNMENT_CENTER
 	col.add_child(stack)
-	var big: Button = _make_card_button(card, card.cost, Vector2(230, 418), true, true)
+	var big: Button = _make_card_button(card, card.cost, Vector2(279, 418), true, true)
 	big.disabled = true
 	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(big)
@@ -5552,7 +5552,7 @@ func _show_upgrade_confirm_overlay(card: CardData, on_confirm: Callable) -> void
 	arrow.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
 	stack.add_child(arrow)
 	var upgraded: CardData = card.upgraded_copy()
-	var up_btn: Button = _make_card_button(upgraded, upgraded.cost, Vector2(230, 418), true, true)
+	var up_btn: Button = _make_card_button(upgraded, upgraded.cost, Vector2(279, 418), true, true)
 	up_btn.disabled = true
 	up_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(up_btn)
@@ -5944,7 +5944,7 @@ func _refresh_combatant_hp(bar: ProgressBar, value_label: Label, hp: int, max_hp
 
 func _card_button(card: CardData) -> Button:
 	var affordable: bool = int(battle.state["energy"]) >= battle.effective_card_cost(card)
-	var card_size: Vector2 = Vector2(124, 225) if _battle_compact else Vector2(144, 262)
+	var card_size: Vector2 = Vector2(150, 225) if _battle_compact else Vector2(175, 262)
 	var button: Button = _make_card_button(card, card.cost, card_size, affordable, true)
 	button.disabled = not affordable
 	button.pressed.connect(func() -> void: _on_card_button_pressed(card, button))
@@ -6139,7 +6139,7 @@ func _show_card_preview(card: CardData) -> void:
 	stack.add_theme_constant_override("separation", 24)
 	stack.alignment = BoxContainer.ALIGNMENT_CENTER
 	center.add_child(stack)
-	var big: Button = _make_card_button(card, card.cost, Vector2(230, 418), true, true)
+	var big: Button = _make_card_button(card, card.cost, Vector2(279, 418), true, true)
 	big.disabled = true
 	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(big)
@@ -6151,14 +6151,14 @@ func _show_card_preview(card: CardData) -> void:
 		arrow.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
 		stack.add_child(arrow)
 		var upgraded: CardData = card.upgraded_copy()
-		var up_btn: Button = _make_card_button(upgraded, upgraded.cost, Vector2(230, 418), true, true)
+		var up_btn: Button = _make_card_button(upgraded, upgraded.cost, Vector2(279, 418), true, true)
 		up_btn.disabled = true
 		up_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		stack.add_child(up_btn)
 
 func _reward_card_button(card: CardData, card_height: float = 349.0) -> Button:
 	var h: float = clampf(card_height, 180.0, 349.0)
-	var w: float = h * (192.0 / 349.0)
+	var w: float = h * (2.0 / 3.0)
 	return _make_card_button(card, card.cost, Vector2(w, h), true, true)
 
 func _card_frame_texture_path(_card_type: String) -> String:
