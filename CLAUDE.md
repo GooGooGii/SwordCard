@@ -418,14 +418,16 @@ match version:
 
 ### 實作狀態
 
-| Phase | 內容 | Commit |
+**已完整實作（所有 Phase 完成）。**
+
+| Phase | 內容 | 狀態 |
 |---|---|---|
-| 1. 資料層 | RunState 陣列化、property aliases、SaveManager v1→v2 migrate | `feat(party): phase 1` |
-| 2. BattleController | `state.players` + `decks` + `_sync_*` + `switch_active` + 後排 +2 HP/回合 + 全滅判定 + active 死自動切 | `feat(party): phase 2` |
-| 3. character select | 多選 + 排序 + 隊長 ★ + 出戰按鈕 | `feat(party): phase 3` |
-| 4. battle UI | 後排頭像 widget（點擊切換）+ active 肖像/HP/狀態 hot-swap + 切換次數提示 | `feat(party): phase 4` |
-| 5. ascension/relic/UI 整合 | 主選單存檔摘要、map status popup、debug full heal、retry 全隊回滿 | `feat(party): phase 5` |
-| 6. 測試補強 | 8 個新 smoke test 覆蓋 round-trip / migrate / switch / state sync / 自動切人 / 專武 | (含在各 phase) |
+| 1. 資料層 | RunState 陣列化、property aliases、SaveManager v1→v2 migrate | ✅ 完成 |
+| 2. BattleController | `state.players` + `decks` + `_sync_*` + `switch_active` + 後排 +2 HP/回合 + 全滅判定 + active 死自動切 | ✅ 完成 |
+| 3. character select | 多選 + 排序 + 隊長 ★ + 出戰按鈕 | ✅ 完成 |
+| 4. battle UI | 後排頭像 widget（`bench_strip`，點擊切換）+ active 肖像/HP/狀態 hot-swap + 切換次數提示 | ✅ 完成 |
+| 5. ascension/relic/UI 整合 | 主選單存檔摘要、map status popup、debug full heal（全隊）、retry 全隊回滿 | ✅ 完成 |
+| 6. 測試補強 | smoke test：round-trip / save migrate / switch / state sync / 自動切人 / 專武 | ✅ 完成 |
 
 ### Smoke test 覆蓋
 
@@ -823,15 +825,15 @@ const ACT_ENCOUNTERS: Dictionary = {
 | Bestiary | 召喚物各自獨立 entry |
 | Debug menu | 加「Spawn Test Minion」快捷 |
 
-### 實作狀態（規劃）
+### 實作狀態（規劃，**尚未開始**）
 
-| Phase | 內容 | Commit |
+| Phase | 內容 | 狀態 |
 |---|---|---|
-| 1+2. 資料層 + AOE | BattleController state 陣列化、alias 同步、EffectResolver 加 `*_all` kinds | `feat(multi-enemy): phase 1+2 data layer + AOE` |
-| 3+3.5. 多體回合 + 召喚 | per-enemy `action_index` / `phased` / intent；`summon` effect kind + `spawn_enemy()` + `EnemyData.summon_pool` | `feat(multi-enemy): phase 3 turn + summon` |
-| 4. 戰鬥 UI | enemy_row、active 高亮、drag 命中個別敵、AOE 視覺、召喚物 fade-in | `feat(multi-enemy): phase 4 UI` |
-| 5+8. 內容 | MapGenerator + 弱版 EnemyData + 5 召喚物 + 改造 5–6 張卡用 `*_all` | `feat(multi-enemy): phase 5+8 content` |
-| 6+7. 測試 + baseline | smoke test 多敵 round-trip / damage 路由 / 召喚 / 切換 active / AOE；balance_matrix 加多敵 scenarios | `feat(multi-enemy): phase 6+7 tests` |
+| 1+2. 資料層 + AOE | BattleController state 陣列化、alias 同步、EffectResolver 加 `*_all` kinds | ❌ 未實作 |
+| 3+3.5. 多體回合 + 召喚 | per-enemy `action_index` / `phased` / intent；`summon` effect kind + `spawn_enemy()` + `EnemyData.summon_pool` | ❌ 未實作 |
+| 4. 戰鬥 UI | enemy_row、active 高亮、drag 命中個別敵、AOE 視覺、召喚物 fade-in | ❌ 未實作 |
+| 5+8. 內容 | MapGenerator + 弱版 EnemyData + 5 召喚物 + 改造 5–6 張卡用 `*_all` | ❌ 未實作 |
+| 6+7. 測試 + baseline | smoke test 多敵 round-trip / damage 路由 / 召喚 / 切換 active / AOE；balance_matrix 加多敵 scenarios | ❌ 未實作 |
 
 預估 5 個 commits，~1500 行。
 
