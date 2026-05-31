@@ -2,18 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ccy1em1lr7idb"
-valid=false
+uid="uid://dos4bueg65823"
+path="res://.godot/imported/lxy_jianzhen.png-a7d618423b458eea82683e71de6c216d.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/lxy_jianzhen.png"
+dest_files=["res://.godot/imported/lxy_jianzhen.png-a7d618423b458eea82683e71de6c216d.ctex"]
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
-compress/lossy_quality=0.5
+compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

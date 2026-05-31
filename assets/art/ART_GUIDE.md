@@ -151,6 +151,22 @@ Target:
 ## 美術狀態 (Art Status)
 
 > **現況**：所有新增卡牌與專屬遺物已成功補齊對應的美術資源，並已移除代碼中的「借圖」暫代方案。
+>
+> **最近驗證（2026-05-31）**：補上 12 張李逍遙／趙靈兒／林月如／阿奴的水墨卡圖（含工作區另 4 張林月如卡），
+> 已實際在 Godot 內重新匯入並驗證 `valid=true` + 產生非佔位的 `.ctex`，確認真的會顯示在遊戲中。
+
+### ⚠️ 新增美術資源的硬性要求（踩過的雷）
+
+產生 / 置換卡圖、圖示時務必確認，否則圖**不會進到遊戲**（匯入失敗、悄悄 fallback 回舊圖）：
+
+1. **副檔名要與真實格式一致**：`.png` 檔案內容必須是真正的 PNG（檔頭 `89 50 4E 47`），
+   不可把 JPEG（檔頭 `FF D8`）改個副檔名當 PNG。Godot 依副檔名挑 loader，假 PNG 會匯入失敗 → `valid=false`。
+   檢查：`file assets/art/cards/<id>.png` 應回報 `PNG image data`。
+2. **每個 `.import` 的 `uid` 必須唯一**：不要連同 `.import` 一起複製貼上（會共用同一個 `uid://…`，
+   Godot 偵測 UID 衝突就拒絕匯入整批）。最安全做法：**只放 `.png`，刪掉舊 `.import`**，
+   讓 `godot --headless --path . --import` 自動產生全新唯一 UID（程式以路徑 `load("res://…png")` 載圖，不靠 UID）。
+3. **匯入後驗證**：跑 `--import`，確認對應 `.godot/imported/<id>.png-*.ctex` 有重新產生（非舊的佔位大小）、
+   且 `.import` 內無 `valid=false`、無重複 `uid`。最後 `-s scripts/smoke_test.gd` 應印 `passed`。
 
 ### 美術統計
 
