@@ -75,6 +75,7 @@ var _battle_potion_strip: HBoxContainer = null
 var _potion_overlay: HBoxContainer = null
 var _potion_overlay_buttons: Array[Button] = []
 var _selected_hand_button: Button = null
+var _pending_card_confirmations: Array[Dictionary] = []
 
 # 畫面切換淡入淡出 — _clear_root 截舊畫面當 overlay，新畫面建在下方，再淡出 overlay
 var _transition_layer: CanvasLayer = null
@@ -3818,7 +3819,7 @@ func _resolve_event_tree_outcome(outcome: Dictionary) -> void:
 				"🎲 賭運：" + ("成功" if won else "失敗"),
 				summary,
 			]
-			_show_event_outcome(full_text, advance_non_battle_node)
+			_show_event_outcome(full_text, func() -> void: _flush_pending_confirmations(advance_non_battle_node))
 		"battle":
 			# Phase 3：開戰、勝利跑 victory_effects、戰敗跑 defeat_effects 後回地圖
 			var battle_dict: Dictionary = outcome.get("battle", {}) as Dictionary
@@ -3846,7 +3847,7 @@ func _resolve_event_tree_outcome(outcome: Dictionary) -> void:
 					full_text2 += "\n\n[ %s ] %s" % [badge_text, summary2]
 			elif not badge_text.is_empty():
 				full_text2 += "\n\n[ %s ]" % badge_text
-			_show_event_outcome(full_text2, advance_non_battle_node)
+			_show_event_outcome(full_text2, func() -> void: _flush_pending_confirmations(advance_non_battle_node))
 
 func _event_choice_passes_filter(event_data: Dictionary, choice_key: String, active_char_id: String) -> bool:
 	# 角色限定：choice_filters[key].if_character = [char_ids]
@@ -3881,7 +3882,7 @@ func _event_show_observe(event_data: Dictionary, _sub_stage: String) -> void:
 	var summary: String = _resolve_observe_effects(effects)
 	if not summary.is_empty():
 		text += "\n\n[ %s ]" % summary
-	_show_event_outcome(text, advance_non_battle_node)
+	_show_event_outcome(text, func() -> void: _flush_pending_confirmations(advance_non_battle_node))
 
 # 結算 observe_effects 並回傳摘要字串。支援的 kind：
 #   heal / damage   — active 角色 HP +/-
@@ -3889,6 +3890,7 @@ func _event_show_observe(event_data: Dictionary, _sub_stage: String) -> void:
 #   max_hp          — 永久 max_hp +/-（增加時當前 HP 同步增加；減少時 clamp）
 #   power           — 永久 power_bonus +/-（影響本 run 後續所有戰鬥）
 func _resolve_observe_effects(effects: Array) -> String:
+	_pending_card_confirmations.clear()
 	if run_state == null:
 		return ""
 	var parts: Array[String] = []
@@ -4004,16 +4006,15 @@ func _resolve_observe_effects(effects: Array) -> String:
 				var pool_key2: String = String(effect.get("pool", "common"))
 				var added_card: CardData = _pick_random_card_from_pool(pool_key2)
 				if added_card != null:
-					var d2: Array = run_state.character_decks[run_state.active_character_index] as Array
-					d2.append(added_card)
-					parts.append("習得「%s」" % added_card.display_name)
+					# 不直接加入牌組，交由 _flush_pending_confirmations 在 outcome 後讓玩家確認
+					_pending_card_confirmations.append({"card": added_card, "force_accept": false})
+					parts.append("習得招式「%s」" % added_card.display_name)
 			"gain_curse":
-				# P4：從 CurseCatalog 取卡並加入 active 角色 deck
+				# P4：詛咒不可拒絕，仍走確認流程（讓玩家看清楚拿到什麼）
 				var curse_id: String = String(effect.get("curse_id", ""))
 				var curse_card: CardData = CurseCatalog.make_card(curse_id)
 				if curse_card != null:
-					var d_curse: Array = run_state.character_decks[run_state.active_character_index] as Array
-					d_curse.append(curse_card)
+					_pending_card_confirmations.append({"card": curse_card, "force_accept": true})
 					parts.append("不祥之兆纏身：「%s」" % curse_card.display_name)
 				else:
 					push_warning("[event tree] gain_curse with unknown id: %s" % curse_id)
@@ -4094,7 +4095,7 @@ func start_event_tree_battle(enemy_id: String, hp_mult: float, victory_effects: 
 		# 不開戰，直接跑 defeat_effects 當作 fallback
 		var summary: String = _resolve_observe_effects(defeat_effects)
 		var fallback_text: String = "（戰鬥未能展開，敵人 '%s' 不存在）\n\n%s" % [enemy_id, summary]
-		_show_event_outcome(fallback_text, advance_non_battle_node)
+		_show_event_outcome(fallback_text, func() -> void: _flush_pending_confirmations(advance_non_battle_node))
 		return
 	var clone: EnemyData = template.clone()
 	if hp_mult > 0.0 and not is_equal_approx(hp_mult, 1.0):
@@ -4124,7 +4125,7 @@ func _finish_event_tree_battle(victory: bool) -> void:
 		var text: String = "戰勝了 %s。\n\n[ ⚔ 戰鬥勝利 ]" % battle.enemy.display_name
 		if not summary.is_empty():
 			text += " " + summary
-		_show_event_outcome(text, advance_non_battle_node)
+		_show_event_outcome(text, func() -> void: _flush_pending_confirmations(advance_non_battle_node))
 		return
 	# 戰敗：先把全隊 HP 抬到 1（不直接 game over），再跑 defeat_effects
 	for i: int in range(run_state.character_hps.size()):
@@ -4139,7 +4140,7 @@ func _finish_event_tree_battle(victory: bool) -> void:
 	var d_text: String = "敗給了 %s。\n\n[ ⚔ 戰鬥失敗 ]" % battle.enemy.display_name
 	if not d_summary.is_empty():
 		d_text += " " + d_summary
-	_show_event_outcome(d_text, advance_non_battle_node)
+	_show_event_outcome(d_text, func() -> void: _flush_pending_confirmations(advance_non_battle_node))
 
 func _start_event_fight() -> void:
 	var outcome_text: String = _get_event_outcome(
@@ -4481,8 +4482,92 @@ func show_event_card_reward(hp_cost_paid: int) -> void:
 	box.add_child(deck_button)
 
 func _choose_event_card(card: CardData) -> void:
-	run_state.deck.append(card.clone())
-	advance_non_battle_node()
+	_show_event_card_confirm(
+		card, false,
+		func() -> void:
+			run_state.deck.append(card.clone())
+			advance_non_battle_node(),
+		func() -> void:
+			advance_non_battle_node()
+	)
+
+func _flush_pending_confirmations(on_done: Callable) -> void:
+	if _pending_card_confirmations.is_empty():
+		on_done.call()
+		return
+	var entry: Dictionary = _pending_card_confirmations.pop_front() as Dictionary
+	var card: CardData = entry["card"] as CardData
+	var force: bool = bool(entry.get("force_accept", false))
+	_show_event_card_confirm(
+		card, force,
+		func() -> void:
+			var d: Array = run_state.character_decks[run_state.active_character_index] as Array
+			d.append(card.clone())
+			_flush_pending_confirmations(on_done),
+		func() -> void:
+			_flush_pending_confirmations(on_done)
+	)
+
+func _show_event_card_confirm(card: CardData, force_accept: bool, on_accept: Callable, on_skip: Callable = Callable()) -> void:
+	_hide_card_preview()
+	var overlay: Control = Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.z_index = 1600
+	add_child(overlay)
+	_card_preview_overlay = overlay
+
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0, 0, 0, 0.72)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.add_child(backdrop)
+
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+
+	var col: VBoxContainer = VBoxContainer.new()
+	col.add_theme_constant_override("separation", 16)
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.add_child(col)
+
+	var is_curse: bool = CurseCatalog.is_curse(card)
+
+	# Top label
+	var top_text: String = "加入牌組？"
+	if is_curse or force_accept:
+		top_text = "詛咒纏身，無法拒絕"
+	col.add_child(_title(top_text, 26))
+
+	# Large card display
+	var card_holder: CenterContainer = CenterContainer.new()
+	col.add_child(card_holder)
+	var big_btn: Button = _make_card_button(card, card.cost, Vector2(260, 360), true, true)
+	big_btn.disabled = true
+	big_btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card_holder.add_child(big_btn)
+
+	# Bottom buttons
+	var btn_row: HBoxContainer = HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 24)
+	col.add_child(btn_row)
+
+	if not (is_curse or force_accept) and on_skip.is_valid():
+		var skip_btn: Button = _button("不要了")
+		skip_btn.pressed.connect(func() -> void:
+			_hide_card_preview()
+			on_skip.call())
+		btn_row.add_child(skip_btn)
+
+	var accept_text: String = "詛咒接受" if (is_curse or force_accept) else "加入牌組"
+	var accept_btn: Button = _button(accept_text)
+	accept_btn.pressed.connect(func() -> void:
+		_hide_card_preview()
+		on_accept.call())
+	btn_row.add_child(accept_btn)
 
 func resolve_event_power(amount: int = 1) -> void:
 	var bonus: int = 0
