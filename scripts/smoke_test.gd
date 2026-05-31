@@ -111,6 +111,7 @@ func _initialize() -> void:
 	_test_party_starter_weapons(characters)
 	_test_revive_effect(characters, enemies[0])
 	_test_map_generator_reachability(enemies, bosses)
+	_test_map_encounter_groups(enemies, bosses)
 	_test_predict_enemy_damage_matches_resolver()
 	_test_requires_enemy_target()
 	_test_bestiary_persistence()
@@ -836,6 +837,36 @@ func _test_map_seed_determinism(enemies: Array[EnemyData], bosses: Array[EnemyDa
 			_check(String(a.get("type", "")) == String(b.get("type", "")),
 				"row %d node %d type differs: %s vs %s" % [row_index, node_index, a.get("type"), b.get("type")])
 
+func _test_map_encounter_groups(enemies: Array[EnemyData], bosses: Array[EnemyData]) -> void:
+	# 每幕地圖 battle 節點都要有 "enemies" 陣列（非空）；boss 節點仍用 "enemy"
+	for act: int in range(1, 6):
+		seed(act * 31337)
+		var choices: Array[Array] = MapGenerator.generate(enemies, bosses, [], act)
+		var battle_count: int = 0
+		for row: Array in choices:
+			for node_v: Variant in row:
+				var node: Dictionary = node_v as Dictionary
+				if String(node.get("type", "")) == "battle":
+					battle_count += 1
+					var enc: Array = node.get("enemies", []) as Array
+					_check(enc.size() >= 1, "act %d battle node has no enemies" % act)
+					_check(enc.size() <= MapGenerator.ACT_ENCOUNTERS.get(act, []).size() + 2,
+						"act %d battle node enemy count out of range: %d" % [act, enc.size()])
+					for e_v: Variant in enc:
+						_check(e_v is EnemyData, "act %d battle node enemy is not EnemyData" % act)
+				elif String(node.get("type", "")) == "boss":
+					_check(node.has("enemy"), "boss node missing 'enemy' key in act %d" % act)
+		_check(battle_count > 0, "act %d map has no battle nodes" % act)
+	# 幕 4-5 應有機率出現 2 敵以上（100 次隨機中至少 1 次）
+	var found_multi: bool = false
+	seed(99999)
+	for _i: int in range(100):
+		var enc: Array[EnemyData] = MapGenerator.choose_enemies_for_act(4, enemies)
+		if enc.size() >= 2:
+			found_multi = true
+			break
+	_check(found_multi, "act 4 never generated multi-enemy encounter in 100 tries")
+
 func _test_requires_enemy_target() -> void:
 	# 純傷害
 	var c_damage: Array[Dictionary] = [{"kind": "damage", "amount": 5}]
@@ -1554,6 +1585,7 @@ func _test_summon_from_boss_pool(characters: Array[CharacterData]) -> void:
 	# 新敵應在 summon_pool 內
 	var new_id: String = String((bc.state["enemies"][size_before] as Dictionary)["id"])
 	_check(new_id in moon.summon_pool, "summoned id should be from boss summon_pool; got '%s'" % new_id)
+	_check(bc.enemies[size_before].is_summoned, "spawned enemy should have is_summoned = true")
 
 func _test_multi_hit_damage(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
 	# 連擊 hits 參數：每段各走 power/weak/vulnerable/block 管線

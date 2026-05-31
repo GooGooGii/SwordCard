@@ -9,6 +9,14 @@ const MALE_ONLY_VARIANTS: Array[String] = ["flower_spirit"]
 const FEMALE_CHARACTER_IDS: Array[String] = ["zhao_linger", "lin_yueru", "anu"]
 const MALE_CHARACTER_IDS: Array[String] = ["li_xiaoyao"]
 const BLACK_SHOP_CHANCE: float = 0.25
+# 每幕普通戰鬥節點的敵人數量加權表。count 為從 pool 中抽取的敵人數。
+const ACT_ENCOUNTERS: Dictionary = {
+	1: [{"count": 1, "weight": 4}, {"count": 2, "weight": 1}],
+	2: [{"count": 1, "weight": 3}, {"count": 2, "weight": 2}],
+	3: [{"count": 1, "weight": 2}, {"count": 2, "weight": 3}],
+	4: [{"count": 1, "weight": 1}, {"count": 2, "weight": 3}, {"count": 3, "weight": 1}],
+	5: [{"count": 1, "weight": 1}, {"count": 2, "weight": 2}, {"count": 3, "weight": 2}],
+}
 const MIN_NORMAL_ROW_COUNT: int = 9
 const MAX_NORMAL_ROW_COUNT: int = 11
 const MIN_ROW_OPTIONS: int = 3
@@ -38,7 +46,30 @@ static func _build_event_pool(has_female: bool, has_male: bool) -> Array[String]
 		pool.append(v)
 	return pool
 
-static func generate(normal_enemies: Array[EnemyData], bosses: Array[EnemyData], character_ids: Array[String] = []) -> Array[Array]:
+static func choose_enemies_for_act(act: int, pool: Array[EnemyData]) -> Array[EnemyData]:
+	if pool.is_empty():
+		return []
+	var table: Array = (ACT_ENCOUNTERS.get(act, ACT_ENCOUNTERS[1])) as Array
+	var total_weight: int = 0
+	for entry: Variant in table:
+		total_weight += int((entry as Dictionary).get("weight", 1))
+	var roll: int = randi_range(0, max(0, total_weight - 1))
+	var count: int = 1
+	var acc: int = 0
+	for entry: Variant in table:
+		acc += int((entry as Dictionary).get("weight", 1))
+		if roll < acc:
+			count = int((entry as Dictionary).get("count", 1))
+			break
+	count = min(count, pool.size())
+	var shuffled: Array[EnemyData] = pool.duplicate()
+	shuffled.shuffle()
+	var result: Array[EnemyData] = []
+	for i: int in range(count):
+		result.append((shuffled[i] as EnemyData).clone())
+	return result
+
+static func generate(normal_enemies: Array[EnemyData], bosses: Array[EnemyData], character_ids: Array[String] = [], act: int = 1) -> Array[Array]:
 	var has_female: bool = _has_female_character(character_ids)
 	var has_male: bool = _has_male_character(character_ids)
 	var event_pool: Array[String] = _build_event_pool(has_female, has_male)
@@ -50,7 +81,7 @@ static func generate(normal_enemies: Array[EnemyData], bosses: Array[EnemyData],
 		var node_types: Array[String] = _build_row_types(row_index, normal_row_count, row_size)
 		for node_index: int in range(row_size):
 			var node_type: String = String(node_types[node_index])
-			row.append(_make_map_node(node_type, node_index, normal_enemies, event_pool))
+			row.append(_make_map_node(node_type, node_index, normal_enemies, event_pool, act))
 		choices.append(row)
 	if not bosses.is_empty():
 		var chosen_boss: EnemyData = bosses[randi() % bosses.size()]
@@ -98,16 +129,14 @@ static func _build_row_types(row_index: int, total_rows: int, row_size: int) -> 
 	node_types.shuffle()
 	return node_types
 
-static func _make_map_node(node_type: String, node_index: int, normal_enemies: Array[EnemyData], event_pool: Array[String] = EVENT_VARIANTS) -> Dictionary:
+static func _make_map_node(node_type: String, node_index: int, normal_enemies: Array[EnemyData], event_pool: Array[String] = EVENT_VARIANTS, act: int = 1) -> Dictionary:
 	var node_data: Dictionary = {
 		"type": node_type,
 		"index": node_index,
 		"connects": []
 	}
 	if node_type == "battle":
-		var pool: Array[EnemyData] = normal_enemies.duplicate()
-		pool.shuffle()
-		node_data["enemy"] = pool[0].clone()
+		node_data["enemies"] = choose_enemies_for_act(act, normal_enemies)
 	elif node_type == "event":
 		node_data["event_variant"] = event_pool[randi_range(0, event_pool.size() - 1)]
 	elif node_type == "shop":

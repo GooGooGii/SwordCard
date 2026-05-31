@@ -631,9 +631,9 @@ func resolve_effects_list(effects: Array, state: Dictionary) -> Array[String]:
 ## 多敵人系統（Multi-Enemy Mode）
 
 **核心已完整實作。** 多敵引擎、AOE 卡、召喚機制、召喚物、UI、12 個 smoke test 都已落地。
-**唯一未接的一塊**：地圖普通戰鬥節點仍只生成 1 個敵人（`map_generator.gd` 的 `_make_map_node`
-每個 battle node 只塞 1 隻）；目前多敵戰場只會透過 **boss 召喚** 產生。藍圖規劃的「普通節點
-1–2 敵、後期 act 可 3 敵」地圖遭遇組（`ACT_ENCOUNTERS` / `choose_enemies_for_act`）尚未實作。
+**已完全實作。** 地圖普通戰鬥節點依 `ACT_ENCOUNTERS` 加權表生成 1–3 敵
+（幕 1 多為 1 敵；幕 5 最多 3 敵）。所有引擎功能（AOE、召喚、多敵 UI、`is_summoned` 旗標）
+均已落地，smoke test 覆蓋 13 個多敵/召喚/遭遇組測試。
 
 下面保留設計藍圖供參考。靈感來自 Slay the Spire；Boss 可以**召喚小怪**為核心新機制。
 
@@ -838,7 +838,7 @@ const ACT_ENCOUNTERS: Dictionary = {
 | 4. 戰鬥 UI | `enemy_row_container`、active 高亮、`set_active_enemy`、drag 命中個別敵、召喚物加入後 `_rebuild_enemy_row_in_place` | ✅ 完成 |
 | 5+8. 內容 | 5 弱版召喚物 EnemyData（centipede_brood / tower_wisp / red_eye_imp / zombie_thrall / water_tentacle）+ 5 boss `summon_pool` + AOE 卡（萬劍訣 / 氣劍指 / 御蜂術 用 `damage_all`） | ✅ 完成 |
 | 6+7. 測試 | 12 個 smoke test（setup / damage 路由 / AOE / partial kill / set_active / 多體回合 / per-enemy phase / summon basic+cap+unknown+from_pool） | ✅ 完成 |
-| **地圖遭遇組** | **`ACT_ENCOUNTERS` 加權表 + `choose_enemies_for_act()` + 接進 `_make_map_node` / `start_next_battle` + 多敵 balance baseline** | ❌ **未實作（唯一缺口）** |
+| 地圖遭遇組 | `ACT_ENCOUNTERS` 加權表 + `choose_enemies_for_act()` + 接進 `_make_map_node` / `start_next_battle` + smoke test | ✅ 完成 |
 
 ### Smoke test 覆蓋（已實作 12 個）
 
@@ -853,7 +853,8 @@ const ACT_ENCOUNTERS: Dictionary = {
 - `_test_summon_basic` — spawn_enemy → enemies +1、state 同步、log 出現
 - `_test_summon_cap` — 已 3 敵時 spawn → 拒絕，回傳 false
 - `_test_summon_unknown_id` — spawn 不存在 id → 拒絕
-- `_test_summon_from_boss_pool` — boss summon_pool 隨機抽召喚物
+- `_test_summon_from_boss_pool` — boss summon_pool 隨機抽召喚物；新增敵 `is_summoned == true`
+- `_test_map_encounter_groups` — act 1–5 地圖 battle 節點都有 enemies 陣列；act 4 百次中出現 2 敵以上
 
 ### 風險與防呆
 
@@ -873,7 +874,6 @@ const ACT_ENCOUNTERS: Dictionary = {
 
 ### 已知未實作 / 之後再說
 
-- **地圖普通節點多敵遭遇組**（`ACT_ENCOUNTERS` / `choose_enemies_for_act`）— 唯一缺口，見上方實作狀態表。目前普通戰鬥仍 1 敵，多敵只靠 boss 召喚
 - 召喚物可被「魅惑/控制」反過來幫玩家打 boss
 - 多敵戰場的 boss action targeted 指定（boss 打 active vs 打全隊）— MVP 先用既有 player_* alias 套用
 - 多敵 boss（2 boss 同場）— scope 太大，目前一律 1 boss

@@ -1261,7 +1261,7 @@ func _make_encounter_choices() -> Array[Array]:
 	var char_ids: Array[String] = []
 	for c: CharacterData in run_state.characters:
 		char_ids.append(c.id)
-	return MapGenerator.generate(act_enemies, act_boss, char_ids)
+	return MapGenerator.generate(act_enemies, act_boss, char_ids, run_state.act)
 
 func show_progress_screen() -> void:
 	SaveManager.save(run_state)
@@ -1739,12 +1739,18 @@ func _map_node_title(node_data: Dictionary) -> String:
 		return "奇遇"
 	if node_type == "shop":
 		return "黑店" if bool(node_data.get("black_market", false)) else "商店"
-	var enemy: EnemyData = node_data.get("enemy") as EnemyData
-	if enemy == null:
-		return "戰鬥"
 	if node_type == "boss":
-		return "Boss\n%s" % enemy.display_name
-	return "戰鬥\n%s" % enemy.display_name
+		var boss_enemy: EnemyData = node_data.get("enemy") as EnemyData
+		if boss_enemy == null:
+			return "Boss"
+		return "Boss\n%s" % boss_enemy.display_name
+	var enemies_arr: Array = node_data.get("enemies", []) as Array
+	if enemies_arr.is_empty():
+		return "戰鬥"
+	var first_e: EnemyData = enemies_arr[0] as EnemyData
+	if enemies_arr.size() == 1:
+		return "戰鬥\n%s" % first_e.display_name
+	return "戰鬥\n%s 等 %d 敵" % [first_e.display_name, enemies_arr.size()]
 
 func _map_node_status(row_index: int, node_index: int) -> String:
 	if row_index == run_state.encounter_index and _is_map_node_selectable(row_index, node_index):
@@ -1801,23 +1807,37 @@ func choose_route_node(node_data: Dictionary, target_row: int = -1) -> void:
 		show_event_node()
 	elif node_type == "shop":
 		open_shop_node(bool(node_data.get("black_market", false)))
+	elif node_type == "boss":
+		assert(node_data.has("enemy"), "Boss 節點缺少 enemy 資料：%s" % node_data)
+		start_next_battle(node_data["enemy"] as EnemyData)
 	else:
-		assert(node_data.has("enemy"), "戰鬥節點缺少 enemy 資料：%s" % node_data)
-		var enemy: EnemyData = node_data["enemy"] as EnemyData
-		start_next_battle(enemy)
+		assert(node_data.has("enemies"), "戰鬥節點缺少 enemies 資料：%s" % node_data)
+		start_next_battle(node_data["enemies"] as Array)
 
-func start_next_battle(enemy: EnemyData) -> void:
-	AudioManager.play_bgm("battle_boss" if Ascension.is_boss_id(enemy.id) else "battle_normal")
+func start_next_battle(enemies: Variant) -> void:
+	# enemies 可為單一 EnemyData 或 Array（地圖多敵節點）
+	var is_boss: bool = false
+	if enemies is EnemyData:
+		is_boss = Ascension.is_boss_id((enemies as EnemyData).id)
+	elif enemies is Array:
+		for e: Variant in (enemies as Array):
+			if e is EnemyData and Ascension.is_boss_id((e as EnemyData).id):
+				is_boss = true
+				break
+	AudioManager.play_bgm("battle_boss" if is_boss else "battle_normal")
 	battle = BattleController.new()
-	battle.setup(run_state, selected_character, enemy)
+	battle.setup(run_state, selected_character, enemies)
 	# Boss phase 2 變身動畫（如拜月教主 → 水魔獸）
 	battle.phase_transitioned.connect(_on_phase_transitioned)
-	var mult: float = Ascension.enemy_hp_multiplier(run_state.ascension_level, Ascension.is_boss_id(enemy.id))
+	var mult: float = Ascension.enemy_hp_multiplier(run_state.ascension_level, is_boss)
 	if mult != 1.0:
-		var scaled_max: int = max(1, int(round(float(battle.state["enemy_max_hp"]) * mult)))
-		battle.state["enemy_max_hp"] = scaled_max
-		battle.state["enemy_hp"] = scaled_max
-		battle.enemy.max_hp = scaled_max
+		var enemy_slots: Array = battle.state.get("enemies", []) as Array
+		for slot_v: Variant in enemy_slots:
+			var slot: Dictionary = slot_v as Dictionary
+			var scaled_max: int = max(1, int(round(float(slot.get("max_hp", 0)) * mult)))
+			slot["max_hp"] = scaled_max
+			slot["hp"] = scaled_max
+		battle._sync_active_enemy_to_state()
 	battle_end_pending = false
 	_build_battle_scene()
 	_start_player_turn()
@@ -2912,16 +2932,24 @@ func _complete_battle_victory() -> void:
 		var cb: Callable = _event_battle_on_win
 		_event_battle_on_win = Callable()
 		battle.complete_victory()
-		Bestiary.mark_defeated(battle.enemy.id)
-		var gold: int = _battle_gold_reward(battle.enemy)
+		for defeated_e: EnemyData in battle.enemies:
+			Bestiary.mark_defeated(defeated_e.id)
+		var gold: int = 0
+		for defeated_e: EnemyData in battle.enemies:
+			if not defeated_e.is_summoned:
+				gold += _battle_gold_reward(defeated_e)
 		run_state.gold += gold
 		battle.add_log("獲得 %d 枚銅錢。" % gold)
 		cb.call()
 		return
 	battle.complete_victory()
-	Bestiary.mark_defeated(battle.enemy.id)
+	for defeated_e: EnemyData in battle.enemies:
+		Bestiary.mark_defeated(defeated_e.id)
 	_grant_battle_exp()
-	var gold_reward: int = _battle_gold_reward(battle.enemy)
+	var gold_reward: int = 0
+	for defeated_e: EnemyData in battle.enemies:
+		if not defeated_e.is_summoned:
+			gold_reward += _battle_gold_reward(defeated_e)
 	# 聚寶盆：勝利額外金錢；P4 淨化符：勝利移除 1 張隨機 curse
 	for r: RelicData in run_state.relics:
 		for t: Dictionary in r.triggers:
@@ -2939,15 +2967,22 @@ func _complete_battle_victory() -> void:
 	battle.add_log("獲得 %d 枚銅錢。" % gold_reward)
 	# Boss 必掉神器；一般戰鬥 25% 機率掉裝備
 	var dropped: RelicData = null
-	var was_boss: bool = Ascension.is_boss_id(battle.enemy.id)
+	var was_boss: bool = false
+	for defeated_e: EnemyData in battle.enemies:
+		if Ascension.is_boss_id(defeated_e.id):
+			was_boss = true
+			break
 	if was_boss:
 		# Event Branching P5：boss 勝利補 1 個 observe token
 		run_state.grant_observe_tokens(RunState.OBSERVE_TOKEN_BOSS_REWARD)
 		battle.add_log("觀察次數 +%d。" % RunState.OBSERVE_TOKEN_BOSS_REWARD)
-		for a: RelicData in RelicCatalog.artifacts():
-			if a.boss_id == battle.enemy.id and not run_state.has_relic(a.id):
-				dropped = a.clone()
+		for defeated_e: EnemyData in battle.enemies:
+			if dropped != null:
 				break
+			for a: RelicData in RelicCatalog.artifacts():
+				if a.boss_id == defeated_e.id and not run_state.has_relic(a.id):
+					dropped = a.clone()
+					break
 		if dropped == null:
 			dropped = _try_random_relic_drop(1.0)
 	else:
@@ -3050,7 +3085,11 @@ func choose_reward_card(card: CardData) -> void:
 
 func _grant_battle_exp() -> void:
 	_pending_levelups.clear()
-	var is_boss: bool = Ascension.is_boss_id(battle.enemy.id)
+	var is_boss: bool = false
+	for e: EnemyData in battle.enemies:
+		if Ascension.is_boss_id(e.id):
+			is_boss = true
+			break
 	var floor_idx: int = run_state.encounter_index
 	var exp_gain: int = LevelSystem.battle_exp(is_boss, floor_idx)
 	for i: int in range(run_state.characters.size()):
@@ -3097,10 +3136,14 @@ func _route_node_button(node_data: Dictionary, row_index: int = -1) -> Button:
 		button = _route_event_button()
 	elif node_type == "shop":
 		button = _route_shop_button(bool(node_data.get("black_market", false)))
+	elif node_type == "boss":
+		assert(node_data.has("enemy"), "Boss 節點缺少 enemy 資料：%s" % node_data)
+		button = _route_enemy_button(node_data["enemy"] as EnemyData, true)
 	else:
-		assert(node_data.has("enemy"), "戰鬥節點缺少 enemy 資料：%s" % node_data)
-		var enemy: EnemyData = node_data["enemy"] as EnemyData
-		button = _route_enemy_button(enemy, node_type == "boss")
+		assert(node_data.has("enemies"), "戰鬥節點缺少 enemies 資料：%s" % node_data)
+		var enemies_arr: Array = node_data["enemies"] as Array
+		var primary: EnemyData = enemies_arr[0] as EnemyData
+		button = _route_enemy_button(primary, false, enemies_arr.size())
 	button.pressed.connect(func(): choose_route_node(node_data, row_index))
 	return button
 
@@ -3150,9 +3193,10 @@ func _animate_map_node(button: Button, selected: bool, selectable: bool, is_boss
 	pulse.tween_property(target, "scale", Vector2(amplitude, amplitude), period).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	pulse.tween_property(target, "scale", Vector2.ONE, period).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
-func _route_enemy_button(enemy: EnemyData, is_boss: bool = false) -> Button:
+func _route_enemy_button(enemy: EnemyData, is_boss: bool = false, enemy_count: int = 1) -> Button:
 	var label_prefix: String = "Boss" if is_boss else "戰鬥"
-	var text: String = "%s\n%s  HP %d\n%s" % [label_prefix, enemy.display_name, enemy.max_hp, _enemy_route_summary(enemy)]
+	var name_text: String = enemy.display_name if enemy_count <= 1 else "%s 等 %d 敵" % [enemy.display_name, enemy_count]
+	var text: String = "%s\n%s  HP %d\n%s" % [label_prefix, name_text, enemy.max_hp, _enemy_route_summary(enemy)]
 	var icon_type: String = "boss" if is_boss else "battle"
 	var icon_color: Color = Color("f8d29c") if is_boss else Color("e2c486")
 	var button: Button = _build_route_button(text, icon_type, icon_color)
@@ -3780,7 +3824,8 @@ func _finish_event_tree_battle(victory: bool) -> void:
 			var p: Dictionary = players[i] as Dictionary
 			run_state.character_hps[i] = max(0, int(p.get("hp", 0)))
 	if victory:
-		Bestiary.mark_defeated(battle.enemy.id)
+		for defeated_e: EnemyData in battle.enemies:
+			Bestiary.mark_defeated(defeated_e.id)
 		var v_effects: Array = pending.get("victory_effects", []) as Array
 		var summary: String = _resolve_observe_effects(v_effects)
 		var text: String = "戰勝了 %s。\n\n[ ⚔ 戰鬥勝利 ]" % battle.enemy.display_name
@@ -5277,9 +5322,12 @@ func _map_overview_row(row_index: int) -> Control:
 	return entry
 
 func _retry_current_battle() -> void:
-	if battle == null or battle.enemy == null:
+	if battle == null or battle.enemies.is_empty():
 		return
-	var enemy_to_retry: EnemyData = battle.enemy.clone()
+	var enemies_to_retry: Array[EnemyData] = []
+	for e: EnemyData in battle.enemies:
+		if not e.is_summoned:
+			enemies_to_retry.append(e.clone())
 	# 扣 1 件 general 遺物（不扣專武 / 神器）
 	var general_indices: Array[int] = []
 	for i: int in range(run_state.relics.size()):
@@ -5293,7 +5341,7 @@ func _retry_current_battle() -> void:
 		run_state.character_hps[i] = run_state.character_max_hps[i]
 	run_state.active_character_index = 0  # 重打 = 隊長重上場
 	SaveManager.save(run_state)
-	start_next_battle(enemy_to_retry)
+	start_next_battle(enemies_to_retry)
 
 func _refresh_battle(animate_draw: bool = false) -> void:
 	_refresh_title_bar()

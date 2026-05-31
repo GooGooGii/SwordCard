@@ -662,6 +662,7 @@ func spawn_enemy(enemy_id: String) -> bool:
 		push_warning("BattleController.spawn_enemy: unknown enemy id '%s'" % enemy_id)
 		return false
 	var clone: EnemyData = template.clone()
+	clone.is_summoned = true
 	enemies.append(clone)
 	enemy_action_indices.append(0)
 	enemy_phased.append(false)

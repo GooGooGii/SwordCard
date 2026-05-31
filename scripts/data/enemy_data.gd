@@ -12,6 +12,7 @@ extends Resource
 @export var phase_2_portrait_tint: Color = Color.WHITE  # phase 2 額外色調（Color.WHITE = 不變色）
 @export var portrait_tint: Color = Color.WHITE
 @export var summon_pool: Array[String] = []  # boss 召喚物 id pool；空 = 不召喚
+@export var is_summoned: bool = false        # 由 spawn_enemy() 設為 true，勝利結算時不計入掉落
 
 func clone() -> EnemyData:
 	var copy: EnemyData = EnemyData.new()
@@ -26,6 +27,7 @@ func clone() -> EnemyData:
 	copy.phase_2_portrait_tint = phase_2_portrait_tint
 	copy.portrait_tint = portrait_tint
 	copy.summon_pool = summon_pool.duplicate()
+	copy.is_summoned = is_summoned
 	return copy
 
 func to_dict() -> Dictionary:
