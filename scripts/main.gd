@@ -116,6 +116,7 @@ var _event_battle_on_win: Callable  # 非空時表示從事件觸發的戰鬥，
 var _after_boss_relic_choice: Callable  # boss 遺物選擇後的 continuation（potion drop + 推進地圖）
 var _boss_card_reward: bool = false  # 下一個 show_card_reward 是否為 boss 獎勵（三張稀有牌）
 var _after_card_reward: Callable  # card reward 選/跳過後的 continuation（預設回 progress screen）
+var _boon_applied: String = ""  # 本次 run 套用的加護 id（空 = 跳過）
 const PARTY_MAX_SIZE: int = 3
 
 const BASE_MARGIN_H: int = 28
@@ -1255,7 +1256,11 @@ func start_run(party_or_char: Variant) -> void:
 	randomize()  # 地圖生成完，戰鬥/獎勵恢復隨機 RNG
 	pending_seed = 0  # 消費掉
 	selected_party_ids.clear()  # 隊伍鎖死、清掉 select buffer
-	show_progress_screen()
+	_boon_applied = ""
+	if dbg_test_mode:
+		show_progress_screen()
+	else:
+		show_run_start_boons()
 
 func _make_encounter_choices() -> Array[Array]:
 	var act_enemies: Array[EnemyData] = GameData.enemies_for_act(run_state.act)
@@ -1265,6 +1270,178 @@ func _make_encounter_choices() -> Array[Array]:
 	for c: CharacterData in run_state.characters:
 		char_ids.append(c.id)
 	return MapGenerator.generate(act_enemies, act_boss, char_ids, run_state.act)
+
+# ──────────────────────────────────────────────────────────────────────
+# 起始加護（Run Start Boons）
+# ──────────────────────────────────────────────────────────────────────
+
+const BOON_POOL: Array[Dictionary] = [
+	{"id": "extra_gold",        "name": "行囊充實",   "desc": "起始銅錢 +200。",                        "locked_by": ""},
+	{"id": "extra_card",        "name": "多學一技",   "desc": "從主角技能池隨機習得 1 張招式。",         "locked_by": ""},
+	{"id": "random_relic",      "name": "機緣遺物",   "desc": "獲得 1 件隨機普通遺物。",                 "locked_by": ""},
+	{"id": "remove_starter",    "name": "去蕪存菁",   "desc": "從主角起始牌組移除 1 張隨機基礎牌。",     "locked_by": ""},
+	{"id": "hp_up",             "name": "體魄強健",   "desc": "全隊最大 HP +12，當前 HP 同步提升。",     "locked_by": ""},
+	{"id": "starting_potion",   "name": "備藥出行",   "desc": "起始攜帶 1 瓶回春丹。",                   "locked_by": ""},
+	{"id": "curse_relic",       "name": "禍福相依",   "desc": "接受 1 張隨機詛咒，但獲得 1 件稀有遺物。", "locked_by": ""},
+	{"id": "weapon_exchange",   "name": "奇遇法器",   "desc": "捨去主角初始武器，換取 1 件隨機稀有遺物（不可選擇）。\n【需曾擊敗 Boss】", "locked_by": "boss_cleared"},
+]
+const BOON_COUNT: int = 4  # 每次 run 顯示的選項數
+
+static func _any_boss_cleared() -> bool:
+	var records: Dictionary = Bestiary.load_all()
+	for boss_id: String in Ascension.BOSS_IDS:
+		if int(records.get(boss_id, 0)) > 0:
+			return true
+	return false
+
+func _make_boon_choices() -> Array[Dictionary]:
+	var boss_cleared: bool = _any_boss_cleared()
+	var fixed: Array[Dictionary] = []   # 保證出現的 boon（weapon_exchange，若解鎖）
+	var pool: Array[Dictionary] = []    # 可隨機抽的 boon
+	for b: Dictionary in BOON_POOL:
+		var lock: String = String(b.get("locked_by", ""))
+		if lock == "boss_cleared":
+			if boss_cleared:
+				fixed.append(b)
+			# 未解鎖的不放入 pool
+		else:
+			pool.append(b)
+	pool.shuffle()
+	var choices: Array[Dictionary] = []
+	choices.append_array(fixed)
+	var needed: int = BOON_COUNT - choices.size()
+	for i: int in range(min(needed, pool.size())):
+		choices.append(pool[i])
+	return choices
+
+func show_run_start_boons() -> void:
+	_set_background("res://assets/art/event_bg.png")
+	_clear_root()
+	var panel: PanelContainer = UIFactory.make_panel()
+	root.add_child(panel)
+	var outer: VBoxContainer = VBoxContainer.new()
+	outer.alignment = BoxContainer.ALIGNMENT_CENTER
+	outer.add_theme_constant_override("separation", 16)
+	panel.add_child(outer)
+	outer.add_child(_title("起始加護", 32))
+	outer.add_child(UIFactory.card_label("選擇一項，或跳過。", 13, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_CENTER))
+	var choices: Array[Dictionary] = _make_boon_choices()
+	# 橫排 4 格（強制橫屏、4 格並排可容納）
+	var row: HBoxContainer = HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 14)
+	outer.add_child(row)
+	for boon: Dictionary in choices:
+		row.add_child(_boon_choice_panel(boon))
+	var skip_btn: Button = _button("跳過（不選加護）")
+	skip_btn.pressed.connect(func() -> void:
+		_boon_applied = ""
+		show_progress_screen()
+	)
+	outer.add_child(skip_btn)
+
+func _boon_choice_panel(boon: Dictionary) -> PanelContainer:
+	var boon_id: String = String(boon.get("id", ""))
+	var is_special: bool = String(boon.get("locked_by", "")) == "boss_cleared"
+	var panel: PanelContainer = UIFactory.make_panel()
+	panel.custom_minimum_size = Vector2(185, 260)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 8)
+	panel.add_child(box)
+	if is_special:
+		var badge: Label = UIFactory.card_label("★ Boss 解鎖", 11, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+		box.add_child(badge)
+	var name_lbl: Label = UIFactory.card_label(String(boon.get("name", "")), 17, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
+	box.add_child(name_lbl)
+	var desc_lbl: Label = UIFactory.card_label(String(boon.get("desc", "")), 12, Color("c8d8ec"), HORIZONTAL_ALIGNMENT_CENTER)
+	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc_lbl.custom_minimum_size = Vector2(165, 0)
+	box.add_child(desc_lbl)
+	var pick_btn: Button = _button("選取")
+	pick_btn.pressed.connect(func(_bid: String = boon_id) -> void:
+		_apply_boon(_bid)
+	)
+	box.add_child(pick_btn)
+	return panel
+
+func _apply_boon(boon_id: String) -> void:
+	_boon_applied = boon_id
+	match boon_id:
+		"extra_gold":
+			run_state.gold += 200
+		"extra_card":
+			var pool: Array[CardData] = selected_character.reward_pool.duplicate()
+			if not pool.is_empty():
+				pool.shuffle()
+				var d: Array = run_state.character_decks[0] as Array
+				d.append((pool[0] as CardData).clone())
+		"random_relic":
+			var relic_pool: Array[RelicData] = []
+			for r: RelicData in RelicCatalog.generals():
+				if r.rarity == "common" and not run_state.has_relic(r.id):
+					relic_pool.append(r)
+			if not relic_pool.is_empty():
+				relic_pool.shuffle()
+				run_state.add_relic(relic_pool[0].clone())
+		"remove_starter":
+			var d: Array = run_state.character_decks[0] as Array
+			var basic_indices: Array[int] = []
+			for i: int in range(d.size()):
+				if (d[i] as CardData).rarity == "basic":
+					basic_indices.append(i)
+			if not basic_indices.is_empty():
+				basic_indices.shuffle()
+				d.remove_at(basic_indices[0])
+		"hp_up":
+			for i: int in range(run_state.characters.size()):
+				run_state.character_max_hps[i] += 12
+				run_state.character_hps[i] = min(run_state.character_max_hps[i], run_state.character_hps[i] + 12)
+		"starting_potion":
+			if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
+				var huichun: Dictionary = PotionCatalog.by_id("huichun_dan")
+				if not huichun.is_empty():
+					run_state.potions.append(huichun.duplicate())
+		"curse_relic":
+			# 詛咒隨機一張
+			var all_curses: Array[String] = []
+			for c: Dictionary in CurseCatalog.all():
+				all_curses.append(String(c["id"]))
+			if not all_curses.is_empty():
+				all_curses.shuffle()
+				var curse_card: CardData = CurseCatalog.make_card(all_curses[0])
+				if curse_card != null:
+					(run_state.character_decks[0] as Array).append(curse_card)
+			# 稀有遺物補償
+			var rare_pool: Array[RelicData] = []
+			for r: RelicData in RelicCatalog.generals():
+				if r.rarity == "rare" and not run_state.has_relic(r.id):
+					rare_pool.append(r)
+			if not rare_pool.is_empty():
+				rare_pool.shuffle()
+				run_state.add_relic(rare_pool[0].clone())
+		"weapon_exchange":
+			# 移除主角初始武器遺物
+			var weapon_id_to_remove: String = ""
+			for w: RelicData in RelicCatalog.weapons_for_character(selected_character.id):
+				if run_state.has_relic(w.id):
+					weapon_id_to_remove = w.id
+					break
+			if not weapon_id_to_remove.is_empty():
+				var kept: Array[RelicData] = []
+				for r_v: RelicData in run_state.relics:
+					if r_v.id != weapon_id_to_remove:
+						kept.append(r_v)
+				run_state.relics = kept
+			# 隨機稀有遺物（不可選）
+			var rare_pool2: Array[RelicData] = []
+			for r2: RelicData in RelicCatalog.generals():
+				if r2.rarity == "rare" and not run_state.has_relic(r2.id):
+					rare_pool2.append(r2)
+			if not rare_pool2.is_empty():
+				rare_pool2.shuffle()
+				run_state.add_relic(rare_pool2[0].clone())
+	show_progress_screen()
 
 func show_progress_screen() -> void:
 	SaveManager.save(run_state)

@@ -184,6 +184,7 @@ func _initialize() -> void:
 	_test_artifact_curse_on_acquire()
 	_test_boss_relic_choices(characters[0])
 	_test_boss_card_reward_rarity(characters)
+	_test_run_start_boons(characters[0])
 	# Phase 7-A：Batch A 6 個事件樹
 	_test_batch_a_all_have_tree()
 	_test_batch_a_character_gating()
@@ -2272,6 +2273,87 @@ func _test_boss_card_reward_rarity(characters: Array[CharacterData]) -> void:
 	_check(ordered[0].rarity == "rare", "tier-ordering first card should be rare")
 	_check(ordered[1].rarity == "uncommon", "tier-ordering second card should be uncommon")
 	_check(ordered[2].rarity == "common", "tier-ordering third card should be common")
+
+func _test_run_start_boons(character: CharacterData) -> void:
+	# 1. pool 有 8 個 boon 定義，locked_by 欄位格式正確
+	var pool: Array[Dictionary] = Main.BOON_POOL
+	_check(pool.size() == 8, "BOON_POOL should have 8 entries, got %d" % pool.size())
+	var weapon_exchange_found: bool = false
+	for b: Dictionary in pool:
+		_check(b.has("id") and b.has("name") and b.has("desc") and b.has("locked_by"),
+			"boon '%s' missing required fields" % String(b.get("id", "?")))
+		if String(b.get("id", "")) == "weapon_exchange":
+			weapon_exchange_found = true
+			_check(String(b.get("locked_by", "")) == "boss_cleared",
+				"weapon_exchange boon should be locked_by boss_cleared")
+	_check(weapon_exchange_found, "weapon_exchange boon should exist in pool")
+	# 2. 未解鎖 boss 時：choices 不含 weapon_exchange，大小為 BOON_COUNT
+	var rs: RunState = RunState.new()
+	rs.init_for(character)
+	# 直接用 pool 邏輯重現（不依賴 main.gd 實例，也沒有辦法呼叫 _any_boss_cleared 因為它讀 file）
+	# 模擬 boss_cleared = false
+	var sim_choices_no_boss: Array[Dictionary] = _simulate_boon_choices(false)
+	_check(sim_choices_no_boss.size() == Main.BOON_COUNT,
+		"boon choices without boss should be %d, got %d" % [Main.BOON_COUNT, sim_choices_no_boss.size()])
+	for bc: Dictionary in sim_choices_no_boss:
+		_check(String(bc.get("id", "")) != "weapon_exchange",
+			"weapon_exchange should NOT appear when boss not cleared")
+	# 3. 已解鎖 boss 時：choices 包含 weapon_exchange，且大小仍為 BOON_COUNT
+	var sim_choices_boss: Array[Dictionary] = _simulate_boon_choices(true)
+	_check(sim_choices_boss.size() == Main.BOON_COUNT,
+		"boon choices with boss should be %d, got %d" % [Main.BOON_COUNT, sim_choices_boss.size()])
+	var has_weapon_exchange: bool = false
+	for bc2: Dictionary in sim_choices_boss:
+		if String(bc2.get("id", "")) == "weapon_exchange":
+			has_weapon_exchange = true
+	_check(has_weapon_exchange, "weapon_exchange should appear when boss cleared")
+	# 4. weapon_exchange 效果：移除初始武器，加稀有遺物
+	rs.init_for(character)
+	_check(rs.relics.size() >= 1, "starter should have at least 1 relic (weapon)")
+	var starter_weapon_id: String = ""
+	for w: RelicData in RelicCatalog.weapons_for_character(character.id):
+		if rs.has_relic(w.id):
+			starter_weapon_id = w.id
+			break
+	if not starter_weapon_id.is_empty():
+		# 模擬 weapon_exchange 核心邏輯
+		var kept: Array[RelicData] = []
+		for r_v: RelicData in rs.relics:
+			if r_v.id != starter_weapon_id:
+				kept.append(r_v)
+		rs.relics = kept
+		var rare_pool: Array[RelicData] = []
+		for r2: RelicData in RelicCatalog.generals():
+			if r2.rarity == "rare" and not rs.has_relic(r2.id):
+				rare_pool.append(r2)
+		_check(rare_pool.size() > 0, "there must be rare general relics for weapon_exchange")
+		if not rare_pool.is_empty():
+			rs.add_relic(rare_pool[0].clone())
+		_check(not rs.has_relic(starter_weapon_id),
+			"starter weapon should be removed after weapon_exchange")
+		var has_rare: bool = false
+		for r3: RelicData in rs.relics:
+			if r3.rarity == "rare":
+				has_rare = true
+		_check(has_rare, "should have a rare relic after weapon_exchange")
+
+func _simulate_boon_choices(boss_cleared: bool) -> Array[Dictionary]:
+	var fixed: Array[Dictionary] = []
+	var pool: Array[Dictionary] = []
+	for b: Dictionary in Main.BOON_POOL:
+		var lock: String = String(b.get("locked_by", ""))
+		if lock == "boss_cleared":
+			if boss_cleared:
+				fixed.append(b)
+		else:
+			pool.append(b)
+	pool.shuffle()
+	var choices: Array[Dictionary] = []
+	choices.append_array(fixed)
+	var needed: int = Main.BOON_COUNT - choices.size()
+	for i: int in range(min(needed, pool.size())):
+		choices.append(pool[i])
+	return choices
 
 # ──────────────────────────────────────────────────────────────────────
 # Event Branching Phase 7-A：Batch A 6 個事件樹（內容驗證）
