@@ -460,7 +460,7 @@ match version:
 
 ## 藥品系統（Potions）
 
-目前**完全未實作**。下面是設計藍圖；實作時按 Phase 順序來。
+**已完整實作（所有 Phase 完成）。** 下面保留設計藍圖供參考。
 
 ### 鎖定的設計決策
 
@@ -593,18 +593,18 @@ func resolve_effects_list(effects: Array, state: Dictionary) -> Array[String]:
 
 ### 實作狀態
 
-| Phase | 內容 | Commit |
+| Phase | 內容 | 狀態 |
 |---|---|---|
-| 1. 資料層 | `potion_catalog.gd`（10 種藥）＋ `RunState.potions` + to/from_dict | `feat(potion): phase 1` |
-| 2. EffectResolver | `resolve_effects_list()` helper + `cure_poison` kind | `feat(potion): phase 2` |
-| 3. 戰鬥 UI | left_dock 藥格列 + `_use_potion()` + DamagePopup + 戰鬥外小格顯示 | `feat(potion): phase 3` |
-| 4. 商店整合 | `ShopInventory.build_potions()` + 商店藥品列 + 丟棄功能 | `feat(potion): phase 4` |
-| 5. 來源補充 | 戰鬥後掉落（小機率）＋ event_data 新增給藥獎勵 | `feat(potion): phase 5` |
-| 6. 測試補強 | smoke test：catalog 完整性、use_potion 效果、save round-trip | （含在各 phase） |
+| 1. 資料層 | `potion_catalog.gd`（11 種藥）＋ `RunState.potions` + to/from_dict | ✅ 完成 |
+| 2. EffectResolver | `resolve_effects_list()` helper + `cure_poison` kind | ✅ 完成 |
+| 3. 戰鬥 UI | left_dock 藥格列 + `_use_potion()` + 確認 overlay + 戰鬥外 `_potion_overlay` | ✅ 完成 |
+| 4. 商店整合 | `ShopInventory.build_potions()` + 商店藥品列 + 購買確認 + 丟棄功能 | ✅ 完成 |
+| 5. 來源補充 | 戰鬥後掉落（一般 20%、boss 60%）＋ event_data 多處 `gain_potion` | ✅ 完成 |
+| 6. 測試補強 | 5 個 smoke test 覆蓋 catalog / round-trip / heal / cure_poison / 舊存檔相容 | ✅ 完成 |
 
 ### Smoke test 覆蓋
 
-- `_test_potion_catalog` — 10 種藥都有 id / display_name / effects，PotionCatalog.by_id 能找到
+- `_test_potion_catalog` — 11 種藥都有 id / display_name / effects，PotionCatalog.by_id 能找到
 - `_test_potion_save_roundtrip` — RunState 放 2 瓶藥 → to_dict → from_dict → 藥品保留
 - `_test_potion_use_heal` — 戰鬥 state 接 resolve_effects_list(heal 15) → player_hp 正確增加
 - `_test_potion_cure_poison` — 有 3 層蠱毒 → 使用解毒散 → player_poison = 0
@@ -622,9 +622,9 @@ func resolve_effects_list(effects: Array, state: Dictionary) -> Array[String]:
 
 ### 已知未實作 / 之後再說
 
-- 戰鬥中使用動畫（目前 DamagePopup 已夠用）
-- 丟棄確認 dialog（直接長按丟棄，不另加 confirm）
-- 多人隊藥品使用對象（Phase 3 MVP：藥品效果只作用在 active 角色；heal 系列之後可改成「選擇目標」）
+- 戰鬥中使用動畫（DamagePopup 已夠用，目前無需補）
+- 丟棄確認 dialog（直接點按鈕丟棄，不另加 confirm）
+- 多人隊藥品使用對象（MVP：效果只作用在 active 角色；heal 系列之後可改成「選擇目標」）
 
 ## 多敵人系統（Multi-Enemy Mode）
 
