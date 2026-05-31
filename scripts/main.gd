@@ -560,10 +560,19 @@ func _battle_background_path() -> String:
 		return act_path
 	return fallback_path
 
+# AudioManager 是 autoload；直接引用全域識別字 `AudioManager` 會在「以 const 路徑
+# load(main.gd) 觸發的啟動期編譯」中找不到（autoload global 尚未註冊），進而毒化
+# main.gd 的編譯快取（smoke test 載入 main.gd 時就會踩到）。改用節點路徑存取，
+# 讓 main.gd 在任何 headless / tool 情境都能編譯；正式遊戲時節點存在、行為不變。
+func _play_bgm(track: String) -> void:
+	var am: Node = get_node_or_null("/root/AudioManager")
+	if am != null:
+		am.play_bgm(track)
+
 func show_main_menu() -> void:
 	selected_party_ids.clear()  # 進主選單清掉 character_select 的暫存隊伍
 	_hide_title_bar()
-	AudioManager.play_bgm("title")
+	_play_bgm("title")
 	_set_background("res://assets/art/login_background.jpg")
 	_clear_root()
 	var viewport_size: Vector2 = get_viewport_rect().size
@@ -929,7 +938,7 @@ func _build_ascension_picker(compact_layout: bool = false, ultra_compact: bool =
 
 func show_bestiary() -> void:
 	_hide_title_bar()
-	AudioManager.play_bgm("bestiary")
+	_play_bgm("bestiary")
 	_set_background("res://assets/art/main_menu_bg.png")
 	_clear_root()
 	_show(BestiaryScreen.new())
@@ -1446,7 +1455,7 @@ func _apply_boon(boon_id: String) -> void:
 
 func show_progress_screen() -> void:
 	SaveManager.save(run_state)
-	AudioManager.play_bgm("map_act%d" % max(1, run_state.act))
+	_play_bgm("map_act%d" % max(1, run_state.act))
 	_set_background("res://assets/art/map_bg_ink.png")
 	_clear_root()
 	_show_title_bar()
@@ -2005,7 +2014,7 @@ func start_next_battle(enemies: Variant) -> void:
 			if e is EnemyData and Ascension.is_boss_id((e as EnemyData).id):
 				is_boss = true
 				break
-	AudioManager.play_bgm("battle_boss" if is_boss else "battle_normal")
+	_play_bgm("battle_boss" if is_boss else "battle_normal")
 	battle = BattleController.new()
 	battle.setup(run_state, selected_character, enemies)
 	# Boss phase 2 變身動畫（如拜月教主 → 水魔獸）
@@ -2697,9 +2706,17 @@ func _update_potion_button(btn: Button, slot: int, in_battle: bool = true) -> vo
 	btn.tooltip_text = "%s\n%s\n%s" % [name, String(potion.get("description", "")), tip_action]
 	btn.disabled = false
 	var rarity_col: Color = PotionCatalog.rarity_color(potion)
-	btn.add_theme_stylebox_override("normal", UIFactory.style_box(Color("1a2230"), rarity_col, 1, 6))
-	btn.add_theme_stylebox_override("hover", UIFactory.style_box(Color("2a3040"), rarity_col, 2, 6))
-	btn.add_theme_stylebox_override("pressed", UIFactory.style_box(Color("0e141e"), rarity_col, 2, 6))
+	if in_battle:
+		btn.add_theme_stylebox_override("normal", UIFactory.style_box(Color("1a2230"), rarity_col, 1, 6))
+		btn.add_theme_stylebox_override("hover", UIFactory.style_box(Color("2a3040"), rarity_col, 2, 6))
+		btn.add_theme_stylebox_override("pressed", UIFactory.style_box(Color("0e141e"), rarity_col, 2, 6))
+	else:
+		# 戰鬥外（title bar）：去除彩色邊框/底色，只留藥品圖
+		var flat: StyleBoxEmpty = StyleBoxEmpty.new()
+		btn.add_theme_stylebox_override("normal", flat)
+		btn.add_theme_stylebox_override("hover", flat)
+		btn.add_theme_stylebox_override("pressed", flat)
+		btn.add_theme_stylebox_override("focus", flat)
 	btn.add_theme_color_override("font_color", ThemeColors.TEXT_LIGHT)
 	btn.remove_theme_color_override("font_disabled_color")
 	
@@ -3544,7 +3561,7 @@ func resolve_rest_node() -> void:
 	show_rest_node()
 
 func show_rest_node() -> void:
-	AudioManager.play_bgm("rest")
+	_play_bgm("rest")
 	_set_background("res://assets/art/event_bg.png")
 	_clear_root()
 	var panel: PanelContainer = UIFactory.make_panel()
@@ -3579,7 +3596,7 @@ func resolve_rest_heal() -> void:
 	advance_non_battle_node()
 
 func show_event_node(sub_stage: String = "") -> void:
-	AudioManager.play_bgm("event")
+	_play_bgm("event")
 	# Event Branching P2：若此 variant 有新版 tree schema，走 tree path（_show_event_tree_node）
 	# 否則 fallback 舊扁平 schema（原 sub_stage 分支邏輯）
 	var ed: Dictionary = EventData.for_variant(run_state.current_event_variant)
@@ -4600,7 +4617,7 @@ func open_shop_node(is_black_shop: bool) -> void:
 	show_shop_node()
 
 func show_shop_node() -> void:
-	AudioManager.play_bgm("shop")
+	_play_bgm("shop")
 	_set_background("res://assets/art/event_bg.png")
 	_clear_root()
 	_show_title_bar()
@@ -5555,7 +5572,7 @@ func _show_upgrade_confirm_overlay(card: CardData, on_confirm: Callable) -> void
 
 func show_result(victory: bool) -> void:
 	_hide_title_bar()
-	AudioManager.play_bgm("victory" if victory else "defeat")
+	_play_bgm("victory" if victory else "defeat")
 	if victory:
 		Ascension.mark_cleared(run_state.ascension_level)
 		SaveManager.clear()
