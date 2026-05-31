@@ -12,6 +12,7 @@ extends Resource
 @export var slot: String = "general"
 @export var character_id: String = ""  # only for "weapon" slot
 @export var boss_id: String = ""  # only for "artifact" slot (drops from this boss)
+@export var curse_on_acquire: String = ""  # curse_id to add to deck when this relic is obtained
 @export var triggers: Array[Dictionary] = []
 @export var icon_color: Color = ThemeColors.BORDER_GOLD
 @export var icon_shape: String = "diamond"  # diamond | circle | hex | star
@@ -25,6 +26,7 @@ func clone() -> RelicData:
 	copy.slot = slot
 	copy.character_id = character_id
 	copy.boss_id = boss_id
+	copy.curse_on_acquire = curse_on_acquire
 	copy.triggers = triggers.duplicate(true)
 	copy.icon_color = icon_color
 	copy.icon_shape = icon_shape
@@ -39,6 +41,7 @@ func to_dict() -> Dictionary:
 		"slot": slot,
 		"character_id": character_id,
 		"boss_id": boss_id,
+		"curse_on_acquire": curse_on_acquire,
 		"triggers": triggers.duplicate(true),
 		"icon_color": [icon_color.r, icon_color.g, icon_color.b, icon_color.a],
 		"icon_shape": icon_shape
@@ -53,6 +56,7 @@ static func from_dict(data: Dictionary) -> RelicData:
 	r.slot = String(data.get("slot", "general"))
 	r.character_id = String(data.get("character_id", ""))
 	r.boss_id = String(data.get("boss_id", ""))
+	r.curse_on_acquire = String(data.get("curse_on_acquire", ""))
 	var raw_triggers: Array = data.get("triggers", []) as Array
 	var typed_triggers: Array[Dictionary] = []
 	for t: Variant in raw_triggers:

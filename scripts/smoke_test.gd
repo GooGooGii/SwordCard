@@ -180,6 +180,8 @@ func _initialize() -> void:
 	_test_curse_retention_turn_start(characters[0], enemies[0])
 	_test_curse_retention_battle_start(characters[0], enemies[0])
 	_test_jing_hua_fu_removes_curse(characters[0])
+	_test_enemy_curse_infliction(characters[0], enemies[0])
+	_test_artifact_curse_on_acquire()
 	# Phase 7-A：Batch A 6 個事件樹
 	_test_batch_a_all_have_tree()
 	_test_batch_a_character_gating()
@@ -2136,6 +2138,58 @@ func _test_jing_hua_fu_removes_curse(character: CharacterData) -> void:
 				if String(e.get("kind", "")) == "remove_random_curse":
 					has_battle_victory_trigger = true
 	_check(has_battle_victory_trigger, "jing_hua_fu should have battle_victory + remove_random_curse")
+
+func _test_enemy_curse_infliction(character: CharacterData, enemy: EnemyData) -> void:
+	# gain_curse_player effect → 寫入 state["pending_player_curses"]，不直接碰 RunState
+	var bc: BattleController = BattleController.new()
+	var rs: RunState = RunState.new()
+	rs.init_for(character)
+	bc.setup(rs, character, enemy)
+	# 模擬敵方施咒 action
+	var curse_action: Dictionary = {
+		"intent": "殘蠱降身",
+		"effects": [{"kind": "gain_curse_player", "curse_id": "gu_du"}]
+	}
+	bc.resolver.resolve_enemy_action(curse_action, bc.state)
+	var pending: Array = bc.state.get("pending_player_curses", []) as Array
+	_check(pending.size() == 1, "pending_player_curses should have 1 entry after curse action")
+	_check(String(pending[0]) == "gu_du", "pending curse should be gu_du")
+	# 確認 蠱毒妖人 的 actions 含 gain_curse_player
+	var gu_cultist: EnemyData = GameData.enemy_by_id("gu_cultist")
+	_check(gu_cultist != null, "gu_cultist must exist in GameData")
+	var has_curse_action: bool = false
+	for a: Dictionary in gu_cultist.actions:
+		for e_v: Variant in (a.get("effects", []) as Array):
+			var e: Dictionary = e_v as Dictionary
+			if String(e.get("kind", "")) == "gain_curse_player":
+				has_curse_action = true
+	_check(has_curse_action, "gu_cultist should have at least 1 gain_curse_player action")
+
+func _test_artifact_curse_on_acquire() -> void:
+	# 指定 3 個 boss 神器帶 curse_on_acquire；其餘神器不帶
+	var cursed_artifacts: Dictionary = {
+		"baiyue_shenfu": "xie_yin",
+		"wugong_jia": "gu_du",
+		"baiyue_jiaozhi": "tong_ji",
+	}
+	for art_id: String in cursed_artifacts.keys():
+		var relic: RelicData = RelicCatalog.by_id(art_id)
+		_check(relic != null, "%s must exist in RelicCatalog" % art_id)
+		if relic != null:
+			var expected_curse: String = String(cursed_artifacts[art_id])
+			_check(relic.curse_on_acquire == expected_curse,
+				"%s curse_on_acquire should be '%s', got '%s'" % [art_id, expected_curse, relic.curse_on_acquire])
+			# curse_id 必須能從 CurseCatalog 找到
+			var curse_card: CardData = CurseCatalog.make_card(relic.curse_on_acquire)
+			_check(curse_card != null, "CurseCatalog.make_card('%s') should return valid CardData" % relic.curse_on_acquire)
+	# 驗證不帶 curse 的神器
+	var clean_artifacts: Array[String] = ["shiling_gu", "chiyan_fuyin", "guijiang_lingpai"]
+	for art_id2: String in clean_artifacts:
+		var relic2: RelicData = RelicCatalog.by_id(art_id2)
+		_check(relic2 != null, "%s must exist in RelicCatalog" % art_id2)
+		if relic2 != null:
+			_check(relic2.curse_on_acquire.is_empty(),
+				"%s should NOT have curse_on_acquire" % art_id2)
 
 # ──────────────────────────────────────────────────────────────────────
 # Event Branching Phase 7-A：Batch A 6 個事件樹（內容驗證）

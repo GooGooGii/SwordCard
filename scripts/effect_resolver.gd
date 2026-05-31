@@ -284,6 +284,17 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				pending.append({"id": String(effect.get("enemy_id", ""))})
 			state["pending_summons"] = pending
 			log_lines.append("施展召喚之術。")
+		"gain_curse_player":
+			# 敵方施咒：把指定 curse 加入 pending list，由 main.gd 在 resolve_enemy_phase 後
+			# 寫入 run_state.character_decks（避免 BattleController 直接依賴 RunState）。
+			var curse_id: String = String(effect.get("curse_id", ""))
+			if not curse_id.is_empty():
+				var pending_curses: Array = state.get("pending_player_curses", []) as Array
+				pending_curses.append(curse_id)
+				state["pending_player_curses"] = pending_curses
+				var curse_data: Dictionary = CurseCatalog.by_id(curse_id)
+				var curse_name: String = String(curse_data.get("display_name", curse_id))
+				log_lines.append("詛咒降臨：「%s」！" % curse_name)
 		"cure_poison":
 			state["player_poison"] = 0
 			log_lines.append("蠱毒已全數清除。")

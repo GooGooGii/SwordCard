@@ -2845,6 +2845,7 @@ func end_player_turn() -> void:
 		UIFactory.dash_node(enemy_portrait_wrap, Vector2(-1, 0), 36.0, 0.22)
 		await get_tree().create_timer(0.1).timeout
 	var result: Dictionary = battle.resolve_enemy_phase(actions)
+	_process_battle_curses()
 	_show_state_feedback(result["before_enemy"])
 	_refresh_battle()
 	if bool(result["ended"]) and await _finish_battle_after_delay():
@@ -2988,7 +2989,7 @@ func _complete_battle_victory() -> void:
 	else:
 		dropped = _try_random_relic_drop(0.25)
 	if dropped != null:
-		run_state.add_relic(dropped)
+		_add_relic_with_curse_effect(dropped)
 		battle.add_log("獲得裝備：%s" % dropped.display_name)
 	# 藥品掉落：一般 20%，boss 60%（揹包未滿時）
 	if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
@@ -4664,6 +4665,40 @@ func _upgradeable_cards() -> Array[CardData]:
 	return cards
 
 # P4：嘗試從 active 角色 deck 移除 1 張隨機 curse，回傳被移除的名稱（沒有則回空）
+# 戰鬥中敵方詛咒：resolve_enemy_phase 後清 pending_player_curses，加入 active 角色 deck
+func _process_battle_curses() -> void:
+	if battle == null or run_state == null:
+		return
+	var pending: Array = battle.state.get("pending_player_curses", []) as Array
+	if pending.is_empty():
+		return
+	battle.state["pending_player_curses"] = []
+	var d_idx: int = run_state.active_character_index
+	if d_idx >= run_state.character_decks.size():
+		return
+	var d: Array = run_state.character_decks[d_idx] as Array
+	for cid_v: Variant in pending:
+		var cid: String = String(cid_v)
+		var curse_card: CardData = CurseCatalog.make_card(cid)
+		if curse_card != null:
+			d.append(curse_card)
+
+# Boss 神器附帶詛咒：取得遺物的同時加詛咒牌到 active 角色 deck（若有 curse_on_acquire）
+func _add_relic_with_curse_effect(relic: RelicData) -> void:
+	run_state.add_relic(relic)
+	var cid: String = relic.curse_on_acquire
+	if cid.is_empty():
+		return
+	var curse_card: CardData = CurseCatalog.make_card(cid)
+	if curse_card == null:
+		return
+	var d_idx: int = run_state.active_character_index
+	if d_idx < run_state.character_decks.size():
+		var d: Array = run_state.character_decks[d_idx] as Array
+		d.append(curse_card)
+	if battle != null:
+		battle.add_log("神器之力反噬：「%s」詛咒加入牌組！" % curse_card.display_name)
+
 func _try_remove_random_curse() -> String:
 	if run_state == null:
 		return ""

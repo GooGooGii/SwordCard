@@ -417,7 +417,7 @@ static func _gu_cultist() -> EnemyData:
 	enemy.actions = [
 		{"intent": "毒霧 3", "effects": [{"kind": "poison", "amount": 3}]},
 		{"intent": "邪術 9", "effects": [{"kind": "damage", "amount": 9}, {"kind": "weak", "amount": 1}]},
-		{"intent": "護咒 10", "effects": [{"kind": "block", "amount": 10}]}
+		{"intent": "殘蠱降身", "effects": [{"kind": "gain_curse_player", "curse_id": "gu_du"}]}
 	]
 	return enemy
 
@@ -684,7 +684,7 @@ static func _zombie_general() -> EnemyData:
 	]
 	enemy.phase_2_actions = [
 		{"intent": "殭屍狂咒 18", "effects": [{"kind": "damage", "amount": 18}]},
-		{"intent": "毒屍爆炸 蠱毒 6 + 破綻 2", "effects": [{"kind": "poison", "amount": 6}, {"kind": "vulnerable", "amount": 2}]},
+		{"intent": "殭咒縛身 妖債", "effects": [{"kind": "gain_curse_player", "curse_id": "yao_zhai"}]},
 		{"intent": "鬼將斬魂 22", "effects": [{"kind": "damage", "amount": 22}]},
 		{"intent": "召喚殭屍奴", "effects": [{"kind": "summon", "count": 1}]}
 	]
@@ -701,7 +701,7 @@ static func _baiyue_lord() -> EnemyData:
 	enemy.actions = [
 		{"intent": "拜月神力 14 + 破綻 1", "effects": [{"kind": "damage", "amount": 14}, {"kind": "vulnerable", "amount": 1}]},
 		{"intent": "月蝕暗咒 蠱毒 5", "effects": [{"kind": "poison", "amount": 5}]},
-		{"intent": "黑暗護罩 16", "effects": [{"kind": "block", "amount": 16}]},
+		{"intent": "邪印烙身", "effects": [{"kind": "gain_curse_player", "curse_id": "xie_yin"}]},
 		{"intent": "邪神降世 20", "effects": [{"kind": "damage", "amount": 20}]}
 	]
 	# Phase 2：召出水魔獸（PAL1 原作終局妖獸）

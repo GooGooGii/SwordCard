@@ -50,10 +50,11 @@ static func _make_weapon(id: String, name: String, desc: String, char_id: String
 	r.character_id = char_id
 	return r
 
-static func _make_artifact(id: String, name: String, desc: String, boss_id: String, triggers: Array[Dictionary], color: Color) -> RelicData:
+static func _make_artifact(id: String, name: String, desc: String, boss_id: String, triggers: Array[Dictionary], color: Color, curse_id: String = "") -> RelicData:
 	var r: RelicData = _make(id, name, desc, "legendary", triggers, color, "hex")
 	r.slot = "artifact"
 	r.boss_id = boss_id
+	r.curse_on_acquire = curse_id
 	return r
 
 static func _generals() -> Array[RelicData]:
@@ -193,15 +194,15 @@ static func _weapons() -> Array[RelicData]:
 static func _artifacts() -> Array[RelicData]:
 	var l: Array[RelicData] = []
 	l.append(_make_artifact("baiyue_shenfu", "拜月神符",
-		"戰鬥開始敵人虛弱 3 層、破綻 3 層。每回合結束敵人 +1 層破綻。",
+		"戰鬥開始敵人虛弱 3 層、破綻 3 層。每回合結束敵人 +1 層破綻。【附帶詛咒：邪印】",
 		"moon_worshipper",
 		[{"trigger": "battle_start", "effects": [{"kind": "enemy_weak", "amount": 3}, {"kind": "enemy_vulnerable", "amount": 3}]},
-		{"trigger": "turn_end", "effects": [{"kind": "enemy_vulnerable", "amount": 1}]}], Color("d9c2ff")))
+		{"trigger": "turn_end", "effects": [{"kind": "enemy_vulnerable", "amount": 1}]}], Color("d9c2ff"), "xie_yin"))
 	l.append(_make_artifact("wugong_jia", "蜈蚣甲",
-		"受到的傷害 -3（最低 0）。每回合開始獲得 4 護體。",
+		"受到的傷害 -3（最低 0）。每回合開始獲得 4 護體。【附帶詛咒：殘蠱】",
 		"centipede_lord",
 		[{"trigger": "passive_modifier", "effects": [{"kind": "damage_taken_reduction", "amount": 3}]},
-		{"trigger": "turn_start", "effects": [{"kind": "self_block", "amount": 4}]}], Color("76c46a")))
+		{"trigger": "turn_start", "effects": [{"kind": "self_block", "amount": 4}]}], Color("76c46a"), "gu_du"))
 	l.append(_make_artifact("shiling_gu", "噬靈骨",
 		"敵人受到的蠱毒 +2。每回合結束對敵人造成的蠱毒翻倍引爆 50%。",
 		"witch_queen",
@@ -217,7 +218,7 @@ static func _artifacts() -> Array[RelicData]:
 		"zombie_general",
 		[{"trigger": "turn_end", "effects": [{"kind": "enemy_poison", "amount": 2}, {"kind": "self_heal", "amount": 4}]}], Color("90c878")))
 	l.append(_make_artifact("baiyue_jiaozhi", "拜月教旨",
-		"每回合開始多抽 1 張牌並回復 1 靈力。",
+		"每回合開始多抽 1 張牌並回復 1 靈力。【附帶詛咒：通緝】",
 		"baiyue_lord",
-		[{"trigger": "turn_start", "effects": [{"kind": "self_draw", "amount": 1}, {"kind": "self_energy", "amount": 1}]}], Color("9966cc")))
+		[{"trigger": "turn_start", "effects": [{"kind": "self_draw", "amount": 1}, {"kind": "self_energy", "amount": 1}]}], Color("9966cc"), "tong_ji"))
 	return l
