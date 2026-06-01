@@ -215,7 +215,7 @@ static func _lin_yueru() -> CharacterData:
 
 static func _anu() -> CharacterData:
 	# PAL1 對齊版本：
-	# - 靈血咒：原作是「解除異常狀態」，改回 cure_debuff（之前是 self_damage 屬借殼）
+	# - 命名對齊：解毒咒 = 清除負面狀態（cure_debuff），靈血咒 = 回血（heal+block）
 	# - 新增 鬼降（PAL1 初登場 瘋魔 5 回合 → 簡化為 敵人虛弱 3）
 	# - 萬蟻蝕象 PAL1 Lv30 → 升 uncommon
 	# - 爆炸蠱 PAL1 Lv33 → 已是 uncommon（維持）
@@ -224,8 +224,8 @@ static func _anu() -> CharacterData:
 		make_card("anu_wanyi", "萬蟻蝕象", "阿奴", 1, "skill", "施加 5 層蠱毒。", [{"kind": "poison", "amount": 5}], "uncommon"),
 		make_card("anu_mihun", "迷魂術", "阿奴", 1, "skill", "使敵人虛弱 3 層。", [{"kind": "weak", "amount": 3}]),
 		make_card("anu_baozhagu", "爆炸蠱", "阿奴", 2, "attack", "引爆全部蠱毒，每層造成 3 點傷害。", [{"kind": "poison_burst", "amount": 3}], "uncommon"),
-		make_card("anu_lingxue", "靈血咒", "阿奴", 1, "skill", "清除自身全部負面狀態，抽 1 張牌（苗疆解咒之術）。", [{"kind": "cure_debuff"}, {"kind": "draw", "amount": 1}]),
-		make_card("anu_jiedu", "解毒咒", "阿奴", 1, "skill", "回復 5 點生命並獲得 3 點護體。", [{"kind": "heal", "amount": 5}, {"kind": "block", "amount": 3}]),
+		make_card("anu_lingxue", "靈血咒", "阿奴", 1, "skill", "苗疆靈血續命之術，回復 5 點生命並獲得 3 點護體。", [{"kind": "heal", "amount": 5}, {"kind": "block", "amount": 3}]),
+		make_card("anu_jiedu", "解毒咒", "阿奴", 1, "skill", "清除自身全部負面狀態，抽 1 張牌。", [{"kind": "cure_debuff"}, {"kind": "draw", "amount": 1}]),
 		make_card("anu_guling", "蠱靈護身", "阿奴", 1, "skill", "獲得 12 點護體。", [{"kind": "block", "amount": 12}], "uncommon"),
 		make_card("anu_wangyou", "忘憂蠱", "阿奴", 2, "skill", "施加 4 層蠱毒與 2 層破綻。", [{"kind": "poison", "amount": 4}, {"kind": "vulnerable", "amount": 2}], "uncommon"),
 		make_card("anu_duwu", "毒霧繚繞", "阿奴", 1, "skill", "施加 2 層蠱毒，使敵人虛弱 1 層。", [{"kind": "poison", "amount": 2}, {"kind": "weak", "amount": 1}], "uncommon"),
@@ -252,13 +252,19 @@ static func _anu() -> CharacterData:
 	var character: CharacterData = _character("anu", "阿奴", 66, "蠱毒、咒術、削弱與長戰持續傷害。", cards)
 	# PAL1 對齊：10 basic + 2 uncommon + 0 rare
 	# 御蜂術 ×3 → ×2（4 hits 連擊堆疊太快，每張 12 dmg + 觸發毒 tick 過強）
+	# 平衡修正（2026-06，run_simulator 揭露）：原起始牌組 13 張有 8 張純治療/淨化/
+	# 虛弱、唯一攻擊只有 2x 御蜂術，毒疊不起來 → 殺速過慢 → 帶傷續戰被消耗致死
+	# （全 run 清關率僅 15%）。改成有實際毒流 win-con：加 2x 毒針連射(攻擊+毒)、
+	# 1x 萬蟻蝕象(毒 ramp)，砍掉冗餘的治療/淨化牌。
 	character.starting_deck = [
-		cards[0], cards[0],                # 2x 御蜂術 (初登場 basic damage_all 3x3)
-		cards[2],                          # 1x 迷魂術 (basic 3 weak, 自創苗疆風)
-		cards[15],                         # 1x 鬼降 (初登場 basic 3 weak)
-		cards[4], cards[4], cards[4],     # 3x 靈血咒 (初登場 basic cure_debuff+draw1, 改回原作)
-		cards[5], cards[5], cards[5],     # 3x 解毒咒 (basic 5heal+3block)
+		cards[0], cards[0],                # 2x 御蜂術 (basic damage_all 3x3)
+		cards[11], cards[11],              # 2x 毒針連射 (uncommon 5 傷害 + 2 蠱毒) — 早期輸出
+		cards[3],                          # 1x 爆炸蠱 (uncommon poison_burst ×3) — 毒爆 payoff
+		cards[1],                          # 1x 萬蟻蝕象 (uncommon 毒 5) — 毒 ramp
 		cards[8],                          # 1x 毒霧繚繞 (uncommon 2poison+weak1)
+		cards[2],                          # 1x 迷魂術 (basic 3 weak)
+		cards[4], cards[4],                # 2x 靈血咒 (basic 5heal+3block)
+		cards[5],                          # 1x 解毒咒 (basic cure_debuff+draw1)
 		cards[6],                          # 1x 蠱靈護身 (uncommon 12block)
 	]
 	return character

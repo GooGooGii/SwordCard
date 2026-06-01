@@ -959,7 +959,10 @@ const BALANCE_BASELINES_MID: Dictionary = {
 	"li_xiaoyao": 90,
 	"zhao_linger": 100,
 	"lin_yueru": 100,
-	"anu": 50
+	# anu 50→100：起始牌組重做（2026-06，run_simulator 揭露原牌組幾乎零輸出、
+	# 殺速過慢）。加 2x 毒針連射(攻擊+毒)、爆炸蠱(毒爆 payoff)、萬蟻蝕象(毒 ramp)，
+	# 砍冗餘治療牌 → 蜈蚣大王 10 回合限時勝率 50%→100%（故意調整）
+	"anu": 100
 }
 # 全升級起始牌組 vs 山賊頭目。升級應嚴格 >= 基礎勝率，預期全 100%。
 const BALANCE_BASELINES_UPGRADED: Dictionary = {
@@ -969,13 +972,13 @@ const BALANCE_BASELINES_UPGRADED: Dictionary = {
 	"anu": 100
 }
 # 全升級起始牌組 vs 蜈蚣大王（10 回合）。
-# anu 70%：蜈蚣大王 phase 2 加了召喚蜈蚣幼蟲（1/4 機率），anu 對群體輸出不夠強、受擊壓力上升
-# 而掉到 70%。其他角色憑 AOE 或硬控可解，仍維持 100%。
+# anu 70→100：起始牌組重做後輸出大增（毒針+爆炸蠱+萬蟻），即使蜈蚣大王 phase 2
+# 召喚幼蟲，升級版毒流也能在 10 回合內穩殺（故意調整，2026-06 起始牌組重做）。
 const BALANCE_BASELINES_MID_UPGRADED: Dictionary = {
 	"li_xiaoyao": 100,
 	"zhao_linger": 100,
 	"lin_yueru": 100,
-	"anu": 70
+	"anu": 100
 }
 
 # 分級成長 baseline：每幕 boss 對應一個玩家等級（推測自實際 run 經驗值累積）。

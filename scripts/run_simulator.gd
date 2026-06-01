@@ -288,7 +288,22 @@ func _score_card(card: CardData, bc: BattleController) -> float:
 			"weak":
 				score += float(amount) * 5.0
 			"poison", "poison_all":
+				# 毒：tick 總傷 ≈ n(n+1)/2 攤提，但對阿奴是 burst 燃料 → 給高權重
 				score += float(amount) * float(hits) * 3.0
+			"poison_burst":
+				# 爆炸蠱：引爆當前毒層，每層 amount 點瞬間傷害（阿奴核心 payoff）
+				var cur_poison: int = int(st.get("enemy_poison", 0))
+				var burst: float = float(cur_poison) * float(amount)
+				score += burst
+				if burst >= float(enemy_hp + enemy_block):
+					score += 1000.0  # 毒爆致命
+			"consume_energy_damage", "consume_energy_damage_all":
+				# 耗盡靈力換傷害：用剩餘能量估算
+				score += float(int(st.get("energy", 0))) * float(amount)
+			"cure_debuff":
+				# 解負面：身上有 weak/poison/vuln 時才有價值
+				var debuffs: int = int(st.get("player_weak", 0)) + int(st.get("player_poison", 0)) + int(st.get("player_vulnerable", 0))
+				score += float(debuffs) * 2.0
 			"heal":
 				var deficit: int = player_max - player_hp
 				score += float(min(amount, deficit)) * 1.0
@@ -461,6 +476,7 @@ func _card_draft_value(card: CardData) -> float:
 			"block": v += amt * 0.8
 			"vulnerable", "weak": v += amt * 4.0
 			"poison", "poison_all": v += amt * 2.5
+			"poison_burst": v += 30.0  # 阿奴核心 payoff，高估值確保被抽
 			"power": v += 12.0
 			"draw", "energy": v += amt * 5.0
 			_: v += amt * 0.6
