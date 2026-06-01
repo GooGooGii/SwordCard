@@ -2431,6 +2431,7 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	var portrait: TextureRect = UIFactory.portrait_rect(enemy_data.portrait_path, portrait_size, true)
 	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	portrait.modulate = enemy_data.portrait_tint
+	portrait.flip_h = true
 	wrap.add_child(portrait)
 	var badge: BlockBadge = BlockBadge.new()
 	var badge_size: float = 40.0 if total >= 2 else 48.0

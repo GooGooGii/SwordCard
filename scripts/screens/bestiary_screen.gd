@@ -50,6 +50,7 @@ func _tile(enemy: EnemyData, is_boss: bool, kill_count: int) -> Control:
 	tile.add_child(inner)
 	var portrait: TextureRect = UIFactory.portrait_rect(enemy.portrait_path, Vector2(120, 96), true)
 	portrait.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	portrait.flip_h = true
 	if not defeated:
 		portrait.modulate = Color(0.0, 0.0, 0.0, 0.85)
 	inner.add_child(portrait)
