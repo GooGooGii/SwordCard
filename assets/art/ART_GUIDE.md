@@ -5,6 +5,9 @@
 - Style: 2D painted xianxia fantasy, ink-wash atmosphere with readable game UI contrast.
 - Palette: ink blue, charcoal, muted teal, jade green, antique gold, restrained red/purple accents.
 - Use: private fan prototype, not public or commercial release.
+- **Card & Enemy Art Guidelines**:
+  - 卡圖盡量不要出現人物與文字（專注於仙術效果、符咒、武器或道具意境）。
+  - 蟲形敵人（如蠱蟲、蜈蚣等）不要太過寫實，應以水墨寫意風格進行藝術化簡化，避免造成視覺上的噁心感。
 - **戰鬥角色肖像設計 (Battle Character Design)**:
   - **風格簡化 (Simplified Style)**: 戰鬥中角色肖像改為 **正常比例、手繪插畫國風水墨風格**（比例同 Slay the Spire 角色，特徵鮮明、線條簡潔、色彩飽和度適度降低），而非 Q 版。與選角時的寫實水墨全身肖像區隔。
   - **左右對立構圖 (StS Layout)**: 角色居左面向右，敵人在右面向左。
