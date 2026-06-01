@@ -6513,19 +6513,14 @@ func _animate_hand_discard() -> void:
 	card_buttons.clear()
 
 func _show_state_feedback(before: Dictionary) -> void:
-	var player_lines: Array[String] = []
-	var enemy_lines: Array[String] = []
 	var bs: Dictionary = battle.state
+	# ── 玩家（單體）──
 	var player_hp_delta: int = int(bs["player_hp"]) - int(before["player_hp"])
-	var enemy_hp_delta: int = int(bs["enemy_hp"]) - int(before["enemy_hp"])
 	var player_block_delta: int = int(bs["player_block"]) - int(before["player_block"])
-	var enemy_block_delta: int = int(bs["enemy_block"]) - int(before["enemy_block"])
 	var player_poison_delta: int = int(bs["player_poison"]) - int(before["player_poison"])
 	var player_weak_delta: int = int(bs["player_weak"]) - int(before["player_weak"])
 	var player_vulnerable_delta: int = int(bs["player_vulnerable"]) - int(before["player_vulnerable"])
-	var enemy_poison_delta: int = int(bs["enemy_poison"]) - int(before["enemy_poison"])
-	var enemy_weak_delta: int = int(bs["enemy_weak"]) - int(before["enemy_weak"])
-	var enemy_vulnerable_delta: int = int(bs["enemy_vulnerable"]) - int(before["enemy_vulnerable"])
+	var player_lines: Array[String] = []
 	if player_hp_delta < 0:
 		player_lines.append("受傷 %d" % abs(player_hp_delta))
 	elif player_hp_delta > 0:
@@ -6538,54 +6533,72 @@ func _show_state_feedback(before: Dictionary) -> void:
 		player_lines.append("虛弱 +%d" % player_weak_delta)
 	if player_vulnerable_delta > 0:
 		player_lines.append("破綻 +%d" % player_vulnerable_delta)
-	if enemy_hp_delta < 0:
-		enemy_lines.append("傷害 %d" % abs(enemy_hp_delta))
-	if enemy_block_delta > 0:
-		enemy_lines.append("護體 +%d" % enemy_block_delta)
-	if enemy_poison_delta > 0:
-		enemy_lines.append("蠱毒 +%d" % enemy_poison_delta)
-	if enemy_weak_delta > 0:
-		enemy_lines.append("虛弱 +%d" % enemy_weak_delta)
-	if enemy_vulnerable_delta > 0:
-		enemy_lines.append("破綻 +%d" % enemy_vulnerable_delta)
 	if not player_lines.is_empty():
 		_show_feedback(player_feedback_label, player_lines, Color("f4b7a8"))
-	if not enemy_lines.is_empty():
-		_show_feedback(enemy_feedback_label, enemy_lines, ThemeColors.ACCENT_GOLD)
 	if player_hp_delta < 0:
 		UIFactory.shake_node(player_portrait_wrap, 7.0, 0.28)
 		_spawn_damage_popup(player_portrait_wrap, abs(player_hp_delta), "damage")
+		var pmax: int = int(bs.get("player_max_hp", 1))
+		if pmax > 0 and abs(player_hp_delta) >= int(pmax * 0.20):
+			UIFactory.shake_node(player_portrait_wrap, 18.0, 0.45)
 	elif player_hp_delta > 0:
 		_spawn_damage_popup(player_portrait_wrap, player_hp_delta, "heal")
-	if enemy_hp_delta < 0:
-		UIFactory.shake_node(enemy_portrait_wrap, 7.0, 0.28)
-		_spawn_damage_popup(enemy_portrait_wrap, abs(enemy_hp_delta), "damage")
 	if player_block_delta > 0:
 		UIFactory.flash_node(player_portrait_wrap, Color(1.2, 1.35, 1.55), 0.22)
 		_spawn_damage_popup(player_portrait_wrap, player_block_delta, "block")
-	if enemy_block_delta > 0:
-		UIFactory.flash_node(enemy_portrait_wrap, Color(1.2, 1.35, 1.55), 0.22)
-		_spawn_damage_popup(enemy_portrait_wrap, enemy_block_delta, "block")
-	# 狀態 delta 浮字（蠱毒 / 虛弱 / 破綻）— 玩家 / 敵人雙邊
 	if player_poison_delta > 0:
 		_spawn_damage_popup(player_portrait_wrap, player_poison_delta, "poison")
 	if player_weak_delta > 0:
 		_spawn_damage_popup(player_portrait_wrap, player_weak_delta, "weak")
 	if player_vulnerable_delta > 0:
 		_spawn_damage_popup(player_portrait_wrap, player_vulnerable_delta, "vulnerable")
-	if enemy_poison_delta > 0:
-		_spawn_damage_popup(enemy_portrait_wrap, enemy_poison_delta, "poison")
-	if enemy_weak_delta > 0:
-		_spawn_damage_popup(enemy_portrait_wrap, enemy_weak_delta, "weak")
-	if enemy_vulnerable_delta > 0:
-		_spawn_damage_popup(enemy_portrait_wrap, enemy_vulnerable_delta, "vulnerable")
-	# 暴擊 / 重擊強化反饋：傷害 >= max_hp 20% 視為重擊，加大震動 + screen-wide flash
-	var enemy_max_hp: int = int(bs.get("enemy_max_hp", 1))
-	if enemy_hp_delta < 0 and enemy_max_hp > 0 and abs(enemy_hp_delta) >= int(enemy_max_hp * 0.20):
-		UIFactory.shake_node(enemy_portrait_wrap, 18.0, 0.45)
-	var player_max_hp: int = int(bs.get("player_max_hp", 1))
-	if player_hp_delta < 0 and player_max_hp > 0 and abs(player_hp_delta) >= int(player_max_hp * 0.20):
-		UIFactory.shake_node(player_portrait_wrap, 18.0, 0.45)
+	# ── 敵人（逐個）：對每隻敵人各算 delta，把浮字 / 震動飄到「正確的那隻」頭上 ──
+	var before_enemies: Array = before.get("enemies", []) as Array
+	var cur_enemies: Array = bs.get("enemies", []) as Array
+	for i: int in range(enemy_widgets.size()):
+		if i >= cur_enemies.size() or i >= before_enemies.size():
+			continue
+		_show_enemy_slot_feedback(enemy_widgets[i] as Dictionary, before_enemies[i] as Dictionary, cur_enemies[i] as Dictionary)
+
+func _show_enemy_slot_feedback(widget: Dictionary, before_slot: Dictionary, cur_slot: Dictionary) -> void:
+	var hp_delta: int = int(cur_slot.get("hp", 0)) - int(before_slot.get("hp", 0))
+	var block_delta: int = int(cur_slot.get("block", 0)) - int(before_slot.get("block", 0))
+	var poison_delta: int = int(cur_slot.get("poison", 0)) - int(before_slot.get("poison", 0))
+	var weak_delta: int = int(cur_slot.get("weak", 0)) - int(before_slot.get("weak", 0))
+	var vuln_delta: int = int(cur_slot.get("vulnerable", 0)) - int(before_slot.get("vulnerable", 0))
+	var lines: Array[String] = []
+	if hp_delta < 0:
+		lines.append("傷害 %d" % abs(hp_delta))
+	if block_delta > 0:
+		lines.append("護體 +%d" % block_delta)
+	if poison_delta > 0:
+		lines.append("蠱毒 +%d" % poison_delta)
+	if weak_delta > 0:
+		lines.append("虛弱 +%d" % weak_delta)
+	if vuln_delta > 0:
+		lines.append("破綻 +%d" % vuln_delta)
+	var fb: Variant = widget.get("feedback_label")
+	if not lines.is_empty() and fb is Label:
+		_show_feedback(fb as Label, lines, ThemeColors.ACCENT_GOLD)
+	var wrap_v: Variant = widget.get("wrap")
+	if not (wrap_v is Control) or not is_instance_valid(wrap_v as Control):
+		return
+	var wrap: Control = wrap_v as Control
+	if hp_delta < 0:
+		UIFactory.shake_node(wrap, 7.0, 0.28)
+		_spawn_damage_popup(wrap, abs(hp_delta), "damage")
+		var mx: int = int(cur_slot.get("max_hp", 1))
+		if mx > 0 and abs(hp_delta) >= int(mx * 0.20):
+			UIFactory.shake_node(wrap, 18.0, 0.45)
+	if block_delta > 0:
+		UIFactory.flash_node(wrap, Color(1.2, 1.35, 1.55), 0.22)
+		_spawn_damage_popup(wrap, block_delta, "block")
+	if poison_delta > 0:
+		_spawn_damage_popup(wrap, poison_delta, "poison")
+	if weak_delta > 0:
+		_spawn_damage_popup(wrap, weak_delta, "weak")
+	if vuln_delta > 0:
+		_spawn_damage_popup(wrap, vuln_delta, "vulnerable")
 
 func _spawn_damage_popup(target: Control, amount: int, kind: String) -> void:
 	if target == null or not is_instance_valid(target):

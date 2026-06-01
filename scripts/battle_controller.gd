@@ -315,6 +315,18 @@ func add_logs(lines: Array[String]) -> void:
 	battle_log.append_array(lines)
 
 func snapshot_state() -> Dictionary:
+	# 多敵：逐敵快照 slot 狀態，讓 UI 能對每隻敵人各算 delta、把浮字飄到正確的頭上。
+	var enemy_snaps: Array = []
+	for slot_v: Variant in (state.get("enemies", []) as Array):
+		var s: Dictionary = slot_v as Dictionary
+		enemy_snaps.append({
+			"hp": int(s.get("hp", 0)),
+			"max_hp": int(s.get("max_hp", 1)),
+			"block": int(s.get("block", 0)),
+			"poison": int(s.get("poison", 0)),
+			"weak": int(s.get("weak", 0)),
+			"vulnerable": int(s.get("vulnerable", 0)),
+		})
 	return {
 		"player_hp": int(state["player_hp"]),
 		"player_block": int(state["player_block"]),
@@ -325,7 +337,8 @@ func snapshot_state() -> Dictionary:
 		"enemy_block": int(state["enemy_block"]),
 		"enemy_poison": int(state["enemy_poison"]),
 		"enemy_weak": int(state["enemy_weak"]),
-		"enemy_vulnerable": int(state["enemy_vulnerable"])
+		"enemy_vulnerable": int(state["enemy_vulnerable"]),
+		"enemies": enemy_snaps,
 	}
 
 func is_victory() -> bool:
