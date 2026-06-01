@@ -956,13 +956,12 @@ const BALANCE_BASELINES: Dictionary = {
 const BALANCE_BASELINES_MID: Dictionary = {
 	# li_xiaoyao 63→90：STS 風能力牌一次性消耗後，醉夢望月不再洗回堆，
 	# 牌組變薄 → 御劍/萬劍/天師等高傷卡抽率提升，對蜈蚣大王勝率躍升（故意調整，commit faffda4 之後改的）
-	# 2026-06 怪物 rebalance：蜈蚣大王 HP 92→108 + 傷害上調 → random AI 起始牌組
-	# 限時內勝率全面下修（故意調整，數值為重測觀測值）。
-	# anu 57→80：毒 tick 時機改為 StS 式（敵人毒在出手前 tick）+ 毒引擎，毒流殺速提升。
-	"li_xiaoyao": 53,
-	"zhao_linger": 47,
-	"lin_yueru": 83,
-	"anu": 80
+	# 2026-06 難度收斂（多分層 AI 測試）：敵人傷害再 +15% 把中手清關拉到 ~25-45%。
+	# random AI 起始牌組對上調後的蜈蚣大王，限時勝率再下修（故意調整，重測觀測值）。
+	"li_xiaoyao": 13,
+	"zhao_linger": 30,
+	"lin_yueru": 50,
+	"anu": 63
 }
 # 全升級起始牌組 vs 山賊頭目。升級應嚴格 >= 基礎勝率，預期全 100%。
 const BALANCE_BASELINES_UPGRADED: Dictionary = {
@@ -975,9 +974,10 @@ const BALANCE_BASELINES_UPGRADED: Dictionary = {
 # anu 70→100：起始牌組重做後輸出大增（毒針+爆炸蠱+萬蟻），即使蜈蚣大王 phase 2
 # 召喚幼蟲，升級版毒流也能在 10 回合內穩殺（故意調整，2026-06 起始牌組重做）。
 const BALANCE_BASELINES_MID_UPGRADED: Dictionary = {
-	"li_xiaoyao": 100,
-	"zhao_linger": 100,
-	"lin_yueru": 100,
+	# 2026-06 難度收斂後重測（敵人傷害 +15%）：升級牌組仍多能過，但李/林限時勝率下修。
+	"li_xiaoyao": 80,
+	"zhao_linger": 93,
+	"lin_yueru": 83,
 	"anu": 100
 }
 
@@ -996,10 +996,11 @@ const BALANCE_BASELINES_LEVELED: Dictionary = {
 	# Lv10 vs 蜈蚣大王（HP 108）：上調後 random AI 限時內較難穩殺 → 67-83%
 	# Lv15 vs 山靈巫后（HP 92）：仍接近全 100%
 	# Lv20 vs 拜月教主（HP 136）：67-90%，最終 boss 壓力提升
-	"li_xiaoyao":  {5: 100, 10: 80,  15: 93,  20: 67},
-	"zhao_linger": {5: 100, 10: 67,  15: 97,  20: 80},
-	"lin_yueru":   {5: 100, 10: 83,  15: 100, 20: 90},
-	"anu":         {5: 100, 10: 80,  15: 100, 20: 90},
+	# 2026-06 難度收斂後重測（敵人傷害 +15%）：Lv10/Lv20 對應 boss 勝率再下修。
+	"li_xiaoyao":  {5: 100, 10: 40,  15: 90,  20: 47},
+	"zhao_linger": {5: 100, 10: 40,  15: 93,  20: 53},
+	"lin_yueru":   {5: 100, 10: 50,  15: 100, 20: 87},
+	"anu":         {5: 100, 10: 67,  15: 100, 20: 90},
 }
 
 # Lv → act 對應

@@ -428,9 +428,9 @@ static func _bandit() -> EnemyData:
 	enemy.max_hp = 70
 	enemy.portrait_path = "res://assets/art/enemies/bandit.png"
 	enemy.actions = [
-		{"intent": "劈砍 13", "effects": [{"kind": "damage", "amount": 13}]},
+		{"intent": "劈砍 15", "effects": [{"kind": "damage", "amount": 15}]},
 		{"intent": "防守 10", "effects": [{"kind": "block", "amount": 10}]},
-		{"intent": "猛擊 18", "effects": [{"kind": "damage", "amount": 18}]}
+		{"intent": "猛擊 21", "effects": [{"kind": "damage", "amount": 21}]}
 	]
 	return enemy
 
@@ -441,9 +441,9 @@ static func _beast() -> EnemyData:
 	enemy.max_hp = 80
 	enemy.portrait_path = "res://assets/art/enemies/beast.png"
 	enemy.actions = [
-		{"intent": "撕咬 15", "effects": [{"kind": "damage", "amount": 15}]},
-		{"intent": "怒吼 10", "effects": [{"kind": "damage", "amount": 10}]},
-		{"intent": "撲擊 23", "effects": [{"kind": "damage", "amount": 23}]}
+		{"intent": "撕咬 17", "effects": [{"kind": "damage", "amount": 17}]},
+		{"intent": "怒吼 12", "effects": [{"kind": "damage", "amount": 12}]},
+		{"intent": "撲擊 26", "effects": [{"kind": "damage", "amount": 26}]}
 	]
 	return enemy
 
@@ -455,7 +455,7 @@ static func _gu_cultist() -> EnemyData:
 	enemy.portrait_path = "res://assets/art/enemies/gu_cultist.png"
 	enemy.actions = [
 		{"intent": "毒霧 4", "effects": [{"kind": "poison", "amount": 4}]},
-		{"intent": "邪術 12", "effects": [{"kind": "damage", "amount": 12}, {"kind": "weak", "amount": 1}]},
+		{"intent": "邪術 14", "effects": [{"kind": "damage", "amount": 14}, {"kind": "weak", "amount": 1}]},
 		{"intent": "殘蠱降身", "effects": [{"kind": "gain_curse_player", "curse_id": "gu_du"}]}
 	]
 	return enemy
@@ -467,9 +467,9 @@ static func _sword_spirit() -> EnemyData:
 	enemy.max_hp = 78
 	enemy.portrait_path = "res://assets/art/enemies/sword_spirit.png"
 	enemy.actions = [
-		{"intent": "劍芒 14", "effects": [{"kind": "damage", "amount": 14}]},
+		{"intent": "劍芒 16", "effects": [{"kind": "damage", "amount": 16}]},
 		{"intent": "護劍 11", "effects": [{"kind": "block", "amount": 11}]},
-		{"intent": "破勢 10", "effects": [{"kind": "damage", "amount": 10}, {"kind": "weak", "amount": 1}]}
+		{"intent": "破勢 12", "effects": [{"kind": "damage", "amount": 12}, {"kind": "weak", "amount": 1}]}
 	]
 	return enemy
 
@@ -481,7 +481,7 @@ static func _fox_spirit() -> EnemyData:
 	enemy.portrait_path = "res://assets/art/enemies/fox_spirit.png"
 	enemy.actions = [
 		{"intent": "魅惑 2", "effects": [{"kind": "weak", "amount": 2}]},
-		{"intent": "幻爪 13", "effects": [{"kind": "damage", "amount": 13}]},
+		{"intent": "幻爪 15", "effects": [{"kind": "damage", "amount": 15}]},
 		{"intent": "遁形 12", "effects": [{"kind": "block", "amount": 12}]}
 	]
 	return enemy
@@ -509,9 +509,9 @@ static func _serpent_demon() -> EnemyData:
 	enemy.max_hp = 88
 	enemy.portrait_path = "res://assets/art/enemies/serpent_demon.png"
 	enemy.actions = [
-		{"intent": "毒牙 12", "effects": [{"kind": "damage", "amount": 12}, {"kind": "poison", "amount": 3}]},
+		{"intent": "毒牙 14", "effects": [{"kind": "damage", "amount": 14}, {"kind": "poison", "amount": 3}]},
 		{"intent": "盤身 14", "effects": [{"kind": "block", "amount": 14}]},
-		{"intent": "蛇吻 19", "effects": [{"kind": "damage", "amount": 19}]}
+		{"intent": "蛇吻 22", "effects": [{"kind": "damage", "amount": 22}]}
 	]
 	return enemy
 
@@ -522,18 +522,18 @@ static func _moon_worshipper() -> EnemyData:
 	enemy.max_hp = 105
 	enemy.portrait_path = "res://assets/art/enemies/moon_worshipper.png"
 	enemy.actions = [
-		{"intent": "拜月咒 17", "effects": [{"kind": "damage", "amount": 17}]},
+		{"intent": "拜月咒 20", "effects": [{"kind": "damage", "amount": 20}]},
 		{"intent": "妖術：蠱毒 5", "effects": [{"kind": "poison", "amount": 5}]},
 		{"intent": "結界 14", "effects": [{"kind": "block", "amount": 14}]},
-		{"intent": "邪月重擊 25", "effects": [{"kind": "damage", "amount": 25}]}
+		{"intent": "邪月重擊 29", "effects": [{"kind": "damage", "amount": 29}]}
 	]
 	enemy.phase_2_actions = [
-		{"intent": "月蝕重擊 22 + 虛弱 2", "effects": [
-			{"kind": "damage", "amount": 22},
+		{"intent": "月蝕重擊 25 + 虛弱 2", "effects": [
+			{"kind": "damage", "amount": 25},
 			{"kind": "weak", "amount": 2}
 		]},
 		{"intent": "邪結界 20", "effects": [{"kind": "block", "amount": 20}]},
-		{"intent": "拜月狂咒 30", "effects": [{"kind": "damage", "amount": 30}]}
+		{"intent": "拜月狂咒 35", "effects": [{"kind": "damage", "amount": 35}]}
 	]
 	return enemy
 
@@ -544,30 +544,30 @@ static func _centipede_lord() -> EnemyData:
 	enemy.max_hp = 108
 	enemy.portrait_path = "res://assets/art/enemies/centipede_lord.png"
 	enemy.actions = [
-		{"intent": "多足踏擊 6x4", "effects": [
-			{"kind": "damage", "amount": 6},
-			{"kind": "damage", "amount": 6},
-			{"kind": "damage", "amount": 6},
-			{"kind": "damage", "amount": 6}
+		{"intent": "多足踏擊 7x4", "effects": [
+			{"kind": "damage", "amount": 7},
+			{"kind": "damage", "amount": 7},
+			{"kind": "damage", "amount": 7},
+			{"kind": "damage", "amount": 7}
 		]},
-		{"intent": "毒尾掃 14 + 蠱毒 4", "effects": [
-			{"kind": "damage", "amount": 14},
+		{"intent": "毒尾掃 16 + 蠱毒 4", "effects": [
+			{"kind": "damage", "amount": 16},
 			{"kind": "poison", "amount": 4}
 		]},
 		{"intent": "蜷甲防禦 18", "effects": [{"kind": "block", "amount": 18}]},
-		{"intent": "蝕骨蝕魂 21 + 虛弱 1", "effects": [
-			{"kind": "damage", "amount": 21},
+		{"intent": "蝕骨蝕魂 24 + 虛弱 1", "effects": [
+			{"kind": "damage", "amount": 24},
 			{"kind": "weak", "amount": 1}
 		]}
 	]
 	enemy.phase_2_actions = [
-		{"intent": "怒爪掃 8x4", "effects": [
-			{"kind": "damage", "amount": 8},
-			{"kind": "damage", "amount": 8},
-			{"kind": "damage", "amount": 8},
-			{"kind": "damage", "amount": 8}
+		{"intent": "怒爪掃 9x4", "effects": [
+			{"kind": "damage", "amount": 9},
+			{"kind": "damage", "amount": 9},
+			{"kind": "damage", "amount": 9},
+			{"kind": "damage", "amount": 9}
 		]},
-		{"intent": "噬魂咒 25", "effects": [{"kind": "damage", "amount": 25}]},
+		{"intent": "噬魂咒 29", "effects": [{"kind": "damage", "amount": 29}]},
 		{"intent": "毒霧 蠱毒 6 + 破綻 2", "effects": [
 			{"kind": "poison", "amount": 6},
 			{"kind": "vulnerable", "amount": 2}
@@ -587,22 +587,22 @@ static func _witch_queen() -> EnemyData:
 		{"intent": "蠱咒 蠱毒 6", "effects": [{"kind": "poison", "amount": 6}]},
 		{"intent": "詛咒 虛弱 3", "effects": [{"kind": "weak", "amount": 3}]},
 		{"intent": "邪結界 16", "effects": [{"kind": "block", "amount": 16}]},
-		{"intent": "魂噬 17 + 蠱毒 3", "effects": [
-			{"kind": "damage", "amount": 17},
+		{"intent": "魂噬 20 + 蠱毒 3", "effects": [
+			{"kind": "damage", "amount": 20},
 			{"kind": "poison", "amount": 3}
 		]}
 	]
 	enemy.phase_2_actions = [
-		{"intent": "山靈怒火 23 + 虛弱 1", "effects": [
-			{"kind": "damage", "amount": 23},
+		{"intent": "山靈怒火 26 + 虛弱 1", "effects": [
+			{"kind": "damage", "amount": 26},
 			{"kind": "weak", "amount": 1}
 		]},
 		{"intent": "蠱噬 蠱毒 7 + 破綻 2", "effects": [
 			{"kind": "poison", "amount": 7},
 			{"kind": "vulnerable", "amount": 2}
 		]},
-		{"intent": "邪音咒 14 + 破綻 3", "effects": [
-			{"kind": "damage", "amount": 14},
+		{"intent": "邪音咒 16 + 破綻 3", "effects": [
+			{"kind": "damage", "amount": 16},
 			{"kind": "vulnerable", "amount": 3}
 		]},
 		{"intent": "召喚鎖妖塔殘魂", "effects": [{"kind": "summon", "count": 1}]}
@@ -617,8 +617,8 @@ static func _zombie_soldier() -> EnemyData:
 	enemy.max_hp = 78
 	enemy.portrait_path = "res://assets/art/enemies/zombie_soldier.png"
 	enemy.actions = [
-		{"intent": "腐爛爪 12 + 虛弱 1", "effects": [{"kind": "damage", "amount": 12}, {"kind": "weak", "amount": 1}]},
-		{"intent": "殭步衝 16", "effects": [{"kind": "damage", "amount": 16}]},
+		{"intent": "腐爛爪 14 + 虛弱 1", "effects": [{"kind": "damage", "amount": 14}, {"kind": "weak", "amount": 1}]},
+		{"intent": "殭步衝 18", "effects": [{"kind": "damage", "amount": 18}]},
 		{"intent": "死硬護 13", "effects": [{"kind": "block", "amount": 13}]}
 	]
 	return enemy
@@ -630,8 +630,8 @@ static func _toxic_centipede() -> EnemyData:
 	enemy.max_hp = 69
 	enemy.portrait_path = "res://assets/art/enemies/toxic_centipede.png"
 	enemy.actions = [
-		{"intent": "毒噬 11 + 蠱毒 3", "effects": [{"kind": "damage", "amount": 11}, {"kind": "poison", "amount": 3}]},
-		{"intent": "多足撲 14", "effects": [{"kind": "damage", "amount": 14}]},
+		{"intent": "毒噬 13 + 蠱毒 3", "effects": [{"kind": "damage", "amount": 13}, {"kind": "poison", "amount": 3}]},
+		{"intent": "多足撲 16", "effects": [{"kind": "damage", "amount": 16}]},
 		{"intent": "蛻甲 10", "effects": [{"kind": "block", "amount": 10}]}
 	]
 	return enemy
@@ -643,8 +643,8 @@ static func _tower_demon() -> EnemyData:
 	enemy.max_hp = 90
 	enemy.portrait_path = "res://assets/art/enemies/tower_demon.png"
 	enemy.actions = [
-		{"intent": "邪焰 13 + 破綻 1", "effects": [{"kind": "damage", "amount": 13}, {"kind": "vulnerable", "amount": 1}]},
-		{"intent": "衝擊 19", "effects": [{"kind": "damage", "amount": 19}]},
+		{"intent": "邪焰 15 + 破綻 1", "effects": [{"kind": "damage", "amount": 15}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "衝擊 22", "effects": [{"kind": "damage", "amount": 22}]},
 		{"intent": "封魔護 14", "effects": [{"kind": "block", "amount": 14}]}
 	]
 	return enemy
@@ -656,8 +656,8 @@ static func _tower_ghost_soldier() -> EnemyData:
 	enemy.max_hp = 81
 	enemy.portrait_path = "res://assets/art/enemies/tower_ghost_soldier.png"
 	enemy.actions = [
-		{"intent": "魂刃 14 + 虛弱 1", "effects": [{"kind": "damage", "amount": 14}, {"kind": "weak", "amount": 1}]},
-		{"intent": "鬼卒衝 18", "effects": [{"kind": "damage", "amount": 18}]},
+		{"intent": "魂刃 16 + 虛弱 1", "effects": [{"kind": "damage", "amount": 16}, {"kind": "weak", "amount": 1}]},
+		{"intent": "鬼卒衝 21", "effects": [{"kind": "damage", "amount": 21}]},
 		{"intent": "幻影遁 11", "effects": [{"kind": "block", "amount": 11}]}
 	]
 	return enemy
@@ -669,7 +669,7 @@ static func _baiyue_guard() -> EnemyData:
 	enemy.max_hp = 92
 	enemy.portrait_path = "res://assets/art/enemies/baiyue_guard.png"
 	enemy.actions = [
-		{"intent": "拜月斬 16", "effects": [{"kind": "damage", "amount": 16}]},
+		{"intent": "拜月斬 18", "effects": [{"kind": "damage", "amount": 18}]},
 		{"intent": "邪毒 蠱毒 4 + 破綻 1", "effects": [{"kind": "poison", "amount": 4}, {"kind": "vulnerable", "amount": 1}]},
 		{"intent": "教衛盾 15", "effects": [{"kind": "block", "amount": 15}]}
 	]
@@ -682,8 +682,8 @@ static func _ancient_evil_spirit() -> EnemyData:
 	enemy.max_hp = 85
 	enemy.portrait_path = "res://assets/art/enemies/ancient_evil_spirit.png"
 	enemy.actions = [
-		{"intent": "噬魂 13 + 虛弱 1", "effects": [{"kind": "damage", "amount": 13}, {"kind": "weak", "amount": 1}]},
-		{"intent": "邪氣蝕 14 + 蠱毒 3", "effects": [{"kind": "damage", "amount": 14}, {"kind": "poison", "amount": 3}]},
+		{"intent": "噬魂 15 + 虛弱 1", "effects": [{"kind": "damage", "amount": 15}, {"kind": "weak", "amount": 1}]},
+		{"intent": "邪氣蝕 16 + 蠱毒 3", "effects": [{"kind": "damage", "amount": 16}, {"kind": "poison", "amount": 3}]},
 		{"intent": "邪盾 12", "effects": [{"kind": "block", "amount": 12}]}
 	]
 	return enemy
@@ -695,15 +695,15 @@ static func _red_eye_demon() -> EnemyData:
 	enemy.max_hp = 95
 	enemy.portrait_path = "res://assets/art/enemies/red_eye_demon.png"
 	enemy.actions = [
-		{"intent": "爪擊 12", "effects": [{"kind": "damage", "amount": 12}]},
+		{"intent": "爪擊 14", "effects": [{"kind": "damage", "amount": 14}]},
 		{"intent": "怒吼 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]},
-		{"intent": "血眼撲擊 15 + 破綻 1", "effects": [{"kind": "damage", "amount": 15}, {"kind": "vulnerable", "amount": 1}]},
-		{"intent": "山魈跳踏 9+9", "effects": [{"kind": "damage", "amount": 9}, {"kind": "damage", "amount": 9}]}
+		{"intent": "血眼撲擊 17 + 破綻 1", "effects": [{"kind": "damage", "amount": 17}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "山魈跳踏 10+10", "effects": [{"kind": "damage", "amount": 10}, {"kind": "damage", "amount": 10}]}
 	]
 	enemy.phase_2_actions = [
-		{"intent": "赤眼怒火 18 + 虛弱 1", "effects": [{"kind": "damage", "amount": 18}, {"kind": "weak", "amount": 1}]},
-		{"intent": "血月衝擊 23", "effects": [{"kind": "damage", "amount": 23}]},
-		{"intent": "群怪呼嘯 16 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 16}, {"kind": "poison", "amount": 2}]},
+		{"intent": "赤眼怒火 21 + 虛弱 1", "effects": [{"kind": "damage", "amount": 21}, {"kind": "weak", "amount": 1}]},
+		{"intent": "血月衝擊 26", "effects": [{"kind": "damage", "amount": 26}]},
+		{"intent": "群怪呼嘯 18 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 18}, {"kind": "poison", "amount": 2}]},
 		{"intent": "召喚赤眼幼魈", "effects": [{"kind": "summon", "count": 1}]}
 	]
 	enemy.summon_pool = ["red_eye_imp"]
@@ -716,15 +716,15 @@ static func _zombie_general() -> EnemyData:
 	enemy.max_hp = 106
 	enemy.portrait_path = "res://assets/art/enemies/zombie_general.png"
 	enemy.actions = [
-		{"intent": "鬼將劈砍 14", "effects": [{"kind": "damage", "amount": 14}]},
+		{"intent": "鬼將劈砍 16", "effects": [{"kind": "damage", "amount": 16}]},
 		{"intent": "腐臭毒氣 蠱毒 5", "effects": [{"kind": "poison", "amount": 5}]},
 		{"intent": "屍甲護衛 16", "effects": [{"kind": "block", "amount": 16}]},
-		{"intent": "千年寒氣 12 + 虛弱 2", "effects": [{"kind": "damage", "amount": 12}, {"kind": "weak", "amount": 2}]}
+		{"intent": "千年寒氣 14 + 虛弱 2", "effects": [{"kind": "damage", "amount": 14}, {"kind": "weak", "amount": 2}]}
 	]
 	enemy.phase_2_actions = [
-		{"intent": "殭屍狂咒 21", "effects": [{"kind": "damage", "amount": 21}]},
+		{"intent": "殭屍狂咒 24", "effects": [{"kind": "damage", "amount": 24}]},
 		{"intent": "殭咒縛身 妖債", "effects": [{"kind": "gain_curse_player", "curse_id": "yao_zhai"}]},
-		{"intent": "鬼將斬魂 25", "effects": [{"kind": "damage", "amount": 25}]},
+		{"intent": "鬼將斬魂 29", "effects": [{"kind": "damage", "amount": 29}]},
 		{"intent": "召喚殭屍奴", "effects": [{"kind": "summon", "count": 1}]}
 	]
 	enemy.summon_pool = ["zombie_thrall"]
@@ -738,19 +738,19 @@ static func _baiyue_lord() -> EnemyData:
 	enemy.max_hp = 136
 	enemy.portrait_path = "res://assets/art/enemies/baiyue_lord.png"
 	enemy.actions = [
-		{"intent": "拜月神力 16 + 破綻 1", "effects": [{"kind": "damage", "amount": 16}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "拜月神力 18 + 破綻 1", "effects": [{"kind": "damage", "amount": 18}, {"kind": "vulnerable", "amount": 1}]},
 		{"intent": "月蝕暗咒 蠱毒 6", "effects": [{"kind": "poison", "amount": 6}]},
 		{"intent": "邪印烙身", "effects": [{"kind": "gain_curse_player", "curse_id": "xie_yin"}]},
-		{"intent": "邪神降世 23", "effects": [{"kind": "damage", "amount": 23}]}
+		{"intent": "邪神降世 26", "effects": [{"kind": "damage", "amount": 26}]}
 	]
 	# Phase 2：召出水魔獸（PAL1 原作終局妖獸）
 	enemy.phase_2_display_name = "水魔獸"
 	enemy.phase_2_actions = [
-		{"intent": "海嘯襲擊 27 + 虛弱 2", "effects": [{"kind": "damage", "amount": 27}, {"kind": "weak", "amount": 2}]},
+		{"intent": "海嘯襲擊 31 + 虛弱 2", "effects": [{"kind": "damage", "amount": 31}, {"kind": "weak", "amount": 2}]},
 		{"intent": "水妖蝕魂 蠱毒 9 + 破綻 2", "effects": [{"kind": "poison", "amount": 9}, {"kind": "vulnerable", "amount": 2}]},
 		{"intent": "召喚水妖觸手", "effects": [{"kind": "summon", "count": 1}]},
-		{"intent": "觸手鞭打 9x3", "effects": [{"kind": "damage", "amount": 9}, {"kind": "damage", "amount": 9}, {"kind": "damage", "amount": 9}]},
-		{"intent": "滅世巨浪 32", "effects": [{"kind": "damage", "amount": 32}]}
+		{"intent": "觸手鞭打 10x3", "effects": [{"kind": "damage", "amount": 10}, {"kind": "damage", "amount": 10}, {"kind": "damage", "amount": 10}]},
+		{"intent": "滅世巨浪 37", "effects": [{"kind": "damage", "amount": 37}]}
 	]
 	enemy.summon_pool = ["water_tentacle"]
 	return enemy
