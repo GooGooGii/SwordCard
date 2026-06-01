@@ -333,7 +333,7 @@ func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> 
 		character_exps.append(0)
 	gold = int(data.get("gold", 0))
 	encounter_index = int(data.get("encounter_index", 0))
-	encounter_choices = _deserialize_choices(data.get("encounter_choices", []) as Array)
+	encounter_choices = _deserialize_choices(data.get("encounter_choices", []) as Array, int(data.get("act", 1)))
 	chosen_map_path.clear()
 	for entry: Variant in (data.get("chosen_map_path", []) as Array):
 		chosen_map_path.append(int(entry))
@@ -409,21 +409,30 @@ func _serialize_choices() -> Array:
 				node_out["event_variant"] = node_data["event_variant"]
 			if node_data.has("black_market"):
 				node_out["black_market"] = node_data["black_market"]
-			if node_data.has("enemy"):
-				node_out["enemy"] = (node_data["enemy"] as EnemyData).to_dict()
+			# 敵人以 id 序列化（讀檔用 GameData.enemy_by_id 重建完整模板，
+			# 避免 to_dict 漏 summon_pool 等欄位）。boss = 單數 enemy；戰鬥 = 複數 enemies。
+			if node_data.has("enemy") and node_data["enemy"] is EnemyData:
+				node_out["enemy_id"] = (node_data["enemy"] as EnemyData).id
+			if node_data.has("enemies"):
+				var enemy_ids: Array = []
+				for e_v: Variant in (node_data["enemies"] as Array):
+					if e_v is EnemyData:
+						enemy_ids.append((e_v as EnemyData).id)
+				node_out["enemy_ids"] = enemy_ids
 			row_out.append(node_out)
 		rows_out.append(row_out)
 	return rows_out
 
-func _deserialize_choices(rows_in: Array) -> Array[Array]:
+func _deserialize_choices(rows_in: Array, act_for_fallback: int = 1) -> Array[Array]:
 	var rows_out: Array[Array] = []
 	for row_variant: Variant in rows_in:
 		var row_in: Array = row_variant as Array
 		var row_out: Array[Dictionary] = []
 		for node_variant: Variant in row_in:
 			var node_data: Dictionary = node_variant as Dictionary
+			var node_type: String = String(node_data.get("type", "battle"))
 			var node_out: Dictionary = {
-				"type": String(node_data.get("type", "battle")),
+				"type": node_type,
 				"index": int(node_data.get("index", 0)),
 				"connects": []
 			}
@@ -436,8 +445,33 @@ func _deserialize_choices(rows_in: Array) -> Array[Array]:
 				node_out["event_variant"] = String(node_data["event_variant"])
 			if node_data.has("black_market"):
 				node_out["black_market"] = bool(node_data["black_market"])
-			if node_data.has("enemy"):
+			# boss 單敵：新版用 enemy_id；舊版相容 enemy（完整 dict）
+			if node_data.has("enemy_id"):
+				var be: EnemyData = GameData.enemy_by_id(String(node_data["enemy_id"]))
+				if be != null:
+					node_out["enemy"] = be.clone()
+			elif node_data.has("enemy"):
 				node_out["enemy"] = EnemyData.from_dict(node_data["enemy"] as Dictionary)
+			# 戰鬥多敵：新版用 enemy_ids；舊版相容 enemies（完整 dict）
+			if node_data.has("enemy_ids"):
+				var arr: Array[EnemyData] = []
+				for id_v: Variant in (node_data["enemy_ids"] as Array):
+					var e: EnemyData = GameData.enemy_by_id(String(id_v))
+					if e != null:
+						arr.append(e.clone())
+				node_out["enemies"] = arr
+			elif node_data.has("enemies"):
+				var arr2: Array[EnemyData] = []
+				for e_v: Variant in (node_data["enemies"] as Array):
+					arr2.append(EnemyData.from_dict(e_v as Dictionary))
+				node_out["enemies"] = arr2
+			# 舊壞檔修復：戰鬥節點完全沒有敵人資料（多敵上線前的存檔丟了 enemies）
+			# → 用該幕的遭遇表重新生一組，讓地圖可渲染、可遊玩（敵人組合可能與原本不同）。
+			if node_type == "battle" and not node_out.has("enemies"):
+				node_out["enemies"] = MapGenerator.choose_enemies_for_act(
+					act_for_fallback, GameData.enemies_for_act(act_for_fallback))
+			if node_type == "boss" and not node_out.has("enemy"):
+				node_out["enemy"] = GameData.boss_for_act(act_for_fallback).clone()
 			row_out.append(node_out)
 		rows_out.append(row_out)
 	return rows_out

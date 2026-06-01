@@ -217,6 +217,10 @@ func _test_save_round_trip(characters: Array[CharacterData]) -> void:
 	state.shop_remove_used = true
 	state.shop_upgrade_used = false
 	state.current_shop_potions = [{"id": "huichun_dan", "display_name": "回春丹", "price": 40}]
+	# 地圖節點：用真實 MapGenerator 生一張（含多敵 battle 節點 + boss 節點）
+	var act1_enemies: Array[EnemyData] = GameData.enemies_for_act(1)
+	var act1_bosses: Array[EnemyData] = [GameData.boss_for_act(1)]
+	state.encounter_choices = MapGenerator.generate(act1_enemies, act1_bosses, [characters[0].id], 1)
 	var dict: Dictionary = state.to_dict()
 	var text: String = JSON.stringify(dict)
 	var parsed: Variant = JSON.parse_string(text)
@@ -235,6 +239,24 @@ func _test_save_round_trip(characters: Array[CharacterData]) -> void:
 	_check(restored.character.id == state.character.id, "character_id mismatch")
 	_check(restored.deck.size() == state.deck.size(), "deck size mismatch")
 	_check(restored.relics.size() == state.relics.size(), "relics size mismatch")
+	# 地圖節點 round-trip 回歸測試：曾因序列化只處理單數 "enemy"、漏掉多敵的複數
+	# "enemies"，讀檔後戰鬥節點無敵人 → _route_node_button assert 失敗 → 地圖全空無法點。
+	_check(restored.encounter_choices.size() == state.encounter_choices.size(), "encounter_choices row count mismatch")
+	var found_battle_enemies: bool = false
+	var found_boss_enemy: bool = false
+	for row_v: Variant in restored.encounter_choices:
+		for node_v: Variant in (row_v as Array):
+			var node: Dictionary = node_v as Dictionary
+			var nt: String = String(node.get("type", ""))
+			if nt == "battle":
+				var es: Array = node.get("enemies", []) as Array
+				if es.size() > 0 and es[0] is EnemyData:
+					found_battle_enemies = true
+			elif nt == "boss":
+				if node.get("enemy") is EnemyData:
+					found_boss_enemy = true
+	_check(found_battle_enemies, "battle 節點 round-trip 後遺失 enemies（地圖空白 bug 回歸）")
+	_check(found_boss_enemy, "boss 節點 round-trip 後遺失 enemy（地圖空白 bug 回歸）")
 
 func _test_save_migration(characters: Array[CharacterData]) -> void:
 	# 模擬「v1 單角色存檔」（character_id / hp / max_hp / deck 等舊欄位）→ v2 一人隊伍
