@@ -156,7 +156,7 @@ func _simulate_full_run(leader: CharacterData, tier: String) -> Dictionary:
 		for row: Array in enc:
 			if (row as Array).is_empty():
 				continue
-			var node: Dictionary = _pick_node(row as Array, rs)
+			var node: Dictionary = _pick_node(row as Array, rs, tier)
 			var node_type: String = String(node.get("type", "battle"))
 			floors += 1
 			if node_type == "battle" or node_type == "boss":
@@ -168,13 +168,13 @@ func _simulate_full_run(leader: CharacterData, tier: String) -> Dictionary:
 				if not bool(res["victory"]):
 					death_to = enemies[0].id if not enemies.is_empty() else "?"
 					return {"cleared": false, "floors": floors, "final_hp_pct": _hp_pct(rs), "death_to": death_to}
-				_post_battle_rewards(rs, enemies, node_type == "boss")
+				_post_battle_rewards(rs, enemies, node_type == "boss", tier)
 			elif node_type == "event":
-				_resolve_event_node(rs, String(node.get("event_variant", "")))
+				_resolve_event_node(rs, String(node.get("event_variant", "")), tier)
 			elif node_type == "shop":
-				_resolve_shop(rs)
+				_resolve_shop(rs, tier)
 			elif node_type == "rest":
-				_resolve_rest(rs)
+				_resolve_rest(rs, tier)
 			rs.encounter_index += 1
 	return {"cleared": true, "floors": floors, "final_hp_pct": _hp_pct(rs), "death_to": ""}
 
@@ -418,16 +418,22 @@ func _gen_map(rs: RunState) -> Array[Array]:
 		char_ids.append(c.id)
 	return MapGenerator.generate(act_enemies, act_boss, char_ids, rs.act)
 
-# 選路啟發式：缺血優先 rest；錢多且非滿血優先 shop；其餘優先 event > battle
-func _pick_node(row: Array, rs: RunState) -> Dictionary:
-	var hp_pct: float = _hp_pct(rs)
+# 選路：tier 決定聰明程度。boss 列只有一個節點，一律走。
+#   生手：隨機挑（不會策略性休息 → 容易帶傷硬撐而死）
+#   中手：缺血才休息、錢多買物，否則打怪/事件
+#   高手：同中手 + 更積極在缺血時找 rest
+func _pick_node(row: Array, rs: RunState, tier: String) -> Dictionary:
 	var by_type: Dictionary = {}
 	for n_v: Variant in row:
 		var n: Dictionary = n_v as Dictionary
 		by_type[String(n.get("type", "battle"))] = n
 	if by_type.has("boss"):
 		return by_type["boss"]
-	if hp_pct < 55.0 and by_type.has("rest"):
+	if tier == "random":
+		return row[randi() % row.size()] as Dictionary
+	var hp_pct: float = _hp_pct(rs)
+	var rest_threshold: float = 65.0 if tier == "expert" else 55.0
+	if hp_pct < rest_threshold and by_type.has("rest"):
 		return by_type["rest"]
 	if rs.gold >= 150 and by_type.has("shop"):
 		return by_type["shop"]
@@ -435,7 +441,6 @@ func _pick_node(row: Array, rs: RunState) -> Dictionary:
 		return by_type["event"]
 	if by_type.has("rest") and hp_pct < 80.0:
 		return by_type["rest"]
-	# 預設挑第一個
 	return row[0] as Dictionary
 
 func _node_enemies(node: Dictionary) -> Array[EnemyData]:
@@ -448,7 +453,7 @@ func _node_enemies(node: Dictionary) -> Array[EnemyData]:
 		out.append(node["enemy"] as EnemyData)
 	return out
 
-func _post_battle_rewards(rs: RunState, enemies: Array[EnemyData], is_boss: bool) -> void:
+func _post_battle_rewards(rs: RunState, enemies: Array[EnemyData], is_boss: bool, tier: String) -> void:
 	# gold
 	var gold: int = 0
 	for e: EnemyData in enemies:
@@ -458,7 +463,7 @@ func _post_battle_rewards(rs: RunState, enemies: Array[EnemyData], is_boss: bool
 	# exp / level
 	_grant_exp(rs, is_boss)
 	# 卡片獎勵抽取（boss 偏稀有）
-	_draft_card(rs, is_boss)
+	_draft_card(rs, is_boss, tier)
 	# 遺物：boss 必得 1、一般 25%
 	if is_boss:
 		_grant_relic(rs, true)
@@ -493,7 +498,7 @@ func _grant_exp(rs: RunState, is_boss: bool) -> void:
 			for card: CardData in LevelSystem.unlock_cards_for(rs.characters[i].id, lv):
 				(rs.character_decks[i] as Array).append(card.clone())
 
-func _draft_card(rs: RunState, boss: bool) -> void:
+func _draft_card(rs: RunState, boss: bool, tier: String) -> void:
 	var pool: Array[CardData] = []
 	var seen: Array[String] = []
 	for card: CardData in rs.characters[0].reward_pool:
@@ -510,7 +515,13 @@ func _draft_card(rs: RunState, boss: bool) -> void:
 	var choices: Array[CardData] = []
 	for i: int in range(min(3, pool.size())):
 		choices.append(pool[i])
-	# 挑最高分卡（用一個粗略 deck-value：傷害/格擋/能力權重）
+	if choices.is_empty():
+		return
+	# 生手：無腦每張都拿（牌組臃腫、抽不到關鍵牌）
+	if tier == "random":
+		(rs.character_decks[0] as Array).append(choices[randi() % choices.size()].clone())
+		return
+	# 中手/高手：挑最高 deck-value；高手牌組過大且都低分時跳過（控牌、提高關鍵牌抽率）
 	var best: CardData = null
 	var best_v: float = 0.0
 	for c: CardData in choices:
@@ -518,9 +529,9 @@ func _draft_card(rs: RunState, boss: bool) -> void:
 		if v > best_v:
 			best_v = v
 			best = c
-	# 牌組過大且都低分 → 跳過（控牌）
 	var deck_size: int = (rs.character_decks[0] as Array).size()
-	if best != null and (best_v >= 8.0 or deck_size < 14):
+	var skip_threshold: int = 14 if tier == "expert" else 18
+	if best != null and (best_v >= 8.0 or deck_size < skip_threshold):
 		(rs.character_decks[0] as Array).append(best.clone())
 
 func _card_draft_value(card: CardData) -> float:
@@ -561,14 +572,12 @@ func _grant_relic(rs: RunState, boss: bool) -> void:
 		return
 	rs.add_relic(pool[randi() % pool.size()].clone())
 
-func _resolve_event_node(rs: RunState, variant: String) -> void:
+func _resolve_event_node(rs: RunState, variant: String, tier: String) -> void:
 	var ed: Dictionary = EventData.for_variant(variant)
 	if not EventRunner.has_tree(ed):
-		# legacy：保守取一個療傷/增益（用 heal 欄位）
 		var heal: int = int(ed.get("heal", 0))
 		_heal_party(rs, heal)
 		return
-	# tree：從 root 走，挑「EV 最佳且非自殺」的葉節點（不消耗 observe、不選 punish/battle）
 	var ctx: Dictionary = EventRunner.build_context(
 		rs.characters[0].id, rs.gold, rs.character_power_bonus[0], 0, _relic_ids(rs),
 		(rs.character_decks[0] as Array).size())
@@ -579,20 +588,23 @@ func _resolve_event_node(rs: RunState, variant: String) -> void:
 		var visible: Array = EventRunner.visible_choices(node, ctx)
 		if visible.is_empty():
 			return
-		# 偏好：有 outcome 的 reward 葉節點；否則跟著 next 往下
 		var chosen: Dictionary = {}
-		var best_v: float = -1e9
-		for ch_v: Variant in visible:
-			var ch: Dictionary = ch_v as Dictionary
-			var kind: String = EventRunner.leaf_kind(ch)
-			var v: float = _event_choice_value(ch, kind)
-			if v > best_v:
-				best_v = v
-				chosen = ch
+		if tier == "random":
+			# 生手：隨機選 → 可能踩到 punish/賭運/戰鬥（自傷、curse、損血）
+			chosen = visible[randi() % visible.size()] as Dictionary
+		else:
+			# 中手/高手：挑 EV 最佳、非自殺的選項
+			var best_v: float = -1e9
+			for ch_v: Variant in visible:
+				var ch: Dictionary = ch_v as Dictionary
+				var v: float = _event_choice_value(ch, EventRunner.leaf_kind(ch))
+				if v > best_v:
+					best_v = v
+					chosen = ch
 		if chosen.is_empty():
 			return
 		if EventRunner.is_leaf(chosen):
-			_apply_event_effects(rs, (chosen["outcome"] as Dictionary).get("effects", []) as Array)
+			_apply_event_effects(rs, (chosen["outcome"] as Dictionary).get("effects", []) as Array, tier)
 			return
 		if chosen.has("next"):
 			node = EventRunner.get_node(ed, String(chosen["next"]))
@@ -610,7 +622,7 @@ func _event_choice_value(choice: Dictionary, kind: String) -> float:
 		"punish": return -100.0
 		_: return 0.0
 
-func _apply_event_effects(rs: RunState, effects: Array) -> void:
+func _apply_event_effects(rs: RunState, effects: Array, tier: String) -> void:
 	for e_v: Variant in effects:
 		var e: Dictionary = e_v as Dictionary
 		var k: String = String(e.get("kind", ""))
@@ -630,13 +642,22 @@ func _apply_event_effects(rs: RunState, effects: Array) -> void:
 					rs.character_power_bonus[i] += amt
 			"damage": _heal_party(rs, -amt)
 			"gain_relic_pool": _grant_relic(rs, false)
-			"gain_card_pool": _draft_card(rs, false)
+			"gain_card_pool": _draft_card(rs, false, tier)
 			# gain_curse / lose_card / next_battle_buff：簡化略過
 
-func _resolve_shop(rs: RunState) -> void:
-	# 買得起的最高分卡（從主角商店池）+ 偶爾移一張基礎牌
+func _resolve_shop(rs: RunState, tier: String) -> void:
 	var inv: Array[Dictionary] = ShopInventory.build(rs.characters[0], false)
-	# 依分數高到低買，直到錢不夠或買 2 張
+	if tier == "random":
+		# 生手：隨機亂買得起的，浪費銅錢、稀釋牌組；不削牌
+		inv.shuffle()
+		for entry: Dictionary in inv:
+			var card_r: CardData = entry["card"] as CardData
+			var price_r: int = int(entry.get("price", ShopInventory.price_of(card_r, false)))
+			if rs.gold >= price_r and randf() < 0.6:
+				rs.gold -= price_r
+				(rs.character_decks[0] as Array).append(card_r.clone())
+		return
+	# 中手/高手：買最高分卡（最多 2 張）+ 削一張基礎攻擊牌
 	var bought: int = 0
 	inv.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return _card_draft_value(a["card"] as CardData) > _card_draft_value(b["card"] as CardData))
@@ -649,8 +670,9 @@ func _resolve_shop(rs: RunState) -> void:
 			rs.gold -= price
 			(rs.character_decks[0] as Array).append(card.clone())
 			bought += 1
-	# 移基礎牌（去蕪存菁）：錢還夠且牌組大
-	if rs.gold >= 75 and (rs.character_decks[0] as Array).size() > 10:
+	# 削牌（去蕪存菁）：高手門檻較低（更積極控牌）
+	var thin_floor: int = 10 if tier == "expert" else 12
+	if rs.gold >= 75 and (rs.character_decks[0] as Array).size() > thin_floor:
 		var deck: Array = rs.character_decks[0] as Array
 		for i: int in range(deck.size()):
 			var c: CardData = deck[i] as CardData
@@ -659,8 +681,17 @@ func _resolve_shop(rs: RunState) -> void:
 				rs.gold -= 75
 				break
 
-func _resolve_rest(rs: RunState) -> void:
-	# 缺血 → 回 30% max；否則升級一張未升級牌
+func _resolve_rest(rs: RunState, tier: String) -> void:
+	if tier == "random":
+		# 生手：不看血量，隨機選回血或升級（常常該回血卻去升級）
+		if randf() < 0.5:
+			for i: int in range(rs.character_hps.size()):
+				if rs.character_hps[i] > 0:
+					rs.character_hps[i] = min(rs.character_max_hps[i], rs.character_hps[i] + int(round(float(rs.character_max_hps[i]) * 0.3)))
+		else:
+			_rest_upgrade(rs)
+		return
+	# 中手/高手：缺血回血、否則升級
 	if _hp_pct(rs) < 65.0:
 		for i: int in range(rs.character_hps.size()):
 			if rs.character_hps[i] <= 0:
@@ -668,12 +699,15 @@ func _resolve_rest(rs: RunState) -> void:
 			var heal: int = int(round(float(rs.character_max_hps[i]) * 0.3))
 			rs.character_hps[i] = min(rs.character_max_hps[i], rs.character_hps[i] + heal)
 	else:
-		var deck: Array = rs.character_decks[0] as Array
-		for i: int in range(deck.size()):
-			var c: CardData = deck[i] as CardData
-			if not c.upgraded:
-				deck[i] = c.upgraded_copy()
-				break
+		_rest_upgrade(rs)
+
+func _rest_upgrade(rs: RunState) -> void:
+	var deck: Array = rs.character_decks[0] as Array
+	for i: int in range(deck.size()):
+		var c: CardData = deck[i] as CardData
+		if not c.upgraded:
+			deck[i] = c.upgraded_copy()
+			break
 
 # ─────────────────────────────────────────────────────────────────────────
 # 小工具
