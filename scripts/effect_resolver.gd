@@ -224,10 +224,28 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			state["enemy_hp"] = max(0, int(state["enemy_hp"]) - damage)
 			log_lines.append("耗盡靈力，造成 %d 點傷害。" % damage)
 		"poison_burst":
-			var burst: int = int(state["enemy_poison"]) * amount
-			state["enemy_hp"] = max(0, int(state["enemy_hp"]) - burst)
-			state["enemy_poison"] = 0
-			log_lines.append("引爆蠱毒，造成 %d 點傷害。" % burst)
+			# 引爆「全部」蠱毒（符合卡面「引爆全部蠱毒」）：對每隻中毒敵各引爆自己的毒層。
+			# 多敵時是 AOE 清場利器；單敵時等同舊行為。無 slots（smoke）走 alias fallback。
+			var burst_slots: Array = state.get("enemies", []) as Array
+			if burst_slots.is_empty():
+				var burst: int = int(state["enemy_poison"]) * amount
+				state["enemy_hp"] = max(0, int(state["enemy_hp"]) - burst)
+				state["enemy_poison"] = 0
+				log_lines.append("引爆蠱毒，造成 %d 點傷害。" % burst)
+			else:
+				_sync_active_slot_from_alias(state)
+				for slot_v: Variant in burst_slots:
+					var slot: Dictionary = slot_v as Dictionary
+					if int(slot["hp"]) <= 0:
+						continue
+					var p: int = int(slot["poison"])
+					if p <= 0:
+						continue
+					var b: int = p * amount
+					slot["hp"] = max(0, int(slot["hp"]) - b)
+					slot["poison"] = 0
+					log_lines.append("引爆 %s 的蠱毒，造成 %d 點傷害。" % [String(slot["name"]), b])
+				_sync_alias_from_active_slot(state)
 		"revive":
 			# 救回第一個倒下的後排同伴；amount = 復活後的 HP（封頂於 max_hp）
 			# 若沒有倒下同伴 → 改回復 active 同等量 HP（不至於完全廢卡）
