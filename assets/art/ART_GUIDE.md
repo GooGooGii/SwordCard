@@ -150,7 +150,8 @@ Target:
 
 ## 美術狀態 (Art Status)
 
-> **現況**：所有新增卡牌與專屬遺物已成功補齊對應的美術資源，並已移除代碼中的「借圖」暫代方案。
+> **現況**：流派卡 / 等級解鎖卡 / 專武遺物皆已補齊專屬圖。**但連打牌組（2026-06 新增）等 17 張卡仍為「借圖」狀態**，
+> 透過 `make_card(..., art_id="既有卡id")` 暫借同角色既有插圖，需補正式卡圖（見下方「借圖待補」）。
 >
 > **最近驗證（2026-05-31）**：補上 12 張李逍遙／趙靈兒／林月如／阿奴的水墨卡圖（含工作區另 4 張林月如卡），
 > 已實際在 Godot 內重新匯入並驗證 `valid=true` + 產生非佔位的 `.ctex`，確認真的會顯示在遊戲中。
@@ -175,7 +176,10 @@ Target:
 | 流派 / 新機制卡（CARD_DESIGN ch.3-4） | 0 | 已完成專屬插圖 | 🟢 已完成 |
 | 等級解鎖卡（LevelSystem） | 0 | 已完成專屬插圖 | 🟢 已完成 |
 | 角色專武遺物 | 0 | 已補齊專屬圖示 | 🟢 已完成 |
-| **合計** | **0** | | |
+| **連打牌組卡（2026-06）+ 毒引擎** | **17** | 借同角色既有圖（art_id） | 🔴 待補專屬圖 |
+| **合計** | **17** | | |
+
+> 連打抽牌遺物（循環珠 / 連環珮 / 疾風鈴）使用程序繪製圖示（`RelicCatalog` 的 `icon_color` + `icon_shape`），無 PNG 需求。
 
 ### 🔴 流派／新機制卡（8 張）
 
@@ -202,6 +206,34 @@ Target:
 兩件流派錨點專屬武器已成功配置專屬圖示，並移除了程序繪製 fallback 顯示：
 - `wuyue_shendao` (巫月神刀): 阿奴刀流錨點。
 - `fengming_dao` (鳳鳴刀): 林月如刀流錨點。
+
+### 🔴 借圖待補（17 張，連打牌組 + 毒引擎）
+
+下列卡片目前以 `art_id` 暫借同角色既有卡圖，補圖時放 `assets/art/cards/<id>.png` 即可生效
+（並把 `game_data.gd` 對應 `make_card` 的最後 `art_id` 參數移除）。
+**注意上方「新增美術資源的硬性要求」：必須是真 PNG、`.import` UID 唯一、匯入後驗證。**
+
+- **李逍遙（4，御劍連擊）**
+  - `lxy_jianjue` (劍訣) ← 借 `lxy_yujian` 御劍術
+  - `lxy_huijian` (揮劍引氣) ← 借 `lxy_qingfeng` 清風御劍
+  - `lxy_yufengbu` (御風步) ← 借 `lxy_jianqi` 劍氣護身
+  - `lxy_lianhuanjian` (連環御劍，減靈耗升級) ← 借 `lxy_jianzhen` 劍陣
+- **趙靈兒（4，連咒）**
+  - `zl_xiaoleizhou` (小雷咒) ← 借 `zl_leizhou` 雷咒
+  - `zl_yinlingfu` (引靈符) ← 借 `zl_fengling` 風靈符
+  - `zl_huguangzhou` (護光咒) ← 借 `zl_lingguang` 靈光護體
+  - `zl_lianzhuzhou` (連珠雷咒，減靈耗升級) ← 借 `zl_leiguang` 雷光連擊
+- **林月如（4，鞭劍連擊）**
+  - `lyr_jici` (急刺) ← 借 `lyr_xuanjian` 旋劍花舞
+  - `lyr_huaci` (花刺引身) ← 借 `lyr_tianv` 飛花亂舞
+  - `lyr_qiebushan` (怯步閃) ← 借 `lyr_fanji` 回身反擊
+  - `lyr_shuangjianci` (雙劍連刺，減靈耗升級) ← 借 `lyr_lianhuan` 連環快斬
+- **阿奴（5，蠱毒連擊 + 毒引擎）**
+  - `anu_sandu` (散蠱) ← 借 `anu_duwu` 毒霧繚繞
+  - `anu_yindu` (引蠱) ← 借 `anu_yufeng` 御蜂術
+  - `anu_huguzhao` (護蠱罩) ← 借 `anu_guling` 蠱靈護身
+  - `anu_lianduzhen` (連環毒針，減靈耗升級) ← 借 `anu_duzhen` 毒針連射
+  - `anu_guzhang` (蠱瘴瀰漫，毒引擎) ← 借 `anu_baizu` 百足蠱
 
 ## Card Layering Convention
 
