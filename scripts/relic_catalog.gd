@@ -1,7 +1,7 @@
 class_name RelicCatalog
 extends RefCounted
 
-# 61 件裝備：45 通用 + 10 角色專武 + 6 神器
+# 64 件裝備：48 通用 + 10 角色專武 + 6 神器
 
 static func all() -> Array[RelicData]:
 	var list: Array[RelicData] = []
@@ -110,7 +110,7 @@ static func _generals() -> Array[RelicData]:
 		[{"trigger": "turn_end", "effects": [{"kind": "enemy_vulnerable", "amount": 1}]}], ThemeColors.HIGHLIGHT_GOLD))
 	l.append(_make("xue_hun_fu", "雪魂符", "每回合結束回復 1 生命並獲得 1 護體。", "uncommon",
 		[{"trigger": "turn_end", "effects": [{"kind": "self_heal", "amount": 1}, {"kind": "self_block", "amount": 1}]}], Color("c8e8ff")))
-	# ── 8 card_played triggers (出牌時) ──
+	# ── 11 card_played triggers (出牌時，含 3 連打抽牌引擎) ──
 	l.append(_make("lie_huo_ling", "烈火令", "每出一張攻擊牌，對敵人額外造成 1 傷害。", "uncommon",
 		[{"trigger": "card_played", "filter": {"card_type": "attack"}, "effects": [{"kind": "enemy_damage", "amount": 1}]}], Color("e25a3a")))
 	l.append(_make("jiao_long_xian", "蛟龍弦", "每出一張攻擊牌，敵人 +1 層破綻（每場戰鬥僅前 3 次）。", "rare",
@@ -127,6 +127,13 @@ static func _generals() -> Array[RelicData]:
 		[{"trigger": "passive_modifier", "effects": [{"kind": "block_bonus", "amount": 2}]}], Color("76c4d8")))
 	l.append(_make("yin_hun_die", "引魂蝶", "出 0 費牌時，下回合多抽 1 張。", "rare",
 		[{"trigger": "card_played", "filter": {"cost_eq": 0}, "effects": [{"kind": "self_draw_next_turn", "amount": 1}]}], Color("e2a8ff")))
+	# ── 連打抽牌輔助（chain draw engines）──
+	l.append(_make("xun_huan_zhu", "循環珠", "每出 10 張牌，抽 1 張牌。", "uncommon",
+		[{"trigger": "card_played", "filter": {"every_n": 10}, "effects": [{"kind": "self_draw", "amount": 1}]}], Color("a8e2c4")))
+	l.append(_make("lian_huan_pei", "連環珮", "每出 5 張牌，抽 1 張牌。", "rare",
+		[{"trigger": "card_played", "filter": {"every_n": 5}, "effects": [{"kind": "self_draw", "amount": 1}]}], Color("8edcff")))
+	l.append(_make("ji_feng_ling", "疾風鈴", "每出 6 張牌，回復 1 點靈力。", "rare",
+		[{"trigger": "card_played", "filter": {"every_n": 6}, "effects": [{"kind": "self_energy", "amount": 1}]}], Color("cfe8a8")))
 	# ── 8 passive modifiers (常駐) ──
 	l.append(_make("tie_gu_dan", "鐵骨丹", "受到的傷害 -1。", "rare",
 		[{"trigger": "passive_modifier", "effects": [{"kind": "damage_taken_reduction", "amount": 1}]}], Color("786258")))

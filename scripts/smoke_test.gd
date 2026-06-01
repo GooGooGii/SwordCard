@@ -156,6 +156,10 @@ func _initialize() -> void:
 	_test_zhao_staff_payoff_cards(characters)
 	_test_damage_all_multi_hit(characters, enemies)
 	_test_power_card_consumed_on_play(characters, enemies)
+	# 連打牌組：0 費卡、減靈耗升級、連打抽牌遺物
+	_test_chain_zero_cost_cards(characters)
+	_test_cost_reduction_upgrade(characters)
+	_test_chain_draw_relic(characters, enemies)
 	# Event Branching Phase 1：純樹走訪器（無 UI、無 effect 結算）
 	_test_event_runner_has_tree()
 	_test_event_runner_root_choices()
@@ -1729,6 +1733,58 @@ func _test_power_card_consumed_on_play(characters: Array[CharacterData], enemies
 	_check(not bc.deck.draw_pile.has(power_card), "power 卡不應在抽牌堆")
 	_check(not bc.deck.exhausted_pile.has(power_card), "power 卡也不該進消耗堆（STS 是直接消失）")
 
+func _test_chain_zero_cost_cards(characters: Array[CharacterData]) -> void:
+	# 每角色都應有 >=3 張 0 費卡（含本次新增的連打牌），且所有牌的 art 存在
+	for ch: CharacterData in characters:
+		var zero_cost: int = 0
+		var all_cards: Array[CardData] = []
+		all_cards.append_array(ch.starting_deck)
+		all_cards.append_array(ch.reward_pool)
+		var seen: Dictionary = {}
+		for c: CardData in all_cards:
+			if seen.has(c.id):
+				continue
+			seen[c.id] = true
+			if c.cost == 0:
+				zero_cost += 1
+			_check(ResourceLoader.exists(c.art_path), "%s art 缺失: %s" % [c.id, c.art_path])
+		_check(zero_cost >= 3, "%s 應至少有 3 張 0 費卡，實得 %d" % [ch.id, zero_cost])
+
+func _test_cost_reduction_upgrade(characters: Array[CharacterData]) -> void:
+	# 減靈耗升級：cost-1（最低 0）、effects 數值不變、upgraded 旗標 true
+	var found: int = 0
+	for ch: CharacterData in characters:
+		for c: CardData in ch.reward_pool:
+			if not c.upgrade_reduces_cost:
+				continue
+			found += 1
+			var up: CardData = c.upgraded_copy()
+			_check(up.upgraded, "%s 升級後 upgraded 應為 true" % c.id)
+			_check(up.cost == max(0, c.cost - 1), "%s 減靈耗升級 cost 應為 %d，實得 %d" % [c.id, max(0, c.cost - 1), up.cost])
+			_check(up.effects.size() == c.effects.size(), "%s 減靈耗升級 effects 數量應不變" % c.id)
+			# 數值不變：逐 effect 比 amount
+			for i: int in range(c.effects.size()):
+				_check(int((c.effects[i] as Dictionary).get("amount", 0)) == int((up.effects[i] as Dictionary).get("amount", 0)), \
+					"%s 減靈耗升級不應改數值" % c.id)
+	_check(found >= 4, "應至少有 4 張減靈耗升級卡（每角色 1），實得 %d" % found)
+
+func _test_chain_draw_relic(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# 連環珮：每出 5 張牌抽 1。出 5 張 0 費牌後，pending_draw 應被加 1。
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0]])
+	var pei: RelicData = RelicCatalog.by_id("lian_huan_pei")
+	_check(pei != null, "連環珮遺物存在")
+	if pei == null:
+		return
+	bc.run_state.relics.append(pei)
+	bc.state["pending_draw"] = 0
+	# 直接打 card_played trigger 5 次，隔離測 every_n 過濾邏輯（不走 play_card 的 pending_draw 消耗）
+	var ctx: Dictionary = {"card_type": "skill", "card_cost": 0, "card_effects": []}
+	for i: int in range(4):
+		bc._fire_relic_triggers("card_played", ctx)
+	_check(int(bc.state["pending_draw"]) == 0, "前 4 張不該觸發連環珮，實得 pending_draw=%d" % int(bc.state["pending_draw"]))
+	bc._fire_relic_triggers("card_played", ctx)  # 第 5 張 → 觸發
+	_check(int(bc.state["pending_draw"]) == 1, "第 5 張應觸發連環珮抽 1，實得 pending_draw=%d" % int(bc.state["pending_draw"]))
+
 func _reset_all_enemy_slots(s: Dictionary, hp: int = 100, block: int = 0) -> void:
 	# 同時重置 slots 與 active alias，避免 _sync_active_slot_from_alias 把 alias 值回寫 slot[0]
 	s["enemy_hp"] = hp; s["enemy_block"] = block; s["enemy_vulnerable"] = 0; s["enemy_weak"] = 0; s["enemy_poison"] = 0
@@ -2038,6 +2094,10 @@ func _test_curse_catalog() -> void:
 		_check(not c.is_empty(), "missing curse: %s" % cid)
 		_check(String(c.get("display_name", "")).length() > 0, "curse %s lacks display_name" % cid)
 		_check(c.has("retention"), "curse %s lacks retention" % cid)
+		# 驗證卡圖檔案存在
+		var card_obj: CardData = CurseCatalog.make_card(cid)
+		_check(card_obj != null, "make_card failed for curse: %s" % cid)
+		_check(ResourceLoader.exists(card_obj.art_path), "curse %s lacks art image: %s" % [cid, card_obj.art_path])
 	# make_card 產出真正 curse 牌
 	var card: CardData = CurseCatalog.make_card("yao_zhai")
 	_check(card != null)

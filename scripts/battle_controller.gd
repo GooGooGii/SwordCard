@@ -802,6 +802,16 @@ func _trigger_filter_matches(filter: Dictionary, context: Dictionary, relic_id: 
 			return false
 		counts[key] = current + 1
 		state["card_played_counts"] = counts
+	if filter.has("every_n"):
+		# 每出 N 張（符合前面其他 filter 的）牌觸發一次。計數累積整場戰鬥。
+		var n: int = max(1, int(filter["every_n"]))
+		var ec: Dictionary = state.get("card_played_counts", {}) as Dictionary
+		var ekey: String = "everyn_" + relic_id
+		var tally: int = int(ec.get(ekey, 0)) + 1
+		ec[ekey] = tally
+		state["card_played_counts"] = ec
+		if tally % n != 0:
+			return false
 	return true
 
 func _apply_trigger_effects(effects: Array, relic_name: String) -> void:

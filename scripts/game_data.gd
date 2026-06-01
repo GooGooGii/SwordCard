@@ -1,7 +1,7 @@
 class_name GameData
 extends RefCounted
 
-static func make_card(id: String, display_name: String, owner: String, cost: int, card_type: String, description: String, effects: Array[Dictionary], rarity: String = "basic", art_id: String = "") -> CardData:
+static func make_card(id: String, display_name: String, owner: String, cost: int, card_type: String, description: String, effects: Array[Dictionary], rarity: String = "basic", art_id: String = "", reduces_cost: bool = false) -> CardData:
 	var card: CardData = CardData.new()
 	card.id = id
 	card.display_name = display_name
@@ -11,6 +11,7 @@ static func make_card(id: String, display_name: String, owner: String, cost: int
 	card.description = description
 	card.effects = effects
 	card.rarity = rarity
+	card.upgrade_reduces_cost = reduces_cost
 	var image_id: String = id if art_id.is_empty() else art_id
 	card.art_path = "res://assets/art/cards/%s.png" % image_id
 	return card
@@ -98,6 +99,11 @@ static func _li_xiaoyao() -> CharacterData:
 		make_card("lxy_zhenyuan", "真元凝聚", "李逍遙", 1, "skill", "凝聚真元之氣，抽 2 張牌並回復 4 點生命。", [{"kind": "draw", "amount": 2}, {"kind": "heal", "amount": 4}], "uncommon"),
 		make_card("lxy_jinchan_ls", "金蟬脫殼", "李逍遙", 1, "skill", "金蟬脫殼，獲得 12 點護體，抽 2 張牌，回復 6 點生命。", [{"kind": "block", "amount": 12}, {"kind": "draw", "amount": 2}, {"kind": "heal", "amount": 6}], "rare"),
 		make_card("lxy_ningyuan_ls", "凝元化神", "李逍遙", 2, "power", "凝聚本源化為神氣，本場戰鬥傷害提升 3，回復 8 點生命。", [{"kind": "power", "amount": 3}, {"kind": "heal", "amount": 8}], "rare"),
+		# 連打牌組（0 費 / 減靈耗升級）：御劍連擊軸，art 暫借既有劍系卡
+		make_card("lxy_jianjue", "劍訣", "李逍遙", 0, "attack", "造成 4 點傷害。", [{"kind": "damage", "amount": 4}], "basic", "lxy_yujian"),
+		make_card("lxy_huijian", "揮劍引氣", "李逍遙", 0, "attack", "造成 3 點傷害，抽 1 張牌。", [{"kind": "damage", "amount": 3}, {"kind": "draw", "amount": 1}], "uncommon", "lxy_qingfeng"),
+		make_card("lxy_yufengbu", "御風步", "李逍遙", 0, "skill", "獲得 4 點護體。", [{"kind": "block", "amount": 4}], "basic", "lxy_jianqi"),
+		make_card("lxy_lianhuanjian", "連環御劍", "李逍遙", 1, "attack", "造成 5 點傷害兩次。", [{"kind": "damage", "amount": 5, "hits": 2}], "uncommon", "lxy_jianzhen", true),
 	]
 	var character: CharacterData = _character("li_xiaoyao", "李逍遙", 74, "劍仙風流，禦劍、偷取與酒神系高風險高傷害。", cards)
 	# PAL1 對齊：9 basic + 3 uncommon + 0 rare
@@ -152,6 +158,11 @@ static func _zhao_linger() -> CharacterData:
 		make_card("zl_wuleizhou", "五雷咒", "趙靈兒", 3, "attack", "五雷齊降，造成 6 點傷害五次。", [{"kind": "damage", "amount": 6, "hits": 5}], "rare"),
 		make_card("zl_xuanfengzhou", "旋風咒", "趙靈兒", 1, "skill", "旋風護體，獲得 10 點護體，使敵人虛弱 1 層。", [{"kind": "block", "amount": 10}, {"kind": "weak", "amount": 1}], "uncommon"),
 		make_card("zl_mengshe_ls", "夢蛇靈印★", "趙靈兒", 2, "power", "夢蛇靈印大成，本場戰鬥傷害提升 3，回復 6 點生命，抽 2 張牌。", [{"kind": "power", "amount": 3}, {"kind": "heal", "amount": 6}, {"kind": "draw", "amount": 2}], "rare"),
+		# 連打牌組（0 費 / 減靈耗升級）：連咒軸，art 暫借既有仙術卡
+		make_card("zl_xiaoleizhou", "小雷咒", "趙靈兒", 0, "attack", "造成 4 點傷害。", [{"kind": "damage", "amount": 4}], "basic", "zl_leizhou"),
+		make_card("zl_yinlingfu", "引靈符", "趙靈兒", 0, "skill", "抽 1 張牌並獲得 2 點護體。", [{"kind": "draw", "amount": 1}, {"kind": "block", "amount": 2}], "uncommon", "zl_fengling"),
+		make_card("zl_huguangzhou", "護光咒", "趙靈兒", 0, "skill", "獲得 4 點護體。", [{"kind": "block", "amount": 4}], "basic", "zl_lingguang"),
+		make_card("zl_lianzhuzhou", "連珠雷咒", "趙靈兒", 1, "attack", "造成 5 點傷害兩次。", [{"kind": "damage", "amount": 5, "hits": 2}], "uncommon", "zl_leiguang", true),
 	]
 	var character: CharacterData = _character("zhao_linger", "趙靈兒", 68, "五靈仙術、治療、護盾、解狀態與長戰持續。", cards)
 	# PAL1 對齊：9 basic + 3 uncommon + 0 rare
@@ -200,6 +211,11 @@ static func _lin_yueru() -> CharacterData:
 		make_card("lyr_tongqianbiao", "銅錢鏢", "林月如", 1, "attack", "擲出三枚銅錢鏢，造成 4 點傷害三次。", [{"kind": "damage", "amount": 4, "hits": 3}], "uncommon"),
 		make_card("lyr_wanlikuang", "萬里狂沙", "林月如", 2, "skill", "狂沙漫天，對全體敵人施加 3 層破綻，抽 1 張牌。", [{"kind": "vulnerable_all", "amount": 3}, {"kind": "draw", "amount": 1}], "rare"),
 		make_card("lyr_yuanlinggui", "元靈護體", "林月如", 2, "skill", "靈龜護體，回復 8 點生命並獲得 16 點護體。", [{"kind": "heal", "amount": 8}, {"kind": "block", "amount": 16}], "uncommon"),
+		# 連打牌組（0 費 / 減靈耗升級）：鞭劍連擊軸，art 暫借既有劍系卡
+		make_card("lyr_jici", "急刺", "林月如", 0, "attack", "造成 4 點傷害。", [{"kind": "damage", "amount": 4}], "basic", "lyr_xuanjian"),
+		make_card("lyr_huaci", "花刺引身", "林月如", 0, "attack", "造成 3 點傷害，抽 1 張牌。", [{"kind": "damage", "amount": 3}, {"kind": "draw", "amount": 1}], "uncommon", "lyr_tianv"),
+		make_card("lyr_qiebushan", "怯步閃", "林月如", 0, "skill", "獲得 4 點護體。", [{"kind": "block", "amount": 4}], "basic", "lyr_fanji"),
+		make_card("lyr_shuangjianci", "雙劍連刺", "林月如", 1, "attack", "造成 5 點傷害兩次。", [{"kind": "damage", "amount": 5, "hits": 2}], "uncommon", "lyr_lianhuan", true),
 	]
 	var character: CharacterData = _character("lin_yueru", "林月如", 72, "鞭劍武學、連擊、反擊與內勁治療。", cards)
 	# PAL1 對齊：10 basic + 2 uncommon + 0 rare
@@ -251,6 +267,11 @@ static func _anu() -> CharacterData:
 		# 毒引擎（StS Noxious Fumes 式）：阿奴蠱術的核心——放出蠱蟲化瘴，每回合自動疊毒，
 		# 讓她不必每回合花牌施毒、騰出手牌防禦。art 暫借百足蠱。
 		make_card("anu_guzhang", "蠱瘴瀰漫", "阿奴", 1, "power", "放出蠱蟲化作毒瘴，每回合開始時對所有敵人施加 3 層蠱毒。", [{"kind": "poison_engine", "amount": 3}], "uncommon", "anu_baizu"),
+		# 連打牌組（0 費 / 減靈耗升級）：蠱毒連擊軸，art 暫借既有蠱術卡
+		make_card("anu_sandu", "散蠱", "阿奴", 0, "skill", "施加 2 層蠱毒。", [{"kind": "poison", "amount": 2}], "basic", "anu_duwu"),
+		make_card("anu_yindu", "引蠱", "阿奴", 0, "attack", "造成 3 點傷害，抽 1 張牌。", [{"kind": "damage", "amount": 3}, {"kind": "draw", "amount": 1}], "uncommon", "anu_yufeng"),
+		make_card("anu_huguzhao", "護蠱罩", "阿奴", 0, "skill", "獲得 4 點護體。", [{"kind": "block", "amount": 4}], "basic", "anu_guling"),
+		make_card("anu_lianduzhen", "連環毒針", "阿奴", 1, "attack", "造成 3 點傷害兩次，施加 1 層蠱毒。", [{"kind": "damage", "amount": 3, "hits": 2}, {"kind": "poison", "amount": 1}], "uncommon", "anu_duzhen", true),
 	]
 	# HP 66→82：阿奴是「長戰持續傷害」毒龜流，毒需要時間 ramp+tick，必須夠肉才撐得到
 	# 毒生效（pilot 實測：66 HP 對上 +15% 傷害的多敵戰撐不過 3 回合就被消耗死）。

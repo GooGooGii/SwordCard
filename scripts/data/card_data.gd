@@ -11,6 +11,8 @@ extends Resource
 @export var effects: Array[Dictionary] = []
 @export var upgraded: bool = false
 @export var art_path: String = ""
+# 升級行為：true = 升級時「靈耗 -1（最低 0）」而非加數值（連打牌組用）。
+@export var upgrade_reduces_cost: bool = false
 
 func clone() -> CardData:
 	var copy: CardData = CardData.new()
@@ -24,6 +26,7 @@ func clone() -> CardData:
 	copy.effects = effects.duplicate(true)
 	copy.upgraded = upgraded
 	copy.art_path = art_path
+	copy.upgrade_reduces_cost = upgrade_reduces_cost
 	return copy
 
 func display_title() -> String:
@@ -37,6 +40,10 @@ func display_description() -> String:
 func upgraded_copy() -> CardData:
 	var copy: CardData = clone()
 	copy.upgraded = true
+	# 減靈耗型升級：靈耗 -1（最低 0），數值與描述維持不變（連打牌組的核心）。
+	if upgrade_reduces_cost:
+		copy.cost = max(0, cost - 1)
+		return copy
 	copy.effects.clear()
 	var replacements: Dictionary = {}  # old_amount -> new_amount
 	for effect: Dictionary in effects:
@@ -115,7 +122,8 @@ func to_dict() -> Dictionary:
 		"rarity": rarity,
 		"effects": effects.duplicate(true),
 		"upgraded": upgraded,
-		"art_path": art_path
+		"art_path": art_path,
+		"upgrade_reduces_cost": upgrade_reduces_cost
 	}
 
 static func from_dict(data: Dictionary) -> CardData:
@@ -129,6 +137,7 @@ static func from_dict(data: Dictionary) -> CardData:
 	card.rarity = String(data.get("rarity", "basic"))
 	card.upgraded = bool(data.get("upgraded", false))
 	card.art_path = String(data.get("art_path", ""))
+	card.upgrade_reduces_cost = bool(data.get("upgrade_reduces_cost", false))
 	var raw_effects: Array = data.get("effects", []) as Array
 	var typed_effects: Array[Dictionary] = []
 	for entry: Variant in raw_effects:
