@@ -956,13 +956,12 @@ const BALANCE_BASELINES: Dictionary = {
 const BALANCE_BASELINES_MID: Dictionary = {
 	# li_xiaoyao 63→90：STS 風能力牌一次性消耗後，醉夢望月不再洗回堆，
 	# 牌組變薄 → 御劍/萬劍/天師等高傷卡抽率提升，對蜈蚣大王勝率躍升（故意調整，commit faffda4 之後改的）
-	"li_xiaoyao": 90,
-	"zhao_linger": 100,
-	"lin_yueru": 100,
-	# anu 50→100：起始牌組重做（2026-06，run_simulator 揭露原牌組幾乎零輸出、
-	# 殺速過慢）。加 2x 毒針連射(攻擊+毒)、爆炸蠱(毒爆 payoff)、萬蟻蝕象(毒 ramp)，
-	# 砍冗餘治療牌 → 蜈蚣大王 10 回合限時勝率 50%→100%（故意調整）
-	"anu": 100
+	# 2026-06 怪物 rebalance：蜈蚣大王 HP 92→108 + 傷害上調 → random AI 起始牌組
+	# 限時內勝率全面下修（故意調整，數值為重測觀測值）。
+	"li_xiaoyao": 53,
+	"zhao_linger": 47,
+	"lin_yueru": 83,
+	"anu": 57
 }
 # 全升級起始牌組 vs 山賊頭目。升級應嚴格 >= 基礎勝率，預期全 100%。
 const BALANCE_BASELINES_UPGRADED: Dictionary = {
@@ -991,15 +990,15 @@ const BALANCE_BASELINES_MID_UPGRADED: Dictionary = {
 #   Lv15 vs act 4 boss (山靈巫后 HP 78)
 #   Lv20 vs act 5 boss (拜月教主 HP 115)
 const BALANCE_BASELINES_LEVELED: Dictionary = {
-	# Lv5 vs 殭屍大帥（act 2 boss HP 90）：應全部 ≥95%
-	# Lv10 vs 蜈蚣大王（act 3 boss HP 92）：李/趙 80-90%，林/阿 100%
-	# Lv15 vs 山靈巫后（act 4 boss HP 78）：應全部 100%
-	# Lv20 vs 拜月教主（act 5 boss HP 115）：李/趙 半數左右（爆發不足），林/阿 70-90%
-	#   （林/阿 nerf 後降到合理範圍，差距收斂到 30pp）
-	"li_xiaoyao":  {5: 97,  10: 90,  15: 100, 20: 83},
-	"zhao_linger": {5: 100, 10: 100, 15: 100, 20: 93},
-	"lin_yueru":   {5: 100, 10: 100, 15: 100, 20: 100},
-	"anu":         {5: 100, 10: 93,  15: 100, 20: 93},
+	# 2026-06 怪物 rebalance 後重測（boss HP/傷害上調 15-18%）：
+	# Lv5 vs 殭屍大帥（HP 106）：全部 100%
+	# Lv10 vs 蜈蚣大王（HP 108）：上調後 random AI 限時內較難穩殺 → 67-83%
+	# Lv15 vs 山靈巫后（HP 92）：仍接近全 100%
+	# Lv20 vs 拜月教主（HP 136）：67-90%，最終 boss 壓力提升
+	"li_xiaoyao":  {5: 100, 10: 80,  15: 93,  20: 67},
+	"zhao_linger": {5: 100, 10: 67,  15: 97,  20: 80},
+	"lin_yueru":   {5: 100, 10: 83,  15: 100, 20: 90},
+	"anu":         {5: 100, 10: 67,  15: 100, 20: 90},
 }
 
 # Lv → act 對應
