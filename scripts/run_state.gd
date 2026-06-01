@@ -333,7 +333,7 @@ func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> 
 		character_exps.append(0)
 	gold = int(data.get("gold", 0))
 	encounter_index = int(data.get("encounter_index", 0))
-	encounter_choices = _deserialize_choices(data.get("encounter_choices", []) as Array, int(data.get("act", 1)))
+	encounter_choices = _deserialize_choices(data.get("encounter_choices", []) as Array, int(data.get("act", 1)), int(data.get("map_seed", 0)))
 	chosen_map_path.clear()
 	for entry: Variant in (data.get("chosen_map_path", []) as Array):
 		chosen_map_path.append(int(entry))
@@ -423,7 +423,11 @@ func _serialize_choices() -> Array:
 		rows_out.append(row_out)
 	return rows_out
 
-func _deserialize_choices(rows_in: Array, act_for_fallback: int = 1) -> Array[Array]:
+func _deserialize_choices(rows_in: Array, act_for_fallback: int = 1, map_seed_for_fallback: int = 0) -> Array[Array]:
+	# 舊壞檔 fallback 才會動到全域 RNG：第一次 fallback 時用決定性 seed（map_seed+act），
+	# 確保同一存檔每次讀檔重生的敵人一致；結尾 randomize() 還原非決定性 RNG。
+	# 新存檔（敵人已用 id 保存）完全不走 fallback，不碰全域 RNG。
+	var used_fallback: bool = false
 	var rows_out: Array[Array] = []
 	for row_variant: Variant in rows_in:
 		var row_in: Array = row_variant as Array
@@ -466,14 +470,24 @@ func _deserialize_choices(rows_in: Array, act_for_fallback: int = 1) -> Array[Ar
 					arr2.append(EnemyData.from_dict(e_v as Dictionary))
 				node_out["enemies"] = arr2
 			# 舊壞檔修復：戰鬥節點完全沒有敵人資料（多敵上線前的存檔丟了 enemies）
-			# → 用該幕的遭遇表重新生一組，讓地圖可渲染、可遊玩（敵人組合可能與原本不同）。
+			# → 用該幕的遭遇表重生一組（決定性 seed，每次讀檔一致）。原本的確切敵人
+			# 當初未寫入存檔、物理上無法還原；新存檔不會走到這條路徑（敵人已用 id 保存）。
 			if node_type == "battle" and not node_out.has("enemies"):
+				if not used_fallback:
+					seed(map_seed_for_fallback + act_for_fallback)
+					used_fallback = true
 				node_out["enemies"] = MapGenerator.choose_enemies_for_act(
 					act_for_fallback, GameData.enemies_for_act(act_for_fallback))
 			if node_type == "boss" and not node_out.has("enemy"):
+				if not used_fallback:
+					seed(map_seed_for_fallback + act_for_fallback)
+					used_fallback = true
 				node_out["enemy"] = GameData.boss_for_act(act_for_fallback).clone()
 			row_out.append(node_out)
 		rows_out.append(row_out)
+	# 還原非決定性 RNG（避免讀檔後的戰鬥/獎勵變成固定序列）
+	if used_fallback:
+		randomize()
 	return rows_out
 
 func _serialize_shop_inventory() -> Array:
