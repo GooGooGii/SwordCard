@@ -6691,6 +6691,9 @@ func _get_active_player_pose() -> String:
 func _get_battle_portrait_path(char_data: CharacterData, pose: String) -> String:
 	if char_data == null:
 		return ""
+	var override_path: String = "res://assets/art/battle_characters/%s_%s_v2.png" % [char_data.id, pose]
+	if ResourceLoader.exists(override_path):
+		return override_path
 	var path: String = "res://assets/art/battle_characters/%s_%s.png" % [char_data.id, pose]
 	if ResourceLoader.exists(path):
 		return path
