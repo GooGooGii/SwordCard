@@ -160,6 +160,10 @@ func _initialize() -> void:
 	_test_chain_zero_cost_cards(characters)
 	_test_cost_reduction_upgrade(characters)
 	_test_chain_draw_relic(characters, enemies)
+	# 共同牌（colorless 移植）
+	_test_colorless_pool()
+	_test_colorless_exhaust(characters, enemies)
+	_test_combo_strike_panache(characters, enemies)
 	# Event Branching Phase 1：純樹走訪器（無 UI、無 effect 結算）
 	_test_event_runner_has_tree()
 	_test_event_runner_root_choices()
@@ -1784,6 +1788,56 @@ func _test_chain_draw_relic(characters: Array[CharacterData], enemies: Array[Ene
 	_check(int(bc.state["pending_draw"]) == 0, "前 4 張不該觸發連環珮，實得 pending_draw=%d" % int(bc.state["pending_draw"]))
 	bc._fire_relic_triggers("card_played", ctx)  # 第 5 張 → 觸發
 	_check(int(bc.state["pending_draw"]) == 1, "第 5 張應觸發連環珮抽 1，實得 pending_draw=%d" % int(bc.state["pending_draw"]))
+
+func _test_colorless_pool() -> void:
+	# 共同牌池：10 張、owner=無門、art 存在、恰 2 張 exhaust
+	var pool: Array[CardData] = GameData.colorless_cards()
+	_check(pool.size() == 10, "共同牌應為 10 張，實得 %d" % pool.size())
+	var exhaust_n: int = 0
+	for c: CardData in pool:
+		_check(c.owner == "無門", "%s owner 應為無門，實得 %s" % [c.id, c.owner])
+		_check(ResourceLoader.exists(c.art_path), "%s art 缺失: %s" % [c.id, c.art_path])
+		if c.exhaust:
+			exhaust_n += 1
+	_check(exhaust_n == 2, "共同牌應有 2 張 exhaust（金創藥帖/運籌帷幄），實得 %d" % exhaust_n)
+	_check(GameData.colorless_card_by_id("cl_huacaijianyi") != null, "華彩劍意應存在於共同牌池")
+
+func _test_colorless_exhaust(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# exhaust 牌打出後進消耗堆，不進棄牌堆
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0]])
+	var card: CardData = GameData.colorless_card_by_id("cl_yunchou")  # 抽 3，exhaust
+	_check(card != null and card.exhaust, "運籌帷幄應為 exhaust 牌")
+	if card == null:
+		return
+	var c: CardData = card.clone()
+	bc.deck.hand.append(c)
+	bc.state["energy"] = 5
+	bc.play_card(c)
+	_check(bc.deck.exhausted_pile.has(c), "exhaust 牌打完應進消耗堆")
+	_check(not bc.deck.discard_pile.has(c), "exhaust 牌不應進棄牌堆")
+
+func _test_combo_strike_panache(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# 華彩劍意：本回合每出 5 張牌 → 全體敵人受 10 傷。出滿 5 張時觸發。
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0], enemies[1]])
+	bc.state["energy"] = 99
+	bc.state["cards_this_turn"] = 0
+	bc.state["player_power"] = 0
+	# 先打華彩（power，設定 combo_strike 引擎）
+	var panache: CardData = GameData.colorless_card_by_id("cl_huacaijianyi").clone()
+	bc.deck.hand.append(panache)
+	bc.play_card(panache)  # 這是本回合第 1 張
+	_check(int(bc.state.get("combo_strike_damage", 0)) == 10, "華彩應設定 combo_strike_damage=10")
+	var slots: Array = bc.state["enemies"] as Array
+	_reset_all_enemy_slots(bc.state, 100, 0)
+	var hp_before: int = int((slots[0] as Dictionary)["hp"])
+	# 再打 4 張 0 費牌 → 本回合累計第 5 張時觸發 combo strike
+	bc.state["cards_this_turn"] = 4  # 模擬已出 4 張（含華彩共 4 次計入後，下一張為第 5）
+	var probe: CardData = GameData.make_card("cmb_probe", "測試", characters[0].display_name, 0, "skill", "獲得 1 護體。", [{"kind": "block", "amount": 1}])
+	bc.deck.hand.append(probe)
+	bc.play_card(probe)  # 第 5 張 → 觸發
+	var hp_after: int = int((slots[0] as Dictionary)["hp"])
+	_check(hp_after == hp_before - 10, "第 5 張應觸發華彩，敵人[0] 應 -10，實得 %d→%d" % [hp_before, hp_after])
+	_check(int((slots[1] as Dictionary)["hp"]) == 90, "華彩應對全體生效，敵人[1] 應 -10")
 
 func _reset_all_enemy_slots(s: Dictionary, hp: int = 100, block: int = 0) -> void:
 	# 同時重置 slots 與 active alias，避免 _sync_active_slot_from_alias 把 alias 值回寫 slot[0]

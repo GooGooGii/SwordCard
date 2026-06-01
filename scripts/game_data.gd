@@ -19,6 +19,33 @@ static func make_card(id: String, display_name: String, owner: String, cost: int
 static func characters() -> Array[CharacterData]:
 	return [_li_xiaoyao(), _zhao_linger(), _lin_yueru(), _anu()]
 
+# 共同牌（STS colorless 移植）：owner = "無門"，任何角色都能在 獎勵/商店/事件 取得。
+# art 暫借既有同類卡（記入 ART_GUIDE「借圖待補」）。
+static func colorless_cards() -> Array[CardData]:
+	var list: Array[CardData] = [
+		make_card("cl_xunjiezhan", "迅捷斬", "無門", 0, "attack", "造成 7 點傷害。", [{"kind": "damage", "amount": 7}], "uncommon", "lxy_yujian"),
+		make_card("cl_hanfengjue", "寒鋒訣", "無門", 0, "attack", "造成 3 點傷害，抽 1 張牌。", [{"kind": "damage", "amount": 3}, {"kind": "draw", "amount": 1}], "uncommon", "lyr_xuanjian"),
+		make_card("cl_hushenjue", "護身訣", "無門", 0, "skill", "獲得 6 點護體。", [{"kind": "block", "amount": 6}], "uncommon", "lxy_jianqi"),
+		make_card("cl_qiaojin", "巧勁", "無門", 0, "skill", "獲得 2 點護體，抽 1 張牌。", [{"kind": "block", "amount": 2}, {"kind": "draw", "amount": 1}], "uncommon", "zl_lingguang"),
+		make_card("cl_zhimingfu", "致盲符", "無門", 0, "skill", "使敵人虛弱 2 層。", [{"kind": "weak", "amount": 2}], "uncommon", "anu_mihun"),
+		make_card("cl_poshi", "破式", "無門", 0, "skill", "施加 2 層破綻。", [{"kind": "vulnerable", "amount": 2}], "uncommon", "lyr_juesha"),
+		make_card("cl_jinchuangtie", "金創藥帖", "無門", 0, "skill", "回復 5 點生命。打出後消耗。", [{"kind": "heal", "amount": 5}], "uncommon", "lxy_qiliao"),
+		make_card("cl_qimendunjia", "奇門遁甲", "無門", 0, "attack", "對全體敵人造成 8 點傷害。", [{"kind": "damage_all", "amount": 8}], "uncommon", "lxy_wanjian"),
+		make_card("cl_yunchou", "運籌帷幄", "無門", 0, "skill", "抽 3 張牌。打出後消耗。", [{"kind": "draw", "amount": 3}], "rare", "zl_lingxi"),
+		make_card("cl_huacaijianyi", "華彩劍意", "無門", 1, "power", "本回合每出 5 張牌，對全體敵人造成 10 點傷害。", [{"kind": "combo_strike", "amount": 10, "threshold": 5}], "rare", "lxy_jianshen"),
+	]
+	# exhaust 標記（make_card 無此參數，直接設）
+	for c: CardData in list:
+		if c.id == "cl_jinchuangtie" or c.id == "cl_yunchou":
+			c.exhaust = true
+	return list
+
+static func colorless_card_by_id(id: String) -> CardData:
+	for c: CardData in colorless_cards():
+		if c.id == id:
+			return c
+	return null
+
 static func enemies() -> Array[EnemyData]:
 	return [_bandit(), _beast(), _gu_cultist(), _sword_spirit(), _fox_spirit(), _serpent_demon(),
 		_zombie_soldier(), _toxic_centipede(), _tower_demon(), _tower_ghost_soldier(),

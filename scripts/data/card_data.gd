@@ -13,6 +13,8 @@ extends Resource
 @export var art_path: String = ""
 # 升級行為：true = 升級時「靈耗 -1（最低 0）」而非加數值（連打牌組用）。
 @export var upgrade_reduces_cost: bool = false
+# 打出後消耗（進消耗堆，本場不再洗回）。STS 共同牌如金創藥帖／運籌帷幄。
+@export var exhaust: bool = false
 
 func clone() -> CardData:
 	var copy: CardData = CardData.new()
@@ -27,6 +29,7 @@ func clone() -> CardData:
 	copy.upgraded = upgraded
 	copy.art_path = art_path
 	copy.upgrade_reduces_cost = upgrade_reduces_cost
+	copy.exhaust = exhaust
 	return copy
 
 func display_title() -> String:
@@ -123,7 +126,8 @@ func to_dict() -> Dictionary:
 		"effects": effects.duplicate(true),
 		"upgraded": upgraded,
 		"art_path": art_path,
-		"upgrade_reduces_cost": upgrade_reduces_cost
+		"upgrade_reduces_cost": upgrade_reduces_cost,
+		"exhaust": exhaust
 	}
 
 static func from_dict(data: Dictionary) -> CardData:
@@ -138,6 +142,7 @@ static func from_dict(data: Dictionary) -> CardData:
 	card.upgraded = bool(data.get("upgraded", false))
 	card.art_path = String(data.get("art_path", ""))
 	card.upgrade_reduces_cost = bool(data.get("upgrade_reduces_cost", false))
+	card.exhaust = bool(data.get("exhaust", false))
 	var raw_effects: Array = data.get("effects", []) as Array
 	var typed_effects: Array[Dictionary] = []
 	for entry: Variant in raw_effects:

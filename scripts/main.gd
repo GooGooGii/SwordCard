@@ -3480,6 +3480,11 @@ func _make_reward_choices() -> Array[CardData]:
 	var rewards: Array[CardData] = []
 	for i: int in range(min(count, pool.size())):
 		rewards.append(pool[i])
+	# 共同牌（colorless）：非 boss 獎勵有 ~22% 機率把其中一張換成共同牌（任何角色都能拿）
+	if not _boss_card_reward and not rewards.is_empty() and randf() < 0.22:
+		var cl_pool: Array[CardData] = GameData.colorless_cards()
+		if not cl_pool.is_empty():
+			rewards[randi() % rewards.size()] = (cl_pool[randi() % cl_pool.size()] as CardData).clone()
 	return rewards
 
 func choose_reward_card(card: CardData) -> void:
@@ -4174,7 +4179,11 @@ func _pick_random_relic_from_pool(pool_key: String) -> RelicData:
 	return candidates[randi() % candidates.size()].clone()
 
 func _pick_random_card_from_pool(pool_key: String) -> CardData:
-	# MVP：用 active 角色 reward_pool。pool_key 影響將留給 P6 完整實作。
+	# pool_key == "colorless" → 共同牌池（任何角色）；其餘事件得牌有 ~18% 改抽共同牌。
+	if pool_key == "colorless" or randf() < 0.18:
+		var cl_pool: Array[CardData] = GameData.colorless_cards()
+		if not cl_pool.is_empty():
+			return (cl_pool[randi() % cl_pool.size()] as CardData).clone()
 	if run_state == null or run_state.characters.is_empty():
 		return null
 	var char_idx: int = run_state.active_character_index
@@ -4183,7 +4192,6 @@ func _pick_random_card_from_pool(pool_key: String) -> CardData:
 	var pool: Array[CardData] = run_state.characters[char_idx].reward_pool
 	if pool.is_empty():
 		return null
-	var _unused: String = pool_key
 	return (pool[randi() % pool.size()] as CardData).clone()
 
 # ─────────────────────────────────────────────────────────────

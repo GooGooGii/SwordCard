@@ -21,6 +21,14 @@ static func build(character: CharacterData, is_black_shop: bool) -> Array[Dictio
 		if is_black_shop and not card.upgraded:
 			card = card.upgraded_copy()
 		inventory.append({"card": card, "price": price_of(card, is_black_shop), "on_sale": false})
+	# 共同牌欄（STS colorless slot）：商店固定加 1 張共同牌，任何角色都能買。
+	var cl_pool: Array[CardData] = GameData.colorless_cards()
+	if not cl_pool.is_empty():
+		cl_pool.shuffle()
+		var cl: CardData = cl_pool[0].clone()
+		if is_black_shop and not cl.upgraded:
+			cl = cl.upgraded_copy()
+		inventory.append({"card": cl, "price": price_of(cl, is_black_shop), "on_sale": false})
 	if not is_black_shop and inventory.size() > 0 and randf() < SALE_CHANCE:
 		var sale_idx: int = randi() % inventory.size()
 		inventory[sale_idx]["price"] = max(5, int(inventory[sale_idx]["price"] * (1.0 - SALE_DISCOUNT)))

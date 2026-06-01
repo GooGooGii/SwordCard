@@ -442,6 +442,7 @@ func start_turn() -> Dictionary:
 	state["pending_draw"] = 0
 	state["lin_block_used"] = false
 	state["switched_this_turn"] = false
+	state["cards_this_turn"] = 0  # 連打計數（華彩 combo_strike 用），每回合歸零
 	if int(state["enemy_vulnerable"]) > 0:
 		state["enemy_vulnerable"] = int(state["enemy_vulnerable"]) - 1
 	if int(state["enemy_weak"]) > 0:
@@ -545,11 +546,16 @@ func play_card(card: CardData) -> Dictionary:
 		"card_cost": card.cost,
 		"card_effects": card.effects
 	})
+	# 連打計數（華彩 combo_strike）：先 +1，結算移到下方 alias 同步後（避免讀到未刷新的 active slot）。
+	state["cards_this_turn"] = int(state.get("cards_this_turn", 0)) + 1
 	if deck != null:
 		# 能力牌 STS 規則：打完本場消失（不進棄牌堆、不會再洗回手裡）；
 		# power 增益已套到 player_power 持續整場，不需卡片本體留下。
+		# exhaust 牌（共同牌等）同樣打完進消耗堆。
 		if card.card_type == "power":
 			deck.consume_card(card)
+		elif card.exhaust:
+			deck.exhaust_card(card)
 		else:
 			deck.discard_card(card)
 	if int(state["pending_draw"]) > 0:
@@ -558,6 +564,8 @@ func play_card(card: CardData) -> Dictionary:
 		state["pending_draw"] = 0
 	_sync_state_to_active()
 	_sync_state_to_active_enemy()  # 單體敵人 effects 寫回 active slot
+	# 連打引擎結算：此時 active slot 已從 alias 刷新，combo strike 讀 slots 才正確。
+	_check_combo_strike()
 	_check_active_enemy_death()  # active 敵被打死 → 自動換到下一個活敵
 	return {"affordable": true, "before_card": before_card, "ended": is_battle_over()}
 
@@ -576,6 +584,28 @@ func _check_active_enemy_death() -> void:
 			_sync_active_enemy_to_state()
 			return
 	# 全部死光 → is_victory 會處理
+
+# 連打引擎（華彩 / Panache）：本回合出牌數達 threshold 倍數時，對全體活敵造成固定傷害。
+func _check_combo_strike() -> void:
+	var dmg: int = int(state.get("combo_strike_damage", 0))
+	if dmg <= 0:
+		return
+	var threshold: int = max(1, int(state.get("combo_strike_threshold", 5)))
+	if int(state.get("cards_this_turn", 0)) % threshold != 0:
+		return
+	var slots: Array = state.get("enemies", []) as Array
+	var hit_any: bool = false
+	for i: int in range(slots.size()):
+		var slot: Dictionary = slots[i] as Dictionary
+		if int(slot["hp"]) <= 0:
+			continue
+		var blocked: int = min(int(slot.get("block", 0)), dmg)
+		slot["block"] = int(slot.get("block", 0)) - blocked
+		slot["hp"] = max(0, int(slot["hp"]) - (dmg - blocked))
+		hit_any = true
+	if hit_any:
+		add_log("華彩劍意：連打成勢，對全體敵人造成 %d 點傷害！" % dmg)
+		_sync_active_enemy_to_state()
 
 func begin_enemy_phase() -> Array[Dictionary]:
 	# Multi-Enemy 模式：每隻活敵各預備一招，回傳陣列（死敵 = empty dict）

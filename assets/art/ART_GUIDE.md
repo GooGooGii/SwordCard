@@ -177,7 +177,8 @@ Target:
 | 等級解鎖卡（LevelSystem） | 0 | 已完成專屬插圖 | 🟢 已完成 |
 | 角色專武遺物 | 0 | 已補齊專屬圖示 | 🟢 已完成 |
 | **連打牌組卡（2026-06）+ 毒引擎** | **17** | 借同角色既有圖（art_id） | 🔴 待補專屬圖 |
-| **合計** | **17** | | |
+| **共同牌（colorless 移植，2026-06）** | **10** | 借既有圖（art_id） | 🔴 待補專屬圖 |
+| **合計** | **27** | | |
 
 > 連打抽牌遺物（循環珠 / 連環珮 / 疾風鈴）使用程序繪製圖示（`RelicCatalog` 的 `icon_color` + `icon_shape`），無 PNG 需求。
 
@@ -234,6 +235,20 @@ Target:
   - `anu_huguzhao` (護蠱罩) ← 借 `anu_guling` 蠱靈護身
   - `anu_lianduzhen` (連環毒針，減靈耗升級) ← 借 `anu_duzhen` 毒針連射
   - `anu_guzhang` (蠱瘴瀰漫，毒引擎) ← 借 `anu_baizu` 百足蠱
+
+### 🔴 借圖待補（10 張，共同牌 colorless 移植）
+
+`owner="無門"`，任何角色都能在 獎勵/商店/事件 取得（STS colorless 移植）。同樣借既有卡圖：
+- `cl_xunjiezhan` (迅捷斬，Swift Strike) ← 借 `lxy_yujian`
+- `cl_hanfengjue` (寒鋒訣，Flash of Steel) ← 借 `lyr_xuanjian`
+- `cl_hushenjue` (護身訣，Good Instincts) ← 借 `lxy_jianqi`
+- `cl_qiaojin` (巧勁，Finesse) ← 借 `zl_lingguang`
+- `cl_zhimingfu` (致盲符，Blind) ← 借 `anu_mihun`
+- `cl_poshi` (破式，Trip) ← 借 `lyr_juesha`
+- `cl_jinchuangtie` (金創藥帖，Bandage Up，exhaust) ← 借 `lxy_qiliao`
+- `cl_qimendunjia` (奇門遁甲，Dramatic Entrance) ← 借 `lxy_wanjian`
+- `cl_yunchou` (運籌帷幄，Master of Strategy，exhaust) ← 借 `zl_lingxi`
+- `cl_huacaijianyi` (華彩劍意，Panache，連打 payoff) ← 借 `lxy_jianshen`
 
 ## Card Layering Convention
 

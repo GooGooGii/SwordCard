@@ -198,6 +198,12 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			# 實際每回合施毒由 BattleController.start_turn 讀 state["poison_per_turn"] 執行。
 			state["poison_per_turn"] = int(state.get("poison_per_turn", 0)) + amount
 			log_lines.append("瘴蠱纏身：每回合開始對所有敵人施加 %d 層蠱毒。" % amount)
+		"combo_strike":
+			# 連打引擎（StS Panache 式）：持久能力，本回合每出 threshold 張牌對全體敵人造成傷害。
+			# 實際計數與結算由 BattleController.play_card 讀 state["combo_strike_*"] 執行。
+			state["combo_strike_damage"] = int(state.get("combo_strike_damage", 0)) + amount
+			state["combo_strike_threshold"] = max(1, int(effect.get("threshold", 5)))
+			log_lines.append("劍意如虹：本回合每出 %d 張牌，對全體敵人造成 %d 點傷害。" % [int(state["combo_strike_threshold"]), amount])
 		"thorns":
 			# Thorns 荊棘反擊：被攻擊時反彈傷害（不衰減，跨回合保留）
 			state["player_thorns"] = int(state.get("player_thorns", 0)) + amount
