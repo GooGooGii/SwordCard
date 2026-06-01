@@ -2523,6 +2523,7 @@ func _refresh_enemy_widgets() -> void:
 		if name_label != null and is_instance_valid(name_label):
 			name_label.text = String(slot["name"])
 		_refresh_combatant_hp(hp_bar, hp_value, int(slot["hp"]), int(slot["max_hp"]))
+		_update_poison_preview(hp_bar, int(slot["hp"]), int(slot["max_hp"]), int(slot["poison"]))
 		block_badge.set_amount(int(slot["block"]))
 		status_line.text = UIFactory.status_summary(int(slot["poison"]), int(slot["weak"]), int(slot["vulnerable"]))
 		# 視覺狀態：active 全亮、其他半暗、死敵更暗
@@ -2956,6 +2957,22 @@ func _hp_bar_with_overlay(bar: ProgressBar, value_label: Label) -> Control:
 	bar.custom_minimum_size = Vector2(0, bar_height)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	wrap.add_child(bar)
+	# 毒傷預覽（StS 風）：血條上疊一段半透明綠，標示這回合 tick 會被蠱毒扣掉多少。
+	# 疊在血條之上、數值文字之下；預設隱藏，由 _update_poison_preview 控制。
+	var poison_preview: ColorRect = ColorRect.new()
+	poison_preview.color = Color("6cc24a", 0.62)
+	poison_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	poison_preview.anchor_top = 0.0
+	poison_preview.anchor_bottom = 1.0
+	poison_preview.anchor_left = 1.0
+	poison_preview.anchor_right = 1.0
+	poison_preview.offset_left = 0.0
+	poison_preview.offset_right = 0.0
+	poison_preview.offset_top = 0.0
+	poison_preview.offset_bottom = 0.0
+	poison_preview.visible = false
+	wrap.add_child(poison_preview)
+	bar.set_meta("poison_preview", poison_preview)
 	value_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -5965,6 +5982,7 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 			if tex != null:
 				player_portrait_image.texture = tex
 	_refresh_combatant_hp(player_hp_bar, player_hp_value, int(battle.state["player_hp"]), int(battle.state["player_max_hp"]))
+	_update_poison_preview(player_hp_bar, int(battle.state["player_hp"]), int(battle.state["player_max_hp"]), int(battle.state["player_poison"]))
 	player_block_badge.set_amount(int(battle.state["player_block"]))
 	player_status_line.text = UIFactory.status_summary(int(battle.state["player_poison"]), int(battle.state["player_weak"]), int(battle.state["player_vulnerable"]))
 	_refresh_bench_strip()
@@ -6013,6 +6031,23 @@ func _refresh_combatant_hp(bar: ProgressBar, value_label: Label, hp: int, max_hp
 	var tween: Tween = bar.create_tween()
 	tween.tween_property(bar, "value", target, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	bar.set_meta("hp_tween", tween)
+
+func _update_poison_preview(bar: ProgressBar, hp: int, max_hp: int, poison: int) -> void:
+	# 在血條右段（即將失血處）疊綠：寬度 = 這回合 tick 會扣的毒傷（封頂於當前 HP）。
+	if bar == null or not is_instance_valid(bar) or not bar.has_meta("poison_preview"):
+		return
+	var rect: ColorRect = bar.get_meta("poison_preview") as ColorRect
+	if rect == null or not is_instance_valid(rect):
+		return
+	if poison <= 0 or hp <= 0 or max_hp <= 0:
+		rect.visible = false
+		return
+	var lost: int = min(poison, hp)
+	rect.anchor_left = clamp(float(hp - lost) / float(max_hp), 0.0, 1.0)
+	rect.anchor_right = clamp(float(hp) / float(max_hp), 0.0, 1.0)
+	rect.offset_left = 0.0
+	rect.offset_right = 0.0
+	rect.visible = true
 
 func _card_button(card: CardData) -> Button:
 	var affordable: bool = int(battle.state["energy"]) >= battle.effective_card_cost(card)
