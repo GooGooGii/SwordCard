@@ -961,7 +961,7 @@ const BALANCE_BASELINES_MID: Dictionary = {
 	"li_xiaoyao": 13,
 	"zhao_linger": 30,
 	"lin_yueru": 50,
-	"anu": 63
+	"anu": 87
 }
 # 全升級起始牌組 vs 山賊頭目。升級應嚴格 >= 基礎勝率，預期全 100%。
 const BALANCE_BASELINES_UPGRADED: Dictionary = {
@@ -1000,7 +1000,7 @@ const BALANCE_BASELINES_LEVELED: Dictionary = {
 	"li_xiaoyao":  {5: 100, 10: 40,  15: 90,  20: 47},
 	"zhao_linger": {5: 100, 10: 40,  15: 93,  20: 53},
 	"lin_yueru":   {5: 100, 10: 50,  15: 100, 20: 87},
-	"anu":         {5: 100, 10: 67,  15: 100, 20: 90},
+	"anu":         {5: 100, 10: 87,  15: 100, 20: 93},
 }
 
 # Lv → act 對應

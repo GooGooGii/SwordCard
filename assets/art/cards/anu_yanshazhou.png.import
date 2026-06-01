@@ -2,16 +2,12 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://6skdpdmeair8"
-path="res://.godot/imported/anu_yanshazhou.png-5173664a0946404e537d23fb7f0a9f4a.ctex"
-metadata={
-"vram_texture": false
-}
+uid="uid://e0xs06siyvf5"
+valid=false
 
 [deps]
 
 source_file="res://assets/art/cards/anu_yanshazhou.png"
-dest_files=["res://.godot/imported/anu_yanshazhou.png-5173664a0946404e537d23fb7f0a9f4a.ctex"]
 
 [params]
 

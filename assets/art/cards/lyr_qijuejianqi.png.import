@@ -2,16 +2,12 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cn3ksc3cmaoax"
-path="res://.godot/imported/lyr_qijuejianqi.png-6376a0056b56ed1215af4c9e74db4ec6.ctex"
-metadata={
-"vram_texture": false
-}
+uid="uid://eqsvj5i5kdxq"
+valid=false
 
 [deps]
 
 source_file="res://assets/art/cards/lyr_qijuejianqi.png"
-dest_files=["res://.godot/imported/lyr_qijuejianqi.png-6376a0056b56ed1215af4c9e74db4ec6.ctex"]
 
 [params]
 

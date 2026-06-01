@@ -2,16 +2,12 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://p7q1rjj33egc"
-path="res://.godot/imported/anu_baozhagu.png-cdbf6fcb43071ca8bfca55948f27141e.ctex"
-metadata={
-"vram_texture": false
-}
+uid="uid://syojlk7uspdo"
+valid=false
 
 [deps]
 
 source_file="res://assets/art/cards/anu_baozhagu.png"
-dest_files=["res://.godot/imported/anu_baozhagu.png-cdbf6fcb43071ca8bfca55948f27141e.ctex"]
 
 [params]
 
