@@ -64,8 +64,8 @@ func _report_single_battle(characters: Array[CharacterData]) -> void:
 		var tag: String = "★" if bool(t["boss"]) else ""
 		var row: String = "| %s%s (%d) |" % [tag, enemy.display_name, enemy.max_hp]
 		for c: CharacterData in characters:
-			var smart: Dictionary = _battle_stats(c, enemy, true)
-			var rnd: Dictionary = _battle_stats(c, enemy, false)
+			var smart: Dictionary = _battle_stats(c, enemy, "expert")
+			var rnd: Dictionary = _battle_stats(c, enemy, "random")
 			var flag: String = ""
 			if int(smart["win"]) >= 95 and not bool(t["boss"]):
 				flag = " ⚠弱"
@@ -75,18 +75,18 @@ func _report_single_battle(characters: Array[CharacterData]) -> void:
 		print(row)
 	print("")
 
-func _battle_stats(character: CharacterData, enemy_template: EnemyData, smart: bool) -> Dictionary:
+func _battle_stats(character: CharacterData, enemy_template: EnemyData, tier: String) -> Dictionary:
 	var wins: int = 0
 	var turn_sum: float = 0.0
 	var hp_lost_sum: float = 0.0
 	for trial: int in range(BATTLE_TRIALS):
-		seed(trial * 7919 + hash(character.id) * 17 + hash(enemy_template.id) * 31 + (5 if smart else 0))
+		seed(trial * 7919 + hash(character.id) * 17 + hash(enemy_template.id) * 31 + hash(tier))
 		var rs: RunState = RunState.new()
 		rs.init_for(character)
 		var bc: BattleController = BattleController.new()
 		bc.setup(rs, character, enemy_template.clone())
 		var max_t: int = MAX_TURNS_BOSS if Ascension.is_boss_id(enemy_template.id) else MAX_TURNS_NORMAL
-		var res: Dictionary = _run_battle(bc, max_t, smart)
+		var res: Dictionary = _run_battle(bc, max_t, tier)
 		if bool(res["victory"]):
 			wins += 1
 			turn_sum += float(res["turns"])
@@ -102,41 +102,49 @@ func _battle_stats(character: CharacterData, enemy_template: EnemyData, smart: b
 # Part B — 全 run（帶傷續戰 + 成長）
 # ─────────────────────────────────────────────────────────────────────────
 func _report_full_runs(characters: Array[CharacterData]) -> void:
-	print("## Part B — Smart-AI 全 run（帶傷續戰、牌組成長、遺物/事件/商店）")
+	print("## Part B — 全 run 清關率，按玩家技術分層（帶傷續戰、牌組成長、遺物/事件/商店）")
 	print("")
-	print("| 角色 | 清關率(過act5 boss) | 平均到達層 | 平均結算HP%% | 死因分布 |")
-	print("|---|---|---|---|---|")
+	print("> 生手=隨機出牌、中手=貪婪挑最高分牌、高手=低血龜防+危急切人+毒龜會佈局。")
+	print("> 目標曲線（聰明選擇+運氣）：高手 ~30-50%%、中手 ~15-25%%、生手 <10%%。")
+	print("")
+	print("| 角色 | 生手清關 | 中手清關 | 高手清關 | 高手平均層 | 高手結算HP%% | 高手死因 |")
+	print("|---|---|---|---|---|---|---|")
+	var tiers: Array[String] = ["random", "greedy", "expert"]
 	for c: CharacterData in characters:
-		var clears: int = 0
-		var floor_sum: int = 0
-		var hp_sum: float = 0.0
-		var death_by: Dictionary = {}  # enemy_id → count
-		for run_i: int in range(RUNS_PER_CHAR):
-			seed(run_i * 104729 + hash(c.id) * 13)
-			var res: Dictionary = _simulate_full_run(c)
-			if bool(res["cleared"]):
-				clears += 1
-			floor_sum += int(res["floors"])
-			hp_sum += float(res["final_hp_pct"])
-			var dk: String = String(res.get("death_to", ""))
-			if not dk.is_empty():
-				death_by[dk] = int(death_by.get(dk, 0)) + 1
-		var clear_rate: int = int(round(100.0 * float(clears) / float(RUNS_PER_CHAR)))
-		var avg_floor: float = float(floor_sum) / float(RUNS_PER_CHAR)
-		var avg_hp: int = int(round(hp_sum / float(RUNS_PER_CHAR)))
-		# 死因 top-2
-		var death_keys: Array = death_by.keys()
-		death_keys.sort_custom(func(a: Variant, b: Variant) -> bool: return int(death_by[a]) > int(death_by[b]))
+		var clear_by_tier: Dictionary = {}
+		var expert_floor_sum: int = 0
+		var expert_hp_sum: float = 0.0
+		var expert_death_by: Dictionary = {}
+		for tier: String in tiers:
+			var clears: int = 0
+			for run_i: int in range(RUNS_PER_CHAR):
+				seed(run_i * 104729 + hash(c.id) * 13 + hash(tier))
+				var res: Dictionary = _simulate_full_run(c, tier)
+				if bool(res["cleared"]):
+					clears += 1
+				if tier == "expert":
+					expert_floor_sum += int(res["floors"])
+					expert_hp_sum += float(res["final_hp_pct"])
+					var dk: String = String(res.get("death_to", ""))
+					if not dk.is_empty():
+						expert_death_by[dk] = int(expert_death_by.get(dk, 0)) + 1
+			clear_by_tier[tier] = int(round(100.0 * float(clears) / float(RUNS_PER_CHAR)))
+		var avg_floor: float = float(expert_floor_sum) / float(RUNS_PER_CHAR)
+		var avg_hp: int = int(round(expert_hp_sum / float(RUNS_PER_CHAR)))
+		var death_keys: Array = expert_death_by.keys()
+		death_keys.sort_custom(func(a: Variant, b: Variant) -> bool: return int(expert_death_by[a]) > int(expert_death_by[b]))
 		var death_str: String = ""
 		for i: int in range(min(2, death_keys.size())):
-			death_str += "%s×%d " % [String(death_keys[i]), int(death_by[death_keys[i]])]
+			death_str += "%s×%d " % [String(death_keys[i]), int(expert_death_by[death_keys[i]])]
 		if death_str.is_empty():
 			death_str = "—"
-		print("| %s | %d%% | %.1f | %d%% | %s |" % [c.display_name, clear_rate, avg_floor, avg_hp, death_str])
+		print("| %s | %d%% | %d%% | %d%% | %.1f | %d%% | %s |" % [
+			c.display_name, int(clear_by_tier["random"]), int(clear_by_tier["greedy"]),
+			int(clear_by_tier["expert"]), avg_floor, avg_hp, death_str])
 	print("")
-	print("> ⚠弱 = 滿血單場 smart-AI 勝率 ≥95%%（一般怪）；清關率偏高代表整體偏易。")
+	print("> ⚠弱 = 滿血單場 expert 勝率 ≥95%%（一般怪）。技術梯度越陡 = 越獎勵聰明選擇。")
 
-func _simulate_full_run(leader: CharacterData) -> Dictionary:
+func _simulate_full_run(leader: CharacterData, tier: String) -> Dictionary:
 	var rs: RunState = RunState.new()
 	rs.init_for(leader)
 	var floors: int = 0
@@ -155,7 +163,7 @@ func _simulate_full_run(leader: CharacterData) -> Dictionary:
 				var enemies: Array[EnemyData] = _node_enemies(node)
 				var bc: BattleController = BattleController.new()
 				bc.setup(rs, leader, enemies)
-				var res: Dictionary = _run_battle(bc, MAX_TURNS_BOSS, true)
+				var res: Dictionary = _run_battle(bc, MAX_TURNS_BOSS, tier)
 				_sync_hp_back(bc, rs)
 				if not bool(res["victory"]):
 					death_to = enemies[0].id if not enemies.is_empty() else "?"
@@ -173,7 +181,8 @@ func _simulate_full_run(leader: CharacterData) -> Dictionary:
 # ─────────────────────────────────────────────────────────────────────────
 # 戰鬥核心：smart 或 random 出牌
 # ─────────────────────────────────────────────────────────────────────────
-func _run_battle(bc: BattleController, max_turns: int, smart: bool) -> Dictionary:
+# tier ∈ {"random"（生手）, "greedy"（中手）, "expert"（高手）}
+func _run_battle(bc: BattleController, max_turns: int, tier: String) -> Dictionary:
 	var start_hp: int = _party_hp(bc.run_state)
 	var start_max: int = _party_max_hp(bc.run_state)
 	var turns: int = 0
@@ -182,10 +191,13 @@ func _run_battle(bc: BattleController, max_turns: int, smart: bool) -> Dictionar
 		bc.start_turn()
 		if bc.is_battle_over():
 			break
-		if smart:
-			_smart_turn(bc)
-		else:
-			_random_turn(bc)
+		match tier:
+			"random":
+				_random_turn(bc)
+			"expert":
+				_policy_turn(bc, true)
+			_:
+				_policy_turn(bc, false)
 		if bc.is_battle_over():
 			break
 		var actions: Array = bc.begin_enemy_phase()
@@ -214,7 +226,11 @@ func _random_turn(bc: BattleController) -> void:
 		if not bool(played.get("affordable", false)):
 			return
 
-func _smart_turn(bc: BattleController) -> void:
+# 啟發式出牌。expert=false → 中手（greedy，挑當下最高分牌）；
+# expert=true → 高手（低血時提高防禦/治療/虛弱權重、危急時切人、毒龜會邊疊邊防）。
+func _policy_turn(bc: BattleController, expert: bool) -> void:
+	if expert:
+		_expert_consider_switch(bc)
 	for _attempt: int in range(40):
 		if bc.is_battle_over():
 			return
@@ -225,7 +241,7 @@ func _smart_turn(bc: BattleController) -> void:
 		for card: CardData in bc.deck.hand:
 			if bc.effective_card_cost(card) > int(bc.state["energy"]):
 				continue
-			var s: float = _score_card(card, bc)
+			var s: float = _score_card(card, bc, expert)
 			if s > best_score:
 				best_score = s
 				best_card = card
@@ -234,6 +250,33 @@ func _smart_turn(bc: BattleController) -> void:
 		var played: Dictionary = bc.play_card(best_card)
 		if not bool(played.get("affordable", false)):
 			return
+
+# 高手：active 角色危急（<28% HP）且有更健康的後排、本回合還能免費換 → 換人續戰
+func _expert_consider_switch(bc: BattleController) -> void:
+	var players: Array = bc.state.get("players", []) as Array
+	if players.size() <= 1:
+		return
+	if bool(bc.state.get("switched_this_turn", false)):
+		return
+	var active: int = int(bc.state.get("active_player_index", 0))
+	if active >= players.size():
+		return
+	var ap: Dictionary = players[active] as Dictionary
+	var hp_frac: float = float(int(ap.get("hp", 0))) / float(max(1, int(ap.get("max_hp", 1))))
+	if hp_frac >= 0.28:
+		return
+	var best_idx: int = -1
+	var best_frac: float = 0.5  # 後排至少 50% HP 才值得換上
+	for i: int in range(players.size()):
+		if i == active:
+			continue
+		var p: Dictionary = players[i] as Dictionary
+		var f: float = float(int(p.get("hp", 0))) / float(max(1, int(p.get("max_hp", 1))))
+		if f > best_frac:
+			best_frac = f
+			best_idx = i
+	if best_idx >= 0:
+		bc.switch_active(best_idx)
 
 # 把 active 敵切到「能一擊打死的最低 HP 敵」，否則切到最低 HP 敵（集火）
 func _focus_best_enemy(bc: BattleController) -> void:
@@ -253,7 +296,8 @@ func _focus_best_enemy(bc: BattleController) -> void:
 	bc.set_active_enemy(best_idx)
 
 # 卡片啟發式評分（越高越想打）。粗略反映「會玩的人」的優先序。
-func _score_card(card: CardData, bc: BattleController) -> float:
+# expert=true：低血時提高防禦/治療/虛弱權重（高手會龜、邊疊毒邊防，不硬拚）。
+func _score_card(card: CardData, bc: BattleController, expert: bool = false) -> float:
 	var st: Dictionary = bc.state
 	var enemy_hp: int = int(st.get("enemy_hp", 0))
 	var enemy_block: int = int(st.get("enemy_block", 0))
@@ -263,6 +307,11 @@ func _score_card(card: CardData, bc: BattleController) -> float:
 	var player_block: int = int(st.get("player_block", 0))
 	var alive_enemies: int = _alive_enemy_count(bc)
 	var incoming: int = _predicted_incoming(bc)
+	# 高手：HP 越低，防禦/治療/控場價值越高（低於半血時最多 ×2.6）
+	var hp_frac: float = float(player_hp) / float(max(1, player_max))
+	var def_mult: float = 1.0
+	if expert and hp_frac < 0.5:
+		def_mult = 1.0 + (0.5 - hp_frac) * 3.2
 	var score: float = 0.0
 	for eff: Dictionary in card.effects:
 		var kind: String = String(eff.get("kind", ""))
@@ -280,13 +329,13 @@ func _score_card(card: CardData, bc: BattleController) -> float:
 			"block":
 				# 只有在敵人威脅 > 現有 block 時才有價值；過量 block 低分
 				var need: int = max(0, incoming - player_block)
-				score += float(min(amount, need)) * 1.2
+				score += float(min(amount, need)) * 1.2 * def_mult
 				if incoming > player_hp:
 					score += 60.0  # 會被打死 → 格擋變超高優先
 			"vulnerable":
-				score += float(amount) * 6.0 if enemy_vuln == 0 else float(amount) * 2.0
+				score += (float(amount) * 6.0 if enemy_vuln == 0 else float(amount) * 2.0)
 			"weak":
-				score += float(amount) * 5.0
+				score += float(amount) * 5.0 * def_mult
 			"poison", "poison_all":
 				# 毒：tick 總傷 ≈ n(n+1)/2 攤提，但對阿奴是 burst 燃料 → 給高權重
 				score += float(amount) * float(hits) * 3.0
@@ -311,7 +360,7 @@ func _score_card(card: CardData, bc: BattleController) -> float:
 				score += float(debuffs) * 2.0
 			"heal":
 				var deficit: int = player_max - player_hp
-				score += float(min(amount, deficit)) * 1.0
+				score += float(min(amount, deficit)) * 1.0 * def_mult
 			"power":
 				score += 14.0  # 能力牌：盡早鋪
 			"poison_engine":
