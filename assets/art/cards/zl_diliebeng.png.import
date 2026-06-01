@@ -3,11 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://by4cxr7ki7ld4"
-valid=false
+path="res://.godot/imported/zl_diliebeng.png-dce814feef2fb6abaa9b13034abaef52.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/zl_diliebeng.png"
+dest_files=["res://.godot/imported/zl_diliebeng.png-dce814feef2fb6abaa9b13034abaef52.ctex"]
 
 [params]
 

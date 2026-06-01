@@ -1,57 +1,57 @@
 # 卡圖待補清單
 
-最後更新：重新掃描 `assets/art/cards/` 與 `game_data.gd` 後的完整結果。
+最後更新：2026-06-01（經自動化程式掃描與像素比對驗證後完整更新）
 
 ---
 
-## 一、共用佔位圖（21 張）
+## 一、共用佔位圖（21 張） —— 🟢 已全部完成
 
-以下 21 張卡的圖檔 MD5 完全相同（同一張佔位圖），每張都需獨立製圖。
+以下 21 張卡原本共用相同的佔位圖，現已全部繪製並補齊獨立的專屬美術圖檔，經檢測已無任何佔位圖情況。
 
-### 李逍遙（5 張）
+### 🟢 李逍遙（5 張）- 已完成
+- `lxy_jianzhen` (劍陣 - 已補專屬水墨圖)
+- `lxy_jiulong` (九龍訣 - 已補專屬水墨圖)
+- `lxy_liepo` (裂魄斬 - 已補專屬水墨圖)
+- `lxy_qingfeng` (清風御劍 - 已補專屬水墨圖)
+- `lxy_zuilong` (醉龍翻江 - 已補專屬水墨圖)
 
-| ID | 招式名 | 稀有度 |
-|---|---|---|
-| `lxy_jianzhen` | 劍陣 | uncommon |
-| `lxy_jiulong` | 九龍訣 | rare |
-| `lxy_liepo` | 裂魄斬 | uncommon |
-| `lxy_qingfeng` | 清風御劍 | uncommon |
-| `lxy_zuilong` | 醉龍翻江 | rare |
+### 🟢 趙靈兒（5 張）- 已完成
+- `zl_huihun` (還魂咒 - 已補專屬水墨圖)
+- `zl_leiguang` (雷光連擊 - 已補專屬水墨圖)
+- `zl_lingxi` (靈息術 - 已補專屬水墨圖)
+- `zl_shenlei` (神雷降世 - 已補專屬水墨圖)
+- `zl_shuiling` (水靈護罩 - 已補專屬水墨圖)
 
-### 趙靈兒（5 張）
+### 🟢 林月如（5 張）- 已完成
+- `lyr_kuaijian` (輕劍急刺 - 已補專屬水墨圖)
+- `lyr_poqian` (破千謀 - 已補專屬水墨圖)
+- `lyr_tianv` (飛花亂舞 - 已補專屬水墨圖)
+- `lyr_tieyi` (鐵衣功 - 已補專屬水墨圖)
+- `lyr_xuanjian` (旋劍花舞 - 已補專屬水墨圖)
 
-| ID | 招式名 | 稀有度 |
-|---|---|---|
-| `zl_huihun` | 還魂咒 | rare |
-| `zl_leiguang` | 雷光連擊 | basic |
-| `zl_lingxi` | 靈息術 | uncommon |
-| `zl_shenlei` | 神雷降世 | rare |
-| `zl_shuiling` | 水靈護罩 | uncommon |
-
-### 林月如（5 張）
-
-| ID | 招式名 | 稀有度 |
-|---|---|---|
-| `lyr_kuaijian` | 輕劍急刺 | uncommon |
-| `lyr_poqian` | 破千謀 | uncommon |
-| `lyr_tianv` | 飛花亂舞 | uncommon |
-| `lyr_tieyi` | 鐵衣功 | rare |
-| `lyr_xuanjian` | 旋劍花舞 | basic |
-
-### 阿奴（6 張）
-
-| ID | 招式名 | 稀有度 |
-|---|---|---|
-| `anu_baizu` | 百足蠱 | uncommon |
-| `anu_baozhagu` | 爆炸蠱 | uncommon |
-| `anu_duzhen` | 毒針連射 | uncommon |
-| `anu_gushen` | 蠱神附體 | rare |
-| `anu_guwang` | 蠱王號令 | uncommon |
-| `anu_sanmao` | 三毛蠱 | uncommon |
+### 🟢 阿奴（6 張）- 已完成
+- `anu_baizu` (百足蠱 - 已補專屬水墨圖)
+- `anu_baozhagu` (爆炸蠱 - 已補專屬水墨圖)
+- `anu_duzhen` (毒針連射 - 已補專屬水墨圖)
+- `anu_gushen` (蠱神附體 - 已補專屬水墨圖)
+- `anu_guwang` (蠱王號令 - 已補專屬水墨圖)
+- `anu_sanmao` (三毛蠱 - 已補專屬水墨圖)
 
 ---
 
-## 二、跨角色共用圖（需確認）
+## 二、詛咒牌（6 張） —— 🟢 已全部完成
+
+遊戲中的特殊卡牌 `card_type="curse"`，已於 2026-06-01 生成去背水墨圖檔，並完成 Godot `.import` 配置及 smoke test 存在性斷言保護。
+- `yao_zhai` (妖債)
+- `xie_yin` (邪印)
+- `tong_ji` (通緝)
+- `hua_zhai` (花債)
+- `jiu_zui` (醉魂)
+- `gu_du` (殘蠱)
+
+---
+
+## 三、跨角色共用圖（待確認或待清理）
 
 以下兩張卡 PNG 內容完全一樣，但兩張卡都有各自的定義。
 若設計上本來就要共用同一張圖，請在 `game_data.gd` 的 `zl_bingxin` 加上 `art_id="lxy_bingxin"` 明確標示；
@@ -64,7 +64,7 @@
 
 ---
 
-## 三、孤兒圖（有圖無卡，可清理或留待未來）
+## 四、孤兒圖（有圖無卡，可清理或留待未來）
 
 以下 PNG 存在於 `assets/art/cards/` 但目前 `game_data.gd` 沒有對應的卡牌定義。
 不影響遊戲，可暫時保留（若未來會新增卡牌），或刪除清理。

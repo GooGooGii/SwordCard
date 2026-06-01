@@ -3,11 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cbd21w7m475aa"
-valid=false
+path="res://.godot/imported/anu_gushen.png-30ae6ea08b0e9317fb697668b294e585.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/anu_gushen.png"
+dest_files=["res://.godot/imported/anu_gushen.png-30ae6ea08b0e9317fb697668b294e585.ctex"]
 
 [params]
 
