@@ -2,11 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-valid=false
+uid="uid://cgo7oa4mvgp2i"
+path="res://.godot/imported/xie_yin.png-1e672b2389611c85875e7bf035a76e2e.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/xie_yin.png"
+dest_files=["res://.godot/imported/xie_yin.png-1e672b2389611c85875e7bf035a76e2e.ctex"]
 
 [params]
 

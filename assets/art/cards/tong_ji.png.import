@@ -2,11 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-valid=false
+uid="uid://brtxp4v3x6042"
+path="res://.godot/imported/tong_ji.png-a3b7533d1118ca53e73787b07bc60407.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/tong_ji.png"
+dest_files=["res://.godot/imported/tong_ji.png-a3b7533d1118ca53e73787b07bc60407.ctex"]
 
 [params]
 

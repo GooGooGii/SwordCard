@@ -2,11 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-valid=false
+uid="uid://m7ofpppke0ri"
+path="res://.godot/imported/hua_zhai.png-9cda06f331992a5b4d05d450e87b2571.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/hua_zhai.png"
+dest_files=["res://.godot/imported/hua_zhai.png-9cda06f331992a5b4d05d450e87b2571.ctex"]
 
 [params]
 

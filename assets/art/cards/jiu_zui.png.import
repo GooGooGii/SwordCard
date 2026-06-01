@@ -2,11 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-valid=false
+uid="uid://wclgw20wpuv6"
+path="res://.godot/imported/jiu_zui.png-aeb2a6641469ab68f4d7626c0807429e.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/jiu_zui.png"
+dest_files=["res://.godot/imported/jiu_zui.png-aeb2a6641469ab68f4d7626c0807429e.ctex"]
 
 [params]
 
