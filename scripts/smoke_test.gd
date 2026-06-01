@@ -958,10 +958,11 @@ const BALANCE_BASELINES_MID: Dictionary = {
 	# 牌組變薄 → 御劍/萬劍/天師等高傷卡抽率提升，對蜈蚣大王勝率躍升（故意調整，commit faffda4 之後改的）
 	# 2026-06 怪物 rebalance：蜈蚣大王 HP 92→108 + 傷害上調 → random AI 起始牌組
 	# 限時內勝率全面下修（故意調整，數值為重測觀測值）。
+	# anu 57→80：毒 tick 時機改為 StS 式（敵人毒在出手前 tick）+ 毒引擎，毒流殺速提升。
 	"li_xiaoyao": 53,
 	"zhao_linger": 47,
 	"lin_yueru": 83,
-	"anu": 57
+	"anu": 80
 }
 # 全升級起始牌組 vs 山賊頭目。升級應嚴格 >= 基礎勝率，預期全 100%。
 const BALANCE_BASELINES_UPGRADED: Dictionary = {
@@ -998,7 +999,7 @@ const BALANCE_BASELINES_LEVELED: Dictionary = {
 	"li_xiaoyao":  {5: 100, 10: 80,  15: 93,  20: 67},
 	"zhao_linger": {5: 100, 10: 67,  15: 97,  20: 80},
 	"lin_yueru":   {5: 100, 10: 83,  15: 100, 20: 90},
-	"anu":         {5: 100, 10: 67,  15: 100, 20: 90},
+	"anu":         {5: 100, 10: 80,  15: 100, 20: 90},
 }
 
 # Lv → act 對應

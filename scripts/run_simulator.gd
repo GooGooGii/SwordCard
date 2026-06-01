@@ -291,12 +291,17 @@ func _score_card(card: CardData, bc: BattleController) -> float:
 				# 毒：tick 總傷 ≈ n(n+1)/2 攤提，但對阿奴是 burst 燃料 → 給高權重
 				score += float(amount) * float(hits) * 3.0
 			"poison_burst":
-				# 爆炸蠱：引爆當前毒層，每層 amount 點瞬間傷害（阿奴核心 payoff）
+				# 爆炸蠱：引爆當前毒層，每層 amount 點瞬間傷害（阿奴核心 payoff）。
+				# 關鍵策略：先疊毒後引爆。毒層不夠高時壓低分數（讓爆炸蠱留在手裡、
+				# 先打毒生成牌），疊到 ≥8 層或能致命才認列高分引爆。
 				var cur_poison: int = int(st.get("enemy_poison", 0))
 				var burst: float = float(cur_poison) * float(amount)
-				score += burst
 				if burst >= float(enemy_hp + enemy_block):
-					score += 1000.0  # 毒爆致命
+					score += burst + 1000.0  # 毒爆致命，最高優先
+				elif cur_poison >= 8:
+					score += burst            # 毒已疊夠 → 兌現
+				else:
+					score += burst * 0.12     # 太早 → 壓低，hold 著繼續疊毒
 			"consume_energy_damage", "consume_energy_damage_all":
 				# 耗盡靈力換傷害：用剩餘能量估算
 				score += float(int(st.get("energy", 0))) * float(amount)
@@ -309,6 +314,9 @@ func _score_card(card: CardData, bc: BattleController) -> float:
 				score += float(min(amount, deficit)) * 1.0
 			"power":
 				score += 14.0  # 能力牌：盡早鋪
+			"poison_engine":
+				# 毒引擎：越早鋪價值越高（每回合複利施毒）。估剩餘 ~6 回合複利。
+				score += float(amount) * 18.0
 			"draw":
 				score += float(amount) * 4.0
 			"energy":
@@ -477,6 +485,7 @@ func _card_draft_value(card: CardData) -> float:
 			"vulnerable", "weak": v += amt * 4.0
 			"poison", "poison_all": v += amt * 2.5
 			"poison_burst": v += 30.0  # 阿奴核心 payoff，高估值確保被抽
+			"poison_engine": v += 36.0  # 毒引擎，最高優先確保被抽
 			"power": v += 12.0
 			"draw", "energy": v += amt * 5.0
 			_: v += amt * 0.6

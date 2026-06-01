@@ -149,6 +149,7 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"li_discount_used": false,
 		"lin_block_used": false,
 		"player_thorns": 0,  # 反擊（Thorns）：被攻擊時反彈 N 點傷害給攻擊者，不衰減
+		"poison_per_turn": 0,  # 毒引擎（StS Noxious Fumes 式）：每回合開始對全體敵人施毒
 		"damage_taken_reduction": 0,
 		"damage_out_bonus": 0,
 		"block_bonus": 0,
@@ -434,7 +435,8 @@ func start_turn() -> Dictionary:
 		state["enemy_weak"] = int(state["enemy_weak"]) - 1
 	_apply_bench_heal()
 	var before_tick: Dictionary = snapshot_state()
-	add_logs(resolver.tick_statuses(state))
+	# 玩家毒在自己回合開始 tick；敵人毒改到敵人階段開始 tick（見 begin_enemy_phase）
+	add_logs(resolver.tick_player_statuses(state))
 	# Event Branching P4：curse 滯留效果在 tick 之後跑 — 新加的 poison 留到下回合 tick
 	if int(state["turn"]) == 1:
 		_apply_curse_retention("battle_start")
@@ -572,7 +574,16 @@ func begin_enemy_phase() -> Array[Dictionary]:
 		state["player_weak"] = int(state["player_weak"]) - 1
 	if int(state["player_vulnerable"]) > 0:
 		state["player_vulnerable"] = int(state["player_vulnerable"]) - 1
+	# StS 時機：敵人毒在「出手前」tick → 致命毒可在它攻擊前殺死它（對毒流關鍵）。
+	# 接著毒引擎（瘴蠱纏身）對全體敵人補毒，供下一輪 tick。
+	add_logs(resolver.tick_enemy_statuses(state))
+	var poison_engine: int = int(state.get("poison_per_turn", 0))
+	if poison_engine > 0:
+		add_logs(resolver.resolve_effects_list([{"kind": "poison_all", "amount": poison_engine}], state))
+	_check_active_enemy_death()  # 毒死 active 敵 → 換到下一個活敵
 	_sync_state_to_active()
+	if is_victory():
+		return []  # 全部敵人被毒死，無人出手
 	var actions: Array[Dictionary] = []
 	for i: int in range(enemies.size()):
 		var slot: Dictionary = state["enemies"][i] as Dictionary

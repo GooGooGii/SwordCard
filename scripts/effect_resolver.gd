@@ -48,13 +48,44 @@ func _sync_alias_from_active_slot(state: Dictionary) -> void:
 	state["enemy_weak"] = int(slot["weak"])
 	state["enemy_vulnerable"] = int(slot["vulnerable"])
 
+# 向後相容：tick 敵 + 玩家 poison（smoke 單元測試與舊呼叫點用）。
+# 遊戲實際流程改用分離時機：tick_enemy_statuses 在敵人階段開始、
+# tick_player_statuses 在玩家回合開始（對齊 StS 毒在受害者回合開始 tick）。
 func tick_statuses(state: Dictionary) -> Array[String]:
 	var log_lines: Array[String] = []
-	if int(state["enemy_poison"]) > 0:
-		state["enemy_hp"] = max(0, int(state["enemy_hp"]) - int(state["enemy_poison"]))
-		log_lines.append("中毒造成 %d 點傷害。" % int(state["enemy_poison"]))
-		state["enemy_poison"] = max(0, int(state["enemy_poison"]) - 1)
-	if int(state["player_poison"]) > 0:
+	log_lines.append_array(tick_enemy_statuses(state))
+	log_lines.append_array(tick_player_statuses(state))
+	return log_lines
+
+# tick 全體敵人 slot 的 poison（多敵 aware）。在敵人出手「之前」呼叫 →
+# 致命毒可在敵人攻擊前殺死它（StS 行為，對毒流角色關鍵）。
+# state 無 "enemies" slots（如 smoke _make_state）時退回 alias 單敵路徑。
+func tick_enemy_statuses(state: Dictionary) -> Array[String]:
+	var log_lines: Array[String] = []
+	var slots: Array = state.get("enemies", []) as Array
+	if slots.is_empty():
+		if int(state.get("enemy_poison", 0)) > 0:
+			state["enemy_hp"] = max(0, int(state["enemy_hp"]) - int(state["enemy_poison"]))
+			log_lines.append("中毒造成 %d 點傷害。" % int(state["enemy_poison"]))
+			state["enemy_poison"] = max(0, int(state["enemy_poison"]) - 1)
+		return log_lines
+	_sync_active_slot_from_alias(state)
+	for slot_v: Variant in slots:
+		var slot: Dictionary = slot_v as Dictionary
+		if int(slot["hp"]) <= 0:
+			continue
+		var p: int = int(slot["poison"])
+		if p > 0:
+			slot["hp"] = max(0, int(slot["hp"]) - p)
+			log_lines.append("%s 中毒受到 %d 點傷害。" % [String(slot["name"]), p])
+			slot["poison"] = max(0, p - 1)
+	_sync_alias_from_active_slot(state)
+	return log_lines
+
+# tick active 玩家 poison（玩家回合開始）。
+func tick_player_statuses(state: Dictionary) -> Array[String]:
+	var log_lines: Array[String] = []
+	if int(state.get("player_poison", 0)) > 0:
 		state["player_hp"] = max(0, int(state["player_hp"]) - int(state["player_poison"]))
 		log_lines.append("你受到 %d 點蠱毒傷害。" % int(state["player_poison"]))
 		state["player_poison"] = max(0, int(state["player_poison"]) - 1)
@@ -162,6 +193,11 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 		"power":
 			state["player_power"] = int(state["player_power"]) + amount
 			log_lines.append("本場戰鬥傷害提升 %d。" % amount)
+		"poison_engine":
+			# 毒引擎（StS Noxious Fumes 式）：持久能力，每回合開始自動對全體敵人施毒。
+			# 實際每回合施毒由 BattleController.start_turn 讀 state["poison_per_turn"] 執行。
+			state["poison_per_turn"] = int(state.get("poison_per_turn", 0)) + amount
+			log_lines.append("瘴蠱纏身：每回合開始對所有敵人施加 %d 層蠱毒。" % amount)
 		"thorns":
 			# Thorns 荊棘反擊：被攻擊時反彈傷害（不衰減，跨回合保留）
 			state["player_thorns"] = int(state.get("player_thorns", 0)) + amount

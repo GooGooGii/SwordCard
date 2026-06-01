@@ -248,6 +248,9 @@ static func _anu() -> CharacterData:
 		make_card("anu_wangushitian", "萬蠱噬天", "阿奴", 3, "skill", "萬蠱齊發，施加 12 層蠱毒，使敵人虛弱 3 層。", [{"kind": "poison", "amount": 12}, {"kind": "weak", "amount": 3}], "rare"),
 		make_card("anu_wanyi_ls", "萬蟻蝕骨", "阿奴", 1, "skill", "萬蟻蝕骨，施加 8 層蠱毒。", [{"kind": "poison", "amount": 8}], "rare"),
 		make_card("anu_yanshazhou", "燃殺咒", "阿奴", 2, "attack", "燃殺之咒，造成 14 點傷害並施加 3 層蠱毒。", [{"kind": "damage", "amount": 14}, {"kind": "poison", "amount": 3}], "uncommon"),
+		# 毒引擎（StS Noxious Fumes 式）：阿奴蠱術的核心——放出蠱蟲化瘴，每回合自動疊毒，
+		# 讓她不必每回合花牌施毒、騰出手牌防禦。art 暫借百足蠱。
+		make_card("anu_guzhang", "蠱瘴瀰漫", "阿奴", 1, "power", "放出蠱蟲化作毒瘴，每回合開始時對所有敵人施加 2 層蠱毒。", [{"kind": "poison_engine", "amount": 2}], "uncommon", "anu_baizu"),
 	]
 	var character: CharacterData = _character("anu", "阿奴", 66, "蠱毒、咒術、削弱與長戰持續傷害。", cards)
 	# PAL1 對齊：10 basic + 2 uncommon + 0 rare
@@ -256,8 +259,11 @@ static func _anu() -> CharacterData:
 	# 虛弱、唯一攻擊只有 2x 御蜂術，毒疊不起來 → 殺速過慢 → 帶傷續戰被消耗致死
 	# （全 run 清關率僅 15%）。改成有實際毒流 win-con：加 2x 毒針連射(攻擊+毒)、
 	# 1x 萬蟻蝕象(毒 ramp)，砍掉冗餘的治療/淨化牌。
+	# 毒流 win-con（StS Silent / Noxious Fumes 流對齊）：毒引擎被動疊毒 + 防禦續命 +
+	# 爆炸蠱 burst payoff。蠱瘴瀰漫(引擎)讓她不必每回合花牌施毒、騰出手牌防禦。
 	character.starting_deck = [
-		cards[0], cards[0],                # 2x 御蜂術 (basic damage_all 3x3)
+		cards[0],                          # 1x 御蜂術 (basic damage_all 3x3)
+		cards[25],                         # 1x 蠱瘴瀰漫 (uncommon poison_engine 2/回合) — 毒引擎
 		cards[11], cards[11],              # 2x 毒針連射 (uncommon 5 傷害 + 2 蠱毒) — 早期輸出
 		cards[3],                          # 1x 爆炸蠱 (uncommon poison_burst ×3) — 毒爆 payoff
 		cards[1],                          # 1x 萬蟻蝕象 (uncommon 毒 5) — 毒 ramp
