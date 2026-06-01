@@ -13,6 +13,7 @@ extends Resource
 @export var portrait_tint: Color = Color.WHITE
 @export var summon_pool: Array[String] = []  # boss 召喚物 id pool；空 = 不召喚
 @export var is_summoned: bool = false        # 由 spawn_enemy() 設為 true，勝利結算時不計入掉落
+@export var default_facing_left: bool = false # 原始圖檔是否已面向左邊（若是，則戰鬥中不需 flip_h）
 
 func clone() -> EnemyData:
 	var copy: EnemyData = EnemyData.new()
@@ -28,6 +29,7 @@ func clone() -> EnemyData:
 	copy.portrait_tint = portrait_tint
 	copy.summon_pool = summon_pool.duplicate()
 	copy.is_summoned = is_summoned
+	copy.default_facing_left = default_facing_left
 	return copy
 
 func to_dict() -> Dictionary:
@@ -41,7 +43,8 @@ func to_dict() -> Dictionary:
 		"phase_2_display_name": phase_2_display_name,
 		"phase_2_portrait_path": phase_2_portrait_path,
 		"phase_2_portrait_tint": [phase_2_portrait_tint.r, phase_2_portrait_tint.g, phase_2_portrait_tint.b, phase_2_portrait_tint.a],
-		"portrait_tint": [portrait_tint.r, portrait_tint.g, portrait_tint.b, portrait_tint.a]
+		"portrait_tint": [portrait_tint.r, portrait_tint.g, portrait_tint.b, portrait_tint.a],
+		"default_facing_left": default_facing_left
 	}
 
 static func from_dict(data: Dictionary) -> EnemyData:
@@ -80,4 +83,5 @@ static func from_dict(data: Dictionary) -> EnemyData:
 			float(tint_data[2]),
 			float(tint_data[3]) if tint_data.size() >= 4 else 1.0
 		)
+	enemy.default_facing_left = bool(data.get("default_facing_left", false))
 	return enemy

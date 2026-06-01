@@ -429,6 +429,7 @@ static func _bandit() -> EnemyData:
 	enemy.display_name = "山賊頭目"
 	enemy.max_hp = 70
 	enemy.portrait_path = "res://assets/art/enemies/bandit.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "劈砍 15", "effects": [{"kind": "damage", "amount": 15}]},
 		{"intent": "防守 10", "effects": [{"kind": "block", "amount": 10}]},
@@ -442,6 +443,7 @@ static func _beast() -> EnemyData:
 	enemy.display_name = "山林妖獸"
 	enemy.max_hp = 80
 	enemy.portrait_path = "res://assets/art/enemies/beast.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "撕咬 17", "effects": [{"kind": "damage", "amount": 17}]},
 		{"intent": "怒吼 12", "effects": [{"kind": "damage", "amount": 12}]},
@@ -455,6 +457,7 @@ static func _gu_cultist() -> EnemyData:
 	enemy.display_name = "蠱毒妖人"
 	enemy.max_hp = 72
 	enemy.portrait_path = "res://assets/art/enemies/gu_cultist.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "毒霧 4", "effects": [{"kind": "poison", "amount": 4}]},
 		{"intent": "邪術 14", "effects": [{"kind": "damage", "amount": 14}, {"kind": "weak", "amount": 1}]},
@@ -468,6 +471,7 @@ static func _sword_spirit() -> EnemyData:
 	enemy.display_name = "劍冢靈影"
 	enemy.max_hp = 78
 	enemy.portrait_path = "res://assets/art/enemies/sword_spirit.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "劍芒 16", "effects": [{"kind": "damage", "amount": 16}]},
 		{"intent": "護劍 11", "effects": [{"kind": "block", "amount": 11}]},
@@ -481,6 +485,7 @@ static func _fox_spirit() -> EnemyData:
 	enemy.display_name = "魅狐幻影"
 	enemy.max_hp = 65
 	enemy.portrait_path = "res://assets/art/enemies/fox_spirit.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "魅惑 2", "effects": [{"kind": "weak", "amount": 2}]},
 		{"intent": "幻爪 15", "effects": [{"kind": "damage", "amount": 15}]},
@@ -494,6 +499,7 @@ static func _flower_spirit_enemy() -> EnemyData:
 	enemy.display_name = "花妖"
 	enemy.max_hp = 46
 	enemy.portrait_path = "res://assets/art/enemies/fox_spirit.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "迷香 2", "effects": [{"kind": "weak", "amount": 2}]},
 		{"intent": "花瓣刺 9", "effects": [{"kind": "damage", "amount": 9}]},
@@ -510,6 +516,7 @@ static func _serpent_demon() -> EnemyData:
 	enemy.display_name = "赤蛇妖"
 	enemy.max_hp = 88
 	enemy.portrait_path = "res://assets/art/enemies/serpent_demon.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "毒牙 14", "effects": [{"kind": "damage", "amount": 14}, {"kind": "poison", "amount": 3}]},
 		{"intent": "盤身 14", "effects": [{"kind": "block", "amount": 14}]},
@@ -523,6 +530,7 @@ static func _moon_worshipper() -> EnemyData:
 	enemy.display_name = "拜月教徒"
 	enemy.max_hp = 105
 	enemy.portrait_path = "res://assets/art/enemies/moon_worshipper.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "拜月咒 20", "effects": [{"kind": "damage", "amount": 20}]},
 		{"intent": "妖術：蠱毒 5", "effects": [{"kind": "poison", "amount": 5}]},
@@ -545,6 +553,7 @@ static func _centipede_lord() -> EnemyData:
 	enemy.display_name = "蜈蚣大王"
 	enemy.max_hp = 108
 	enemy.portrait_path = "res://assets/art/enemies/centipede_lord.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "多足踏擊 7x4", "effects": [
 			{"kind": "damage", "amount": 7},
@@ -585,6 +594,7 @@ static func _witch_queen() -> EnemyData:
 	enemy.display_name = "山靈巫后"
 	enemy.max_hp = 92
 	enemy.portrait_path = "res://assets/art/enemies/witch_queen.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "蠱咒 蠱毒 6", "effects": [{"kind": "poison", "amount": 6}]},
 		{"intent": "詛咒 虛弱 3", "effects": [{"kind": "weak", "amount": 3}]},
@@ -618,6 +628,7 @@ static func _zombie_soldier() -> EnemyData:
 	enemy.display_name = "地底殭屍"
 	enemy.max_hp = 78
 	enemy.portrait_path = "res://assets/art/enemies/zombie_soldier.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "腐爛爪 14 + 虛弱 1", "effects": [{"kind": "damage", "amount": 14}, {"kind": "weak", "amount": 1}]},
 		{"intent": "殭步衝 18", "effects": [{"kind": "damage", "amount": 18}]},
@@ -644,6 +655,7 @@ static func _tower_demon() -> EnemyData:
 	enemy.display_name = "塔中封魔"
 	enemy.max_hp = 90
 	enemy.portrait_path = "res://assets/art/enemies/tower_demon.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "邪焰 15 + 破綻 1", "effects": [{"kind": "damage", "amount": 15}, {"kind": "vulnerable", "amount": 1}]},
 		{"intent": "衝擊 22", "effects": [{"kind": "damage", "amount": 22}]},
@@ -657,6 +669,7 @@ static func _tower_ghost_soldier() -> EnemyData:
 	enemy.display_name = "鎖妖塔鬼兵"
 	enemy.max_hp = 81
 	enemy.portrait_path = "res://assets/art/enemies/tower_ghost_soldier.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "魂刃 16 + 虛弱 1", "effects": [{"kind": "damage", "amount": 16}, {"kind": "weak", "amount": 1}]},
 		{"intent": "鬼卒衝 21", "effects": [{"kind": "damage", "amount": 21}]},
@@ -670,6 +683,7 @@ static func _baiyue_guard() -> EnemyData:
 	enemy.display_name = "拜月教衛"
 	enemy.max_hp = 92
 	enemy.portrait_path = "res://assets/art/enemies/baiyue_guard.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "拜月斬 18", "effects": [{"kind": "damage", "amount": 18}]},
 		{"intent": "邪毒 蠱毒 4 + 破綻 1", "effects": [{"kind": "poison", "amount": 4}, {"kind": "vulnerable", "amount": 1}]},
@@ -683,6 +697,7 @@ static func _ancient_evil_spirit() -> EnemyData:
 	enemy.display_name = "上古惡靈"
 	enemy.max_hp = 85
 	enemy.portrait_path = "res://assets/art/enemies/ancient_evil_spirit.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "噬魂 15 + 虛弱 1", "effects": [{"kind": "damage", "amount": 15}, {"kind": "weak", "amount": 1}]},
 		{"intent": "邪氣蝕 16 + 蠱毒 3", "effects": [{"kind": "damage", "amount": 16}, {"kind": "poison", "amount": 3}]},
@@ -696,6 +711,7 @@ static func _red_eye_demon() -> EnemyData:
 	enemy.display_name = "赤眼山魈"
 	enemy.max_hp = 95
 	enemy.portrait_path = "res://assets/art/enemies/red_eye_demon.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "爪擊 14", "effects": [{"kind": "damage", "amount": 14}]},
 		{"intent": "怒吼 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]},
@@ -717,6 +733,7 @@ static func _zombie_general() -> EnemyData:
 	enemy.display_name = "殭屍大帥"
 	enemy.max_hp = 106
 	enemy.portrait_path = "res://assets/art/enemies/zombie_general.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "鬼將劈砍 16", "effects": [{"kind": "damage", "amount": 16}]},
 		{"intent": "腐臭毒氣 蠱毒 5", "effects": [{"kind": "poison", "amount": 5}]},
@@ -739,6 +756,7 @@ static func _baiyue_lord() -> EnemyData:
 	enemy.display_name = "拜月教主"
 	enemy.max_hp = 136
 	enemy.portrait_path = "res://assets/art/enemies/baiyue_lord.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "拜月神力 18 + 破綻 1", "effects": [{"kind": "damage", "amount": 18}, {"kind": "vulnerable", "amount": 1}]},
 		{"intent": "月蝕暗咒 蠱毒 6", "effects": [{"kind": "poison", "amount": 6}]},
@@ -764,6 +782,7 @@ static func _water_tentacle() -> EnemyData:
 	enemy.display_name = "水妖觸手"
 	enemy.max_hp = 22
 	enemy.portrait_path = "res://assets/art/enemies/water_tentacle.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "鞭打 6", "effects": [{"kind": "damage", "amount": 6}]},
 		{"intent": "防 8", "effects": [{"kind": "block", "amount": 8}]},
@@ -778,6 +797,7 @@ static func _red_eye_imp() -> EnemyData:
 	enemy.display_name = "赤眼幼魈"
 	enemy.max_hp = 18
 	enemy.portrait_path = "res://assets/art/enemies/red_eye_imp.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "撓擊 5", "effects": [{"kind": "damage", "amount": 5}]},
 		{"intent": "怒吼 虛弱 1", "effects": [{"kind": "weak", "amount": 1}]},
@@ -791,6 +811,7 @@ static func _zombie_thrall() -> EnemyData:
 	enemy.display_name = "殭屍奴"
 	enemy.max_hp = 20
 	enemy.portrait_path = "res://assets/art/enemies/zombie_thrall.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "抓撲 6", "effects": [{"kind": "damage", "amount": 6}]},
 		{"intent": "守 5", "effects": [{"kind": "block", "amount": 5}]},
@@ -804,6 +825,7 @@ static func _centipede_brood() -> EnemyData:
 	enemy.display_name = "蜈蚣幼蟲"
 	enemy.max_hp = 14
 	enemy.portrait_path = "res://assets/art/enemies/centipede_brood.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "啃噬 4 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 4}, {"kind": "poison", "amount": 2}]},
 	]
@@ -816,6 +838,7 @@ static func _tower_wisp() -> EnemyData:
 	enemy.display_name = "鎖妖塔殘魂"
 	enemy.max_hp = 16
 	enemy.portrait_path = "res://assets/art/enemies/tower_wisp.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "魂吸 4 + 蠱毒 1", "effects": [{"kind": "damage", "amount": 4}, {"kind": "poison", "amount": 1}]},
 	]
