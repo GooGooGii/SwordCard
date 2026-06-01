@@ -31,7 +31,7 @@ var player_level_label: Label
 var player_block_badge: BlockBadge
 var player_portrait_wrap: Control
 var player_portrait_image: TextureRect  # 戰鬥中切換 active 時動態換肖像
-var bench_strip: VBoxContainer  # 後排頭像容器（戰鬥中可點切換上場）
+var bench_strip: Control  # 後排「站位」容器（手動定位，斜向交疊在隊長身後）
 var _switch_tween: Tween = null  # 切換角色的淡出/淡入動畫，防止重疊
 var enemy_hp_bar: ProgressBar
 var enemy_hp_value: Label
@@ -2060,8 +2060,16 @@ func _build_battle_scene() -> void:
 	arena.alignment = BoxContainer.ALIGNMENT_CENTER
 	arena.add_theme_constant_override("separation", 24)
 	screen.add_child(arena)
-	_build_bench_widget(arena)
-	_build_player_widget(arena)
+	# 後排 + 隊長綁成一個「隊伍站位」群組：負分隔讓隊長肖像疊在後排前面、
+	# 後排從隊長身後斜向探出，形成有景深的陣形（而非並排的獨立格子）。
+	var has_bench: bool = run_state != null and run_state.characters.size() > 1
+	var party_group: HBoxContainer = HBoxContainer.new()
+	party_group.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	party_group.alignment = BoxContainer.ALIGNMENT_END
+	party_group.add_theme_constant_override("separation", -42 if has_bench else 0)
+	arena.add_child(party_group)
+	_build_bench_widget(party_group)
+	_build_player_widget(party_group)
 	var spacer: Control = Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2079,14 +2087,15 @@ func _build_battle_scene() -> void:
 	_build_right_dock(bottom)
 
 func _build_bench_widget(parent: HBoxContainer) -> void:
-	var col: VBoxContainer = VBoxContainer.new()
-	col.custom_minimum_size = Vector2(110, 0)
-	col.size_flags_horizontal = 0
-	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	col.alignment = BoxContainer.ALIGNMENT_CENTER
-	col.add_theme_constant_override("separation", 10)
-	parent.add_child(col)
-	bench_strip = col
+	# 後排不再是一格格獨立的金邊盒子，而是去背肖像「斜向交疊」站在隊長身後，
+	# 偏暗往後退、最近的後援疊在最上層。手動定位 → 用 Control 當容器。
+	var holder: Control = Control.new()
+	holder.custom_minimum_size = Vector2(118, 0)
+	holder.size_flags_horizontal = 0
+	holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	holder.clip_contents = false  # 允許肖像略微溢出右緣、疊向隊長
+	parent.add_child(holder)
+	bench_strip = holder
 	_refresh_bench_strip()  # 後排內容會在 _refresh_battle 持續刷新
 
 func _refresh_bench_strip() -> void:
@@ -2095,62 +2104,125 @@ func _refresh_bench_strip() -> void:
 	for child: Node in bench_strip.get_children():
 		child.queue_free()
 	if battle == null or run_state == null or run_state.characters.size() <= 1:
+		bench_strip.custom_minimum_size = Vector2(0, 0)
 		return  # 單人隊不顯示 bench
 	var players: Array = battle.state.get("players", []) as Array
 	var active: int = int(battle.state.get("active_player_index", 0))
+	var bench_indices: Array[int] = []
 	for i: int in range(players.size()):
-		if i == active:
-			continue
-		var portrait_node: Control = _bench_portrait(i, players[i] as Dictionary)
-		bench_strip.add_child(portrait_node)
-		if _pending_revive_indices.has(i):
-			UIFactory.flash_node(portrait_node, Color(1.6, 1.5, 0.7), 0.7)
+		if i != active:
+			bench_indices.append(i)
+	if bench_indices.is_empty():
+		bench_strip.custom_minimum_size = Vector2(0, 0)
+		return
+	bench_strip.custom_minimum_size = Vector2(118, 0)
+	var n: int = bench_indices.size()
+	# 由「最遠」往「最近」加 child：先加的畫在底層（被後加的蓋住）。
+	# rank 0 = 最靠近隊長的第一後援（最大、最亮、最靠右下、畫最上層）。
+	for draw_order: int in range(n):
+		var rank: int = n - 1 - draw_order
+		var bi: int = bench_indices[rank]
+		var node: Control = _bench_portrait(bi, players[bi] as Dictionary, rank)
+		bench_strip.add_child(node)
+		if _pending_revive_indices.has(bi):
+			UIFactory.flash_node(node, Color(1.6, 1.5, 0.7), 0.7)
 	_pending_revive_indices.clear()
 
-func _bench_portrait(index: int, player_data: Dictionary) -> Control:
+func _bench_portrait(index: int, player_data: Dictionary, rank: int) -> Control:
+	# rank 0 = front-most 後援（最大最亮，貼著隊長）；rank 越大越往左後方退、越暗越小。
 	var character: CharacterData = run_state.characters[index] if index < run_state.characters.size() else null
 	if character == null:
 		return Control.new()
 	var hp: int = int(player_data.get("hp", 0))
 	var max_hp_v: int = int(player_data.get("max_hp", 1))
 	var alive: bool = hp > 0
-	var wrap: VBoxContainer = VBoxContainer.new()
-	wrap.add_theme_constant_override("separation", 2)
-	wrap.alignment = BoxContainer.ALIGNMENT_CENTER
-	var btn: Button = Button.new()
-	btn.custom_minimum_size = Vector2(96, 96)
-	btn.focus_mode = Control.FOCUS_NONE
-	btn.text = ""
-	btn.disabled = not alive
-	var border: Color = ThemeColors.BORDER_GOLD if alive else Color("5f6570", 0.5)
-	var bg: Color = Color("18212f", 0.85) if alive else Color("0d121b", 0.85)
-	btn.add_theme_stylebox_override("normal", UIFactory.style_box(bg, border, 1, 8))
-	btn.add_theme_stylebox_override("hover", UIFactory.style_box(bg.lightened(0.1), ThemeColors.ACCENT_GOLD, 2, 8))
-	btn.add_theme_stylebox_override("pressed", UIFactory.style_box(bg.darkened(0.1), ThemeColors.HIGHLIGHT_GOLD, 2, 8))
-	btn.add_theme_stylebox_override("disabled", UIFactory.style_box(Color("0d121b", 0.6), Color("5f6570", 0.4), 1, 8))
+	# 尺寸 / 站位：front 96、每往後一階縮 16；後排往左上錯開製造交疊景深
+	var psize: float = max(64.0, 96.0 - rank * 16.0)
+	var off_x: float = 22.0 - rank * 14.0   # rank0 貼齊 holder 右緣、疊向隊長；後排往左退
+	var off_y: float = rank * 54.0          # 後排往上錯開，與前一個交疊約 40 px
+	var wrap: Control = Control.new()
+	wrap.custom_minimum_size = Vector2(psize, psize)
+	wrap.size = Vector2(psize, psize)
+	wrap.pivot_offset = Vector2(psize * 0.5, psize * 0.5)
+	# 錨定到 holder 底部，往上堆疊（站在同一條地平線上）
+	wrap.anchor_left = 0.0
+	wrap.anchor_right = 0.0
+	wrap.anchor_top = 1.0
+	wrap.anchor_bottom = 1.0
+	wrap.offset_left = off_x
+	wrap.offset_right = off_x + psize
+	wrap.offset_top = -off_y - psize
+	wrap.offset_bottom = -off_y
+	wrap.mouse_filter = Control.MOUSE_FILTER_STOP if alive else Control.MOUSE_FILTER_IGNORE
+	# 去背肖像（無邊框盒子）。後排偏暗偏冷往後退，讓隊長在視覺上跳出來。
+	var portrait: TextureRect = UIFactory.portrait_rect(character.portrait_path, Vector2(psize, psize), true)
+	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if alive:
-		btn.pressed.connect(func() -> void: _on_bench_pressed(index))
-	var portrait: TextureRect = UIFactory.portrait_rect(character.portrait_path, Vector2(84, 84), true)
-	portrait.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	portrait.size = Vector2(84, 84)
-	portrait.position = Vector2(-42, -42)
-	if not alive:
-		portrait.modulate = Color(0.0, 0.0, 0.0, 0.7)
-	btn.add_child(portrait)
-	UIFactory.ignore_child_mouse(btn)
-	wrap.add_child(btn)
-	var name_label: Label = UIFactory.card_label(character.display_name, 12, ThemeColors.TEXT_LIGHT if alive else ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_CENTER)
-	wrap.add_child(name_label)
-	if alive:
-		var hp_label: Label = UIFactory.card_label("HP %d/%d" % [hp, max_hp_v], 11, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_CENTER)
-		wrap.add_child(hp_label)
+		var dim: float = 0.90 - rank * 0.16
+		portrait.modulate = Color(dim, dim, min(1.0, dim + 0.06))
 	else:
-		var ko_label: Label = UIFactory.card_label("倒下", 11, Color("c84a3a"), HORIZONTAL_ALIGNMENT_CENTER)
-		wrap.add_child(ko_label)
-	if index < run_state.character_levels.size():
-		var bench_lv_label: Label = UIFactory.card_label("Lv %d" % run_state.character_levels[index], 10, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-		wrap.add_child(bench_lv_label)
+		portrait.modulate = Color(0.08, 0.09, 0.13, 0.92)  # 倒下 = 暗色剪影
+	wrap.add_child(portrait)
+	# 細 HP pip（取代原本的金邊盒 + 文字 HP），貼在肖像底部
+	if alive:
+		wrap.add_child(_bench_hp_pip(psize, float(hp) / float(max(1, max_hp_v))))
+	else:
+		var ko: Label = UIFactory.card_label("✕", 20, Color("c84a3a", 0.9), HORIZONTAL_ALIGNMENT_CENTER)
+		ko.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+		ko.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		wrap.add_child(ko)
+	# 點擊切換 + hover 提亮/上浮（無 stylebox，純肖像互動）
+	if alive:
+		var captured: int = index
+		var pnode: TextureRect = portrait
+		wrap.gui_input.connect(func(event: InputEvent) -> void:
+			if event is InputEventMouseButton:
+				var mb: InputEventMouseButton = event as InputEventMouseButton
+				if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+					_on_bench_pressed(captured))
+		wrap.mouse_entered.connect(func() -> void:
+			if is_instance_valid(wrap):
+				wrap.scale = Vector2(1.08, 1.08)
+			if is_instance_valid(pnode):
+				pnode.modulate = Color(1.0, 1.0, 1.0))
+		wrap.mouse_exited.connect(func() -> void:
+			if is_instance_valid(wrap):
+				wrap.scale = Vector2.ONE
+			if is_instance_valid(pnode):
+				var d: float = 0.90 - rank * 0.16
+				pnode.modulate = Color(d, d, min(1.0, d + 0.06)))
+		wrap.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	return wrap
+
+func _bench_hp_pip(portrait_w: float, ratio: float) -> Control:
+	# 極簡 HP 條：底色 + 填色兩層 ColorRect，貼在肖像底部置中
+	var pip_w: float = portrait_w * 0.66
+	var pip_h: float = 5.0
+	var holder: Control = Control.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.anchor_left = 0.5
+	holder.anchor_right = 0.5
+	holder.anchor_top = 1.0
+	holder.anchor_bottom = 1.0
+	holder.offset_left = -pip_w * 0.5
+	holder.offset_right = pip_w * 0.5
+	holder.offset_top = -pip_h - 2.0
+	holder.offset_bottom = -2.0
+	var bg: ColorRect = ColorRect.new()
+	bg.color = Color("0b1018", 0.82)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(bg)
+	var fill: ColorRect = ColorRect.new()
+	fill.color = ThemeColors.HP_FILL
+	fill.anchor_left = 0.0
+	fill.anchor_top = 0.0
+	fill.anchor_right = clamp(ratio, 0.0, 1.0)
+	fill.anchor_bottom = 1.0
+	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(fill)
+	return holder
 
 func _on_bench_pressed(index: int) -> void:
 	if battle == null:
