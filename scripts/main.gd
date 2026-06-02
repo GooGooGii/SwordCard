@@ -3099,8 +3099,19 @@ func play_card(card: CardData, source_button: Button = null) -> void:
 	else:
 		_refresh_battle()
 	_show_state_feedback(result["before_card"])
-	if card.id == "lxy_wanjian" or card.id == "lxy_wanjianguizong":
-		_animate_wan_jian_jue_effect(card)
+	match card.id:
+		"lxy_wanjian", "lxy_wanjianguizong":
+			_animate_wan_jian_jue_effect(card)
+		"lxy_yujian":
+			_animate_yu_jian_effect(card)
+		"lxy_tianjian":
+			_animate_tian_jian_effect(card)
+		"lxy_jianzhen":
+			_animate_jian_zhen_effect(card)
+		"lxy_jiulong":
+			_animate_jiu_long_effect(card)
+		"lxy_xiaoyao_shenjian":
+			_animate_xiaoyao_shenjian_effect(card)
 	if bool(result["ended"]) and await _finish_battle_after_delay():
 		return
 
@@ -6813,4 +6824,312 @@ func _animate_wan_jian_jue_effect(card: CardData) -> void:
 			# Shake the enemy portrait upon impact
 			if is_instance_valid(captured_wrap):
 				UIFactory.shake_node(captured_wrap, 6.0, 0.2)
+		)
+
+func _animate_yu_jian_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var texture_path: String = "res://assets/art/effects/blue_flying_sword.png"
+	var sword_tex: Texture2D = UIFactory.load_texture(texture_path)
+	if sword_tex == null:
+		return
+	var active_idx: int = battle._active_enemy_index()
+	var target_widget: Dictionary = {}
+	for w: Dictionary in enemy_widgets:
+		if w["enemy_idx"] == active_idx:
+			target_widget = w
+			break
+	if target_widget.is_empty():
+		for w: Dictionary in enemy_widgets:
+			var enemy_slots: Array = battle.state.get("enemies", []) as Array
+			var i: int = w["enemy_idx"]
+			if i < enemy_slots.size() and int(enemy_slots[i]["hp"]) > 0:
+				target_widget = w
+				break
+	if target_widget.is_empty():
+		return
+	
+	var wrap: Control = target_widget["wrap"] as Control
+	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
+	var start_pos: Vector2 = Vector2(100.0, get_viewport_rect().size.y * 0.7)
+	
+	var sword_size: Vector2 = Vector2(80, 80)
+	var sword: TextureRect = TextureRect.new()
+	sword.texture = sword_tex
+	sword.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sword.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	sword.size = sword_size
+	sword.pivot_offset = sword_size / 2.0
+	sword.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sword.global_position = start_pos
+	
+	var to_target: Vector2 = target_center - start_pos
+	sword.rotation = to_target.angle()
+	add_child(sword)
+	
+	var duration: float = 0.35
+	var tween: Tween = create_tween().set_parallel(true)
+	var end_pos: Vector2 = target_center - sword_size / 2.0
+	tween.tween_property(sword, "global_position", end_pos, duration)\
+		.set_trans(Tween.TRANS_QUAD)\
+		.set_ease(Tween.EASE_IN)
+	
+	sword.modulate.a = 0.0
+	tween.tween_property(sword, "modulate:a", 1.0, duration * 0.2)
+	
+	var captured_wrap = wrap
+	tween.finished.connect(func() -> void:
+		if is_instance_valid(sword):
+			sword.queue_free()
+		if is_instance_valid(captured_wrap):
+			UIFactory.shake_node(captured_wrap, 6.0, 0.2)
+	)
+
+func _animate_tian_jian_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var texture_path: String = "res://assets/art/effects/gold_giant_sword.png"
+	var sword_tex: Texture2D = UIFactory.load_texture(texture_path)
+	if sword_tex == null:
+		return
+	var active_idx: int = battle._active_enemy_index()
+	var target_widget: Dictionary = {}
+	for w: Dictionary in enemy_widgets:
+		if w["enemy_idx"] == active_idx:
+			target_widget = w
+			break
+	if target_widget.is_empty() and not enemy_widgets.is_empty():
+		target_widget = enemy_widgets[0]
+	
+	var wrap: Control = target_widget["wrap"] as Control
+	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
+	var sword_size: Vector2 = Vector2(250, 250)
+	
+	var sword: TextureRect = TextureRect.new()
+	sword.texture = sword_tex
+	sword.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sword.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	sword.size = sword_size
+	sword.pivot_offset = sword_size / 2.0
+	sword.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	var start_pos: Vector2 = Vector2(target_center.x, -300.0)
+	sword.global_position = start_pos
+	sword.rotation = PI / 2.0
+	add_child(sword)
+	
+	var duration: float = 0.45
+	var tween: Tween = create_tween().set_parallel(true)
+	var end_pos: Vector2 = target_center - sword_size / 2.0
+	
+	tween.tween_property(sword, "global_position", end_pos, duration)\
+		.set_trans(Tween.TRANS_CUBIC)\
+		.set_ease(Tween.EASE_IN)
+	
+	sword.scale = Vector2(1.5, 1.5)
+	tween.tween_property(sword, "scale", Vector2(0.8, 0.8), duration)
+	
+	sword.modulate.a = 0.0
+	tween.tween_property(sword, "modulate:a", 1.0, duration * 0.15)
+	
+	var captured_wrap = wrap
+	var captured_self = self
+	tween.finished.connect(func() -> void:
+		if is_instance_valid(sword):
+			sword.queue_free()
+		
+		if is_instance_valid(captured_wrap):
+			UIFactory.shake_node(captured_wrap, 20.0, 0.45)
+		
+		for w in captured_self.enemy_widgets:
+			if w != captured_wrap and is_instance_valid(w["wrap"]):
+				UIFactory.shake_node(w["wrap"], 10.0, 0.3)
+	)
+
+func _animate_jian_zhen_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var texture_path: String = "res://assets/art/effects/blue_flying_sword.png"
+	var sword_tex: Texture2D = UIFactory.load_texture(texture_path)
+	if sword_tex == null:
+		return
+	var active_idx: int = battle._active_enemy_index()
+	var target_widget: Dictionary = {}
+	for w: Dictionary in enemy_widgets:
+		if w["enemy_idx"] == active_idx:
+			target_widget = w
+			break
+	if target_widget.is_empty() and not enemy_widgets.is_empty():
+		target_widget = enemy_widgets[0]
+	
+	var wrap: Control = target_widget["wrap"] as Control
+	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
+	var radius: float = 160.0
+	var sword_size: Vector2 = Vector2(70, 70)
+	
+	for i in range(6):
+		var angle: float = i * (TAU / 6.0)
+		var start_pos: Vector2 = target_center + Vector2(cos(angle), sin(angle)) * radius - sword_size / 2.0
+		
+		var sword: TextureRect = TextureRect.new()
+		sword.texture = sword_tex
+		sword.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		sword.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		sword.size = sword_size
+		sword.pivot_offset = sword_size / 2.0
+		sword.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		sword.global_position = start_pos
+		sword.rotation = angle + PI
+		
+		sword.modulate.a = 0.0
+		add_child(sword)
+		
+		var is_first_wave: bool = (i % 2 == 0)
+		var delay: float = 0.1 if is_first_wave else 0.4
+		var duration: float = 0.25
+		
+		var tween: Tween = create_tween().set_parallel(true)
+		tween.tween_property(sword, "modulate:a", 1.0, 0.1).set_delay(delay)
+		
+		var end_pos: Vector2 = target_center - sword_size / 2.0
+		tween.tween_property(sword, "global_position", end_pos, duration)\
+			.set_delay(delay)\
+			.set_trans(Tween.TRANS_QUAD)\
+			.set_ease(Tween.EASE_IN)
+			
+		var captured_wrap = wrap
+		tween.finished.connect(func() -> void:
+			if is_instance_valid(sword):
+				sword.queue_free()
+			if is_instance_valid(captured_wrap):
+				UIFactory.shake_node(captured_wrap, 5.0, 0.15)
+		)
+
+func _animate_jiu_long_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var texture_path: String = "res://assets/art/effects/blue_flying_sword.png"
+	var sword_tex: Texture2D = UIFactory.load_texture(texture_path)
+	if sword_tex == null:
+		return
+	var active_idx: int = battle._active_enemy_index()
+	var target_widget: Dictionary = {}
+	for w: Dictionary in enemy_widgets:
+		if w["enemy_idx"] == active_idx:
+			target_widget = w
+			break
+	if target_widget.is_empty() and not enemy_widgets.is_empty():
+		target_widget = enemy_widgets[0]
+	
+	var wrap: Control = target_widget["wrap"] as Control
+	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
+	var view_size: Vector2 = get_viewport_rect().size
+	var sword_size: Vector2 = Vector2(80, 80)
+	
+	for w_idx in range(3):
+		var wave_delay: float = w_idx * 0.25
+		for s_idx in range(3):
+			var sword: TextureRect = TextureRect.new()
+			sword.texture = sword_tex
+			sword.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			sword.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			sword.size = sword_size
+			sword.pivot_offset = sword_size / 2.0
+			sword.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			
+			var start_pos: Vector2 = Vector2(
+				randf_range(-150.0, -50.0),
+				randf_range(100.0, view_size.y - 200.0)
+			)
+			sword.global_position = start_pos
+			
+			var to_target: Vector2 = target_center - start_pos
+			sword.rotation = to_target.angle()
+			sword.modulate.a = 0.0
+			add_child(sword)
+			
+			var duration: float = randf_range(0.35, 0.45)
+			var delay: float = wave_delay + s_idx * 0.04
+			
+			var tween: Tween = create_tween().set_parallel(true)
+			var end_pos: Vector2 = target_center - sword_size / 2.0
+			
+			tween.tween_property(sword, "global_position", end_pos, duration)\
+				.set_delay(delay)\
+				.set_trans(Tween.TRANS_QUAD)\
+				.set_ease(Tween.EASE_IN)
+			
+			tween.tween_property(sword, "modulate:a", 1.0, duration * 0.2).set_delay(delay)
+			
+			var captured_wrap = wrap
+			tween.finished.connect(func() -> void:
+				if is_instance_valid(sword):
+					sword.queue_free()
+				if is_instance_valid(captured_wrap):
+					UIFactory.shake_node(captured_wrap, 6.0, 0.15)
+			)
+
+func _animate_xiaoyao_shenjian_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var texture_path: String = "res://assets/art/effects/blue_flying_sword.png"
+	var sword_tex: Texture2D = UIFactory.load_texture(texture_path)
+	if sword_tex == null:
+		return
+	var active_idx: int = battle._active_enemy_index()
+	var target_widget: Dictionary = {}
+	for w: Dictionary in enemy_widgets:
+		if w["enemy_idx"] == active_idx:
+			target_widget = w
+			break
+	if target_widget.is_empty() and not enemy_widgets.is_empty():
+		target_widget = enemy_widgets[0]
+	
+	var wrap: Control = target_widget["wrap"] as Control
+	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
+	var sword_size: Vector2 = Vector2(90, 90)
+	
+	for slash in range(2):
+		var sword: TextureRect = TextureRect.new()
+		sword.texture = sword_tex
+		sword.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		sword.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		sword.size = sword_size
+		sword.pivot_offset = sword_size / 2.0
+		sword.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		
+		var start_offset: Vector2
+		var end_offset: Vector2
+		if slash == 0:
+			start_offset = Vector2(-200.0, -200.0)
+			end_offset = Vector2(200.0, 200.0)
+		else:
+			start_offset = Vector2(200.0, -200.0)
+			end_offset = Vector2(-200.0, 200.0)
+			
+		var start_pos: Vector2 = target_center + start_offset - sword_size / 2.0
+		var end_pos: Vector2 = target_center + end_offset - sword_size / 2.0
+		
+		sword.global_position = start_pos
+		sword.rotation = (end_pos - start_pos).angle()
+		sword.modulate.a = 0.0
+		add_child(sword)
+		
+		var delay: float = slash * 0.18
+		var duration: float = 0.25
+		
+		var tween: Tween = create_tween().set_parallel(true)
+		tween.tween_property(sword, "global_position", end_pos, duration)\
+			.set_delay(delay)\
+			.set_trans(Tween.TRANS_LINEAR)
+			
+		tween.tween_property(sword, "modulate:a", 1.0, duration * 0.2).set_delay(delay)
+		tween.tween_property(sword, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.7)
+		
+		var captured_wrap = wrap
+		tween.finished.connect(func() -> void:
+			if is_instance_valid(sword):
+				sword.queue_free()
+			if is_instance_valid(captured_wrap):
+				UIFactory.shake_node(captured_wrap, 8.0, 0.2)
 		)
