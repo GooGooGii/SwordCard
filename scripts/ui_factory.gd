@@ -124,6 +124,28 @@ static func portrait_rect(path: String, size: Vector2, show_full_image: bool = f
 		rect.texture = texture
 	return rect
 
+# 戰鬥肖像「底部對齊地面線」：把肖像保持比例縮放後，水平置中、底部貼齊框底，
+# 讓四角色與敵人站在同一條地面線（解決不同比例原圖造成的高度漂移）。
+# rect 須先 set_meta("ground_box", Vector2)；換 texture（換姿勢/變身）後重呼叫即可。
+static func ground_portrait(rect: TextureRect) -> void:
+	if rect == null or not rect.has_meta("ground_box"):
+		return
+	var box: Vector2 = rect.get_meta("ground_box")
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_SCALE  # 已自算尺寸吻合比例，不會變形
+	var tex: Texture2D = rect.texture
+	if tex == null or tex.get_width() <= 0 or tex.get_height() <= 0:
+		rect.position = Vector2.ZERO
+		rect.size = box
+		return
+	var tw: float = float(tex.get_width())
+	var th: float = float(tex.get_height())
+	var s: float = min(box.x / tw, box.y / th)
+	var dw: float = tw * s
+	var dh: float = th * s
+	rect.size = Vector2(dw, dh)
+	rect.position = Vector2((box.x - dw) * 0.5, box.y - dh)  # 水平置中、底部對齊
+
 static var _texture_cache: Dictionary = {}
 
 static func load_texture(path: String) -> Texture2D:

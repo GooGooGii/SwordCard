@@ -2504,6 +2504,7 @@ func _swap_to_phase_2_portrait() -> void:
 		var tex: Texture2D = UIFactory.load_texture(phase_2_path)
 		if tex != null:
 			enemy_portrait_image.texture = tex
+			UIFactory.ground_portrait(enemy_portrait_image)  # 變身後重新貼地
 	var phase_2_tint: Color = battle.enemy.phase_2_portrait_tint
 	if phase_2_tint != Color.WHITE:
 		enemy_portrait_image.modulate = phase_2_tint
@@ -2635,8 +2636,10 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	# portrait wrap（含 block badge）
 	var wrap: Control = Control.new()
 	wrap.custom_minimum_size = portrait_size
+	wrap.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	var portrait: TextureRect = UIFactory.portrait_rect(enemy_data.portrait_path, portrait_size, true)
-	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	portrait.set_meta("ground_box", portrait_size)
+	UIFactory.ground_portrait(portrait)  # 底部對齊地面線
 	portrait.modulate = enemy_data.portrait_tint
 	portrait.flip_h = not enemy_data.default_facing_left
 	wrap.add_child(portrait)
@@ -3255,8 +3258,10 @@ func _hp_bar_with_overlay(bar: ProgressBar, value_label: Label) -> Control:
 func _portrait_with_block_badge(path: String, portrait_size: Vector2, show_full: bool, is_player: bool, tint: Color = Color.WHITE) -> Control:
 	var wrap: Control = Control.new()
 	wrap.custom_minimum_size = portrait_size
+	wrap.size_flags_horizontal = Control.SIZE_SHRINK_CENTER  # 維持 box 寬，地面線置中才準
 	var portrait: TextureRect = UIFactory.portrait_rect(path, portrait_size, show_full)
-	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	portrait.set_meta("ground_box", portrait_size)
+	UIFactory.ground_portrait(portrait)  # 底部對齊地面線（取代置中）
 	portrait.modulate = tint
 	wrap.add_child(portrait)
 	var badge: BlockBadge = BlockBadge.new()
@@ -6322,6 +6327,7 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 			var tex: Texture2D = UIFactory.load_texture(path)
 			if tex != null:
 				player_portrait_image.texture = tex
+				UIFactory.ground_portrait(player_portrait_image)  # 換姿勢後重新貼地
 	_refresh_combatant_hp(player_hp_bar, player_hp_value, int(battle.state["player_hp"]), int(battle.state["player_max_hp"]))
 	_update_poison_preview(player_hp_bar, int(battle.state["player_hp"]), int(battle.state["player_max_hp"]), int(battle.state["player_poison"]))
 	player_block_badge.set_amount(int(battle.state["player_block"]))
