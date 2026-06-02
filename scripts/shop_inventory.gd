@@ -83,7 +83,7 @@ static func build_potions(is_black_shop: bool) -> Array[Dictionary]:
 	var pool: Array[Dictionary] = PotionCatalog.all().duplicate()
 	pool.shuffle()
 	var result: Array[Dictionary] = []
-	for i: int in range(min(2, pool.size())):
+	for i: int in range(min(3, pool.size())):
 		var p: Dictionary = pool[i]
 		result.append({"potion": p, "price": PotionCatalog.price_of(p, is_black_shop)})
 	return result

@@ -23,7 +23,7 @@ var pending_rest_heal: int = 0
 var current_shop_inventory: Array[Dictionary] = []
 var current_shop_potions: Array[Dictionary] = []
 var current_shop_is_black: bool = false
-var current_shop_relic_id: String = ""    # 本商店額外販售的遺物 id（買掉後清空）
+var current_shop_relic_ids: Array[String] = []  # 本商店販售的遺物 id（最多 3 種，買掉後移除）
 var current_shop_node_index: int = -1      # 已開出貨架的 encounter_index；-1 = 尚未開店
 var shop_remove_used: bool = false         # 本商店削牌服務是否用過
 var shop_upgrade_used: bool = false        # 本商店強化服務是否用過
@@ -142,7 +142,7 @@ func init_for(chars: Variant) -> void:
 	current_shop_inventory = []
 	current_shop_potions = []
 	current_shop_is_black = false
-	current_shop_relic_id = ""
+	current_shop_relic_ids = []
 	current_shop_node_index = -1
 	shop_remove_used = false
 	shop_upgrade_used = false
@@ -261,7 +261,7 @@ func to_dict() -> Dictionary:
 		"current_shop_inventory": _serialize_shop_inventory(),
 		"current_shop_potions": current_shop_potions.duplicate(true),
 		"current_shop_is_black": current_shop_is_black,
-		"current_shop_relic_id": current_shop_relic_id,
+		"current_shop_relic_ids": current_shop_relic_ids.duplicate(),
 		"current_shop_node_index": current_shop_node_index,
 		"shop_remove_used": shop_remove_used,
 		"shop_upgrade_used": shop_upgrade_used,
@@ -344,7 +344,13 @@ func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> 
 		if p_v is Dictionary:
 			current_shop_potions.append((p_v as Dictionary).duplicate(true))
 	current_shop_is_black = bool(data.get("current_shop_is_black", false))
-	current_shop_relic_id = String(data.get("current_shop_relic_id", ""))
+	current_shop_relic_ids = []
+	for rid_v: Variant in (data.get("current_shop_relic_ids", []) as Array):
+		current_shop_relic_ids.append(String(rid_v))
+	# 舊存檔相容：單一 current_shop_relic_id → 併入清單
+	var legacy_rid: String = String(data.get("current_shop_relic_id", ""))
+	if not legacy_rid.is_empty() and not current_shop_relic_ids.has(legacy_rid):
+		current_shop_relic_ids.append(legacy_rid)
 	current_shop_node_index = int(data.get("current_shop_node_index", -1))
 	shop_remove_used = bool(data.get("shop_remove_used", false))
 	shop_upgrade_used = bool(data.get("shop_upgrade_used", false))

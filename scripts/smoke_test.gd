@@ -221,7 +221,7 @@ func _test_save_round_trip(characters: Array[CharacterData]) -> void:
 	state.current_shop_is_black = true
 	state.current_event_variant = "ruins"
 	# 商店防刷：貨架狀態要存進存檔，重載後不能重抽
-	state.current_shop_relic_id = "tongbao_qian"
+	state.current_shop_relic_ids = ["tongbao_qian", "lie_huo_ling"]
 	state.current_shop_node_index = 4
 	state.shop_remove_used = true
 	state.shop_upgrade_used = false
@@ -241,7 +241,7 @@ func _test_save_round_trip(characters: Array[CharacterData]) -> void:
 	_check(restored.pending_rest_heal == 7, "pending_rest_heal mismatch")
 	_check(restored.current_shop_is_black == true, "current_shop_is_black mismatch")
 	_check(restored.current_event_variant == "ruins", "current_event_variant mismatch")
-	_check(restored.current_shop_relic_id == "tongbao_qian", "current_shop_relic_id mismatch")
+	_check(restored.current_shop_relic_ids.size() == 2 and restored.current_shop_relic_ids[0] == "tongbao_qian", "current_shop_relic_ids mismatch")
 	_check(restored.current_shop_node_index == 4, "current_shop_node_index mismatch")
 	_check(restored.shop_remove_used == true, "shop_remove_used mismatch")
 	_check(restored.current_shop_potions.size() == 1, "current_shop_potions mismatch")

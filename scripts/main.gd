@@ -5048,7 +5048,7 @@ func open_shop_node(is_black_shop: bool) -> void:
 		run_state.current_shop_is_black = is_black_shop
 		run_state.current_shop_inventory = _make_shop_inventory(is_black_shop)
 		run_state.current_shop_potions = ShopInventory.build_potions(is_black_shop)
-		run_state.current_shop_relic_id = _pick_shop_relic_id()
+		run_state.current_shop_relic_ids = _pick_shop_relic_ids(3)
 		run_state.shop_remove_used = false
 		run_state.shop_upgrade_used = false
 		run_state.current_shop_node_index = run_state.encounter_index
@@ -5077,50 +5077,55 @@ func show_shop_node() -> void:
 	var flavor_text: String = "簾後藏著來路不明的珍品，價格狠，成色也狠。" if run_state.current_shop_is_black else "行商在山道旁支起小攤，貨色普通但價格公道。"
 	box.add_child(_title(title_text, 34))
 	box.add_child(UIFactory.paragraph(flavor_text))
-	# 用 HFlowContainer：商品多時自動換行，不會超出畫面右緣（全部可見、可點購買）
-	var goods_row: HFlowContainer = HFlowContainer.new()
-	goods_row.add_theme_constant_override("h_separation", 12)
-	goods_row.add_theme_constant_override("v_separation", 12)
-	goods_row.size_flags_horizontal = Control.SIZE_FILL
-	box.add_child(goods_row)
+	# 依種類分列：第一列卡片、第二列遺物、第三列藥品、第四列其它（服務 + 導覽）。
+	# 每列用 HFlowContainer → 商品多時自動換行，不會超出畫面右緣（全部可見、可點購買）。
+
+	# ── 第一列：卡片 ──
+	box.add_child(_shop_section_label("卡牌"))
+	var card_row: HFlowContainer = _shop_flow_row()
+	box.add_child(card_row)
 	for item: Dictionary in run_state.current_shop_inventory:
-		goods_row.add_child(_shop_item_view(item))
-	# 商店多賣 1 件裝備（在 open_shop_node 開店時就決定，買掉後清空、不重抽）
-	var shop_relic_id: String = run_state.current_shop_relic_id
-	if not shop_relic_id.is_empty() and not run_state.has_relic(shop_relic_id):
-		var relic: RelicData = RelicCatalog.by_id(shop_relic_id)
+		card_row.add_child(_shop_item_view(item))
+
+	# ── 第二列：遺物（最多 3 種，買掉/已持有則略過）──
+	var relic_views: Array[Control] = []
+	for rid: String in run_state.current_shop_relic_ids:
+		if rid.is_empty() or run_state.has_relic(rid):
+			continue
+		var relic: RelicData = RelicCatalog.by_id(rid)
 		if relic != null:
-			goods_row.add_child(_shop_relic_view(relic))
+			relic_views.append(_shop_relic_view(relic))
+	if not relic_views.is_empty():
+		box.add_child(_shop_section_label("遺物"))
+		var relic_row: HFlowContainer = _shop_flow_row()
+		box.add_child(relic_row)
+		for v: Control in relic_views:
+			relic_row.add_child(v)
+
+	# ── 第三列：藥品（最多 3 種）──
 	if not run_state.current_shop_potions.is_empty():
-		var potion_row: HBoxContainer = HBoxContainer.new()
-		potion_row.add_theme_constant_override("separation", 12)
-		potion_row.alignment = BoxContainer.ALIGNMENT_CENTER
+		box.add_child(_shop_section_label("藥品"))
+		var potion_row: HFlowContainer = _shop_flow_row()
 		box.add_child(potion_row)
 		for potion_item: Dictionary in run_state.current_shop_potions:
 			potion_row.add_child(_shop_potion_view(potion_item))
-	var services_row: HBoxContainer = HBoxContainer.new()
-	services_row.add_theme_constant_override("separation", 12)
-	services_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_child(services_row)
+
+	# ── 第四列：其它（削牌 / 強化服務 + 翻閱 / 離店）──
+	box.add_child(_shop_section_label("其它"))
+	var other_row: HFlowContainer = _shop_flow_row()
+	box.add_child(other_row)
 	var remove_price: int = _shop_apply_discount(75)
 	var upgrade_price: int = _shop_apply_discount(100)
-	var remove_used: bool = run_state.shop_remove_used
-	var upgrade_used: bool = run_state.shop_upgrade_used
-	services_row.add_child(_shop_service_panel(
+	other_row.add_child(_shop_service_panel(
 		"削牌服務", "從牌組中移除一張牌", remove_price,
-		remove_used, run_state.deck.size() > 5,
+		run_state.shop_remove_used, run_state.deck.size() > 5,
 		func(): _open_shop_remove_service(remove_price)))
-	services_row.add_child(_shop_service_panel(
+	other_row.add_child(_shop_service_panel(
 		"強化服務", "升級牌組中的一張牌", upgrade_price,
-		upgrade_used, not _upgradeable_cards().is_empty(),
+		run_state.shop_upgrade_used, not _upgradeable_cards().is_empty(),
 		func(): _open_shop_upgrade_service(upgrade_price)))
-	var bottom_row: HBoxContainer = HBoxContainer.new()
-	bottom_row.add_theme_constant_override("separation", 16)
-	bottom_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	bottom_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	box.add_child(bottom_row)
-	bottom_row.add_child(_event_choice_button("翻閱", "查看當前手札", false, show_deck_view))
-	bottom_row.add_child(_event_choice_button("離店", "收手回程", false, advance_non_battle_node))
+	other_row.add_child(_event_choice_button("翻閱", "查看當前手札", false, show_deck_view))
+	other_row.add_child(_event_choice_button("離店", "收手回程", false, advance_non_battle_node))
 	# 讓「非按鈕的所有區域」都能上下拖曳捲動（panel/label/卡圖對滑鼠透明，事件落到 ScrollContainer）
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_make_non_button_scroll_transparent(box)
@@ -5137,23 +5142,37 @@ func _make_non_button_scroll_transparent(node: Node) -> void:
 			(child as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_make_non_button_scroll_transparent(child)
 
-func _pick_shop_relic_id() -> String:
+func _shop_section_label(text: String) -> Label:
+	return UIFactory.card_label("— %s —" % text, 16, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+
+func _shop_flow_row() -> HFlowContainer:
+	var row: HFlowContainer = HFlowContainer.new()
+	row.add_theme_constant_override("h_separation", 12)
+	row.add_theme_constant_override("v_separation", 12)
+	row.size_flags_horizontal = Control.SIZE_FILL
+	return row
+
+func _pick_shop_relic_ids(count: int = 3) -> Array[String]:
+	# 挑 count 種不重複、尚未持有的遺物。黑店 30% 機率讓第一格出角色專武。
 	var pool: Array[RelicData] = []
 	for r: RelicData in RelicCatalog.generals():
 		if not run_state.has_relic(r.id):
 			pool.append(r)
+	pool.shuffle()
+	var ids: Array[String] = []
 	if run_state.current_shop_is_black:
-		# 黑店 30% 機率出角色專武
-		var weapon_pool: Array[RelicData] = RelicCatalog.weapons_for_character(selected_character.id)
 		var avail_weapons: Array[RelicData] = []
-		for w: RelicData in weapon_pool:
+		for w: RelicData in RelicCatalog.weapons_for_character(selected_character.id):
 			if not run_state.has_relic(w.id):
 				avail_weapons.append(w)
 		if not avail_weapons.is_empty() and randf() < 0.3:
-			return avail_weapons[randi() % avail_weapons.size()].id
-	if pool.is_empty():
-		return ""
-	return pool[randi() % pool.size()].id
+			ids.append(avail_weapons[randi() % avail_weapons.size()].id)
+	for r: RelicData in pool:
+		if ids.size() >= count:
+			break
+		if not ids.has(r.id):
+			ids.append(r.id)
+	return ids
 
 func _shop_relic_view(relic: RelicData) -> Control:
 	var price: int = _shop_relic_price(relic)
@@ -5204,7 +5223,7 @@ func _buy_shop_relic(relic: RelicData, price: int) -> void:
 		return
 	run_state.gold -= price
 	run_state.add_relic(relic)
-	run_state.current_shop_relic_id = ""  # 買掉這次的商店裝備
+	run_state.current_shop_relic_ids.erase(relic.id)  # 買掉這件就從貨架移除
 	show_shop_node()
 
 func _shop_potion_view(item: Dictionary) -> Control:
@@ -7097,70 +7116,80 @@ func _animate_wan_jian_jue_effect(card: CardData) -> void:
 		return
 		
 	var view_size: Vector2 = get_viewport_rect().size
-	var sword_count: int = 15
-	var sword_size: Vector2 = Vector2(80, 80)
-	
-	for i: int in range(sword_count):
-		# Select target
-		var target_widget: Dictionary = target_widgets[i % target_widgets.size()]
-		var wrap: Control = target_widget["wrap"] as Control
-		var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
-		
-		# Create sword TextureRect
-		var sword: TextureRect = TextureRect.new()
-		sword.texture = sword_tex
-		sword.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		sword.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		sword.size = sword_size
-		sword.pivot_offset = sword_size / 2.0
-		sword.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		
-		# Staggered entry from top with random coordinates
-		var start_pos: Vector2 = Vector2(
-			randf_range(50.0, view_size.x - 50.0),
-			randf_range(-180.0, -80.0)
-		)
-		sword.global_position = start_pos
-		
-		# Set angle pointing towards the target
-		var to_target: Vector2 = target_center - start_pos
-		var angle: float = to_target.angle()
-		sword.rotation = angle
-		
-		# Add to tree (under self so it is on top of battle elements)
-		add_child(sword)
-		
-		# Animate the sword flying to the target
-		var duration: float = randf_range(0.35, 0.55)
-		var delay: float = i * 0.04
-		var tween: Tween = create_tween().set_parallel(true)
-		
-		# Tween position to target center (centered offset)
-		var end_pos: Vector2 = target_center - sword_size / 2.0
-		
-		tween.tween_property(sword, "global_position", end_pos, duration)\
-			.set_delay(delay)\
-			.set_trans(Tween.TRANS_QUAD)\
-			.set_ease(Tween.EASE_IN)
-			
-		# Fade in and then fade out slightly near the end
-		sword.modulate.a = 0.0
-		tween.tween_property(sword, "modulate:a", 1.0, duration * 0.2)\
-			.set_delay(delay)
-			
-		# Scale down slightly as it hits
-		tween.tween_property(sword, "scale", Vector2(0.5, 0.5), duration * 0.3)\
-			.set_delay(delay + duration * 0.7)
-			
-		# Connect completion signal to handle shake and cleanup
-		var captured_wrap = wrap
-		tween.finished.connect(func() -> void:
-			if is_instance_valid(sword):
-				sword.queue_free()
-			# Shake the enemy portrait upon impact
-			if is_instance_valid(captured_wrap):
-				UIFactory.shake_node(captured_wrap, 6.0, 0.2)
-		)
+	var sword_size: Vector2 = Vector2(145, 145)
+
+	# 收集敵群「頭頂」落點與對應的 portrait（給落地 shake 用）
+	var heads: Array[Vector2] = []
+	var head_wraps: Array[Control] = []
+	for w: Dictionary in target_widgets:
+		var wrap: Control = w["wrap"] as Control
+		heads.append(Vector2(
+			wrap.global_position.x + wrap.size.x / 2.0,
+			wrap.global_position.y + wrap.size.y * 0.22
+		))
+		head_wraps.append(wrap)
+
+	# 第二階段：下劍雨——多把劍從畫面上方垂直插落敵群頭頂
+	var spawn_rain: Callable = func() -> void:
+		var rain_count: int = 16
+		for i: int in range(rain_count):
+			var head: Vector2 = heads[i % heads.size()]
+			var shake_wrap: Control = head_wraps[i % head_wraps.size()]
+			var sword: TextureRect = TextureRect.new()
+			sword.texture = sword_tex
+			sword.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			sword.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			sword.size = sword_size
+			sword.pivot_offset = sword_size / 2.0
+			sword.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			sword.rotation = PI / 2.0  # 劍尖朝下
+
+			var drop_x: float = head.x + randf_range(-55.0, 55.0)
+			var start_pos: Vector2 = Vector2(drop_x, randf_range(-280.0, -150.0)) - sword_size / 2.0
+			var end_pos: Vector2 = Vector2(drop_x, head.y) - sword_size / 2.0
+			sword.global_position = start_pos
+			sword.modulate.a = 0.0
+			add_child(sword)
+
+			var dur: float = randf_range(0.26, 0.4)
+			var delay: float = i * 0.05
+			var t: Tween = create_tween().set_parallel(true)
+			t.tween_property(sword, "global_position", end_pos, dur)\
+				.set_delay(delay).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+			t.tween_property(sword, "modulate:a", 1.0, dur * 0.25).set_delay(delay)
+			t.tween_property(sword, "modulate:a", 0.0, 0.14).set_delay(delay + dur)
+			var cap_wrap: Control = shake_wrap
+			t.finished.connect(func() -> void:
+				if is_instance_valid(sword):
+					sword.queue_free()
+				if is_instance_valid(cap_wrap):
+					UIFactory.shake_node(cap_wrap, 6.0, 0.18)
+			)
+
+	# 第一階段：一把劍從玩家處向天上飛、衝出畫面，落幕後觸發劍雨
+	var herald: TextureRect = TextureRect.new()
+	herald.texture = sword_tex
+	herald.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	herald.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	herald.size = sword_size
+	herald.pivot_offset = sword_size / 2.0
+	herald.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	herald.rotation = -PI / 2.0  # 劍尖朝上
+	var launch_pos: Vector2 = Vector2(150.0, view_size.y * 0.6)
+	herald.global_position = launch_pos - sword_size / 2.0
+	herald.modulate.a = 0.0
+	add_child(herald)
+
+	var launch: Tween = create_tween().set_parallel(true)
+	launch.tween_property(herald, "modulate:a", 1.0, 0.08)
+	launch.tween_property(herald, "global_position",
+		Vector2(launch_pos.x, -260.0) - sword_size / 2.0, 0.32)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	launch.finished.connect(func() -> void:
+		if is_instance_valid(herald):
+			herald.queue_free()
+		spawn_rain.call()
+	)
 
 func _animate_yu_jian_effect(card: CardData) -> void:
 	if battle == null or enemy_widgets.is_empty():
@@ -7189,7 +7218,7 @@ func _animate_yu_jian_effect(card: CardData) -> void:
 	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
 	var start_pos: Vector2 = Vector2(100.0, get_viewport_rect().size.y * 0.7)
 	
-	var sword_size: Vector2 = Vector2(80, 80)
+	var sword_size: Vector2 = Vector2(145, 145)
 	var sword: TextureRect = TextureRect.new()
 	sword.texture = sword_tex
 	sword.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -7239,7 +7268,7 @@ func _animate_tian_jian_effect(card: CardData) -> void:
 	
 	var wrap: Control = target_widget["wrap"] as Control
 	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
-	var sword_size: Vector2 = Vector2(250, 250)
+	var sword_size: Vector2 = Vector2(325, 325)
 	
 	var sword: TextureRect = TextureRect.new()
 	sword.texture = sword_tex
@@ -7301,7 +7330,7 @@ func _animate_jian_zhen_effect(card: CardData) -> void:
 	var wrap: Control = target_widget["wrap"] as Control
 	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
 	var radius: float = 160.0
-	var sword_size: Vector2 = Vector2(70, 70)
+	var sword_size: Vector2 = Vector2(130, 130)
 	
 	for i in range(6):
 		var angle: float = i * (TAU / 6.0)
@@ -7360,7 +7389,7 @@ func _animate_jiu_long_effect(card: CardData) -> void:
 	var wrap: Control = target_widget["wrap"] as Control
 	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
 	var view_size: Vector2 = get_viewport_rect().size
-	var sword_size: Vector2 = Vector2(80, 80)
+	var sword_size: Vector2 = Vector2(145, 145)
 	
 	for w_idx in range(3):
 		var wave_delay: float = w_idx * 0.25
@@ -7423,7 +7452,7 @@ func _animate_xiaoyao_shenjian_effect(card: CardData) -> void:
 	
 	var wrap: Control = target_widget["wrap"] as Control
 	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
-	var sword_size: Vector2 = Vector2(90, 90)
+	var sword_size: Vector2 = Vector2(165, 165)
 	
 	for slash in range(2):
 		var sword: TextureRect = TextureRect.new()
@@ -7492,7 +7521,7 @@ func _animate_qian_kun_effect(card: CardData) -> void:
 		
 	var view_size: Vector2 = get_viewport_rect().size
 	var coin_count: int = 24
-	var coin_size: Vector2 = Vector2(40, 40)
+	var coin_size: Vector2 = Vector2(52, 52)
 	
 	for i in range(coin_count):
 		var target_widget: Dictionary = alive_targets[i % alive_targets.size()]
@@ -7565,7 +7594,7 @@ func _animate_qi_jian_zhi_effect(card: CardData) -> void:
 		
 	# Create a giant slash sweeping horizontally from left to right
 	var view_size: Vector2 = get_viewport_rect().size
-	var slash_size: Vector2 = Vector2(300, 300)
+	var slash_size: Vector2 = Vector2(390, 390)
 	
 	var slash: TextureRect = TextureRect.new()
 	slash.texture = slash_tex
@@ -7636,7 +7665,7 @@ func _animate_bian_ying_effect(card: CardData) -> void:
 		
 	var wrap: Control = target_widget["wrap"] as Control
 	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
-	var slash_size: Vector2 = Vector2(160, 160)
+	var slash_size: Vector2 = Vector2(208, 208)
 	
 	# 2 quick whip slashes (X shape)
 	for i in range(2):
@@ -7691,7 +7720,7 @@ func _animate_lie_long_effect(card: CardData) -> void:
 		
 	var wrap: Control = target_widget["wrap"] as Control
 	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
-	var dragon_size: Vector2 = Vector2(180, 180)
+	var dragon_size: Vector2 = Vector2(234, 234)
 	
 	var dragon: TextureRect = TextureRect.new()
 	dragon.texture = dragon_tex
@@ -7747,8 +7776,8 @@ func _animate_wan_li_kuang_effect(card: CardData) -> void:
 		var cloud: ColorRect = ColorRect.new()
 		# Yellow-brown sand color with low alpha
 		cloud.color = Color(0.72, 0.61, 0.41, 0.0)
-		var cloud_w: float = randf_range(160.0, 260.0)
-		var cloud_h: float = randf_range(160.0, 260.0)
+		var cloud_w: float = randf_range(210.0, 340.0)
+		var cloud_h: float = randf_range(210.0, 340.0)
 		cloud.size = Vector2(cloud_w, cloud_h)
 		cloud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		
@@ -7933,7 +7962,7 @@ func _animate_ice_effect(card: CardData) -> void:
 		spike.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		spike.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		
-		var size := Vector2(75.0, 150.0)
+		var size := Vector2(98.0, 195.0)
 		spike.size = size
 		spike.pivot_offset = Vector2(size.x / 2.0, size.y)
 		spike.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -8042,7 +8071,7 @@ func _animate_fire_effect(card: CardData) -> void:
 			fireball.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			fireball.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			
-			var f_size := Vector2(65.0, 65.0)
+			var f_size := Vector2(85.0, 85.0)
 			fireball.size = f_size
 			fireball.pivot_offset = f_size / 2.0
 			fireball.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -8150,7 +8179,7 @@ func _animate_earth_effect(card: CardData) -> void:
 		stone.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		stone.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		
-		var size_val: float = 160.0 if card.id == "zl_taishan" else 120.0
+		var size_val: float = 208.0 if card.id == "zl_taishan" else 156.0
 		var stone_size := Vector2(size_val, size_val)
 		stone.size = stone_size
 		stone.pivot_offset = stone_size / 2.0
@@ -8242,7 +8271,7 @@ func _spawn_single_heal_vfx(node: Control, is_bench: bool = false) -> void:
 	style.border_width_top = 3
 	style.border_width_bottom = 3
 	
-	var halo_size: float = 70.0 if is_bench else 150.0
+	var halo_size: float = 92.0 if is_bench else 195.0
 	style.corner_radius_top_left = int(halo_size / 2)
 	style.corner_radius_top_right = int(halo_size / 2)
 	style.corner_radius_bottom_left = int(halo_size / 2)
@@ -8338,7 +8367,7 @@ func _animate_yu_feng_effect(card: CardData) -> void:
 		bee.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		bee.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		
-		var bee_size := Vector2(24.0, 24.0)
+		var bee_size := Vector2(32.0, 32.0)
 		bee.size = bee_size
 		bee.pivot_offset = bee_size / 2.0
 		bee.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -8469,7 +8498,7 @@ func _animate_bao_zha_gu_effect(card: CardData) -> void:
 	blast.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	blast.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	
-	var blast_size := Vector2(220.0, 220.0)
+	var blast_size := Vector2(286.0, 286.0)
 	blast.size = blast_size
 	blast.pivot_offset = blast_size / 2.0
 	blast.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -8585,7 +8614,7 @@ func _animate_du_zhen_effect(card: CardData) -> void:
 		needle.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		needle.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		
-		var needle_size := Vector2(50.0, 20.0)
+		var needle_size := Vector2(65.0, 26.0)
 		needle.size = needle_size
 		needle.pivot_offset = needle_size / 2.0
 		needle.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -8656,7 +8685,7 @@ func _animate_wu_yue_zhan_effect(card: CardData) -> void:
 		slash.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		slash.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		
-		var size_val: float = randf_range(150.0, 180.0)
+		var size_val: float = randf_range(195.0, 235.0)
 		var slash_size := Vector2(size_val, size_val)
 		slash.size = slash_size
 		slash.pivot_offset = slash_size / 2.0
@@ -8704,8 +8733,8 @@ func _animate_jiu_shen_effect(card: CardData) -> void:
 	god.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	god.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	
-	var god_w: float = 460.0
-	var god_h: float = 460.0
+	var god_w: float = 600.0
+	var god_h: float = 600.0
 	god.size = Vector2(god_w, god_h)
 	god.pivot_offset = Vector2(god_w / 2.0, god_h) # Pivot at bottom center
 	god.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -8827,7 +8856,7 @@ func _animate_fei_long_effect(card: CardData, stolen_item: Dictionary = {}) -> v
 	hand.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	hand.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	
-	var hand_size := Vector2(70.0, 70.0)
+	var hand_size := Vector2(90.0, 90.0)
 	hand.size = hand_size
 	hand.pivot_offset = hand_size / 2.0
 	hand.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -8881,7 +8910,7 @@ func _spawn_stolen_coins(start_pos: Vector2, end_pos: Vector2) -> void:
 		coin.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		coin.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		
-		var coin_size := Vector2(25.0, 25.0)
+		var coin_size := Vector2(32.0, 32.0)
 		coin.size = coin_size
 		coin.pivot_offset = coin_size / 2.0
 		coin.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -9049,7 +9078,7 @@ func _animate_meng_she_effect(card: CardData) -> void:
 	snake.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	snake.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	
-	var snake_size := Vector2(160.0, 240.0)
+	var snake_size := Vector2(208.0, 312.0)
 	snake.size = snake_size
 	snake.pivot_offset = Vector2(snake_size.x / 2.0, snake_size.y)
 	snake.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -9129,7 +9158,7 @@ func _animate_hui_hun_effect(card: CardData) -> void:
 	style.corner_radius_bottom_right = 20
 	
 	beam.add_theme_stylebox_override("panel", style)
-	beam.size = Vector2(80.0, 650.0)
+	beam.size = Vector2(110.0, 650.0)
 	beam.pivot_offset = Vector2(40.0, 0.0)
 	beam.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	beam.global_position = Vector2(center.x - 40.0, center.y - 580.0)
@@ -9335,7 +9364,7 @@ func _animate_yi_yang_effect(card: CardData) -> void:
 
 func _spawn_gold_cross_spark(pos: Vector2) -> void:
 	# Golden glow cross flare particle
-	var p_size := Vector2(80.0, 80.0)
+	var p_size := Vector2(104.0, 104.0)
 	
 	var flare_h := ColorRect.new()
 	flare_h.color = Color("ffffff")
@@ -9402,7 +9431,7 @@ func _animate_zhan_long_effect(card: CardData) -> void:
 	sword.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	sword.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	
-	var sword_size := Vector2(250.0, 250.0)
+	var sword_size := Vector2(325.0, 325.0)
 	sword.size = sword_size
 	sword.pivot_offset = sword_size / 2.0
 	sword.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -9468,7 +9497,7 @@ func _animate_feng_huang_effect(card: CardData) -> void:
 		style.corner_radius_bottom_right = 6
 		
 		feather.add_theme_stylebox_override("panel", style)
-		feather.size = Vector2(25.0, 12.0)
+		feather.size = Vector2(33.0, 16.0)
 		feather.pivot_offset = Vector2(12.5, 6.0)
 		feather.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		
@@ -9525,8 +9554,8 @@ func _animate_gu_shen_effect(card: CardData) -> void:
 	god.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	god.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	
-	var god_w: float = 460.0
-	var god_h: float = 460.0
+	var god_w: float = 600.0
+	var god_h: float = 600.0
 	god.size = Vector2(god_w, god_h)
 	god.pivot_offset = Vector2(god_w / 2.0, god_h)
 	god.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -9553,7 +9582,7 @@ func _animate_gu_shen_effect(card: CardData) -> void:
 	style.corner_radius_bottom_right = 200
 	
 	shockwave.add_theme_stylebox_override("panel", style)
-	var ring_size := Vector2(100.0, 100.0)
+	var ring_size := Vector2(130.0, 130.0)
 	shockwave.size = ring_size
 	shockwave.pivot_offset = ring_size / 2.0
 	shockwave.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -9633,7 +9662,7 @@ func _animate_confuse_effect(card: CardData) -> void:
 	smoke.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	smoke.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	
-	var smoke_size := Vector2(100.0, 100.0)
+	var smoke_size := Vector2(130.0, 130.0)
 	smoke.size = smoke_size
 	smoke.pivot_offset = smoke_size / 2.0
 	smoke.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -9685,7 +9714,7 @@ func _animate_poison_fog_effect(card: CardData) -> void:
 		fog.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		fog.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		
-		var fog_size := Vector2(250.0, 250.0)
+		var fog_size := Vector2(325.0, 325.0)
 		fog.size = fog_size
 		fog.pivot_offset = fog_size / 2.0
 		fog.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -9725,5 +9754,3 @@ func _animate_poison_fog_effect(card: CardData) -> void:
 			if is_instance_valid(fog):
 				fog.queue_free()
 		)
-
-
