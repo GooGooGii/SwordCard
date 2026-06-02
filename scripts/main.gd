@@ -8578,11 +8578,19 @@ func _animate_fei_long_effect(card: CardData, stolen_item: Dictionary = {}) -> v
 	if player_portrait_wrap != null and is_instance_valid(player_portrait_wrap):
 		player_center = player_portrait_wrap.global_position + player_portrait_wrap.size / 2.0
 		
-	# 人物衝向目標物（有動感的近身切入）
+	# 人物衝向目標物（有動感的近身切入，動態計算到達敵人的精確座標）
 	if player_portrait_wrap != null and is_instance_valid(player_portrait_wrap):
 		var orig_pos: Vector2 = player_portrait_wrap.position
-		var dash_dir: Vector2 = (target_center - player_center).normalized()
-		var dash_distance: float = 140.0
+		var full_vector: Vector2 = target_center - player_center
+		var distance: float = full_vector.length()
+		var dash_dir: Vector2 = full_vector.normalized()
+		
+		# 依據雙方頭像尺寸，計算剛好接觸的距離（減去雙方半寬，多推進 40 像素以增加貼身打擊感）
+		var player_half_width: float = player_portrait_wrap.size.x / 2.0
+		var enemy_half_width: float = wrap.size.x / 2.0
+		var contact_distance: float = player_half_width + enemy_half_width - 40.0
+		var dash_distance: float = max(0.0, distance - contact_distance)
+		
 		var dash_tween := player_portrait_wrap.create_tween()
 		
 		# 衝向目標
