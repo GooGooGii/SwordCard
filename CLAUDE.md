@@ -45,6 +45,24 @@ godot --headless --path . --import
 
 CI 會在每次 push 自動跑 smoke test，失敗就阻擋 APK / EXE build（見 `.github/workflows/`）。
 
+### 實機渲染截圖（驗證 UI / 動畫）
+
+改動 UI 或出牌特效動畫後，**用實機渲染截圖肉眼確認**（純推理看不出大小 / 位置 / 時機）。
+專案根目錄有兩支 `SceneTree` 工具，pattern 一致：開真場景 → 跑幾幀 → `get_root().get_texture().get_image().save_png()`。
+
+- **`render_effects.gd`** — 出牌動畫截圖。開一場真戰鬥、直接觸發指定卡的 `_animate_*`，在動畫途中某幀截圖。
+  改頂部 `SHOTS`（每筆 `[card_id, frame, label]`，frame≈秒數×60）與 `ENEMY_IDS`（AOE / 劍雨要多隻才看得出涵蓋）即可。
+  內建 `CARD_ANIM` 對照表自動把 card_id 對到正確的 `_animate_*`（新增動畫時補這表）。
+- **`render_shop.gd`** — 商店畫面截圖（範例：怎麼 `start_run` → 灌道具 → 開某個 screen）。
+
+```bash
+# 務必 windowed，不要 --headless（headless 無 rendering，截圖全黑）
+godot --headless --path . --import        # 若特效/卡圖剛新增、沒匯入過才需要
+godot --path . -s render_effects.gd       # 輸出 res://_<label>.png
+```
+
+截圖用 Read 工具直接開圖檢視；看完自行刪除暫存 PNG（`_*.png` 及其 `.import`）。
+
 ## Project Layout
 
 ```
