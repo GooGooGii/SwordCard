@@ -5066,6 +5066,7 @@ func show_shop_node() -> void:
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.mouse_filter = Control.MOUSE_FILTER_PASS  # 讓 drag 事件能被 ScrollContainer 接到
 	panel.add_child(scroll)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -5076,8 +5077,11 @@ func show_shop_node() -> void:
 	var flavor_text: String = "簾後藏著來路不明的珍品，價格狠，成色也狠。" if run_state.current_shop_is_black else "行商在山道旁支起小攤，貨色普通但價格公道。"
 	box.add_child(_title(title_text, 34))
 	box.add_child(UIFactory.paragraph(flavor_text))
-	var goods_row: HBoxContainer = HBoxContainer.new()
-	goods_row.add_theme_constant_override("separation", 12)
+	# 用 HFlowContainer：商品多時自動換行，不會超出畫面右緣（全部可見、可點購買）
+	var goods_row: HFlowContainer = HFlowContainer.new()
+	goods_row.add_theme_constant_override("h_separation", 12)
+	goods_row.add_theme_constant_override("v_separation", 12)
+	goods_row.size_flags_horizontal = Control.SIZE_FILL
 	box.add_child(goods_row)
 	for item: Dictionary in run_state.current_shop_inventory:
 		goods_row.add_child(_shop_item_view(item))
@@ -5117,6 +5121,21 @@ func show_shop_node() -> void:
 	box.add_child(bottom_row)
 	bottom_row.add_child(_event_choice_button("翻閱", "查看當前手札", false, show_deck_view))
 	bottom_row.add_child(_event_choice_button("離店", "收手回程", false, advance_non_battle_node))
+	# 讓「非按鈕的所有區域」都能上下拖曳捲動（panel/label/卡圖對滑鼠透明，事件落到 ScrollContainer）
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_make_non_button_scroll_transparent(box)
+
+# 遞迴把非 BaseButton 的 Control 設為 MOUSE_FILTER_IGNORE，使 ScrollContainer 能在
+# 任意非按鈕處接到 drag 捲動；Button（含 _make_card_button）維持 STOP 仍可點擊。
+func _make_non_button_scroll_transparent(node: Node) -> void:
+	for child: Node in node.get_children():
+		if child is BaseButton:
+			# 只有「可用」的按鈕維持 STOP（攔點擊）；停用的按鈕也讓它可拖曳捲動
+			if (child as BaseButton).disabled:
+				(child as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+		elif child is Control:
+			(child as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_make_non_button_scroll_transparent(child)
 
 func _pick_shop_relic_id() -> String:
 	var pool: Array[RelicData] = []
@@ -7825,11 +7844,11 @@ func _animate_lightning_effect(card: CardData) -> void:
 		bolt.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		bolt.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		
-		var bolt_size := Vector2(100.0, 480.0)
+		var bolt_size := Vector2(170.0, 600.0)
 		if card.id == "zl_shenlei":
-			bolt_size = Vector2(240.0, 650.0)
+			bolt_size = Vector2(360.0, 800.0)
 		elif card.id == "zl_tianlei":
-			bolt_size = Vector2(160.0, 520.0)
+			bolt_size = Vector2(260.0, 660.0)
 			
 		bolt.size = bolt_size
 		bolt.pivot_offset = Vector2(bolt_size.x / 2.0, bolt_size.y)
