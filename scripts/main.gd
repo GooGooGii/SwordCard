@@ -3142,6 +3142,30 @@ func play_card(card: CardData, source_button: Button = null) -> void:
 			_animate_du_zhen_effect(card)
 		"anu_wuyuezhan", "anu_xuerenwu":
 			_animate_wu_yue_zhan_effect(card)
+		"lxy_jiushen":
+			_animate_jiu_shen_effect(card)
+		"lxy_feilong":
+			_animate_fei_long_effect(card)
+		"lxy_zuimeng":
+			_animate_zui_meng_effect(card)
+		"zl_mengshe", "zl_mengshe_ls":
+			_animate_meng_she_effect(card)
+		"zl_huihun":
+			_animate_hui_hun_effect(card)
+		"zl_xuanfengzhou", "zl_fengling":
+			_animate_xuan_feng_effect(card)
+		"lyr_yiyang":
+			_animate_yi_yang_effect(card)
+		"lyr_zhanlong":
+			_animate_zhan_long_effect(card)
+		"lyr_fenghuan", "lyr_yuehua":
+			_animate_feng_huang_effect(card)
+		"anu_gushen":
+			_animate_gu_shen_effect(card)
+		"anu_mihun", "anu_guijiang", "anu_guwang":
+			_animate_confuse_effect(card)
+		"anu_guzhang", "anu_duwu", "anu_sanshigu":
+			_animate_poison_fog_effect(card)
 	if bool(result["ended"]) and await _finish_battle_after_delay():
 		return
 
@@ -8381,6 +8405,934 @@ func _animate_wu_yue_zhan_effect(card: CardData) -> void:
 				slash.queue_free()
 			if is_instance_valid(captured_wrap):
 				UIFactory.shake_node(captured_wrap, 6.0, 0.15)
+		)
+
+
+func _animate_jiu_shen_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var texture_path: String = "res://assets/art/effects/drunken_god.png"
+	var god_tex: Texture2D = UIFactory.load_texture(texture_path)
+	if god_tex == null:
+		return
+		
+	var view_size: Vector2 = get_viewport_rect().size
+	var god := TextureRect.new()
+	god.texture = god_tex
+	god.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	god.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	
+	var god_w: float = 460.0
+	var god_h: float = 460.0
+	god.size = Vector2(god_w, god_h)
+	god.pivot_offset = Vector2(god_w / 2.0, god_h) # Pivot at bottom center
+	god.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	# Place in the center/slightly left of screen
+	god.global_position = Vector2((view_size.x - god_w) / 2.0 - 50.0, view_size.y - god_h - 40.0)
+	god.modulate = Color("e0c2ff") # Purple-white watercolor phantom
+	god.modulate.a = 0.0
+	god.scale = Vector2(0.2, 0.2)
+	add_child(god)
+	
+	# Golden flash overlay
+	var overlay := ColorRect.new()
+	overlay.color = Color("ffd700", 0.0)
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(overlay)
+	
+	var flash_tween := create_tween()
+	flash_tween.tween_property(overlay, "color:a", 0.24, 0.06).set_delay(0.26)
+	flash_tween.tween_property(overlay, "color:a", 0.0, 0.24).set_delay(0.32)
+	flash_tween.finished.connect(func() -> void:
+		if is_instance_valid(overlay):
+			overlay.queue_free()
+	)
+	
+	var duration: float = 0.65
+	var tween := create_tween().set_parallel(true)
+	
+	# God phantom rises
+	tween.tween_property(god, "scale", Vector2(1.0, 1.0), 0.3)\
+		.set_trans(Tween.TRANS_BACK)\
+		.set_ease(Tween.EASE_OUT)
+	tween.tween_property(god, "modulate:a", 0.92, 0.12)
+	
+	# God phantom fades away
+	tween.tween_property(god, "modulate:a", 0.0, 0.25).set_delay(0.4)
+	
+	# Screen shake and self-damage flash on impact
+	tween.finished.connect(func() -> void:
+		if is_instance_valid(god):
+			god.queue_free()
+		# Shake all alive enemies
+		for t in enemy_widgets:
+			var wrap: Control = t["wrap"] as Control
+			var enemy_slots: Array = battle.state.get("enemies", []) as Array
+			var idx: int = t["enemy_idx"]
+			if idx < enemy_slots.size() and int(enemy_slots[idx]["hp"]) > 0:
+				UIFactory.shake_node(wrap, 24.0, 0.6)
+		# Red flash self damage feedback
+		if player_portrait_wrap != null and is_instance_valid(player_portrait_wrap):
+			UIFactory.shake_node(player_portrait_wrap, 10.0, 0.25)
+			UIFactory.flash_node(player_portrait_wrap, Color(2.0, 0.4, 0.4), 0.25)
+	)
+
+
+func _animate_fei_long_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var texture_path: String = "res://assets/art/effects/stealing_hand.png"
+	var hand_tex: Texture2D = UIFactory.load_texture(texture_path)
+	if hand_tex == null:
+		return
+		
+	var active_idx: int = battle._active_enemy_index()
+	var target_widget: Dictionary = {}
+	for w: Dictionary in enemy_widgets:
+		if w["enemy_idx"] == active_idx:
+			target_widget = w
+			break
+	if target_widget.is_empty():
+		for w: Dictionary in enemy_widgets:
+			var enemy_slots: Array = battle.state.get("enemies", []) as Array
+			var i: int = w["enemy_idx"]
+			if i < enemy_slots.size() and int(enemy_slots[i]["hp"]) > 0:
+				target_widget = w
+				break
+	if target_widget.is_empty():
+		return
+		
+	var wrap: Control = target_widget["wrap"] as Control
+	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
+	
+	var view_size: Vector2 = get_viewport_rect().size
+	var player_center: Vector2 = Vector2(120.0, view_size.y * 0.65)
+	if player_portrait_wrap != null and is_instance_valid(player_portrait_wrap):
+		player_center = player_portrait_wrap.global_position + player_portrait_wrap.size / 2.0
+		
+	var hand := TextureRect.new()
+	hand.texture = hand_tex
+	hand.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	hand.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	
+	var hand_size := Vector2(70.0, 70.0)
+	hand.size = hand_size
+	hand.pivot_offset = hand_size / 2.0
+	hand.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hand.global_position = player_center - hand_size / 2.0
+	hand.modulate = Color("85e396") # Jade green watercolor hand
+	hand.modulate.a = 0.0
+	add_child(hand)
+	
+	var duration: float = 0.32
+	var tween := create_tween()
+	
+	# 1. Fly to target
+	tween.parallel().tween_property(hand, "global_position", target_center - hand_size / 2.0, duration)\
+		.set_trans(Tween.TRANS_QUAD)\
+		.set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(hand, "modulate:a", 1.0, duration * 0.3)
+	
+	# 2. Return to player
+	var captured_wrap = wrap
+	var current_player_center = player_center
+	var current_target_center = target_center
+	tween.tween_callback(func() -> void:
+		if is_instance_valid(captured_wrap):
+			UIFactory.shake_node(captured_wrap, 5.0, 0.15)
+			# Spawn gold coins flying back
+			_spawn_stolen_coins(current_target_center, current_player_center)
+	)
+	tween.tween_property(hand, "global_position", player_center - hand_size / 2.0, duration)\
+		.set_trans(Tween.TRANS_QUAD)\
+		.set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(hand, "modulate:a", 0.0, duration)
+	
+	tween.finished.connect(func() -> void:
+		if is_instance_valid(hand):
+			hand.queue_free()
+	)
+
+
+func _spawn_stolen_coins(start_pos: Vector2, end_pos: Vector2) -> void:
+	var coin_path: String = "res://assets/art/relics/tong_bao_qian.png"
+	var coin_tex: Texture2D = UIFactory.load_texture(coin_path)
+	if coin_tex == null:
+		return
+		
+	var coin_count: int = 5
+	for i in range(coin_count):
+		var coin := TextureRect.new()
+		coin.texture = coin_tex
+		coin.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		coin.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		
+		var coin_size := Vector2(25.0, 25.0)
+		coin.size = coin_size
+		coin.pivot_offset = coin_size / 2.0
+		coin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		coin.global_position = start_pos - coin_size / 2.0
+		coin.modulate.a = 0.0
+		add_child(coin)
+		
+		var delay: float = i * 0.05
+		var duration: float = randf_range(0.35, 0.5)
+		
+		var tween := create_tween().set_parallel(true)
+		
+		# Curved flying path back to player
+		var control_y: float = start_pos.y - randf_range(80.0, 150.0)
+		var mid_pos := Vector2((start_pos.x + end_pos.x) / 2.0, control_y)
+		
+		tween.tween_property(coin, "global_position", end_pos - coin_size / 2.0, duration)\
+			.set_delay(delay)\
+			.set_trans(Tween.TRANS_QUAD)\
+			.set_ease(Tween.EASE_IN_OUT)
+		tween.tween_property(coin, "rotation", randf_range(PI, TAU * 2.0), duration).set_delay(delay)
+		tween.tween_property(coin, "modulate:a", 1.0, duration * 0.3).set_delay(delay)
+		tween.tween_property(coin, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.7)
+		
+		tween.finished.connect(func() -> void:
+			if is_instance_valid(coin):
+				coin.queue_free()
+		)
+
+
+func _animate_zui_meng_effect(card: CardData) -> void:
+	if player_portrait_wrap == null or not is_instance_valid(player_portrait_wrap):
+		return
+		
+	var node_rect = player_portrait_wrap.get_global_rect()
+	var center = node_rect.position + node_rect.size / 2.0
+	
+	UIFactory.shake_node(player_portrait_wrap, 4.0, 0.4)
+	UIFactory.flash_node(player_portrait_wrap, Color(1.3, 1.25, 0.8), 0.35)
+	
+	# Spawn moon wine mist rising sparkles
+	var particle_count: int = 10
+	for i in range(particle_count):
+		var particle := ColorRect.new()
+		particle.color = Color("ffeb99") if randf() > 0.4 else Color("f8d2ff") # Yellow-gold or soft violet
+		var p_size: float = randf_range(5.0, 10.0)
+		particle.size = Vector2(p_size, p_size)
+		particle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		
+		var spawn_pos := Vector2(
+			center.x + randf_range(-node_rect.size.x * 0.4, node_rect.size.x * 0.4),
+			center.y + randf_range(-node_rect.size.y * 0.3, node_rect.size.y * 0.4)
+		)
+		particle.global_position = spawn_pos
+		add_child(particle)
+		
+		var rise_distance: float = randf_range(80.0, 160.0)
+		var rise_duration: float = randf_range(0.6, 1.0)
+		
+		var tween := create_tween().set_parallel(true)
+		tween.tween_property(particle, "global_position:y", spawn_pos.y - rise_distance, rise_duration)\
+			.set_trans(Tween.TRANS_QUAD)\
+			.set_ease(Tween.EASE_OUT)
+		tween.tween_property(particle, "global_position:x", spawn_pos.x + randf_range(-30, 30), rise_duration)
+		tween.tween_property(particle, "modulate:a", 0.0, rise_duration)
+		
+		tween.finished.connect(func() -> void:
+			if is_instance_valid(particle):
+				particle.queue_free()
+		)
+
+
+func _animate_meng_she_effect(card: CardData) -> void:
+	if player_portrait_wrap == null or not is_instance_valid(player_portrait_wrap):
+		return
+	var texture_path: String = "res://assets/art/effects/serpent_shadow.png"
+	var snake_tex: Texture2D = UIFactory.load_texture(texture_path)
+	if snake_tex == null:
+		return
+		
+	var node_rect = player_portrait_wrap.get_global_rect()
+	var center = node_rect.position + node_rect.size / 2.0
+	
+	var snake := TextureRect.new()
+	snake.texture = snake_tex
+	snake.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	snake.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	
+	var snake_size := Vector2(160.0, 240.0)
+	snake.size = snake_size
+	snake.pivot_offset = Vector2(snake_size.x / 2.0, snake_size.y)
+	snake.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Center it behind Linger
+	snake.global_position = Vector2(center.x - snake_size.x / 2.0, center.y - snake_size.y * 0.8)
+	snake.modulate = Color("dcb0ff") # Purple-green glowing shadow
+	snake.modulate.a = 0.0
+	snake.scale = Vector2(0.5, 0.5)
+	
+	# Add snake under Linger's wrapper if possible, or just add to root
+	add_child(snake)
+	
+	var duration: float = 0.7
+	var tween := create_tween().set_parallel(true)
+	
+	tween.tween_property(snake, "scale", Vector2(1.1, 1.1), duration)\
+		.set_trans(Tween.TRANS_QUAD)\
+		.set_ease(Tween.EASE_OUT)
+	tween.tween_property(snake, "global_position:y", snake.global_position.y - 60.0, duration)
+	tween.tween_property(snake, "modulate:a", 0.8, duration * 0.3)
+	tween.tween_property(snake, "modulate:a", 0.0, duration * 0.5).set_delay(duration * 0.5)
+	
+	tween.finished.connect(func() -> void:
+		if is_instance_valid(snake):
+			snake.queue_free()
+		# Flash portrait
+		if player_portrait_wrap != null and is_instance_valid(player_portrait_wrap):
+			UIFactory.flash_node(player_portrait_wrap, Color(1.3, 0.8, 1.5), 0.4)
+			_spawn_serpent_glow_particles(center, node_rect)
+	)
+
+
+func _spawn_serpent_glow_particles(center: Vector2, rect: Rect2) -> void:
+	# Spawn 15 small green/purple stars floating around Linger
+	for i in range(15):
+		var particle := ColorRect.new()
+		particle.color = Color("c18cff") if randf() > 0.5 else Color("a6ffd2")
+		particle.size = Vector2(6.0, 6.0)
+		particle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		particle.global_position = center + Vector2(randf_range(-rect.size.x * 0.3, rect.size.x * 0.3), randf_range(-rect.size.y * 0.3, rect.size.y * 0.3))
+		add_child(particle)
+		
+		var angle := randf() * TAU
+		var distance := randf_range(40.0, 100.0)
+		var velocity := Vector2(cos(angle), sin(angle)) * distance
+		var duration := randf_range(0.6, 1.2)
+		
+		var tween := create_tween().set_parallel(true)
+		tween.tween_property(particle, "global_position", particle.global_position + velocity, duration)\
+			.set_trans(Tween.TRANS_QUAD)\
+			.set_ease(Tween.EASE_OUT)
+		tween.tween_property(particle, "modulate:a", 0.0, duration)
+		tween.finished.connect(func() -> void:
+			if is_instance_valid(particle):
+				particle.queue_free()
+		)
+
+
+func _animate_hui_hun_effect(card: CardData) -> void:
+	if player_portrait_wrap == null or not is_instance_valid(player_portrait_wrap):
+		return
+		
+	var node_rect = player_portrait_wrap.get_global_rect()
+	var center = node_rect.position + node_rect.size / 2.0
+	
+	# Draw golden beam descending
+	var beam := Panel.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("ffe066", 0.28) # Semi transparent golden
+	style.border_color = Color("ffffff")
+	style.border_width_left = 2
+	style.border_width_right = 2
+	style.anti_aliasing = true
+	style.corner_radius_top_left = 20
+	style.corner_radius_top_right = 20
+	style.corner_radius_bottom_left = 20
+	style.corner_radius_bottom_right = 20
+	
+	beam.add_theme_stylebox_override("panel", style)
+	beam.size = Vector2(80.0, 650.0)
+	beam.pivot_offset = Vector2(40.0, 0.0)
+	beam.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	beam.global_position = Vector2(center.x - 40.0, center.y - 580.0)
+	beam.scale = Vector2(0.1, 1.0)
+	add_child(beam)
+	
+	var duration: float = 0.55
+	var tween := create_tween().set_parallel(true)
+	
+	# Beam expands horizontally and fades out
+	tween.tween_property(beam, "scale", Vector2(1.2, 1.0), duration * 0.4)\
+		.set_trans(Tween.TRANS_QUAD)\
+		.set_ease(Tween.EASE_OUT)
+	tween.tween_property(beam, "scale", Vector2(0.01, 1.0), duration * 0.4).set_delay(duration * 0.6)
+	style.bg_color.a = 0.4
+	tween.tween_property(style, "bg_color:a", 0.0, duration)
+	style.border_color.a = 1.0
+	tween.tween_property(style, "border_color:a", 0.0, duration)
+	
+	tween.finished.connect(func() -> void:
+		if is_instance_valid(beam):
+			beam.queue_free()
+		# Flash portrait
+		if player_portrait_wrap != null and is_instance_valid(player_portrait_wrap):
+			UIFactory.flash_node(player_portrait_wrap, Color(1.5, 1.4, 0.8), 0.35)
+	)
+	
+	# Spawn rising pink/golden sparks
+	var particle_count: int = 15
+	for i in range(particle_count):
+		var particle := ColorRect.new()
+		particle.color = Color("ffe266") if randf() > 0.4 else Color("ff99bb") # Golden or soft pink
+		var p_size: float = randf_range(5.0, 10.0)
+		particle.size = Vector2(p_size, p_size)
+		particle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		
+		var spawn_pos := Vector2(
+			center.x + randf_range(-node_rect.size.x * 0.4, node_rect.size.x * 0.4),
+			center.y + randf_range(-node_rect.size.y * 0.2, node_rect.size.y * 0.4)
+		)
+		particle.global_position = spawn_pos
+		add_child(particle)
+		
+		var rise_distance: float = randf_range(100.0, 220.0)
+		var rise_duration: float = randf_range(0.6, 1.0)
+		var delay: float = randf_range(0.0, 0.15)
+		
+		var p_tween := create_tween().set_parallel(true)
+		p_tween.tween_property(particle, "global_position:y", spawn_pos.y - rise_distance, rise_duration)\
+			.set_delay(delay)\
+			.set_trans(Tween.TRANS_QUAD)\
+			.set_ease(Tween.EASE_OUT)
+		p_tween.tween_property(particle, "global_position:x", spawn_pos.x + randf_range(-40, 40), rise_duration).set_delay(delay)
+		p_tween.tween_property(particle, "modulate:a", 0.0, rise_duration).set_delay(delay)
+		
+		p_tween.finished.connect(func() -> void:
+			if is_instance_valid(particle):
+				particle.queue_free()
+		)
+
+
+func _animate_xuan_feng_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var active_idx: int = battle._active_enemy_index()
+	var target_widget: Dictionary = {}
+	for w: Dictionary in enemy_widgets:
+		if w["enemy_idx"] == active_idx:
+			target_widget = w
+			break
+	if target_widget.is_empty():
+		for w: Dictionary in enemy_widgets:
+			var enemy_slots: Array = battle.state.get("enemies", []) as Array
+			var i: int = w["enemy_idx"]
+			if i < enemy_slots.size() and int(enemy_slots[i]["hp"]) > 0:
+				target_widget = w
+				break
+	if target_widget.is_empty():
+		return
+		
+	var wrap: Control = target_widget["wrap"] as Control
+	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
+	
+	# Pure code-driven whirlwind: spawn 12 green-white wind trails orbiting the target
+	var particle_count: int = 12
+	for i in range(particle_count):
+		var wind := ColorRect.new()
+		wind.color = Color("c2f0d5") if randf() > 0.5 else Color("ffffff") # Green-white wind
+		var w_size := Vector2(randf_range(15.0, 35.0), randf_range(6.0, 10.0))
+		wind.size = w_size
+		wind.pivot_offset = w_size / 2.0
+		wind.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		
+		# Initial position on a circle
+		var initial_angle: float = (i / float(particle_count)) * TAU
+		var start_radius: float = randf_range(80.0, 140.0)
+		var start_pos := target_center + Vector2(cos(initial_angle), sin(initial_angle)) * start_radius - w_size / 2.0
+		wind.global_position = start_pos
+		wind.rotation = initial_angle + PI/2.0
+		wind.modulate.a = 0.0
+		add_child(wind)
+		
+		var delay: float = i * 0.04
+		var duration: float = randf_range(0.5, 0.75)
+		
+		var tween := create_tween().set_parallel(true)
+		
+		# Orbiting motion: tween angle and radius
+		var final_angle: float = initial_angle + TAU * 1.5
+		var final_radius: float = randf_range(20.0, 40.0)
+		
+		# We use custom lerp callbacks or simply tween position in circle
+		# For simplicity, we can tween its position directly to simulate spiral spiraling in
+		tween.tween_property(wind, "global_position", target_center - w_size / 2.0, duration)\
+			.set_delay(delay)\
+			.set_trans(Tween.TRANS_QUAD)\
+			.set_ease(Tween.EASE_IN)
+		
+		tween.tween_property(wind, "rotation", final_angle + PI/2.0, duration).set_delay(delay)
+		tween.tween_property(wind, "modulate:a", 0.7, duration * 0.3).set_delay(delay)
+		tween.tween_property(wind, "modulate:a", 0.0, duration * 0.4).set_delay(delay + duration * 0.6)
+		
+		var captured_wrap = wrap
+		tween.finished.connect(func() -> void:
+			if is_instance_valid(wind):
+				wind.queue_free()
+			if is_instance_valid(captured_wrap) and i == particle_count - 1:
+				UIFactory.shake_node(captured_wrap, 5.0, 0.2)
+		)
+
+
+func _animate_yi_yang_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var active_idx: int = battle._active_enemy_index()
+	var target_widget: Dictionary = {}
+	for w: Dictionary in enemy_widgets:
+		if w["enemy_idx"] == active_idx:
+			target_widget = w
+			break
+	if target_widget.is_empty():
+		for w: Dictionary in enemy_widgets:
+			var enemy_slots: Array = battle.state.get("enemies", []) as Array
+			var i: int = w["enemy_idx"]
+			if i < enemy_slots.size() and int(enemy_slots[i]["hp"]) > 0:
+				target_widget = w
+				break
+	if target_widget.is_empty():
+		return
+		
+	var wrap: Control = target_widget["wrap"] as Control
+	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
+	
+	var view_size: Vector2 = get_viewport_rect().size
+	var player_center: Vector2 = Vector2(120.0, view_size.y * 0.65)
+	if player_portrait_wrap != null and is_instance_valid(player_portrait_wrap):
+		player_center = player_portrait_wrap.global_position + player_portrait_wrap.size / 2.0
+		
+	# Draw thin golden laser ray
+	var ray := Panel.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("fff59d") # Golden light
+	style.border_color = Color("ffffff")
+	style.border_width_top = 1
+	style.border_width_bottom = 1
+	style.anti_aliasing = true
+	
+	ray.add_theme_stylebox_override("panel", style)
+	
+	# Calculate distance and angle
+	var diff: Vector2 = target_center - player_center
+	var distance: float = diff.length()
+	var angle: float = diff.angle()
+	
+	ray.size = Vector2(distance, 6.0)
+	ray.pivot_offset = Vector2(0.0, 3.0)
+	ray.global_position = player_center - Vector2(0.0, 3.0)
+	ray.rotation = angle
+	ray.scale = Vector2(0.01, 1.0)
+	ray.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(ray)
+	
+	var duration: float = 0.22
+	var tween := create_tween().set_parallel(true)
+	
+	# Shoot laser forward
+	tween.tween_property(ray, "scale:x", 1.0, duration * 0.5)\
+		.set_trans(Tween.TRANS_LINEAR)
+	# Fade out
+	tween.tween_property(ray, "modulate:a", 0.0, duration * 0.5).set_delay(duration * 0.5)
+	
+	var captured_wrap = wrap
+	var current_target_center = target_center
+	tween.finished.connect(func() -> void:
+		if is_instance_valid(ray):
+			ray.queue_free()
+		if is_instance_valid(captured_wrap):
+			UIFactory.shake_node(captured_wrap, 8.0, 0.15)
+			# Golden flash spark explosion on impact
+			_spawn_gold_cross_spark(current_target_center)
+	)
+
+
+func _spawn_gold_cross_spark(pos: Vector2) -> void:
+	# Golden glow cross flare particle
+	var p_size := Vector2(80.0, 80.0)
+	
+	var flare_h := ColorRect.new()
+	flare_h.color = Color("ffffff")
+	flare_h.size = Vector2(p_size.x, 4.0)
+	flare_h.pivot_offset = Vector2(p_size.x / 2.0, 2.0)
+	flare_h.global_position = pos - Vector2(p_size.x / 2.0, 2.0)
+	flare_h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(flare_h)
+	
+	var flare_v := ColorRect.new()
+	flare_v.color = Color("ffffff")
+	flare_v.size = Vector2(4.0, p_size.y)
+	flare_v.pivot_offset = Vector2(2.0, p_size.y / 2.0)
+	flare_v.global_position = pos - Vector2(2.0, p_size.y / 2.0)
+	flare_v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(flare_v)
+	
+	var duration: float = 0.2
+	var tween := create_tween().set_parallel(true)
+	
+	flare_h.scale = Vector2(0.1, 1.0)
+	flare_v.scale = Vector2(1.0, 0.1)
+	
+	tween.tween_property(flare_h, "scale:x", 1.2, duration)
+	tween.tween_property(flare_v, "scale:y", 1.2, duration)
+	tween.tween_property(flare_h, "modulate:a", 0.0, duration)
+	tween.tween_property(flare_v, "modulate:a", 0.0, duration)
+	
+	tween.finished.connect(func() -> void:
+		if is_instance_valid(flare_h): flare_h.queue_free()
+		if is_instance_valid(flare_v): flare_v.queue_free()
+	)
+
+
+func _animate_zhan_long_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var texture_path: String = "res://assets/art/effects/gold_giant_sword.png"
+	var sword_tex: Texture2D = UIFactory.load_texture(texture_path)
+	if sword_tex == null:
+		return
+		
+	var active_idx: int = battle._active_enemy_index()
+	var target_widget: Dictionary = {}
+	for w: Dictionary in enemy_widgets:
+		if w["enemy_idx"] == active_idx:
+			target_widget = w
+			break
+	if target_widget.is_empty():
+		for w: Dictionary in enemy_widgets:
+			var enemy_slots: Array = battle.state.get("enemies", []) as Array
+			var i: int = w["enemy_idx"]
+			if i < enemy_slots.size() and int(enemy_slots[i]["hp"]) > 0:
+				target_widget = w
+				break
+	if target_widget.is_empty():
+		return
+		
+	var wrap: Control = target_widget["wrap"] as Control
+	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
+	
+	var sword := TextureRect.new()
+	sword.texture = sword_tex
+	sword.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sword.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	
+	var sword_size := Vector2(250.0, 250.0)
+	sword.size = sword_size
+	sword.pivot_offset = sword_size / 2.0
+	sword.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	# Start above and left, rotate to point diagonally down (forceful heavy hit)
+	var start_pos := Vector2(target_center.x - 200.0, target_center.y - 350.0)
+	sword.global_position = start_pos
+	sword.rotation = deg_to_rad(-45.0)
+	# Modulate dark ink grey-bronze colors
+	sword.modulate = Color("1a1a1a")
+	sword.modulate.a = 0.0
+	add_child(sword)
+	
+	var duration: float = 0.38
+	var tween := create_tween().set_parallel(true)
+	
+	var end_pos := target_center - sword_size / 2.0
+	tween.tween_property(sword, "global_position", end_pos, duration)\
+		.set_trans(Tween.TRANS_QUAD)\
+		.set_ease(Tween.EASE_IN)
+	tween.tween_property(sword, "rotation", deg_to_rad(30.0), duration)
+	tween.tween_property(sword, "modulate:a", 0.95, duration * 0.25)
+	tween.tween_property(sword, "modulate:a", 0.0, duration * 0.3).set_delay(duration * 0.7)
+	
+	var captured_wrap = wrap
+	var current_target_center = target_center
+	tween.finished.connect(func() -> void:
+		if is_instance_valid(sword):
+			sword.queue_free()
+		if is_instance_valid(captured_wrap):
+			UIFactory.shake_node(captured_wrap, 20.0, 0.45)
+			# Black/dark grey splash particles
+			_spawn_earth_debris_particles(current_target_center)
+	)
+
+
+func _animate_feng_huang_effect(card: CardData) -> void:
+	if player_portrait_wrap == null or not is_instance_valid(player_portrait_wrap):
+		return
+		
+	var node_rect = player_portrait_wrap.get_global_rect()
+	var center = node_rect.position + node_rect.size / 2.0
+	
+	var texture_path: String = "res://assets/art/effects/phoenix_feather.png"
+	# Since it fails to generate, we dynamically reuse a star-like structure or gold shield Panel in code
+	# We will generate 3 golden panels (StyleBoxFlat round radius) representing feathers orbiting the portrait center
+	var feathers: Array[Panel] = []
+	var radius: float = 85.0
+	
+	for i in range(3):
+		var feather := Panel.new()
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color("ffcc00") # Golden yellow
+		style.border_color = Color("ffffff")
+		style.border_width_left = 1
+		style.border_width_right = 1
+		style.border_width_top = 1
+		style.border_width_bottom = 1
+		style.anti_aliasing = true
+		style.corner_radius_top_left = 6
+		style.corner_radius_top_right = 6
+		style.corner_radius_bottom_left = 6
+		style.corner_radius_bottom_right = 6
+		
+		feather.add_theme_stylebox_override("panel", style)
+		feather.size = Vector2(25.0, 12.0)
+		feather.pivot_offset = Vector2(12.5, 6.0)
+		feather.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		
+		# Initial position around center
+		var angle: float = (i / 3.0) * TAU
+		feather.global_position = center + Vector2(cos(angle), sin(angle)) * radius - feather.size / 2.0
+		feather.rotation = angle
+		feather.modulate.a = 0.0
+		add_child(feather)
+		feathers.append(feather)
+		
+		# Orbiting rotation Tween
+		var duration: float = 1.6
+		var tween := create_tween().set_parallel(true)
+		
+		tween.tween_property(feather, "modulate:a", 0.9, 0.25)
+		
+		# We rotate the angle over time
+		var final_angle: float = angle + TAU * 1.5
+		# We can calculate positions along circular orbit using tween_method or just let it rotate
+		tween.tween_property(feather, "rotation", final_angle, duration)
+		
+		# Custom method tween to update orbit position
+		var captured_feather = feather
+		var captured_center = center
+		var captured_angle = angle
+		var captured_radius = radius
+		tween.tween_method(func(progress: float) -> void:
+			if is_instance_valid(captured_feather):
+				var curr_angle: float = captured_angle + progress * TAU * 1.5
+				captured_feather.global_position = captured_center + Vector2(cos(curr_angle), sin(curr_angle)) * captured_radius - captured_feather.size / 2.0
+		, 0.0, 1.0, duration)
+		
+		# Fade out near end
+		tween.tween_property(feather, "modulate:a", 0.0, 0.35).set_delay(duration - 0.35)
+		
+		tween.finished.connect(func() -> void:
+			if is_instance_valid(captured_feather):
+				captured_feather.queue_free()
+		)
+
+
+func _animate_gu_shen_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var texture_path: String = "res://assets/art/effects/drunken_god.png" # Reuse drunken god model
+	var god_tex: Texture2D = UIFactory.load_texture(texture_path)
+	if god_tex == null:
+		return
+		
+	var view_size: Vector2 = get_viewport_rect().size
+	var god := TextureRect.new()
+	god.texture = god_tex
+	god.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	god.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	
+	var god_w: float = 460.0
+	var god_h: float = 460.0
+	god.size = Vector2(god_w, god_h)
+	god.pivot_offset = Vector2(god_w / 2.0, god_h)
+	god.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	god.global_position = Vector2((view_size.x - god_w) / 2.0 - 50.0, view_size.y - god_h - 40.0)
+	god.modulate = Color("1e4620") # Dark green poison god phantom
+	god.modulate.a = 0.0
+	god.scale = Vector2(0.2, 0.2)
+	add_child(god)
+	
+	# Poison shockwave ring
+	var shockwave := Panel.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("2be075", 0.0)
+	style.border_color = Color("85ffb1")
+	style.border_width_left = 4
+	style.border_width_right = 4
+	style.border_width_top = 4
+	style.border_width_bottom = 4
+	style.anti_aliasing = true
+	style.corner_radius_top_left = 200
+	style.corner_radius_top_right = 200
+	style.corner_radius_bottom_left = 200
+	style.corner_radius_bottom_right = 200
+	
+	shockwave.add_theme_stylebox_override("panel", style)
+	var ring_size := Vector2(100.0, 100.0)
+	shockwave.size = ring_size
+	shockwave.pivot_offset = ring_size / 2.0
+	shockwave.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shockwave.global_position = Vector2(view_size.x / 2.0 - 50.0, view_size.y / 2.0) - ring_size / 2.0
+	shockwave.scale = Vector2(0.1, 0.1)
+	
+	var duration: float = 0.75
+	var tween := create_tween().set_parallel(true)
+	
+	# God rises
+	tween.tween_property(god, "scale", Vector2(1.0, 1.0), 0.35)\
+		.set_trans(Tween.TRANS_BACK)\
+		.set_ease(Tween.EASE_OUT)
+	tween.tween_property(god, "modulate:a", 0.88, 0.15)
+	
+	# God fades
+	tween.tween_property(god, "modulate:a", 0.0, 0.3).set_delay(0.45)
+	
+	# Shockwave triggers at peak rise
+	tween.tween_callback(func() -> void:
+		add_child(shockwave)
+		var sw_tween := create_tween().set_parallel(true)
+		sw_tween.tween_property(shockwave, "scale", Vector2(8.0, 8.0), 0.45)\
+			.set_trans(Tween.TRANS_QUAD)\
+			.set_ease(Tween.EASE_OUT)
+		sw_tween.tween_property(style, "border_color:a", 0.0, 0.45)
+		sw_tween.finished.connect(func() -> void:
+			if is_instance_valid(shockwave):
+				shockwave.queue_free()
+		)
+	).set_delay(0.3)
+	
+	# Impact shake on all enemies
+	tween.finished.connect(func() -> void:
+		if is_instance_valid(god):
+			god.queue_free()
+		for t in enemy_widgets:
+			var wrap: Control = t["wrap"] as Control
+			var enemy_slots: Array = battle.state.get("enemies", []) as Array
+			var idx: int = t["enemy_idx"]
+			if idx < enemy_slots.size() and int(enemy_slots[idx]["hp"]) > 0:
+				UIFactory.shake_node(wrap, 15.0, 0.4)
+	)
+
+
+func _animate_confuse_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var texture_path: String = "res://assets/art/effects/poison_explosion.png" # Reuse poison cloud shape
+	var smoke_tex: Texture2D = UIFactory.load_texture(texture_path)
+	if smoke_tex == null:
+		return
+		
+	var active_idx: int = battle._active_enemy_index()
+	var target_widget: Dictionary = {}
+	for w: Dictionary in enemy_widgets:
+		if w["enemy_idx"] == active_idx:
+			target_widget = w
+			break
+	if target_widget.is_empty():
+		for w: Dictionary in enemy_widgets:
+			var enemy_slots: Array = battle.state.get("enemies", []) as Array
+			var i: int = w["enemy_idx"]
+			if i < enemy_slots.size() and int(enemy_slots[i]["hp"]) > 0:
+				target_widget = w
+				break
+	if target_widget.is_empty():
+		return
+		
+	var wrap: Control = target_widget["wrap"] as Control
+	var target_rect = wrap.get_global_rect()
+	var target_top := Vector2(target_rect.position.x + target_rect.size.x / 2.0, target_rect.position.y + 40.0)
+	
+	# Swirling confusing smoke over enemy head
+	var smoke := TextureRect.new()
+	smoke.texture = smoke_tex
+	smoke.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	smoke.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	
+	var smoke_size := Vector2(100.0, 100.0)
+	smoke.size = smoke_size
+	smoke.pivot_offset = smoke_size / 2.0
+	smoke.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	smoke.global_position = target_top - smoke_size / 2.0
+	smoke.modulate = Color("d46eff") # Purple pink smoke
+	smoke.modulate.a = 0.0
+	smoke.scale = Vector2(0.2, 0.2)
+	add_child(smoke)
+	
+	var duration: float = 0.55
+	var tween := create_tween().set_parallel(true)
+	
+	# Spiral spin and fade in/out
+	tween.tween_property(smoke, "scale", Vector2(1.2, 1.2), duration * 0.4)\
+		.set_trans(Tween.TRANS_QUAD)\
+		.set_ease(Tween.EASE_OUT)
+	tween.tween_property(smoke, "scale", Vector2(0.1, 0.1), duration * 0.4).set_delay(duration * 0.6)
+	
+	tween.tween_property(smoke, "rotation", smoke.rotation + TAU * 2.0, duration)
+	tween.tween_property(smoke, "modulate:a", 0.85, duration * 0.3)
+	tween.tween_property(smoke, "modulate:a", 0.0, duration * 0.4).set_delay(duration * 0.6)
+	
+	var captured_wrap = wrap
+	tween.finished.connect(func() -> void:
+		if is_instance_valid(smoke):
+			smoke.queue_free()
+		if is_instance_valid(captured_wrap):
+			UIFactory.shake_node(captured_wrap, 4.0, 0.2)
+	)
+
+
+func _animate_poison_fog_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var texture_path: String = "res://assets/art/effects/poison_explosion.png" # Reuse soft cloud texture
+	var fog_tex: Texture2D = UIFactory.load_texture(texture_path)
+	if fog_tex == null:
+		return
+		
+	var view_size: Vector2 = get_viewport_rect().size
+	# Target the entire bottom area of all enemies
+	# Spawn 3 large drifting clouds at the bottom center of the screen (enemies side)
+	var center_x: float = view_size.x * 0.72
+	var bottom_y: float = view_size.y * 0.68
+	
+	for i in range(3):
+		var fog := TextureRect.new()
+		fog.texture = fog_tex
+		fog.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		fog.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		
+		var fog_size := Vector2(250.0, 250.0)
+		fog.size = fog_size
+		fog.pivot_offset = fog_size / 2.0
+		fog.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		
+		# Offset positions
+		var start_pos := Vector2(
+			center_x + (i - 1) * 80.0 - fog_size.x / 2.0 + randf_range(-20, 20),
+			bottom_y - fog_size.y / 2.0 + randf_range(-15, 15)
+		)
+		fog.global_position = start_pos
+		# Modulate purple/green toxic mix
+		fog.modulate = Color("2e7d32") if i % 2 == 0 else Color("7b1fa2")
+		fog.modulate.a = 0.0
+		add_child(fog)
+		
+		var delay: float = i * 0.08
+		var duration: float = randf_range(0.8, 1.2)
+		
+		var tween := create_tween().set_parallel(true)
+		
+		# Slowly drift left/right and float up
+		var drift_x: float = randf_range(-40.0, 40.0)
+		var drift_y: float = randf_range(-30.0, -10.0)
+		
+		tween.tween_property(fog, "global_position:x", start_pos.x + drift_x, duration)\
+			.set_delay(delay)\
+			.set_trans(Tween.TRANS_SINE)
+		tween.tween_property(fog, "global_position:y", start_pos.y + drift_y, duration)\
+			.set_delay(delay)\
+			.set_trans(Tween.TRANS_SINE)
+		
+		# Fade in and out
+		tween.tween_property(fog, "modulate:a", 0.42, duration * 0.3).set_delay(delay)
+		tween.tween_property(fog, "modulate:a", 0.0, duration * 0.4).set_delay(delay + duration * 0.6)
+		
+		tween.finished.connect(func() -> void:
+			if is_instance_valid(fog):
+				fog.queue_free()
 		)
 
 
