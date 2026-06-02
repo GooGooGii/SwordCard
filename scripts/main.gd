@@ -3438,7 +3438,7 @@ func play_card(card: CardData, source_button: Button = null) -> void:
 			_animate_confuse_effect(card)
 		"anu_guzhang", "anu_duwu", "anu_sanshigu":
 			_animate_poison_fog_effect(card)
-	if bool(result["ended"]) and await _finish_battle_after_delay():
+	if bool(result["ended"]) and await _finish_battle_after_delay(_card_anim_duration(card)):
 		return
 
 func end_player_turn() -> void:
@@ -3524,14 +3524,24 @@ func _check_battle_end() -> bool:
 		return true
 	return false
 
-func _finish_battle_after_delay() -> bool:
+# 估算出牌特效動畫的總時長（秒）。只有明顯超過 BATTLE_END_DELAY 的需要登記，
+# 其餘回傳 0 → 結算沿用預設 0.8s 等待。改動畫時長時記得同步這裡。
+func _card_anim_duration(card: CardData) -> float:
+	match card.id:
+		"lxy_wanjian", "lxy_wanjianguizong":
+			# 引劍升天 0.32s + 劍雨（最後一把 delay 0.75 + dur 0.4 + 淡出 0.14）
+			return 1.75
+		_:
+			return 0.0
+
+func _finish_battle_after_delay(anim_wait: float = 0.0) -> bool:
 	if battle_end_pending:
 		return true
 	if not battle.is_battle_over():
 		return false
 	battle_end_pending = true
 	_set_battle_input_enabled(false)
-	await get_tree().create_timer(BATTLE_END_DELAY).timeout
+	await get_tree().create_timer(max(BATTLE_END_DELAY, anim_wait)).timeout
 	if battle.is_victory():
 		_complete_battle_victory()
 		return true
