@@ -203,6 +203,7 @@ func _initialize() -> void:
 	_test_batch_b_character_gating()
 	_test_batch_b_observe_gating()
 	_test_batch_b_battle_leaves_valid()
+	_test_stealing_system()
 	if _smoke_failures > 0:
 		push_error("[smoke] %d 個 _check() 失敗。以 quit(1) 結束。" % _smoke_failures)
 		print("SwordCard smoke test FAILED (%d check failures)." % _smoke_failures)
@@ -2675,3 +2676,46 @@ func _count_battle_leaves_in_tree(ed: Dictionary) -> int:
 			assert(bd.get("victory_effects", []) is Array, "victory_effects must be Array for enemy %s" % enemy_id)
 			assert(bd.get("defeat_effects", []) is Array, "defeat_effects must be Array for enemy %s" % enemy_id)
 	return count
+
+func _test_stealing_system() -> void:
+	# 1. 驗證 80% (10/12) 的一般遭遇敵人身上可以偷到東西
+	var enemies: Array[EnemyData] = GameData.enemies()
+	var count_with_loot: int = 0
+	for e: EnemyData in enemies:
+		var lt: Array[Dictionary] = GameData.loot_table_for(e.id)
+		if not lt.is_empty():
+			count_with_loot += 1
+	_check(count_with_loot == 10, "Expected exactly 10 out of 12 regular enemies to have loot, got %d" % count_with_loot)
+	
+	# 2. 驗證有少數幾個身上帶好幾項東西 (例如 bandit 有 3 項)
+	var bandit_lt: Array[Dictionary] = GameData.loot_table_for("bandit")
+	_check(bandit_lt.size() == 3, "Expected bandit to carry exactly 3 items, got %d" % bandit_lt.size())
+	
+	# 3. 驗證偷竊是機率性的 (50% 成功率) 且成功後會從 loot table 移除
+	var test_resolver := EffectResolver.new()
+	var has_success := false
+	var has_failure := false
+	for i: int in range(100):
+		var temp_state := {
+			"enemy_loot_table": [{"type": "gold", "amount": 10, "display_name": "金幣"}],
+			"steal_result": {}
+		}
+		test_resolver._resolve_effect({"kind": "steal"}, temp_state, false)
+		if temp_state.get("steal_result", {}).is_empty():
+			has_failure = true
+		else:
+			has_success = true
+			_check(temp_state["enemy_loot_table"].is_empty(), "Item should be removed from loot table on successful steal")
+		if has_success and has_failure:
+			break
+	_check(has_success, "Stealing should succeed at least once in 100 trials")
+	_check(has_failure, "Stealing should fail at least once in 100 trials")
+	
+	# 4. 驗證空 loot table 偷不到東西
+	var empty_state := {
+		"enemy_loot_table": [],
+		"steal_result": {}
+	}
+	test_resolver._resolve_effect({"kind": "steal"}, empty_state, false)
+	_check(empty_state["steal_result"].is_empty(), "Stealing from empty loot table should return empty result")
+

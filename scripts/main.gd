@@ -650,10 +650,10 @@ func show_main_menu() -> void:
 	action_box.add_theme_constant_override("separation", 10 if compact_layout else 12)
 	left_box.add_child(action_box)
 	if SaveManager.has_save():
-		var continue_button: Button = UIFactory.main_menu_button("繼續冒險", true, button_height, button_font_size)
+		var continue_button: Button = UIFactory.main_menu_button("舊的回憶", true, button_height, button_font_size)
 		continue_button.pressed.connect(continue_saved_run)
 		action_box.add_child(continue_button)
-	var start_button: Button = UIFactory.main_menu_button("開始遊戲", false, button_height, button_font_size)
+	var start_button: Button = UIFactory.main_menu_button("新的開始", false, button_height, button_font_size)
 	start_button.pressed.connect(_on_start_random_pressed)
 	action_box.add_child(start_button)
 	var secondary_row: HBoxContainer = HBoxContainer.new()
@@ -785,12 +785,12 @@ func _build_minimal_main_menu(ultra_compact: bool, compact_layout: bool, viewpor
 	action_box.add_theme_constant_override("separation", 8 if compact_layout else 10)
 	content.add_child(action_box)
 	if SaveManager.has_save():
-		var continue_button: Button = UIFactory.main_menu_button("繼續冒險", true, button_height, button_font_size)
+		var continue_button: Button = UIFactory.main_menu_button("舊的回憶", true, button_height, button_font_size)
 		continue_button.custom_minimum_size.x = content_width
 		continue_button.pressed.connect(continue_saved_run)
 		action_box.add_child(continue_button)
 
-	var start_button: Button = UIFactory.main_menu_button("開始遊戲", false, button_height, button_font_size)
+	var start_button: Button = UIFactory.main_menu_button("新的開始", false, button_height, button_font_size)
 	start_button.custom_minimum_size.x = content_width
 	start_button.pressed.connect(_on_start_random_pressed)
 	action_box.add_child(start_button)
@@ -1571,14 +1571,28 @@ func _map_icon_button(symbol: String, tooltip: String, action: Callable) -> Butt
 	button.pressed.connect(action)
 	return button
 
-func _map_view_sts() -> Control:
+func _map_view_sts(read_only: bool = false) -> Control:
 	var viewport_size: Vector2 = get_viewport_rect().size
 	var compact_map: bool = viewport_size.y <= 760.0
 	var panel_height: float = clamp(viewport_size.y - (56.0 if compact_map else 64.0), 360.0, 760.0)
+	if read_only:
+		# 唯讀彈窗模式下適度壓縮高度，避免在 720p 螢幕下溢出
+		panel_height = clamp(viewport_size.y - 180.0, 300.0, 500.0)
 	var map_panel: PanelContainer = PanelContainer.new()
 	map_panel.custom_minimum_size = Vector2(1040, panel_height)
 	map_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	map_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("081019", 0.18), Color("f4edd8", 0.10), 1, 8))
+	
+	if read_only:
+		# 在唯讀地圖彈窗內，加入水墨地圖底紙，避免直接疊在戰鬥/奇遇背景上而雜亂
+		var bg_tex: TextureRect = TextureRect.new()
+		bg_tex.texture = load("res://assets/art/map_bg_ink.png") as Texture2D
+		bg_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		bg_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bg_tex.modulate = Color(0.7, 0.7, 0.7, 0.9)
+		map_panel.add_child(bg_tex)
+
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(1040, panel_height)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -1599,7 +1613,7 @@ func _map_view_sts() -> Control:
 	# IGNORE = 讓事件直接穿過 map_area，子節點 (map_node_button) 仍能自己處理點擊。
 	map_area.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	scroll.add_child(map_area)
-	map_area.add_child(_build_map_status_banner())
+	map_area.add_child(_build_map_status_banner(read_only))
 	map_area.add_child(_build_map_row_markers(total_rows, content_size))
 	# 地圖底紙由 show_progress_screen() 的全域 background_rect 提供
 	# （透過半透明的 panel 透出來），不在這裡再疊一張同樣的圖，避免捲動時前後兩張錯位
@@ -1612,7 +1626,7 @@ func _map_view_sts() -> Control:
 		var row: Array = run_state.encounter_choices[row_index]
 		for node_variant: Variant in row:
 			var node_data: Dictionary = node_variant as Dictionary
-			var node_button: Button = _map_node_button(node_data, row_index)
+			var node_button: Button = _map_node_button(node_data, row_index, read_only)
 			var node_index: int = int(node_data.get("index", 0))
 			node_button.position = _map_node_position(row_index, node_index, row.size(), total_rows, map_area.custom_minimum_size)
 			map_area.add_child(node_button)
@@ -1685,7 +1699,7 @@ func _build_map_legend(compact: bool = false) -> Control:
 		vbox.add_child(row)
 	return panel
 
-func _build_map_status_banner() -> Control:
+func _build_map_status_banner(read_only: bool = false) -> Control:
 	var panel: PanelContainer = PanelContainer.new()
 	panel.set_anchors_preset(Control.PRESET_TOP_LEFT, false)
 	panel.offset_left = 20
@@ -1703,6 +1717,8 @@ func _build_map_status_banner() -> Control:
 	title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(title_label)
 	var hint_text: String = "請選擇發亮節點前進" if run_state.encounter_index < run_state.encounter_choices.size() else "前往下一場遭遇"
+	if read_only:
+		hint_text = "唯讀檢視中，點擊外部關閉"
 	var hint_label: Label = UIFactory.card_label(hint_text, 12, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_LEFT)
 	hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(hint_label)
@@ -1830,9 +1846,9 @@ func _is_map_connection_active(row_index: int, node_index: int, target_index: in
 		return run_state.chosen_map_path[row_index + 1] == target_index
 	return row_index + 1 == run_state.encounter_index and _is_map_node_selectable(row_index + 1, target_index)
 
-func _map_node_button(node_data: Dictionary, row_index: int) -> Button:
+func _map_node_button(node_data: Dictionary, row_index: int, read_only: bool = false) -> Button:
 	var node_index: int = int(node_data.get("index", 0))
-	var button: Button = _route_node_button(node_data, row_index)
+	var button: Button = _route_node_button(node_data, row_index, read_only)
 	var selectable: bool = _is_map_node_selectable(row_index, node_index)
 	var selected: bool = row_index < run_state.chosen_map_path.size() and run_state.chosen_map_path[row_index] == node_index
 	var completed: bool = row_index < run_state.encounter_index
@@ -2043,11 +2059,6 @@ func _build_battle_scene() -> void:
 	var screen: VBoxContainer = VBoxContainer.new()
 	screen.add_theme_constant_override("separation", 4 if _battle_compact else 6)
 	root.add_child(screen)
-	status_label = Label.new()
-	status_label.add_theme_font_size_override("font_size", 16)
-	status_label.add_theme_color_override("font_color", Color("f3ead2"))
-	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	screen.add_child(status_label)
 	relic_strip = HBoxContainer.new()
 	relic_strip.alignment = BoxContainer.ALIGNMENT_CENTER
 	relic_strip.add_theme_constant_override("separation", 4)
@@ -2425,6 +2436,11 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	# 浮動 feedback label（傷害數字、狀態提示）
 	var feedback_label: Label = UIFactory.feedback_label()
 	col.add_child(_wrap_feedback_label(feedback_label))
+	# 意圖標籤 (顯示於頭頂上)
+	var intent_label: Label = UIFactory.card_label("",
+		10 if (_battle_compact or total >= 2) else 12,
+		ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	col.add_child(intent_label)
 	# portrait wrap（含 block badge）
 	var wrap: Control = Control.new()
 	wrap.custom_minimum_size = portrait_size
@@ -2475,6 +2491,7 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 		"block_badge": badge,
 		"status_line": status_line,
 		"feedback_label": feedback_label,
+		"intent_label": intent_label,
 		"enemy_idx": idx,
 	}
 
@@ -2501,7 +2518,7 @@ func _set_active_enemy_aliases() -> void:
 	enemy_status_line = w["status_line"]
 	enemy_feedback_label = w["feedback_label"]
 
-# 每次 state 變動後刷新所有敵人 widget；同時套用 active 高亮 / 死敵 dim
+# 每次 state 變動後刷新所有敵人 widget；同時套用 active 高亮 / 死敵 dim / 消失
 func _refresh_enemy_widgets() -> void:
 	if battle == null or enemy_widgets.is_empty():
 		return
@@ -2527,13 +2544,80 @@ func _refresh_enemy_widgets() -> void:
 		_update_poison_preview(hp_bar, int(slot["hp"]), int(slot["max_hp"]), int(slot["poison"]))
 		block_badge.set_amount(int(slot["block"]))
 		status_line.text = UIFactory.status_summary(int(slot["poison"]), int(slot["weak"]), int(slot["vulnerable"]))
-		# 視覺狀態：active 全亮、其他半暗、死敵更暗
-		if int(slot["hp"]) <= 0:
-			wrap.modulate = Color(0.32, 0.32, 0.32, 0.6)
-		elif i == active_idx:
-			wrap.modulate = Color.WHITE
+		
+		var intent_label: Label = w.get("intent_label")
+		if intent_label != null and is_instance_valid(intent_label):
+			var enemy_idx: int = int(w["enemy_idx"])
+			var action: Dictionary = battle._action_for_enemy(enemy_idx)
+			if action.is_empty() or int(slot["hp"]) <= 0:
+				intent_label.text = ""
+			else:
+				var badge_str: String = CardFormat.intent_badge(action)
+				var intent_name: String = String(action.get("intent", ""))
+				var damage_text: String = ""
+				if CardFormat.action_has_damage(action):
+					var temp_state: Dictionary = battle.state.duplicate()
+					temp_state["enemy_weak"] = int(slot.get("weak", 0))
+					var pred: Dictionary = CardFormat.predict_enemy_damage(action, temp_state)
+					var dealt: int = int(pred["dealt"])
+					var blocked: int = int(pred["blocked"])
+					if blocked > 0:
+						damage_text = " 實受%d(擋%d)" % [dealt, blocked]
+					elif dealt < int(pred["raw"]):
+						damage_text = " 實受%d" % dealt
+					else:
+						damage_text = " %d點" % dealt
+				intent_label.text = "%s %s%s" % [badge_str, intent_name, damage_text]
+		
+		# 判斷生死與消失邏輯
+		var hp_now: int = int(slot["hp"])
+		var last_hp: int = int(w.get("last_hp", hp_now))
+		w["last_hp"] = hp_now
+		
+		if hp_now <= 0:
+			if last_hp > 0:
+				# 剛剛死亡！觸發消失動畫
+				w["is_dying"] = true
+				_animate_enemy_death(w)
+			
+			if w.get("dead_hidden", false):
+				w["root"].visible = false
+			elif w.get("is_dying", false):
+				w["root"].visible = true
+				wrap.modulate = Color(0.32, 0.32, 0.32, wrap.modulate.a)
+			else:
+				# 已經死亡（例如非戰鬥卡牌觸發的重設，或初次刷新）
+				w["root"].visible = false
+				w["dead_hidden"] = true
 		else:
-			wrap.modulate = Color(0.72, 0.72, 0.78)
+			w["root"].visible = true
+			w["dead_hidden"] = false
+			w["is_dying"] = false
+			# 視覺狀態：active 全亮、其他半暗
+			if i == active_idx:
+				wrap.modulate = Color.WHITE
+			else:
+				wrap.modulate = Color(0.72, 0.72, 0.78)
+
+func _animate_enemy_death(w: Dictionary) -> void:
+	var root: Control = w["root"]
+	var wrap: Control = w["wrap"]
+	if root == null or not is_instance_valid(root) or wrap == null or not is_instance_valid(wrap):
+		return
+	var tween: Tween = create_tween()
+	# 延遲 0.4 秒，讓傷害數字與震動特效先跑
+	tween.tween_interval(0.4)
+	# 漸隱透明度
+	tween.tween_property(wrap, "modulate:a", 0.0, 0.3)
+	tween.tween_callback(func() -> void:
+		if root != null and is_instance_valid(root):
+			root.visible = false
+		w["dead_hidden"] = true
+		w["is_dying"] = false
+		if wrap != null and is_instance_valid(wrap):
+			wrap.modulate.a = 1.0
+	)
+
 
 func _build_battle_potion_strip(parent: VBoxContainer) -> void:
 	var slot_size: int = 28 if _battle_compact else 34
@@ -2567,14 +2651,6 @@ func _build_left_dock(parent: HBoxContainer) -> void:
 	energy_orb.custom_minimum_size = Vector2(orb_sz, orb_sz)
 	energy_orb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	dock.add_child(energy_orb)
-	log_label = RichTextLabel.new()
-	log_label.custom_minimum_size = Vector2(110 if _battle_compact else 140, 36 if _battle_compact else 96)
-	log_label.fit_content = not _battle_compact
-	log_label.scroll_following = true
-	log_label.bbcode_enabled = false
-	log_label.add_theme_color_override("default_color", ThemeColors.TEXT_MUTED)
-	log_label.add_theme_font_size_override("normal_font_size", 10 if _battle_compact else 12)
-	dock.add_child(log_label)
 	var btn_h: float = 26.0 if _battle_compact else 32.0
 	var btn_f: int = 11 if _battle_compact else 13
 	draw_pile_button = _button("抽牌堆 (0)")
@@ -3145,7 +3221,7 @@ func play_card(card: CardData, source_button: Button = null) -> void:
 		"lxy_jiushen":
 			_animate_jiu_shen_effect(card)
 		"lxy_feilong":
-			_animate_fei_long_effect(card)
+			_animate_fei_long_effect(card, result.get("stolen_item", {}) as Dictionary)
 		"lxy_zuimeng":
 			_animate_zui_meng_effect(card)
 		"zl_mengshe", "zl_mengshe_ls":
@@ -3600,7 +3676,7 @@ func _battle_gold_reward(enemy: EnemyData) -> int:
 	return max(0, int(round(float(base) * Ascension.gold_multiplier(run_state.ascension_level))))
 
 
-func _route_node_button(node_data: Dictionary, row_index: int = -1) -> Button:
+func _route_node_button(node_data: Dictionary, row_index: int = -1, read_only: bool = false) -> Button:
 	var node_type: String = String(node_data.get("type", "battle"))
 	var button: Button
 	if node_type == "rest":
@@ -3617,7 +3693,8 @@ func _route_node_button(node_data: Dictionary, row_index: int = -1) -> Button:
 		var enemies_arr: Array = node_data["enemies"] as Array
 		var primary: EnemyData = enemies_arr[0] as EnemyData
 		button = _route_enemy_button(primary, false, enemies_arr.size())
-	button.pressed.connect(func(): choose_route_node(node_data, row_index))
+	if not read_only:
+		button.pressed.connect(func(): choose_route_node(node_data, row_index))
 	return button
 
 func _build_route_button(text: String, icon_type: String, icon_color: Color, font_color: Color = ThemeColors.TEXT_LIGHT) -> Button:
@@ -5754,8 +5831,8 @@ func show_result(victory: bool) -> void:
 		box.add_child(_title("通關！仙劍成道", 34))
 		box.add_child(UIFactory.paragraph("%s 歷經五幕征途，終於擊敗了拜月教主，守護了天下蒼生。\n最終 HP %d/%d，剩餘銅錢 %d。" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold]))
 	else:
-		box.add_child(_title("戰鬥失敗", 34))
-		box.add_child(UIFactory.paragraph("%s 敗於 %s。調整出牌節奏再試一次。" % [selected_character.display_name, battle.enemy.display_name]))
+		box.add_child(_title("勝敗乃兵家常事", 34))
+		box.add_child(UIFactory.paragraph("大俠請重新來過。\n（%s 敗於 %s）" % [selected_character.display_name, battle.enemy.display_name]))
 		var general_count: int = 0
 		for r: RelicData in run_state.relics:
 			if r.slot == "general":
@@ -5934,35 +6011,31 @@ func _relic_rarity_color_for_popup(relic: RelicData) -> Color:
 	return ThemeColors.BORDER_GOLD
 
 func _show_map_overview_popup() -> void:
+	var prev_scroll: ScrollContainer = active_map_scroll
 	var popup: PopupPanel = _make_battle_popup()
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
-	box.custom_minimum_size = Vector2(520, 0)
+	box.custom_minimum_size = Vector2(1040, 520)
+	
 	var title: Label = Label.new()
-	title.text = "路線總覽"
+	title.text = "地圖路線檢視 (點擊空白處關閉)"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_font_size_override("font_size", 18)
 	title.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
 	box.add_child(title)
-	var hint: Label = Label.new()
-	hint.text = "★ 當前位置  ✓ 已走過  · 待選"
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.add_theme_font_size_override("font_size", 13)
-	hint.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
-	box.add_child(hint)
-	var scroll: ScrollContainer = ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(500, 460)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	box.add_child(scroll)
-	var list: VBoxContainer = VBoxContainer.new()
-	list.add_theme_constant_override("separation", 6)
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(list)
-	for row_index: int in range(run_state.encounter_choices.size()):
-		list.add_child(_map_overview_row(row_index))
+	
+	# 加入真實的地圖視圖，以唯讀模式顯示 (不觸發前進)
+	var map_panel: Control = _map_view_sts(true)
+	map_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	map_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_child(map_panel)
+	
 	popup.add_child(box)
 	get_viewport().add_child(popup)
-	popup.popup_hide.connect(popup.queue_free)
+	popup.popup_hide.connect(func() -> void:
+		active_map_scroll = prev_scroll
+		popup.queue_free()
+	)
 	popup.popup_centered()
 
 func _map_overview_row(row_index: int) -> Control:
@@ -6037,7 +6110,8 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 	if run_state.characters.size() > 1:
 		var switched: bool = bool(battle.state.get("switched_this_turn", false))
 		top_parts.append("切換：%s" % ("已用" if switched else "本回合免費"))
-	status_label.text = "    ".join(top_parts)
+	if status_label != null and is_instance_valid(status_label):
+		status_label.text = "    ".join(top_parts)
 	if draw_pile_button != null and is_instance_valid(draw_pile_button):
 		draw_pile_button.text = "抽牌堆 (%d)" % battle.deck.draw_pile.size()
 	if discard_pile_button != null and is_instance_valid(discard_pile_button):
@@ -6064,17 +6138,8 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 	_refresh_bench_strip()
 	# Multi-Enemy: 迭代更新每個敵人的 widget（active 高亮、死敵 dim、HP/block/status）
 	_refresh_enemy_widgets()
-	var next_action: Dictionary = battle.next_enemy_action()
-	var intent_lines: Array[String] = ["%s  下一步" % CardFormat.intent_badge(next_action), String(next_action["intent"])]
-	if CardFormat.action_has_damage(next_action):
-		var pred: Dictionary = CardFormat.predict_enemy_damage(next_action, battle.state)
-		var dealt: int = int(pred["dealt"])
-		var blocked: int = int(pred["blocked"])
-		if blocked > 0:
-			intent_lines.append("實受 %d (擋 %d)" % [dealt, blocked])
-		elif dealt < int(pred["raw"]):
-			intent_lines.append("實受 %d" % dealt)
-	enemy_label.text = "\n".join(intent_lines)
+	if enemy_label != null and is_instance_valid(enemy_label):
+		enemy_label.text = ""
 	energy_orb.set_energy(int(battle.state["energy"]), int(battle.state.get("per_turn_energy", BattleController.BASE_TURN_ENERGY)))
 	var buttons: Array[Button] = []
 	card_buttons.clear()
@@ -6091,7 +6156,8 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 	hand_row.set_cards(buttons, animate_draw, draw_source)
 	if _selected_hand_button != null:
 		hand_row.set_selected_button(_selected_hand_button)
-	log_label.text = "\n".join(battle.battle_log.slice(max(0, battle.battle_log.size() - 4)))
+	if log_label != null and is_instance_valid(log_label):
+		log_label.text = "\n".join(battle.battle_log.slice(max(0, battle.battle_log.size() - 4)))
 	_refresh_potion_buttons()
 	end_turn_button.disabled = false
 
@@ -8480,7 +8546,7 @@ func _animate_jiu_shen_effect(card: CardData) -> void:
 	)
 
 
-func _animate_fei_long_effect(card: CardData) -> void:
+func _animate_fei_long_effect(card: CardData, stolen_item: Dictionary = {}) -> void:
 	if battle == null or enemy_widgets.is_empty():
 		return
 	var texture_path: String = "res://assets/art/effects/stealing_hand.png"
@@ -8512,6 +8578,26 @@ func _animate_fei_long_effect(card: CardData) -> void:
 	if player_portrait_wrap != null and is_instance_valid(player_portrait_wrap):
 		player_center = player_portrait_wrap.global_position + player_portrait_wrap.size / 2.0
 		
+	# 人物衝向目標物（有動感的近身切入）
+	if player_portrait_wrap != null and is_instance_valid(player_portrait_wrap):
+		var orig_pos: Vector2 = player_portrait_wrap.position
+		var dash_dir: Vector2 = (target_center - player_center).normalized()
+		var dash_distance: float = 140.0
+		var dash_tween := player_portrait_wrap.create_tween()
+		
+		# 衝向目標
+		dash_tween.tween_property(player_portrait_wrap, "position", orig_pos + dash_dir * dash_distance, 0.22)\
+			.set_trans(Tween.TRANS_QUAD)\
+			.set_ease(Tween.EASE_OUT)
+			
+		# 停留
+		dash_tween.tween_interval(0.15)
+		
+		# 收招回彈原位
+		dash_tween.tween_property(player_portrait_wrap, "position", orig_pos, 0.25)\
+			.set_trans(Tween.TRANS_QUAD)\
+			.set_ease(Tween.EASE_IN_OUT)
+		
 	var hand := TextureRect.new()
 	hand.texture = hand_tex
 	hand.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -8526,7 +8612,7 @@ func _animate_fei_long_effect(card: CardData) -> void:
 	hand.modulate.a = 0.0
 	add_child(hand)
 	
-	var duration: float = 0.32
+	var duration: float = 0.28
 	var tween := create_tween()
 	
 	# 1. Fly to target
@@ -8541,7 +8627,7 @@ func _animate_fei_long_effect(card: CardData) -> void:
 	var current_target_center = target_center
 	tween.tween_callback(func() -> void:
 		if is_instance_valid(captured_wrap):
-			UIFactory.shake_node(captured_wrap, 5.0, 0.15)
+			UIFactory.shake_node(captured_wrap, 6.0, 0.18)
 			# Spawn gold coins flying back
 			_spawn_stolen_coins(current_target_center, current_player_center)
 	)
@@ -8553,6 +8639,8 @@ func _animate_fei_long_effect(card: CardData) -> void:
 	tween.finished.connect(func() -> void:
 		if is_instance_valid(hand):
 			hand.queue_free()
+		if not stolen_item.is_empty():
+			_show_stolen_item_popup(stolen_item)
 	)
 
 
@@ -8598,6 +8686,85 @@ func _spawn_stolen_coins(start_pos: Vector2, end_pos: Vector2) -> void:
 			if is_instance_valid(coin):
 				coin.queue_free()
 		)
+
+
+func _show_stolen_item_popup(item: Dictionary) -> void:
+	var popup: PopupPanel = _make_battle_popup()
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 16)
+	box.custom_minimum_size = Vector2(340, 240)
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	
+	var title: Label = Label.new()
+	title.text = "【飛龍探雲手】妙手空空"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
+	box.add_child(title)
+	
+	var content_box: HBoxContainer = HBoxContainer.new()
+	content_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	content_box.add_theme_constant_override("separation", 16)
+	box.add_child(content_box)
+	
+	var item_type: String = String(item.get("type", ""))
+	var item_name: String = String(item.get("display_name", "寶物"))
+	var icon: TextureRect = TextureRect.new()
+	icon.custom_minimum_size = Vector2(64, 64)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	
+	var desc: String = ""
+	var name_color: Color = ThemeColors.TEXT_LIGHT
+	
+	if item_type == "gold":
+		icon.texture = UIFactory.load_texture("res://assets/art/relics/tong_bao_qian.png")
+		desc = "獲得 %d 銅錢，已存入背囊。" % int(item.get("amount", 0))
+		name_color = ThemeColors.HIGHLIGHT_GOLD
+	elif item_type == "potion":
+		var potion_id: String = String(item.get("potion_id", ""))
+		var potion: Dictionary = PotionCatalog.by_id(potion_id)
+		if not potion.is_empty():
+			desc = String(potion.get("description", ""))
+			name_color = PotionCatalog.rarity_color(potion)
+			icon.texture = UIFactory.load_texture("res://assets/art/potions/%s.png" % potion_id)
+			if run_state.potions.size() >= RunState.MAX_POTION_SLOTS:
+				desc += "\n(藥格已滿，無法攜帶！)"
+				name_color = Color("a5a5a5")
+		else:
+			desc = "不知名的珍奇藥品。"
+	
+	content_box.add_child(icon)
+	
+	var text_box: VBoxContainer = VBoxContainer.new()
+	text_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	
+	var name_label: Label = Label.new()
+	name_label.text = item_name
+	name_label.add_theme_font_size_override("font_size", 16)
+	name_label.add_theme_color_override("font_color", name_color)
+	text_box.add_child(name_label)
+	
+	var desc_label: Label = Label.new()
+	desc_label.text = desc
+	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc_label.custom_minimum_size = Vector2(180, 0)
+	desc_label.add_theme_font_size_override("font_size", 13)
+	desc_label.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
+	text_box.add_child(desc_label)
+	
+	content_box.add_child(text_box)
+	
+	var btn: Button = _button("收下")
+	btn.custom_minimum_size = Vector2(80, 32)
+	btn.add_theme_font_size_override("font_size", 13)
+	btn.pressed.connect(popup.hide)
+	box.add_child(btn)
+	
+	popup.add_child(box)
+	get_viewport().add_child(popup)
+	popup.popup_hide.connect(popup.queue_free)
+	popup.popup_centered()
 
 
 func _animate_zui_meng_effect(card: CardData) -> void:

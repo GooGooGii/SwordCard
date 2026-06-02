@@ -373,7 +373,13 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				if loot_table.is_empty():
 					log_lines.append("（對方身上空無一物。）")
 				else:
-					var item: Dictionary = (loot_table[randi() % loot_table.size()] as Dictionary).duplicate()
-					state["steal_result"] = item
-					log_lines.append("偷到了%s！" % String(item.get("display_name", "某物")))
+					# 偷竊有 50% 的成功率
+					if randf() < 0.50:
+						log_lines.append("（出手未中，什麼也沒偷到。）")
+					else:
+						var idx: int = randi() % loot_table.size()
+						var item: Dictionary = (loot_table[idx] as Dictionary).duplicate()
+						loot_table.remove_at(idx)
+						state["steal_result"] = item
+						log_lines.append("偷到了%s！" % String(item.get("display_name", "某物")))
 	return log_lines

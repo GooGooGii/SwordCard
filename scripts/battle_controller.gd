@@ -536,7 +536,9 @@ func play_card(card: CardData) -> Dictionary:
 	var before_card: Dictionary = snapshot_state()
 	add_logs(resolver.resolve_card(card, state))
 	var steal: Dictionary = state.get("steal_result", {}) as Dictionary
+	var stolen_item: Dictionary = {}
 	if not steal.is_empty():
+		stolen_item = steal.duplicate()
 		state["steal_result"] = {}
 		_apply_stolen_item(steal)
 	_check_phase_transition()
@@ -567,7 +569,7 @@ func play_card(card: CardData) -> Dictionary:
 	# 連打引擎結算：此時 active slot 已從 alias 刷新，combo strike 讀 slots 才正確。
 	_check_combo_strike()
 	_check_active_enemy_death()  # active 敵被打死 → 自動換到下一個活敵
-	return {"affordable": true, "before_card": before_card, "ended": is_battle_over()}
+	return {"affordable": true, "before_card": before_card, "ended": is_battle_over(), "stolen_item": stolen_item}
 
 # active 敵 HP <= 0 時，自動切換 active 到第一個活敵
 func _check_active_enemy_death() -> void:

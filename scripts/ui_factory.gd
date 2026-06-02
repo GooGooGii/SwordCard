@@ -137,18 +137,34 @@ static func load_texture(path: String) -> Texture2D:
 	_texture_cache[path] = tex
 	return tex
 
-static func hp_bar(fill_color: Color, bg_color: Color) -> ProgressBar:
+static func hp_bar(fill_color: Color, _bg_color: Color) -> ProgressBar:
 	var bar: ProgressBar = ProgressBar.new()
-	bar.custom_minimum_size = Vector2(0, 18)
+	bar.custom_minimum_size = Vector2(0, 16)
 	bar.show_percentage = false
 	bar.min_value = 0
 	bar.max_value = 1
 	bar.value = 1
-	var bg: StyleBoxFlat = style_box(bg_color, Color("1a1a1f"), 1, 4)
-	var fill: StyleBoxFlat = style_box(fill_color, fill_color.lightened(0.25), 0, 4)
+	
+	var bg: StyleBoxFlat = StyleBoxFlat.new()
+	bg.bg_color = Color("0d1420") # 深層沉穩暗夜藍
+	bg.border_color = Color("233145", 0.8) # 藍灰精緻微光邊緣
+	bg.set_border_width_all(1)
+	bg.set_corner_radius_all(999) # 現代扁平化膠囊設計
+	
+	var fill: StyleBoxFlat = StyleBoxFlat.new()
+	fill.bg_color = fill_color
+	# 高光頂邊線，塑造微光立體感
+	fill.border_color = Color("ffffff", 0.25)
+	fill.border_width_top = 1
+	fill.set_corner_radius_all(999)
+	# 邊緣發光（陰影）特效，提升科幻/仙俠奇幻質感
+	fill.shadow_color = Color(fill_color.r, fill_color.g, fill_color.b, 0.32)
+	fill.shadow_size = 4
+	
 	bar.add_theme_stylebox_override("background", bg)
 	bar.add_theme_stylebox_override("fill", fill)
 	return bar
+
 
 static func status_summary(poison: int, weak: int, vulnerable: int) -> String:
 	var parts: Array[String] = []

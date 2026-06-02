@@ -377,11 +377,6 @@ static func loot_table_for(enemy_id: String) -> Array[Dictionary]:
 				{"type": "potion", "potion_id": "huichun_dan",  "display_name": "回春丹"},
 				{"type": "potion", "potion_id": "jinchuang_yao","display_name": "金瘡藥"},
 			]
-		"beast":
-			return [
-				{"type": "potion", "potion_id": "hugu_jiu",    "display_name": "虎骨酒"},
-				{"type": "potion", "potion_id": "huichun_dan", "display_name": "回春丹"},
-			]
 		"gu_cultist":
 			return [
 				{"type": "potion", "potion_id": "jiedu_san",  "display_name": "解毒散"},
@@ -426,11 +421,6 @@ static func loot_table_for(enemy_id: String) -> Array[Dictionary]:
 			return [
 				{"type": "potion", "potion_id": "jinchuang_yao","display_name": "金瘡藥"},
 				{"type": "potion", "potion_id": "lingshe_dan",  "display_name": "靈蛇膽"},
-			]
-		"ancient_evil_spirit":
-			return [
-				{"type": "potion", "potion_id": "xianren_xue",  "display_name": "仙人遺血"},
-				{"type": "potion", "potion_id": "tianling_dan",  "display_name": "天靈丹"},
 			]
 		# Bosses — 稀有掉落
 		"moon_worshipper":
