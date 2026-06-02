@@ -1377,15 +1377,28 @@ func _boon_choice_panel(boon: Dictionary) -> PanelContainer:
 
 func _apply_boon(boon_id: String) -> void:
 	_boon_applied = boon_id
+	var rewards: Array[Dictionary] = []
 	match boon_id:
 		"extra_gold":
 			run_state.gold += 200
+			rewards.append({
+				"type": "gold",
+				"display_name": "200 銅錢",
+				"description": "旅費資金已加碼存入行囊。"
+			})
 		"extra_card":
 			var pool: Array[CardData] = selected_character.reward_pool.duplicate()
 			if not pool.is_empty():
 				pool.shuffle()
+				var card: CardData = (pool[0] as CardData).clone()
 				var d: Array = run_state.character_decks[0] as Array
-				d.append((pool[0] as CardData).clone())
+				d.append(card)
+				rewards.append({
+					"type": "card",
+					"display_name": card.display_name,
+					"description": card.description,
+					"card": card
+				})
 		"random_relic":
 			var relic_pool: Array[RelicData] = []
 			for r: RelicData in RelicCatalog.generals():
@@ -1393,7 +1406,14 @@ func _apply_boon(boon_id: String) -> void:
 					relic_pool.append(r)
 			if not relic_pool.is_empty():
 				relic_pool.shuffle()
-				run_state.add_relic(relic_pool[0].clone())
+				var relic: RelicData = relic_pool[0].clone()
+				run_state.add_relic(relic)
+				rewards.append({
+					"type": "relic",
+					"display_name": relic.display_name,
+					"description": relic.description,
+					"relic": relic
+				})
 		"remove_starter":
 			var d: Array = run_state.character_decks[0] as Array
 			var basic_indices: Array[int] = []
@@ -1402,18 +1422,35 @@ func _apply_boon(boon_id: String) -> void:
 					basic_indices.append(i)
 			if not basic_indices.is_empty():
 				basic_indices.shuffle()
+				var removed_card: CardData = d[basic_indices[0]]
 				d.remove_at(basic_indices[0])
+				rewards.append({
+					"type": "remove_card",
+					"display_name": removed_card.display_name,
+					"description": "已從初始牌組中永久移除。"
+				})
 		"hp_up":
 			for i: int in range(run_state.characters.size()):
 				run_state.character_max_hps[i] += 12
 				run_state.character_hps[i] = min(run_state.character_max_hps[i], run_state.character_hps[i] + 12)
+			rewards.append({
+				"type": "hp",
+				"display_name": "生命上限 +12",
+				"description": "全隊體魄增強，最大與當前 HP 同步提升。"
+			})
 		"starting_potion":
 			if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
 				var huichun: Dictionary = PotionCatalog.by_id("huichun_dan")
 				if not huichun.is_empty():
-					run_state.potions.append(huichun.duplicate())
+					var dup_potion: Dictionary = huichun.duplicate()
+					run_state.potions.append(dup_potion)
+					rewards.append({
+						"type": "potion",
+						"display_name": String(dup_potion.get("display_name", "回春丹")),
+						"description": String(dup_potion.get("description", "")),
+						"potion": dup_potion
+					})
 		"curse_relic":
-			# 詛咒隨機一張
 			var all_curses: Array[String] = []
 			for c: Dictionary in CurseCatalog.all():
 				all_curses.append(String(c["id"]))
@@ -1422,36 +1459,190 @@ func _apply_boon(boon_id: String) -> void:
 				var curse_card: CardData = CurseCatalog.make_card(all_curses[0])
 				if curse_card != null:
 					(run_state.character_decks[0] as Array).append(curse_card)
-			# 稀有遺物補償
+					rewards.append({
+						"type": "curse",
+						"display_name": curse_card.display_name,
+						"description": "隨機詛咒加入牌組：\n%s" % curse_card.description,
+						"card": curse_card
+					})
 			var rare_pool: Array[RelicData] = []
 			for r: RelicData in RelicCatalog.generals():
 				if r.rarity == "rare" and not run_state.has_relic(r.id):
 					rare_pool.append(r)
 			if not rare_pool.is_empty():
 				rare_pool.shuffle()
-				run_state.add_relic(rare_pool[0].clone())
+				var relic: RelicData = rare_pool[0].clone()
+				run_state.add_relic(relic)
+				rewards.append({
+					"type": "relic",
+					"display_name": relic.display_name,
+					"description": relic.description,
+					"relic": relic
+				})
 		"weapon_exchange":
-			# 移除主角初始武器遺物
 			var weapon_id_to_remove: String = ""
 			for w: RelicData in RelicCatalog.weapons_for_character(selected_character.id):
 				if run_state.has_relic(w.id):
 					weapon_id_to_remove = w.id
 					break
+			var removed_weapon_name: String = ""
 			if not weapon_id_to_remove.is_empty():
 				var kept: Array[RelicData] = []
 				for r_v: RelicData in run_state.relics:
 					if r_v.id != weapon_id_to_remove:
 						kept.append(r_v)
+					else:
+						removed_weapon_name = r_v.display_name
 				run_state.relics = kept
-			# 隨機稀有遺物（不可選）
+				rewards.append({
+					"type": "remove_weapon",
+					"display_name": "捨棄武器 " + removed_weapon_name,
+					"description": "失去初始法器以尋求更大機緣。"
+				})
 			var rare_pool2: Array[RelicData] = []
 			for r2: RelicData in RelicCatalog.generals():
 				if r2.rarity == "rare" and not run_state.has_relic(r2.id):
 					rare_pool2.append(r2)
 			if not rare_pool2.is_empty():
 				rare_pool2.shuffle()
-				run_state.add_relic(rare_pool2[0].clone())
-	show_progress_screen()
+				var relic: RelicData = rare_pool2[0].clone()
+				run_state.add_relic(relic)
+				rewards.append({
+					"type": "relic",
+					"display_name": relic.display_name,
+					"description": relic.description,
+					"relic": relic
+				})
+
+	if not rewards.is_empty():
+		_show_boon_rewards_popup(rewards, show_progress_screen)
+	else:
+		show_progress_screen()
+
+func _show_boon_rewards_popup(rewards: Array[Dictionary], on_close: Callable) -> void:
+	var popup: PopupPanel = _make_battle_popup()
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 16)
+	box.custom_minimum_size = Vector2(420, 280)
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	
+	var title: Label = Label.new()
+	title.text = "【加護結果】獲得加護物資"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
+	box.add_child(title)
+	
+	var subtitle: Label = Label.new()
+	subtitle.text = "大俠踏上旅途，獲得以下物資加護："
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", 12)
+	subtitle.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
+	box.add_child(subtitle)
+	
+	var content_row: HBoxContainer = HBoxContainer.new()
+	content_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	content_row.add_theme_constant_override("separation", 20)
+	box.add_child(content_row)
+	
+	for item: Dictionary in rewards:
+		var type: String = String(item.get("type", ""))
+		var display_name: String = String(item.get("display_name", ""))
+		var description: String = String(item.get("description", ""))
+		
+		var card_panel: PanelContainer = PanelContainer.new()
+		var panel_style := StyleBoxFlat.new()
+		panel_style.bg_color = Color("141c28", 0.95)
+		panel_style.set_border_width_all(1)
+		panel_style.border_color = Color("3a4b63")
+		panel_style.set_corner_radius_all(6)
+		panel_style.content_margin_left = 12
+		panel_style.content_margin_right = 12
+		panel_style.content_margin_top = 10
+		panel_style.content_margin_bottom = 10
+		card_panel.add_theme_stylebox_override("panel", panel_style)
+		card_panel.custom_minimum_size = Vector2(180, 160)
+		
+		var item_box: VBoxContainer = VBoxContainer.new()
+		item_box.alignment = BoxContainer.ALIGNMENT_CENTER
+		item_box.add_theme_constant_override("separation", 6)
+		card_panel.add_child(item_box)
+		
+		var icon: TextureRect = TextureRect.new()
+		icon.custom_minimum_size = Vector2(48, 48)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		
+		var name_color: Color = ThemeColors.TEXT_LIGHT
+		
+		if type == "gold":
+			icon.texture = UIFactory.load_texture("res://assets/art/relics/tong_bao_qian.png")
+			name_color = ThemeColors.HIGHLIGHT_GOLD
+		elif type == "card" or type == "curse":
+			var card_data: CardData = item.get("card") as CardData
+			if card_data != null:
+				icon.texture = UIFactory.load_texture(card_data.art_path)
+				name_color = CardFormat.card_rarity_color(card_data)
+			else:
+				icon.texture = UIFactory.load_texture("res://assets/art/relics/jing_hua_fu.png")
+		elif type == "relic":
+			var relic_data: RelicData = item.get("relic") as RelicData
+			if relic_data != null:
+				icon.texture = UIFactory.load_texture("res://assets/art/relics/%s.png" % relic_data.id)
+				name_color = _relic_rarity_color_for_popup(relic_data)
+			else:
+				icon.texture = UIFactory.load_texture("res://assets/art/relics/duo_bao_ge.png")
+		elif type == "potion":
+			var potion_data: Dictionary = item.get("potion", {}) as Dictionary
+			if not potion_data.is_empty():
+				icon.texture = UIFactory.load_texture("res://assets/art/potions/%s.png" % String(potion_data.get("id", "huichun_dan")))
+				name_color = PotionCatalog.rarity_color(potion_data)
+			else:
+				icon.texture = UIFactory.load_texture("res://assets/art/potions/huichun_dan.png")
+		elif type == "remove_card":
+			icon.texture = UIFactory.load_texture("res://assets/art/relics/jing_hua_fu.png")
+			name_color = Color("a5a5a5")
+		elif type == "remove_weapon":
+			icon.texture = UIFactory.load_texture("res://assets/art/relics/wuyue_shendao.png")
+			name_color = Color("d95e5e")
+		elif type == "hp":
+			icon.texture = UIFactory.load_texture("res://assets/art/relics/long_xue_shi.png")
+			name_color = Color("ff6c6c")
+			
+		item_box.add_child(icon)
+		
+		var name_lbl: Label = Label.new()
+		name_lbl.text = display_name
+		name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		name_lbl.add_theme_font_size_override("font_size", 14)
+		name_lbl.add_theme_color_override("font_color", name_color)
+		item_box.add_child(name_lbl)
+		
+		var desc_lbl: Label = Label.new()
+		desc_lbl.text = description
+		desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		desc_lbl.custom_minimum_size = Vector2(160, 0)
+		desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		desc_lbl.add_theme_font_size_override("font_size", 11)
+		desc_lbl.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
+		item_box.add_child(desc_lbl)
+		
+		content_row.add_child(card_panel)
+		
+	var btn: Button = _button("出發")
+	btn.custom_minimum_size = Vector2(100, 36)
+	btn.add_theme_font_size_override("font_size", 14)
+	btn.pressed.connect(popup.hide)
+	box.add_child(btn)
+	
+	popup.add_child(box)
+	get_viewport().add_child(popup)
+	
+	popup.popup_hide.connect(func() -> void:
+		popup.queue_free()
+		on_close.call()
+	)
+	popup.popup_centered()
 
 func show_progress_screen() -> void:
 	SaveManager.save(run_state)
