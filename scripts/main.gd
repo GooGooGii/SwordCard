@@ -3132,6 +3132,16 @@ func play_card(card: CardData, source_button: Button = null) -> void:
 			_animate_earth_effect(card)
 		"zl_guanyin", "zl_wuqi", "zl_ganlin", "zl_shuiling":
 			_animate_heal_effect(card)
+		"anu_yufeng":
+			_animate_yu_feng_effect(card)
+		"anu_wanyi", "anu_wanyi_ls":
+			_animate_wan_yi_effect(card)
+		"anu_baozhagu":
+			_animate_bao_zha_gu_effect(card)
+		"anu_duzhen", "anu_lianduzhen", "anu_yanshazhou":
+			_animate_du_zhen_effect(card)
+		"anu_wuyuezhan", "anu_xuerenwu":
+			_animate_wu_yue_zhan_effect(card)
 	if bool(result["ended"]) and await _finish_battle_after_delay():
 		return
 
@@ -7985,4 +7995,392 @@ func _spawn_single_heal_vfx(node: Control, is_bench: bool = false) -> void:
 			if is_instance_valid(particle):
 				particle.queue_free()
 		)
+
+
+func _animate_yu_feng_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var texture_path: String = "res://assets/art/effects/toxic_bee.png"
+	var bee_tex: Texture2D = UIFactory.load_texture(texture_path)
+	if bee_tex == null:
+		return
+		
+	var alive_targets: Array[Dictionary] = []
+	var enemy_slots: Array = battle.state.get("enemies", []) as Array
+	for i: int in range(enemy_widgets.size()):
+		if i < enemy_slots.size():
+			var slot: Dictionary = enemy_slots[i] as Dictionary
+			if int(slot["hp"]) > 0:
+				alive_targets.append(enemy_widgets[i])
+				
+	if alive_targets.is_empty():
+		return
+		
+	var view_size: Vector2 = get_viewport_rect().size
+	var player_center: Vector2 = Vector2(120.0, view_size.y * 0.65)
+	if player_portrait_wrap != null and is_instance_valid(player_portrait_wrap):
+		player_center = player_portrait_wrap.global_position + player_portrait_wrap.size / 2.0
+		
+	var bee_count: int = 15
+	for i in range(bee_count):
+		var target: Dictionary = alive_targets[i % alive_targets.size()]
+		var wrap: Control = target["wrap"] as Control
+		var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
+		
+		var bee := TextureRect.new()
+		bee.texture = bee_tex
+		bee.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bee.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		
+		var bee_size := Vector2(24.0, 24.0)
+		bee.size = bee_size
+		bee.pivot_offset = bee_size / 2.0
+		bee.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		
+		var start_pos := player_center + Vector2(randf_range(-40, 40), randf_range(-40, 40)) - bee_size / 2.0
+		bee.global_position = start_pos
+		bee.modulate = Color(1.1, 1.3, 0.9)
+		bee.modulate.a = 0.0
+		add_child(bee)
+		
+		var delay: float = i * 0.035
+		var duration: float = randf_range(0.42, 0.62)
+		var end_pos := target_center + Vector2(randf_range(-30, 30), randf_range(-30, 30)) - bee_size / 2.0
+		
+		var tween: Tween = create_tween().set_parallel(true)
+		
+		tween.tween_property(bee, "global_position", end_pos, duration)\
+			.set_delay(delay)\
+			.set_trans(Tween.TRANS_QUAD)\
+			.set_ease(Tween.EASE_OUT)
+		
+		var angle_to_target: float = (end_pos - start_pos).angle()
+		bee.rotation = angle_to_target
+		tween.tween_property(bee, "rotation", angle_to_target + randf_range(-0.3, 0.3), duration).set_delay(delay)
+		
+		tween.tween_property(bee, "modulate:a", 1.0, duration * 0.25).set_delay(delay)
+		bee.scale = Vector2(0.5, 0.5)
+		tween.tween_property(bee, "scale", Vector2(1.2, 1.2), duration * 0.4).set_delay(delay)
+		
+		tween.tween_property(bee, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.7)
+		
+		var captured_wrap = wrap
+		tween.finished.connect(func() -> void:
+			if is_instance_valid(bee):
+				bee.queue_free()
+			if is_instance_valid(captured_wrap) and randf() > 0.6:
+				UIFactory.shake_node(captured_wrap, 3.0, 0.1)
+		)
+
+
+func _animate_wan_yi_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+		
+	var alive_targets: Array[Dictionary] = []
+	var enemy_slots: Array = battle.state.get("enemies", []) as Array
+	for i: int in range(enemy_widgets.size()):
+		if i < enemy_slots.size():
+			var slot: Dictionary = enemy_slots[i] as Dictionary
+			if int(slot["hp"]) > 0:
+				alive_targets.append(enemy_widgets[i])
+				
+	if alive_targets.is_empty():
+		return
+		
+	for target in alive_targets:
+		var wrap: Control = target["wrap"] as Control
+		var target_rect: Rect2 = wrap.get_global_rect()
+		
+		var ant_count: int = 16
+		for k in range(ant_count):
+			var ant := ColorRect.new()
+			ant.color = Color("1e0526") if randf() > 0.3 else Color("09010d")
+			var ant_w: float = randf_range(3.0, 5.0)
+			var ant_h: float = randf_range(4.0, 6.0)
+			ant.size = Vector2(ant_w, ant_h)
+			ant.pivot_offset = ant.size / 2.0
+			ant.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			
+			var start_x: float = randf_range(target_rect.position.x + 10.0, target_rect.position.x + target_rect.size.x - 10.0)
+			var start_y: float = target_rect.position.y + target_rect.size.y - randf_range(5.0, 25.0)
+			ant.global_position = Vector2(start_x, start_y)
+			ant.rotation = deg_to_rad(randf_range(-15, 15))
+			ant.modulate.a = 0.0
+			add_child(ant)
+			
+			var delay: float = randf_range(0.0, 0.4)
+			var duration: float = randf_range(0.6, 1.1)
+			var crawl_distance_y: float = randf_range(60.0, 160.0)
+			var crawl_drift_x: float = randf_range(-25.0, 25.0)
+			
+			var tween: Tween = create_tween().set_parallel(true)
+			tween.tween_property(ant, "global_position:y", start_y - crawl_distance_y, duration)\
+				.set_delay(delay)\
+				.set_trans(Tween.TRANS_LINEAR)
+			tween.tween_property(ant, "global_position:x", start_x + crawl_drift_x, duration)\
+				.set_delay(delay)\
+				.set_trans(Tween.TRANS_SINE)
+			
+			tween.tween_property(ant, "modulate:a", randf_range(0.7, 1.0), duration * 0.25).set_delay(delay)
+			tween.tween_property(ant, "modulate:a", 0.0, duration * 0.4).set_delay(delay + duration * 0.6)
+			
+			tween.finished.connect(func() -> void:
+				if is_instance_valid(ant):
+					ant.queue_free()
+			)
+
+
+func _animate_bao_zha_gu_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var texture_path: String = "res://assets/art/effects/poison_explosion.png"
+	var blast_tex: Texture2D = UIFactory.load_texture(texture_path)
+	if blast_tex == null:
+		return
+		
+	var active_idx: int = battle._active_enemy_index()
+	var target_widget: Dictionary = {}
+	for w: Dictionary in enemy_widgets:
+		if w["enemy_idx"] == active_idx:
+			target_widget = w
+			break
+	if target_widget.is_empty():
+		for w: Dictionary in enemy_widgets:
+			var enemy_slots: Array = battle.state.get("enemies", []) as Array
+			var i: int = w["enemy_idx"]
+			if i < enemy_slots.size() and int(enemy_slots[i]["hp"]) > 0:
+				target_widget = w
+				break
+	if target_widget.is_empty():
+		return
+		
+	var wrap: Control = target_widget["wrap"] as Control
+	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
+	
+	var blast := TextureRect.new()
+	blast.texture = blast_tex
+	blast.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	blast.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	
+	var blast_size := Vector2(220.0, 220.0)
+	blast.size = blast_size
+	blast.pivot_offset = blast_size / 2.0
+	blast.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	blast.global_position = target_center - blast_size / 2.0
+	blast.modulate = Color(0.5, 1.4, 0.6)
+	blast.modulate.a = 0.0
+	add_child(blast)
+	
+	var overlay := ColorRect.new()
+	overlay.color = Color("4eff76", 0.0)
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(overlay)
+	
+	var flash_tween := create_tween()
+	flash_tween.tween_property(overlay, "color:a", 0.2, 0.06)
+	flash_tween.tween_property(overlay, "color:a", 0.0, 0.18)
+	flash_tween.finished.connect(func() -> void:
+		if is_instance_valid(overlay):
+			overlay.queue_free()
+	)
+	
+	var duration: float = 0.32
+	var tween := create_tween().set_parallel(true)
+	
+	blast.scale = Vector2(0.2, 0.2)
+	tween.tween_property(blast, "scale", Vector2(1.2, 1.2), 0.18)\
+		.set_trans(Tween.TRANS_BACK)\
+		.set_ease(Tween.EASE_OUT)
+	tween.tween_property(blast, "modulate:a", 1.0, 0.06)
+	tween.tween_property(blast, "modulate:a", 0.0, 0.22).set_delay(0.18)
+	
+	var captured_wrap = wrap
+	var current_target_center = target_center
+	tween.finished.connect(func() -> void:
+		if is_instance_valid(blast):
+			blast.queue_free()
+		if is_instance_valid(captured_wrap):
+			UIFactory.shake_node(captured_wrap, 15.0, 0.35)
+			_spawn_poison_explosion_particles(current_target_center)
+	)
+
+
+func _spawn_poison_explosion_particles(pos: Vector2) -> void:
+	for i in range(10):
+		var particle := ColorRect.new()
+		var colors = [Color("2dfa5c"), Color("0f3b17"), Color("adff2f")]
+		particle.color = colors[randi() % colors.size()]
+		var size_val: float = randf_range(6.0, 14.0)
+		particle.size = Vector2(size_val, size_val)
+		particle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		particle.global_position = pos - particle.size / 2.0
+		add_child(particle)
+		
+		var angle: float = randf() * TAU
+		var distance: float = randf_range(40.0, 100.0)
+		var velocity := Vector2(cos(angle), sin(angle)) * distance
+		var duration: float = randf_range(0.3, 0.5)
+		
+		var tween: Tween = create_tween().set_parallel(true)
+		tween.tween_property(particle, "global_position", particle.global_position + velocity, duration)\
+			.set_trans(Tween.TRANS_QUAD)\
+			.set_ease(Tween.EASE_OUT)
+		tween.tween_property(particle, "modulate:a", 0.0, duration)
+		tween.tween_property(particle, "scale", Vector2(0.1, 0.1), duration)
+		
+		tween.finished.connect(func() -> void:
+			if is_instance_valid(particle):
+				particle.queue_free()
+		)
+
+
+func _animate_du_zhen_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var texture_path: String = "res://assets/art/effects/poison_needle.png"
+	var needle_tex: Texture2D = UIFactory.load_texture(texture_path)
+	if needle_tex == null:
+		return
+		
+	var active_idx: int = battle._active_enemy_index()
+	var target_widget: Dictionary = {}
+	for w: Dictionary in enemy_widgets:
+		if w["enemy_idx"] == active_idx:
+			target_widget = w
+			break
+	if target_widget.is_empty():
+		for w: Dictionary in enemy_widgets:
+			var enemy_slots: Array = battle.state.get("enemies", []) as Array
+			var i: int = w["enemy_idx"]
+			if i < enemy_slots.size() and int(enemy_slots[i]["hp"]) > 0:
+				target_widget = w
+				break
+	if target_widget.is_empty():
+		return
+		
+	var wrap: Control = target_widget["wrap"] as Control
+	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
+	
+	var view_size: Vector2 = get_viewport_rect().size
+	var player_center: Vector2 = Vector2(120.0, view_size.y * 0.65)
+	if player_portrait_wrap != null and is_instance_valid(player_portrait_wrap):
+		player_center = player_portrait_wrap.global_position + player_portrait_wrap.size / 2.0
+		
+	var needles: int = 2
+	if card.id == "anu_lianduzhen":
+		needles = 3
+		
+	for k in range(needles):
+		var delay: float = k * 0.1
+		var needle := TextureRect.new()
+		needle.texture = needle_tex
+		needle.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		needle.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		
+		var needle_size := Vector2(50.0, 20.0)
+		needle.size = needle_size
+		needle.pivot_offset = needle_size / 2.0
+		needle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		
+		var start_pos := player_center + Vector2(0.0, (k - 1) * 15.0) - needle_size / 2.0
+		needle.global_position = start_pos
+		
+		var to_target: Vector2 = target_center - start_pos
+		needle.rotation = to_target.angle()
+		needle.modulate = Color(0.8, 1.4, 0.9)
+		needle.modulate.a = 0.0
+		add_child(needle)
+		
+		var duration: float = 0.28
+		var tween := create_tween().set_parallel(true)
+		var end_pos := target_center - needle_size / 2.0
+		
+		tween.tween_property(needle, "global_position", end_pos, duration)\
+			.set_delay(delay)\
+			.set_trans(Tween.TRANS_QUAD)\
+			.set_ease(Tween.EASE_IN)
+		tween.tween_property(needle, "modulate:a", 1.0, duration * 0.25).set_delay(delay)
+		
+		var captured_wrap = wrap
+		tween.finished.connect(func() -> void:
+			if is_instance_valid(needle):
+				needle.queue_free()
+			if is_instance_valid(captured_wrap):
+				UIFactory.shake_node(captured_wrap, 4.0, 0.12)
+		)
+
+
+func _animate_wu_yue_zhan_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var texture_path: String = "res://assets/art/effects/witch_blade_slash.png"
+	var slash_tex: Texture2D = UIFactory.load_texture(texture_path)
+	if slash_tex == null:
+		return
+		
+	var active_idx: int = battle._active_enemy_index()
+	var target_widget: Dictionary = {}
+	for w: Dictionary in enemy_widgets:
+		if w["enemy_idx"] == active_idx:
+			target_widget = w
+			break
+	if target_widget.is_empty():
+		for w: Dictionary in enemy_widgets:
+			var enemy_slots: Array = battle.state.get("enemies", []) as Array
+			var i: int = w["enemy_idx"]
+			if i < enemy_slots.size() and int(enemy_slots[i]["hp"]) > 0:
+				target_widget = w
+				break
+	if target_widget.is_empty():
+		return
+		
+	var wrap: Control = target_widget["wrap"] as Control
+	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
+	
+	var slash_count: int = 2
+	if card.id == "anu_xuerenwu":
+		slash_count = 3
+		
+	for k in range(slash_count):
+		var delay: float = k * 0.16
+		var slash := TextureRect.new()
+		slash.texture = slash_tex
+		slash.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		slash.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		
+		var size_val: float = randf_range(150.0, 180.0)
+		var slash_size := Vector2(size_val, size_val)
+		slash.size = slash_size
+		slash.pivot_offset = slash_size / 2.0
+		slash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slash.global_position = target_center - slash_size / 2.0
+		
+		slash.rotation = randf_range(-PI / 3.0, PI / 3.0)
+		if k % 2 == 1:
+			slash.scale.x = -1.0
+			
+		slash.modulate = Color("e0c2ff")
+		slash.modulate.a = 0.0
+		add_child(slash)
+		
+		var duration: float = 0.22
+		var tween := create_tween().set_parallel(true)
+		
+		tween.tween_property(slash, "scale", Vector2(1.25, 1.25) if k % 2 == 0 else Vector2(-1.25, 1.25), duration)\
+			.set_delay(delay)\
+			.set_trans(Tween.TRANS_QUAD)\
+			.set_ease(Tween.EASE_OUT)
+		tween.tween_property(slash, "modulate:a", 0.9, duration * 0.3).set_delay(delay)
+		tween.tween_property(slash, "modulate:a", 0.0, duration * 0.5).set_delay(delay + duration * 0.5)
+		
+		var captured_wrap = wrap
+		tween.finished.connect(func() -> void:
+			if is_instance_valid(slash):
+				slash.queue_free()
+			if is_instance_valid(captured_wrap):
+				UIFactory.shake_node(captured_wrap, 6.0, 0.15)
+		)
+
 
