@@ -127,7 +127,7 @@ static func _li_xiaoyao() -> CharacterData:
 		make_card("lxy_jinchan_ls", "金蟬脫殼", "李逍遙", 1, "skill", "金蟬脫殼，獲得 12 點護體，抽 2 張牌，回復 6 點生命。", [{"kind": "block", "amount": 12}, {"kind": "draw", "amount": 2}, {"kind": "heal", "amount": 6}], "rare"),
 		make_card("lxy_ningyuan_ls", "凝元化神", "李逍遙", 2, "power", "凝聚本源化為神氣，本場戰鬥傷害提升 3，回復 8 點生命。", [{"kind": "power", "amount": 3}, {"kind": "heal", "amount": 8}], "rare"),
 		# 連打牌組（0 費 / 減靈耗升級）：御劍連擊軸，art 暫借既有劍系卡
-		make_card("lxy_jianjue", "劍訣", "李逍遙", 0, "attack", "造成 4 點傷害。", [{"kind": "damage", "amount": 4}], "basic", "lxy_yujian"),
+		make_card("lxy_jianjue", "劍訣", "李逍遙", 0, "attack", "造成 4 點傷害。", [{"kind": "damage", "amount": 4}], "basic"),
 		make_card("lxy_huijian", "揮劍引氣", "李逍遙", 0, "attack", "造成 3 點傷害，抽 1 張牌。", [{"kind": "damage", "amount": 3}, {"kind": "draw", "amount": 1}], "uncommon", "lxy_qingfeng"),
 		make_card("lxy_yufengbu", "御風步", "李逍遙", 0, "skill", "獲得 4 點護體。", [{"kind": "block", "amount": 4}], "basic"),
 		make_card("lxy_lianhuanjian", "連環御劍", "李逍遙", 1, "attack", "造成 5 點傷害兩次。", [{"kind": "damage", "amount": 5, "hits": 2}], "uncommon", "lxy_jianzhen", true),
