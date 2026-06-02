@@ -297,6 +297,7 @@ main.gd
 
 ## 常見地雷
 
+- **不要在指令前綴 `cd` / `Set-Location`**：工作目錄已是專案根目錄。複合指令裡帶 `cd <path>; ...` 或 `Set-Location <path>; ...` 會觸發 Claude Code 的 path-resolution-bypass 安全檔板、強制人工核准（任何權限模式都關不掉，包含 bypassPermissions）。直接用相對路徑跑即可：`godot --path . -s scripts/smoke_test.gd`、`sed -n '...' scripts/main.gd`、`godot --path . -s render_ground.gd 2>&1 | Select-String "saved"`
 - **加新 `class_name` 後 Godot 報「identifier not declared」**：跑一次 `godot --headless --path . --import` 重建 global class cache
 - **跑 smoke test 不要鏈 `--import`**：`-s scripts/smoke_test.gd` 直接跑即可。只有「**新增 `class_name`**」才需要先 `--import`。鏈 `--import && smoke` 曾在背景管線下 hang（import 卡住、後續又搶 import lock），白等 20 分鐘
 - **smoke test 的 assert 失敗 = 看起來像「卡死」**：`assert` 失敗會中途 abort `_initialize`、來不及 `quit(0)`，SceneTree 就空轉。若再用 `... | tail` 管線，錯誤訊息會被 buffer 蓋掉、CLI 完全看不到。**改成輸出到檔案**（`-s smoke_test.gd > out.txt 2>&1`）就能看到 `SCRIPT ERROR: Assertion failed. at: ... :行號`。已加 watchdog（abort 後 5 秒 `quit(1)`）避免真的無限空轉
