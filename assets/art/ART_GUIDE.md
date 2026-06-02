@@ -273,7 +273,7 @@ Target:
 **注意上方「新增美術資源的硬性要求」：必須是真 PNG、`.import` UID 唯一、匯入後驗證。**
 
 - **李逍遙（4，御劍連擊）**
-  - `lxy_jianjue` (劍訣) ← 借 `lxy_yujian` 御劍術
+  - `lxy_jianjue` (劍引) ← 借 `lxy_yujian` 御劍術
   - `lxy_huijian` (揮劍引氣) ← 借 `lxy_qingfeng` 清風御劍
   - `lxy_yufengbu` (御風步) ← 借 `lxy_jianqi` 劍氣護身
   - `lxy_lianhuanjian` (連環御劍，減靈耗升級) ← 借 `lxy_jianzhen` 劍陣
