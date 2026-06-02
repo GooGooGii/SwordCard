@@ -5124,8 +5124,8 @@ func show_shop_node() -> void:
 		"強化服務", "升級牌組中的一張牌", upgrade_price,
 		run_state.shop_upgrade_used, not _upgradeable_cards().is_empty(),
 		func(): _open_shop_upgrade_service(upgrade_price)))
-	other_row.add_child(_event_choice_button("翻閱", "查看當前手札", false, show_deck_view))
-	other_row.add_child(_event_choice_button("離店", "收手回程", false, advance_non_battle_node))
+	other_row.add_child(_shop_nav_panel("牌組", "查看當前手札", "翻閱", show_deck_view))
+	other_row.add_child(_shop_nav_panel("離開", "收手回程", "離店", advance_non_battle_node))
 	# 讓「非按鈕的所有區域」都能上下拖曳捲動（panel/label/卡圖對滑鼠透明，事件落到 ScrollContainer）
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_make_non_button_scroll_transparent(box)
@@ -5354,6 +5354,21 @@ func _shop_apply_discount(base_price: int) -> int:
 				if String(e.get("kind", "")) == "shop_discount":
 					price -= int(e.get("amount", 0))
 	return max(10, int(ceil(float(price) * _shop_curse_surcharge_mult())))
+
+# 商店導覽面板（翻閱 / 離店）：與服務面板同樣的水墨navy框，取代原本格格不入的米色事件按鈕。
+func _shop_nav_panel(title: String, description: String, button_text: String, on_press: Callable) -> Control:
+	var panel: PanelContainer = UIFactory.make_panel()
+	panel.custom_minimum_size = Vector2(180, 130)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_child(box)
+	box.add_child(UIFactory.card_label(title, 15, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(UIFactory.card_label(description, 11, Color("d8e0ec"), HORIZONTAL_ALIGNMENT_CENTER))
+	var btn: Button = _button(button_text)
+	btn.pressed.connect(on_press)
+	box.add_child(btn)
+	return panel
 
 func _shop_service_panel(title: String, description: String, price: int, used: bool, available: bool, on_press: Callable) -> Control:
 	var panel: PanelContainer = UIFactory.make_panel()
