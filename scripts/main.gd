@@ -76,6 +76,8 @@ var _potion_overlay: HBoxContainer = null
 var _potion_overlay_buttons: Array[Button] = []
 var _selected_hand_button: Button = null
 var _pending_card_confirmations: Array[Dictionary] = []
+# 奇遇得到的遺物 / 藥品：結算後排隊，逐一跳出「獲得物品」說明視窗（圖 + 功能文字）
+var _pending_item_reveals: Array[Dictionary] = []
 
 # 畫面切換淡入淡出 — _clear_root 截舊畫面當 overlay，新畫面建在下方，再淡出 overlay
 var _transition_layer: CanvasLayer = null
@@ -4415,6 +4417,7 @@ func _event_show_observe(event_data: Dictionary, _sub_stage: String) -> void:
 #   power           — 永久 power_bonus +/-（影響本 run 後續所有戰鬥）
 func _resolve_observe_effects(effects: Array) -> String:
 	_pending_card_confirmations.clear()
+	_pending_item_reveals.clear()
 	if run_state == null:
 		return ""
 	var parts: Array[String] = []
@@ -4483,6 +4486,7 @@ func _resolve_observe_effects(effects: Array) -> String:
 						chosen = chosen.duplicate()
 						run_state.potions.append(chosen)
 						parts.append("獲得藥草「%s」" % String(chosen.get("display_name", "?")))
+						_pending_item_reveals.append({"type": "potion", "potion": chosen})
 				else:
 					parts.append("藥袋已滿，無從收取")
 			"upgrade_random":
@@ -4524,6 +4528,7 @@ func _resolve_observe_effects(effects: Array) -> String:
 				if picked != null:
 					run_state.add_relic(picked)
 					parts.append("獲得「%s」" % picked.display_name)
+					_pending_item_reveals.append({"type": "relic", "relic": picked})
 				else:
 					parts.append("（無新遺物可得）")
 			"gain_card_pool":
@@ -5020,7 +5025,8 @@ func _choose_event_card(card: CardData) -> void:
 
 func _flush_pending_confirmations(on_done: Callable) -> void:
 	if _pending_card_confirmations.is_empty():
-		on_done.call()
+		# 卡片確認完後，接著逐一揭示奇遇得到的遺物 / 藥品
+		_flush_pending_item_reveals(on_done)
 		return
 	var entry: Dictionary = _pending_card_confirmations.pop_front() as Dictionary
 	var card: CardData = entry["card"] as CardData
@@ -5034,6 +5040,108 @@ func _flush_pending_confirmations(on_done: Callable) -> void:
 		func() -> void:
 			_flush_pending_confirmations(on_done)
 	)
+
+# 逐一彈出奇遇得到的遺物 / 藥品說明視窗（圖 + 功能文字），全部看完才 on_done。
+func _flush_pending_item_reveals(on_done: Callable) -> void:
+	if _pending_item_reveals.is_empty():
+		on_done.call()
+		return
+	var entry: Dictionary = _pending_item_reveals.pop_front() as Dictionary
+	_show_item_reveal(entry, func() -> void: _flush_pending_item_reveals(on_done))
+
+# 通用「獲得物品」揭示視窗：左側物品圖，右側名稱 + 功能說明，底部「收下」。
+func _show_item_reveal(entry: Dictionary, on_continue: Callable) -> void:
+	_hide_card_preview()
+	var item_type: String = String(entry.get("type", ""))
+
+	var overlay: Control = Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.z_index = 1600
+	add_child(overlay)
+	_card_preview_overlay = overlay
+
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0, 0, 0, 0.72)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.add_child(backdrop)
+
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+
+	var col: VBoxContainer = VBoxContainer.new()
+	col.add_theme_constant_override("separation", 16)
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.add_child(col)
+
+	col.add_child(_title("獲得物品", 26))
+
+	# 名稱色、圖、說明依物品類型決定
+	var item_name: String = ""
+	var description: String = ""
+	var name_color: Color = ThemeColors.ACCENT_GOLD
+	var icon_node: Control = null
+	if item_type == "relic":
+		var relic: RelicData = entry["relic"] as RelicData
+		item_name = relic.display_name
+		description = relic.description
+		name_color = _relic_rarity_color_for_popup(relic)
+		var ri: RelicIcon = RelicIcon.new()
+		ri.custom_minimum_size = Vector2(96, 96)
+		ri.set_relic(relic)
+		ri.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon_node = ri
+	else:
+		var potion: Dictionary = entry["potion"] as Dictionary
+		item_name = String(potion.get("display_name", "藥品"))
+		description = String(potion.get("description", ""))
+		var tex_rect: TextureRect = TextureRect.new()
+		tex_rect.custom_minimum_size = Vector2(96, 96)
+		tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tex_rect.texture = UIFactory.load_texture("res://assets/art/potions/%s.png" % String(potion.get("id", "")))
+		tex_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon_node = tex_rect
+
+	var card_panel: PanelContainer = PanelContainer.new()
+	card_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("111926", 0.92), name_color, 2, 12))
+	col.add_child(card_panel)
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	card_panel.add_child(row)
+	var icon_holder: CenterContainer = CenterContainer.new()
+	icon_holder.custom_minimum_size = Vector2(108, 108)
+	icon_holder.add_child(icon_node)
+	row.add_child(icon_holder)
+	var text_box: VBoxContainer = VBoxContainer.new()
+	text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_box.add_theme_constant_override("separation", 8)
+	text_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_child(text_box)
+	var name_label: Label = Label.new()
+	name_label.text = item_name
+	name_label.add_theme_font_size_override("font_size", 20)
+	name_label.add_theme_color_override("font_color", name_color)
+	text_box.add_child(name_label)
+	var desc_label: Label = Label.new()
+	desc_label.text = description
+	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc_label.add_theme_font_size_override("font_size", 15)
+	desc_label.add_theme_color_override("font_color", ThemeColors.TEXT_LIGHT)
+	desc_label.custom_minimum_size = Vector2(380, 0)
+	text_box.add_child(desc_label)
+
+	var btn_row: HBoxContainer = HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.add_child(btn_row)
+	var ok_btn: Button = _button("收下")
+	ok_btn.pressed.connect(func() -> void:
+		_hide_card_preview()
+		on_continue.call())
+	btn_row.add_child(ok_btn)
 
 func _show_event_card_confirm(card: CardData, force_accept: bool, on_accept: Callable, on_skip: Callable = Callable()) -> void:
 	_hide_card_preview()
@@ -9094,7 +9202,7 @@ func _show_stolen_item_popup(item: Dictionary) -> void:
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	
 	var title: Label = Label.new()
-	title.text = "【飛龍探雲手】妙手空空"
+	title.text = "【飛龍探雲手】"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 18)
 	title.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
