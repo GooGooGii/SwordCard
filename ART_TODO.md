@@ -1,6 +1,6 @@
 # 卡圖待補清單
 
-最後更新：2026-06-01（經自動化程式掃描與像素比對驗證後完整更新）
+最後更新：2026-06-03（新增 Batch 1 & 2 及部分 Batch 3 專屬卡圖對接，完成 17 張，剩餘 8 張待補）
 
 ---
 
@@ -135,6 +135,44 @@
 | `zl_taishan` | 與 `zl_tianlei` 同圖 |
 | `zl_wuleizhou` | 與 `zl_leizhou` 同圖 |
 | `zl_xuanfengzhou` | 有圖 |
+
+## 五、借圖待補與專屬卡圖進度（2026-06）
+
+本項目旨在為 27 張原本暫時「借圖（`art_id`）」的卡牌補齊專屬插畫。目前已完成 17 張，剩餘 8 張（由於 API 配額限制暫緩，將在重置後補齊）。
+
+### 🟢 已完成專屬卡圖（17 張）
+- **李逍遙（2 張，御劍連擊）**：
+  - `lxy_huijian` (揮劍引氣) - 🟢 已完成專屬水墨圖
+  - `lxy_lianhuanjian` (連環御劍) - 🟢 已完成專屬水墨圖
+- **趙靈兒（4 張，連咒）**：
+  - `zl_xiaoleizhou` (小雷咒) - 🟢 已完成專屬水墨圖
+  - `zl_yinlingfu` (引靈符) - 🟢 已完成專屬水墨圖
+  - `zl_huguangzhou` (護光咒) - 🟢 已完成專屬水墨圖
+  - `zl_lianzhuzhou` (連珠雷咒) - 🟢 已完成專屬水墨圖
+- **林月如（4 張，鞭劍連擊）**：
+  - `lyr_jici` (急刺) - 🟢 已完成專屬水墨圖
+  - `lyr_huaci` (花刺引身) - 🟢 已完成專屬水墨圖
+  - `lyr_qiebushan` (怯步閃) - 🟢 已完成專屬水墨圖
+  - `lyr_shuangjianci` (雙劍連刺) - 🟢 已完成專屬水墨圖
+- **阿奴（5 張，蠱毒連擊 + 毒引擎）**：
+  - `anu_sandu` (散蠱) - 🟢 已完成專屬水墨圖
+  - `anu_yindu` (引蠱) - 🟢 已完成專屬水墨圖
+  - `anu_huguzhao` (護蠱罩) - 🟢 已完成專屬水墨圖
+  - `anu_lianduzhen` (連環毒針) - 🟢 已完成專屬水墨圖
+  - `anu_guzhang` (蠱瘴瀰漫) - 🟢 已完成專屬水墨圖
+- **無門派/Colorless（2 張，共同牌）**：
+  - `cl_xunjiezhan` (迅捷斬) - 🟢 已完成專屬水墨圖
+  - `cl_hanfengjue` (寒鋒訣) - 🟢 已完成專屬水墨圖
+
+### 🔴 借圖待補（8 張，共同牌 colorless 移植 - 待配額重置後生成）
+- `cl_hushenjue` (護身訣) ← 借 `lxy_jianqi`
+- `cl_qiaojin` (巧勁) ← 借 `zl_lingguang`
+- `cl_zhimingfu` (致盲符) ← 借 `anu_mihun`
+- `cl_poshi` (破式) ← 借 `lyr_juesha`
+- `cl_jinchuangtie` (金創藥帖) ← 借 `lxy_qiliao`
+- `cl_qimendunjia` (奇門遁甲) ← 借 `lxy_wanjian`
+- `cl_yunchou` (運籌帷幄) ← 借 `zl_lingxi`
+- `cl_huacaijianyi` (華彩劍意) ← 借 `lxy_jianshen`
 
 ---
 
