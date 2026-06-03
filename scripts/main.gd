@@ -569,6 +569,12 @@ func _play_bgm(track: String) -> void:
 	if am != null:
 		am.play_bgm(track)
 
+# 同 _play_bgm：用節點路徑存取 AudioManager，讓 main.gd 在 headless / tool 情境也能編譯。
+func _play_sfx(sfx_id: String, pitch_min: float = 1.0, pitch_max: float = 1.0) -> void:
+	var am: Node = get_node_or_null("/root/AudioManager")
+	if am != null:
+		am.play_sfx(sfx_id, pitch_min, pitch_max)
+
 func show_main_menu() -> void:
 	selected_party_ids.clear()  # 進主選單清掉 character_select 的暫存隊伍
 	_hide_title_bar()
@@ -3316,6 +3322,7 @@ func _start_player_turn() -> void:
 	_show_state_feedback(result["before_tick"])
 	if _check_battle_end():
 		return
+	_play_sfx("card_draw", 0.97, 1.03)
 	_refresh_battle(true)
 
 func _snapshot_dead_bench() -> Array[int]:
@@ -3350,7 +3357,16 @@ func play_card(card: CardData, source_button: Button = null) -> void:
 	if not bool(result["affordable"]):
 		_refresh_battle()
 		return
-	
+
+	# 出牌音效：依牌種，微調音高避免連打機械感
+	match card.card_type:
+		"attack":
+			_play_sfx("card_attack", 0.94, 1.06)
+		"power":
+			_play_sfx("card_power")
+		_:
+			_play_sfx("card_skill", 0.96, 1.04)
+
 	# Set temporary pose for action feedback
 	if card.card_type == "attack":
 		_temporary_player_pose = "attack"
@@ -6074,6 +6090,7 @@ func _show_upgrade_confirm_overlay(card: CardData, on_confirm: Callable) -> void
 func show_result(victory: bool) -> void:
 	_hide_title_bar()
 	_play_bgm("victory" if victory else "defeat")
+	_play_sfx("victory" if victory else "defeat")
 	if victory:
 		Ascension.mark_cleared(run_state.ascension_level)
 		SaveManager.clear()
@@ -7007,6 +7024,16 @@ func _spawn_damage_popup(target: Control, amount: int, kind: String) -> void:
 		return
 	var world_pos: Vector2 = target.global_position + Vector2(target.size.x * 0.5 - 40, target.size.y * 0.35)
 	DamagePopup.spawn(self, world_pos, amount, kind)
+	# 戰鬥回饋音效：所有浮字都走這個漏斗，集中在這裡發聲
+	match kind:
+		"damage":
+			_play_sfx("hit", 0.92, 1.08)
+		"block":
+			_play_sfx("block", 0.96, 1.04)
+		"heal":
+			_play_sfx("heal")
+		"poison", "weak", "vulnerable":
+			_play_sfx("debuff", 0.97, 1.03)
 
 # feedback 浮字包在 0 高度的 plain Control 裡：plain Control 不把子節點 min size 算進自己的
 # min size，所以塞文字時不會撐高 arena、把手牌列擠出畫面下緣。label 錨在 slot 上緣往上延伸，
@@ -7070,6 +7097,7 @@ func _button(text: String) -> Button:
 	button.custom_minimum_size = Vector2(220, 46)
 	button.add_theme_font_size_override("font_size", 18)
 	UIFactory.style_button(button)
+	button.pressed.connect(func() -> void: _play_sfx("button"))
 	return button
 
 func _get_active_player_pose() -> String:

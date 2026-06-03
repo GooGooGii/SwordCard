@@ -5,13 +5,21 @@ extends Node
 # 音檔放 assets/audio/bgm/<track_id>.ogg；缺檔自動靜音不 crash。
 
 const BGM_DIR: String = "res://assets/audio/bgm/"
+const SFX_DIR: String = "res://assets/audio/sfx/"
 const CROSSFADE_SEC: float = 0.8
 const FADE_OUT_SEC: float = 0.4
+const SFX_VOICES: int = 8  # 同時可疊播的 SFX 數（出牌連打 / 多敵受擊不互相打斷）
 
 var _players: Array[AudioStreamPlayer] = []
 var _active_idx: int = 0
 var _current_track: String = ""
 var _tween: Tween = null
+
+# SFX：一池 AudioStreamPlayer 輪流播，串流 load 後快取；缺檔靜默 skip（同 BGM 哲學）。
+# 用法：AudioManager.play_sfx("hit")
+var _sfx_players: Array[AudioStreamPlayer] = []
+var _sfx_idx: int = 0
+var _sfx_cache: Dictionary = {}  # sfx_id -> AudioStream (null = 缺檔，記下避免重複 I/O)
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS  # 暫停時音樂繼續
@@ -21,6 +29,11 @@ func _ready() -> void:
 		p.volume_db = -80.0
 		add_child(p)
 		_players.append(p)
+	for i in range(SFX_VOICES):
+		var s: AudioStreamPlayer = AudioStreamPlayer.new()
+		s.bus = "SFX"
+		add_child(s)
+		_sfx_players.append(s)
 
 func play_bgm(track_id: String) -> void:
 	if track_id == _current_track:
@@ -58,6 +71,34 @@ func play_bgm(track_id: String) -> void:
 func stop_bgm() -> void:
 	_current_track = ""
 	_fade_out_active()
+
+# 播一聲 SFX。pitch_min/max 不同時，每次隨機微調音高避免連打聽起來機械。
+func play_sfx(sfx_id: String, pitch_min: float = 1.0, pitch_max: float = 1.0) -> void:
+	if sfx_id == "":
+		return
+	var stream: AudioStream = _get_sfx_stream(sfx_id)
+	if stream == null:
+		return  # 缺檔靜默 skip
+	var player: AudioStreamPlayer = _sfx_players[_sfx_idx]
+	_sfx_idx = (_sfx_idx + 1) % _sfx_players.size()
+	player.stream = stream
+	player.pitch_scale = pitch_min if pitch_max <= pitch_min else randf_range(pitch_min, pitch_max)
+	player.play()
+
+func _get_sfx_stream(sfx_id: String) -> AudioStream:
+	if _sfx_cache.has(sfx_id):
+		return _sfx_cache[sfx_id]
+	var path: String = _find_sfx_path(sfx_id)
+	var stream: AudioStream = (load(path) as AudioStream) if path != "" else null
+	_sfx_cache[sfx_id] = stream  # 含 null：記下缺檔，下次不再 I/O
+	return stream
+
+func _find_sfx_path(sfx_id: String) -> String:
+	for ext in [".ogg", ".wav"]:
+		var p: String = SFX_DIR + sfx_id + ext
+		if ResourceLoader.exists(p):
+			return p
+	return ""
 
 func _fade_out_active() -> void:
 	var active: AudioStreamPlayer = _players[_active_idx]
