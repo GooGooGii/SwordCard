@@ -3038,6 +3038,15 @@ func _build_potion_overlay() -> void:
 		_potion_overlay_buttons.append(btn)
 		_potion_overlay.add_child(btn)
 
+# 藥格專用 stylebox：彩色邊框 + 圓角，但 content_margin 收到 2px，讓藥品 icon 有空間繪製。
+func _potion_slot_box(bg: Color, border_col: Color, border_w: int) -> StyleBoxFlat:
+	var box: StyleBoxFlat = UIFactory.style_box(bg, border_col, border_w, 6)
+	box.content_margin_left = 2
+	box.content_margin_right = 2
+	box.content_margin_top = 2
+	box.content_margin_bottom = 2
+	return box
+
 func _update_potion_button(btn: Button, slot: int, in_battle: bool = true) -> void:
 	if slot >= run_state.potions.size():
 		# 空槽：完全隱藏，避免一排「—」的視覺雜訊
@@ -3046,14 +3055,23 @@ func _update_potion_button(btn: Button, slot: int, in_battle: bool = true) -> vo
 	btn.visible = true
 	var potion: Dictionary = run_state.potions[slot]
 	var name: String = String(potion.get("display_name", "?"))
-	var tip_action: String = "（點擊查看 → 確認使用）" if in_battle else "（點擊丟棄）"
+	var tip_action: String
+	if in_battle:
+		tip_action = "（點擊查看 → 確認使用）"
+	elif PotionCatalog.usable_outside_battle(potion):
+		tip_action = "（點擊 → 使用 / 丟棄）"
+	else:
+		tip_action = "（戰鬥外不可用，點擊丟棄）"
 	btn.tooltip_text = "%s\n%s\n%s" % [name, String(potion.get("description", "")), tip_action]
 	btn.disabled = false
-	var rarity_col: Color = PotionCatalog.rarity_color(potion)
 	if in_battle:
-		btn.add_theme_stylebox_override("normal", UIFactory.style_box(Color("1a2230"), rarity_col, 1, 6))
-		btn.add_theme_stylebox_override("hover", UIFactory.style_box(Color("2a3040"), rarity_col, 2, 6))
-		btn.add_theme_stylebox_override("pressed", UIFactory.style_box(Color("0e141e"), rarity_col, 2, 6))
+		# UIFactory.style_box 預設 content_margin 14/12（給文字按鈕用），會把 ~28px 藥格的
+		# icon 繪圖區壓到 0 → 藥品圖看不見。改成小邊距讓 icon 有空間顯示。
+		# 戰鬥中不顯示稀有度邊框，只用中性深色框定義格子邊界。
+		var neutral: Color = Color("4a5266")
+		btn.add_theme_stylebox_override("normal", _potion_slot_box(Color("1a2230"), neutral, 1))
+		btn.add_theme_stylebox_override("hover", _potion_slot_box(Color("2a3040"), neutral, 1))
+		btn.add_theme_stylebox_override("pressed", _potion_slot_box(Color("0e141e"), neutral, 1))
 	else:
 		# 戰鬥外（title bar）：去除彩色邊框/底色，只留藥品圖
 		var flat: StyleBoxEmpty = StyleBoxEmpty.new()
@@ -3206,17 +3224,61 @@ func _discard_potion_prompt(slot: int) -> void:
 	btn_row.add_theme_constant_override("separation", 16)
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_child(btn_row)
+	var captured_slot: int = slot
 	var cancel_btn: Button = _button("取消")
 	cancel_btn.pressed.connect(func() -> void: center_wrap.queue_free())
 	btn_row.add_child(cancel_btn)
+	# 回血 / 永久能力類藥草：戰鬥外也能用
+	if PotionCatalog.usable_outside_battle(potion):
+		var use_btn: Button = _button("使用")
+		use_btn.pressed.connect(func() -> void:
+			center_wrap.queue_free()
+			_use_potion_out_of_battle(captured_slot))
+		btn_row.add_child(use_btn)
 	var discard_btn: Button = _button("丟棄")
-	var captured_slot: int = slot
 	discard_btn.pressed.connect(func() -> void:
 		if captured_slot < run_state.potions.size():
 			run_state.potions.remove_at(captured_slot)
 		center_wrap.queue_free()
 		_refresh_potion_overlay_buttons())
 	btn_row.add_child(discard_btn)
+
+# 戰鬥外使用藥草：直接套用回血 / 永久能力 effect 到 run_state（沒有 battle.state）。
+# 只處理 OUT_OF_BATTLE_VALUE_KINDS；戰鬥限定的 effect（power/block/...）此路徑不會進來
+# （usable_outside_battle 已擋掉含這類 effect 的藥）。
+func _use_potion_out_of_battle(slot: int) -> void:
+	if run_state == null or slot >= run_state.potions.size():
+		return
+	var potion: Dictionary = run_state.potions[slot]
+	var active: int = clampi(run_state.active_character_index, 0, max(0, run_state.character_hps.size() - 1))
+	var total_healed: int = 0
+	for effect: Dictionary in (potion.get("effects", []) as Array):
+		var kind: String = String(effect.get("kind", ""))
+		var amount: int = int(effect.get("amount", 0))
+		match kind:
+			"heal":
+				if active < run_state.character_hps.size():
+					var before: int = run_state.character_hps[active]
+					run_state.character_hps[active] = min(run_state.character_max_hps[active], before + amount)
+					total_healed += run_state.character_hps[active] - before
+			"heal_party":
+				for i: int in range(run_state.character_hps.size()):
+					if run_state.character_hps[i] <= 0:
+						continue  # 倒下的後排不靠藥草救（需復活機制）
+					var b: int = run_state.character_hps[i]
+					run_state.character_hps[i] = min(run_state.character_max_hps[i], b + amount)
+					total_healed += run_state.character_hps[i] - b
+			"max_hp":
+				if active < run_state.character_max_hps.size():
+					run_state.character_max_hps[active] += amount
+					run_state.character_hps[active] += amount
+					total_healed += amount
+			# cure_poison 等 noop：戰鬥外無毒可清，略過
+	run_state.potions.remove_at(slot)
+	_refresh_potion_overlay_buttons()
+	_refresh_title_bar()
+	if total_healed > 0 and title_bar_hp_bar != null and is_instance_valid(title_bar_hp_bar):
+		_spawn_damage_popup(title_bar_hp_bar, total_healed, "heal")
 
 func _hp_bar_with_overlay(bar: ProgressBar, value_label: Label) -> Control:
 	var bar_height: int = 18 if _battle_compact else 22
@@ -3370,7 +3432,7 @@ func play_card(card: CardData, source_button: Button = null) -> void:
 		_animate_played_card(source_button, card)
 	else:
 		_refresh_battle()
-	_show_state_feedback(result["before_card"])
+	_show_state_feedback(result["before_card"], _card_hit_count(card))
 	match card.id:
 		"lxy_wanjian", "lxy_wanjianguizong":
 			_animate_wan_jian_jue_effect(card)
@@ -6780,14 +6842,15 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cost_gem.add_child(cost_label)
 
-	# 3b) 稀有度寶石（右上）：card_lv1~4 = 基/良/稀/升。比 cost gem 略小。
+	# 3b) 稀有度寶石（右上）：card_lv1~4 = 基/良/稀/升。
+	# 與左上靈力圈對稱擺放：水平鏡射 cost gem 的 [0.0, 0.33] → [0.67, 1.0]，
+	# 上緣與高度也對齊（top 0.0、bottom 0.178），兩圈大小 / 高度一致。
 	var rarity_gem: TextureRect = TextureRect.new()
 	rarity_gem.name = "CardRarityGem"
-	# 放大稀有度寶石：寬 0.13→0.19、高 0.085→0.12（右上不超出卡圖窗 x85%）
-	rarity_gem.anchor_left = 0.709
+	rarity_gem.anchor_left = 0.67
 	rarity_gem.anchor_top = 0.0
-	rarity_gem.anchor_right = 0.957
-	rarity_gem.anchor_bottom = 0.126
+	rarity_gem.anchor_right = 1.0
+	rarity_gem.anchor_bottom = 0.178
 	rarity_gem.offset_left = 0
 	rarity_gem.offset_top = 0
 	rarity_gem.offset_right = 0
@@ -6932,7 +6995,17 @@ func _animate_hand_discard() -> void:
 				button.queue_free())
 	card_buttons.clear()
 
-func _show_state_feedback(before: Dictionary) -> void:
+# 卡片的單次傷害「段數」：連擊卡的 damage / damage_all effect 有 hits 欄位。
+# 取最大段數（一張卡可能多 effect），用於分次扣血動畫。
+func _card_hit_count(card: CardData) -> int:
+	var hits: int = 1
+	for effect: Dictionary in card.effects:
+		var kind: String = String(effect.get("kind", ""))
+		if kind == "damage" or kind == "damage_all":
+			hits = max(hits, max(1, int(effect.get("hits", 1))))
+	return hits
+
+func _show_state_feedback(before: Dictionary, multi_hit: int = 1) -> void:
 	var bs: Dictionary = battle.state
 	# ── 玩家（單體）──
 	var player_hp_delta: int = int(bs["player_hp"]) - int(before["player_hp"])
@@ -6978,9 +7051,9 @@ func _show_state_feedback(before: Dictionary) -> void:
 	for i: int in range(enemy_widgets.size()):
 		if i >= cur_enemies.size() or i >= before_enemies.size():
 			continue
-		_show_enemy_slot_feedback(enemy_widgets[i] as Dictionary, before_enemies[i] as Dictionary, cur_enemies[i] as Dictionary)
+		_show_enemy_slot_feedback(enemy_widgets[i] as Dictionary, before_enemies[i] as Dictionary, cur_enemies[i] as Dictionary, multi_hit)
 
-func _show_enemy_slot_feedback(widget: Dictionary, before_slot: Dictionary, cur_slot: Dictionary) -> void:
+func _show_enemy_slot_feedback(widget: Dictionary, before_slot: Dictionary, cur_slot: Dictionary, multi_hit: int = 1) -> void:
 	var hp_delta: int = int(cur_slot.get("hp", 0)) - int(before_slot.get("hp", 0))
 	var block_delta: int = int(cur_slot.get("block", 0)) - int(before_slot.get("block", 0))
 	var poison_delta: int = int(cur_slot.get("poison", 0)) - int(before_slot.get("poison", 0))
@@ -7005,11 +7078,15 @@ func _show_enemy_slot_feedback(widget: Dictionary, before_slot: Dictionary, cur_
 		return
 	var wrap: Control = wrap_v as Control
 	if hp_delta < 0:
-		UIFactory.shake_node(wrap, 7.0, 0.28)
-		_spawn_damage_popup(wrap, abs(hp_delta), "damage")
 		var mx: int = int(cur_slot.get("max_hp", 1))
-		if mx > 0 and abs(hp_delta) >= int(mx * 0.20):
-			UIFactory.shake_node(wrap, 18.0, 0.45)
+		var heavy: bool = mx > 0 and abs(hp_delta) >= int(mx * 0.20)
+		if multi_hit > 1:
+			_spawn_damage_popup_staggered(wrap, abs(hp_delta), multi_hit, heavy)
+		else:
+			UIFactory.shake_node(wrap, 7.0, 0.28)
+			_spawn_damage_popup(wrap, abs(hp_delta), "damage")
+			if heavy:
+				UIFactory.shake_node(wrap, 18.0, 0.45)
 	if block_delta > 0:
 		UIFactory.flash_node(wrap, Color(1.2, 1.35, 1.55), 0.22)
 		_spawn_damage_popup(wrap, block_delta, "block")
@@ -7025,6 +7102,31 @@ func _spawn_damage_popup(target: Control, amount: int, kind: String) -> void:
 		return
 	var world_pos: Vector2 = target.global_position + Vector2(target.size.x * 0.5 - 40, target.size.y * 0.35)
 	DamagePopup.spawn(self, world_pos, amount, kind)
+
+# 連擊：把總傷害拆成 hits 段，逐段延遲彈出 + 逐段震動，視覺上「一刀一刀砍」。
+# 總傷害平均分配，餘數補到最後一段（與 resolver 逐段遞減 block 的實際分布略有出入，
+# 但視覺夠逼真；最終扣血總量一致）。
+func _spawn_damage_popup_staggered(target: Control, total: int, hits: int, heavy: bool) -> void:
+	if target == null or not is_instance_valid(target) or total <= 0:
+		return
+	hits = clamp(hits, 1, total)
+	var base_chunk: int = int(total / float(hits))
+	var remainder: int = total - base_chunk * hits
+	var delay_step: float = 0.13
+	for h: int in range(hits):
+		var chunk: int = base_chunk + (1 if h == hits - 1 else 0) * remainder
+		if chunk <= 0:
+			continue
+		var t: SceneTree = get_tree()
+		if t == null:
+			_spawn_damage_popup(target, chunk, "damage")
+			continue
+		var timer: SceneTreeTimer = t.create_timer(delay_step * h)
+		timer.timeout.connect(func() -> void:
+			if not is_instance_valid(target):
+				return
+			_spawn_damage_popup(target, chunk, "damage")
+			UIFactory.shake_node(target, 14.0 if heavy else 6.0, 0.2))
 
 # feedback 浮字包在 0 高度的 plain Control 裡：plain Control 不把子節點 min size 算進自己的
 # min size，所以塞文字時不會撐高 arena、把手牌列擠出畫面下緣。label 錨在 slot 上緣往上延伸，

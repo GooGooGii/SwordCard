@@ -133,6 +133,9 @@ static func ground_portrait(rect: TextureRect) -> void:
 	var box: Vector2 = rect.get_meta("ground_box")
 	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	rect.stretch_mode = TextureRect.STRETCH_SCALE  # 已自算尺寸吻合比例，不會變形
+	# 解除 portrait_rect 設的 custom_minimum_size 鉗制，否則「比例縮放後較短的那一邊」
+	# 會被最小尺寸頂回 box，導致圖被拉伸、底部對齊也跟著失準（不同比例原圖飄移程度不同）。
+	rect.custom_minimum_size = Vector2.ZERO
 	var tex: Texture2D = rect.texture
 	if tex == null or tex.get_width() <= 0 or tex.get_height() <= 0:
 		rect.position = Vector2.ZERO
@@ -144,7 +147,15 @@ static func ground_portrait(rect: TextureRect) -> void:
 	var dw: float = tw * s
 	var dh: float = th * s
 	rect.size = Vector2(dw, dh)
-	rect.position = Vector2((box.x - dw) * 0.5, box.y - dh)  # 水平置中、底部對齊
+	# 內容底部對齊：抓不透明像素的下緣（去除腳下透明留白），讓不同原圖的人物「實體」
+	# 站在同一條地面線。get_image() 在壓縮貼圖上可能取不到 → fallback 用整張圖下緣。
+	var content_bottom: float = th  # 預設 = 圖片下緣
+	var src_img: Image = tex.get_image()
+	if src_img != null:
+		var used: Rect2i = src_img.get_used_rect()
+		if used.size.y > 0:
+			content_bottom = float(used.position.y + used.size.y)
+	rect.position = Vector2((box.x - dw) * 0.5, box.y - content_bottom * s)  # 水平置中、內容底部對齊
 
 static var _texture_cache: Dictionary = {}
 

@@ -89,6 +89,24 @@ static func by_id(id: String) -> Dictionary:
 			return p
 	return {}
 
+# 戰鬥外仍有意義的 effect kind（回血、永久能力增益）。
+# heal / heal_party 直接補 run HP；未來若加 max_hp 等永久 buff 也列在此。
+const OUT_OF_BATTLE_VALUE_KINDS: Array[String] = ["heal", "heal_party", "max_hp"]
+# 戰鬥外無作用、但也不浪費價值的 kind（清毒在無毒時是 noop）。
+const OUT_OF_BATTLE_NOOP_KINDS: Array[String] = ["cure_poison"]
+
+# 此藥是否可在非戰鬥時使用：至少含一個「戰鬥外有價值」的 effect，且其餘 effect
+# 都只是戰鬥外無害（noop）的——避免把 power/護體 等只在戰鬥有效的價值白白浪費掉。
+static func usable_outside_battle(potion: Dictionary) -> bool:
+	var has_value: bool = false
+	for effect: Dictionary in (potion.get("effects", []) as Array):
+		var kind: String = String(effect.get("kind", ""))
+		if kind in OUT_OF_BATTLE_VALUE_KINDS:
+			has_value = true
+		elif not (kind in OUT_OF_BATTLE_NOOP_KINDS):
+			return false
+	return has_value
+
 static func price_of(potion: Dictionary, is_black_shop: bool) -> int:
 	var base: int = 40
 	match potion.get("rarity", "common"):

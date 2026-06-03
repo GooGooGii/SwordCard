@@ -1265,6 +1265,12 @@ func _test_potion_catalog() -> void:
 		var by_id: Dictionary = PotionCatalog.by_id(String(p["id"]))
 		_check(not by_id.is_empty(), "PotionCatalog.by_id failed for %s" % p["id"])
 	_check(PotionCatalog.by_id("nonexistent").is_empty(), "by_id should return empty dict for unknown id")
+	# 戰鬥外可用分類：純回血 / 回血+清毒 可用；含 power / block / energy 等戰鬥限定價值的不可用
+	_check(PotionCatalog.usable_outside_battle(PotionCatalog.by_id("huichun_dan")), "回春丹(純回血) 應可戰鬥外使用")
+	_check(PotionCatalog.usable_outside_battle(PotionCatalog.by_id("baihua_xianniang")), "百花仙釀(回血+清毒) 應可戰鬥外使用")
+	_check(not PotionCatalog.usable_outside_battle(PotionCatalog.by_id("xianren_xue")), "仙人遺血(回血+power) 不應可戰鬥外使用(會浪費power)")
+	_check(not PotionCatalog.usable_outside_battle(PotionCatalog.by_id("huti_fu")), "護體符(block) 不應可戰鬥外使用")
+	_check(not PotionCatalog.usable_outside_battle(PotionCatalog.by_id("jiedu_san")), "解毒散(純清毒) 不應可戰鬥外使用(無回血價值)")
 
 func _test_potion_save_roundtrip(characters: Array[CharacterData]) -> void:
 	var state: RunState = RunState.new()
