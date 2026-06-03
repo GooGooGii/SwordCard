@@ -141,3 +141,64 @@ static func predict_enemy_damage(action: Dictionary, state: Dictionary) -> Dicti
 		blocked += b
 		dealt += modified - b
 	return {"raw": raw, "blocked": blocked, "dealt": dealt}
+
+# 戰鬥手牌即時數值：把玩家卡片 effects 依當前 state（power / weak / vulnerable / 各種
+# relic+potion bonus）算成「實際打出」的數字。與 EffectResolver._resolve_effect 的
+# player（from_enemy=false）路徑保持同步。回傳 [{label, value, base, hits}]，只涵蓋
+# 有數字意義的 kind；其餘（draw / energy / power / 狀態施加）不列。
+static func live_effect_previews(card: CardData, state: Dictionary) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var power: int = int(state.get("player_power", 0))
+	var weak: int = int(state.get("player_weak", 0))
+	var dmg_bonus: int = int(state.get("damage_out_bonus", 0))
+	var enemy_vuln: int = int(state.get("enemy_vulnerable", 0))
+	for effect: Dictionary in card.effects:
+		var kind: String = String(effect.get("kind", ""))
+		var amount: int = int(effect.get("amount", 0))
+		match kind:
+			"damage", "damage_all":
+				var hits: int = max(1, int(effect.get("hits", 1)))
+				var modified: int = max(0, amount + power - weak) + dmg_bonus
+				if enemy_vuln > 0:
+					modified = int(ceil(modified * 1.5))
+				out.append({"label": "傷害", "value": modified, "base": amount, "hits": hits})
+			"damage_debuff_bonus":
+				var bonus_per: int = int(effect.get("bonus_per_layer", 0))
+				var layers: int = int(state.get("enemy_weak", 0)) + enemy_vuln
+				var raw: int = amount + bonus_per * layers
+				var modified: int = max(0, raw + power - weak) + dmg_bonus
+				if enemy_vuln > 0:
+					modified = int(ceil(modified * 1.5))
+				out.append({"label": "傷害", "value": modified, "base": amount, "hits": 1})
+			"consume_energy_damage":
+				var spent: int = int(state.get("energy", 0))
+				var d: int = max(0, amount * spent - weak)
+				if enemy_vuln > 0:
+					d = int(ceil(d * 1.5))
+				out.append({"label": "傷害", "value": d, "base": amount, "hits": 1})
+			"block":
+				out.append({"label": "護體", "value": amount + int(state.get("block_bonus", 0)), "base": amount, "hits": 1})
+			"heal", "heal_party":
+				out.append({"label": "治療", "value": amount + int(state.get("heal_bonus", 0)), "base": amount, "hits": 1})
+			"poison", "poison_all":
+				out.append({"label": "蠱毒", "value": amount + int(state.get("poison_bonus", 0)), "base": amount, "hits": 1})
+	return out
+
+# 一行即時預覽字串，例如「傷害 12 / 護體 8」。無可顯示數值時回傳空字串。
+static func live_preview_text(card: CardData, state: Dictionary) -> String:
+	var parts: Array[String] = []
+	for p: Dictionary in live_effect_previews(card, state):
+		var v: int = int(p["value"])
+		var hits: int = int(p["hits"])
+		if hits > 1:
+			parts.append("%s %d×%d" % [p["label"], v, hits])
+		else:
+			parts.append("%s %d" % [p["label"], v])
+	return " / ".join(parts)
+
+# 整體增減：>0 表示比卡面基礎值強（被增益）、<0 表示被削弱（虛弱等）、0 無變化。
+static func live_preview_delta(card: CardData, state: Dictionary) -> int:
+	var diff: int = 0
+	for p: Dictionary in live_effect_previews(card, state):
+		diff += (int(p["value"]) - int(p["base"])) * int(p["hits"])
+	return diff

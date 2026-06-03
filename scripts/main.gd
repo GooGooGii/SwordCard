@@ -6452,9 +6452,10 @@ func _update_poison_preview(bar: ProgressBar, hp: int, max_hp: int, poison: int)
 	rect.visible = true
 
 func _card_button(card: CardData) -> Button:
-	var affordable: bool = int(battle.state["energy"]) >= battle.effective_card_cost(card)
+	var shown_cost: int = battle.effective_card_cost(card)
+	var affordable: bool = int(battle.state["energy"]) >= shown_cost
 	var card_size: Vector2 = Vector2(120, 225) if _battle_compact else Vector2(140, 262)
-	var button: Button = _make_card_button(card, card.cost, card_size, affordable, true)
+	var button: Button = _make_card_button(card, shown_cost, card_size, affordable, true, battle.state)
 	button.disabled = not affordable
 	button.pressed.connect(func() -> void: _on_card_button_pressed(card, button))
 	button.button_down.connect(func() -> void: _on_card_button_down(card, button))
@@ -6691,7 +6692,7 @@ func _rarity_gem_texture_path(card: CardData) -> String:
 		_:
 			return "res://assets/ui/card_lv1.png"
 
-func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: bool, selectable: bool) -> Button:
+func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: bool, selectable: bool, live_state: Dictionary = {}) -> Button:
 	# 全部用 anchor 百分比定位，元素位置 / 字體大小皆依卡片尺寸比例縮放。
 	# 卡套版面參考（2026-05 重做後再修：卡套_base 原圖 1024×1536 左右各內建 ~11.7% 透明留白，
 	#   會在 STRETCH_SCALE 鋪滿 Button 時露出背景成「外圍空白」。已把貼圖裁到實際內容
@@ -6849,6 +6850,23 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	desc.add_theme_constant_override("line_spacing", -1)
 	desc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rules_box.add_child(desc)
+
+	# 即時數值預覽：戰鬥中（live_state 非空）若卡片實際打出的數字因 power / 虛弱 /
+	# 破綻 / 遺物 / 藥品而異於卡面基礎值，補一行「實際」數字讓玩家看得到真實效果。
+	if not live_state.is_empty():
+		var delta: int = CardFormat.live_preview_delta(card, live_state)
+		if delta != 0:
+			var preview_text: String = CardFormat.live_preview_text(card, live_state)
+			if preview_text != "":
+				var preview_color: Color = ThemeColors.HP_FILL if delta > 0 else Color("c2453a")
+				var preview: Label = UIFactory.card_label("▶ " + preview_text, desc_font_size, preview_color, HORIZONTAL_ALIGNMENT_CENTER)
+				preview.name = "CardLivePreview"
+				preview.autowrap_mode = TextServer.AUTOWRAP_OFF
+				preview.clip_text = true
+				preview.add_theme_color_override("font_outline_color", Color("1b150f", 0.85))
+				preview.add_theme_constant_override("outline_size", 2)
+				preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				rules_box.add_child(preview)
 
 	UIFactory.ignore_child_mouse(button)
 	return button
