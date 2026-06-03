@@ -128,9 +128,9 @@ static func _li_xiaoyao() -> CharacterData:
 		make_card("lxy_ningyuan_ls", "凝元化神", "李逍遙", 2, "power", "凝聚本源化為神氣，本場戰鬥傷害提升 3，回復 8 點生命。", [{"kind": "power", "amount": 3}, {"kind": "heal", "amount": 8}], "rare"),
 		# 連打牌組（0 費 / 減靈耗升級）：御劍連擊軸，art 暫借既有劍系卡
 		make_card("lxy_jianjue", "劍引", "李逍遙", 0, "attack", "造成 4 點傷害。", [{"kind": "damage", "amount": 4}], "basic"),
-		make_card("lxy_huijian", "揮劍引氣", "李逍遙", 0, "attack", "造成 3 點傷害，抽 1 張牌。", [{"kind": "damage", "amount": 3}, {"kind": "draw", "amount": 1}], "uncommon", "lxy_qingfeng"),
+		make_card("lxy_huijian", "揮劍引氣", "李逍遙", 0, "attack", "造成 3 點傷害，抽 1 張牌。", [{"kind": "damage", "amount": 3}, {"kind": "draw", "amount": 1}], "uncommon"),
 		make_card("lxy_yufengbu", "御風步", "李逍遙", 0, "skill", "獲得 4 點護體。", [{"kind": "block", "amount": 4}], "basic"),
-		make_card("lxy_lianhuanjian", "連環御劍", "李逍遙", 1, "attack", "造成 5 點傷害兩次。", [{"kind": "damage", "amount": 5, "hits": 2}], "uncommon", "lxy_jianzhen", true),
+		make_card("lxy_lianhuanjian", "連環御劍", "李逍遙", 1, "attack", "造成 5 點傷害兩次。", [{"kind": "damage", "amount": 5, "hits": 2}], "uncommon", "", true),
 	]
 	var character: CharacterData = _character("li_xiaoyao", "李逍遙", 74, "劍仙風流，禦劍、偷取與酒神系高風險高傷害。", cards)
 	# PAL1 對齊：9 basic + 3 uncommon + 0 rare
@@ -186,10 +186,10 @@ static func _zhao_linger() -> CharacterData:
 		make_card("zl_xuanfengzhou", "旋風咒", "趙靈兒", 1, "skill", "旋風護體，獲得 10 點護體，使敵人虛弱 1 層。", [{"kind": "block", "amount": 10}, {"kind": "weak", "amount": 1}], "uncommon"),
 		make_card("zl_mengshe_ls", "夢蛇靈印★", "趙靈兒", 2, "power", "夢蛇靈印大成，本場戰鬥傷害提升 3，回復 6 點生命，抽 2 張牌。", [{"kind": "power", "amount": 3}, {"kind": "heal", "amount": 6}, {"kind": "draw", "amount": 2}], "rare"),
 		# 連打牌組（0 費 / 減靈耗升級）：連咒軸，art 暫借既有仙術卡
-		make_card("zl_xiaoleizhou", "小雷咒", "趙靈兒", 0, "attack", "造成 4 點傷害。", [{"kind": "damage", "amount": 4}], "basic", "zl_leizhou"),
-		make_card("zl_yinlingfu", "引靈符", "趙靈兒", 0, "skill", "抽 1 張牌並獲得 2 點護體。", [{"kind": "draw", "amount": 1}, {"kind": "block", "amount": 2}], "uncommon", "zl_fengling"),
-		make_card("zl_huguangzhou", "護光咒", "趙靈兒", 0, "skill", "獲得 4 點護體。", [{"kind": "block", "amount": 4}], "basic", "zl_lingguang"),
-		make_card("zl_lianzhuzhou", "連珠雷咒", "趙靈兒", 1, "attack", "造成 5 點傷害兩次。", [{"kind": "damage", "amount": 5, "hits": 2}], "uncommon", "zl_leiguang", true),
+		make_card("zl_xiaoleizhou", "小雷咒", "趙靈兒", 0, "attack", "造成 4 點傷害。", [{"kind": "damage", "amount": 4}]),
+		make_card("zl_yinlingfu", "引靈符", "趙靈兒", 0, "skill", "抽 1 張牌並獲得 2 點護體。", [{"kind": "draw", "amount": 1}, {"kind": "block", "amount": 2}], "uncommon"),
+		make_card("zl_huguangzhou", "護光咒", "趙靈兒", 0, "skill", "獲得 4 點護體。", [{"kind": "block", "amount": 4}]),
+		make_card("zl_lianzhuzhou", "連珠雷咒", "趙靈兒", 1, "attack", "造成 5 點傷害兩次。", [{"kind": "damage", "amount": 5, "hits": 2}], "uncommon", "", true),
 	]
 	var character: CharacterData = _character("zhao_linger", "趙靈兒", 68, "五靈仙術、治療、護盾、解狀態與長戰持續。", cards)
 	# PAL1 對齊：9 basic + 3 uncommon + 0 rare
