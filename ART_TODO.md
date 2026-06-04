@@ -199,7 +199,7 @@
 
 | Boss ID | 顯示名 | 目前借用/狀態 | 風格建議 |
 |---|---|---|---|
-| `miao_chieftain` | 黑苗頭領（仙靈島 boss・正史）| `gu_cultist.png` | 黑苗血洗仙靈島、擄走南詔公主靈兒的苗族頭領；苗刀蠱術、兇悍狠戾 |
+| `miao_chieftain` | 黑苗頭領（仙靈島 boss）| `gu_cultist.png` | 手持苗刀、面容兇惡的黑苗頭領，統領黑苗士兵血洗仙靈島，陰險霸氣 |
 | `tomb_general` | 塚中亡將（將軍塚 boss）| `ancient_evil_spirit.png` | 殘甲執戈的亡將魂魄，陰森戰魂氣息 |
 | `zhenyu_mingwang` | 鎮獄明王（鎖妖塔 boss・正史）| 🟢 已完成（專屬美術） | 金剛怒目的鎮獄明王法相，鎖鏈降魔杵，莊嚴而威壓 |
 
