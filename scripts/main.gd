@@ -2216,6 +2216,10 @@ func choose_route_node(node_data: Dictionary, target_row: int = -1) -> void:
 
 func start_next_battle(enemies: Variant) -> void:
 	# enemies 可為單一 EnemyData 或 Array（地圖多敵節點）
+	if enemies is EnemyData and (enemies as EnemyData).id == "miao_chieftain":
+		var left_soldier: EnemyData = GameData.enemy_by_id("miao_soldier")
+		var right_soldier: EnemyData = GameData.enemy_by_id("miao_soldier")
+		enemies = [left_soldier, enemies, right_soldier]
 	var is_boss: bool = false
 	if enemies is EnemyData:
 		is_boss = Ascension.is_boss_id((enemies as EnemyData).id)
@@ -2776,18 +2780,23 @@ func _refresh_enemy_widgets() -> void:
 				# 剛剛死亡！觸發消失動畫
 				w["is_dying"] = true
 				_animate_enemy_death(w)
-			
+
+			# 死敵「保留版位」：整欄透明但不設 visible=false，避免 HBoxContainer 重排
+			# 讓存活敵人往死敵方向靠攏（右側敵人先死時左側留在原地）。
 			if w.get("dead_hidden", false):
-				w["root"].visible = false
+				w["root"].visible = true
+				w["root"].modulate.a = 0.0
 			elif w.get("is_dying", false):
 				w["root"].visible = true
 				wrap.modulate = Color(0.32, 0.32, 0.32, wrap.modulate.a)
 			else:
 				# 已經死亡（例如非戰鬥卡牌觸發的重設，或初次刷新）
-				w["root"].visible = false
+				w["root"].visible = true
+				w["root"].modulate.a = 0.0
 				w["dead_hidden"] = true
 		else:
 			w["root"].visible = true
+			w["root"].modulate.a = 1.0
 			w["dead_hidden"] = false
 			w["is_dying"] = false
 			# 視覺狀態：active 全亮、其他半暗
@@ -2804,15 +2813,13 @@ func _animate_enemy_death(w: Dictionary) -> void:
 	var tween: Tween = create_tween()
 	# 延遲 0.4 秒，讓傷害數字與震動特效先跑
 	tween.tween_interval(0.4)
-	# 漸隱透明度
-	tween.tween_property(wrap, "modulate:a", 0.0, 0.3)
+	# 整欄漸隱（含 HP 條/狀態），但保留版位（不 visible=false）→ 存活敵人不會位移
+	tween.tween_property(root, "modulate:a", 0.0, 0.3)
 	tween.tween_callback(func() -> void:
-		if root != null and is_instance_valid(root):
-			root.visible = false
 		w["dead_hidden"] = true
 		w["is_dying"] = false
-		if wrap != null and is_instance_valid(wrap):
-			wrap.modulate.a = 1.0
+		if root != null and is_instance_valid(root):
+			root.modulate.a = 0.0
 	)
 
 
@@ -7373,7 +7380,7 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	#   左上靈力寶石 / 右上稀有度寶石。
 	var title_font_size: int = int(clamp(size.y * 0.045, 10, 20))
 	var type_font_size: int = int(clamp(size.y * 0.035, 9, 16))
-	var desc_font_size: int = int(clamp(size.y * 0.035, 9, 15))
+	var desc_font_size: int = int(clamp(size.y * 0.040, 10, 17))
 
 	var button: Button = Button.new()
 	button.text = ""
@@ -7869,23 +7876,49 @@ func _animate_wan_jian_jue_effect(card: CardData) -> void:
 	var view_size: Vector2 = get_viewport_rect().size
 	var sword_size: Vector2 = Vector2(145, 145)
 
-	# 收集敵群「頭頂」落點與對應的 portrait（給落地 shake 用）
-	var heads: Array[Vector2] = []
-	var head_wraps: Array[Control] = []
+	# 依「敵群實際涵蓋範圍」決定劍雨：收集每個目標的水平範圍與頭頂高度，
+	# 算出最左到最右的跨距，讓劍雨均勻鋪滿整片陣形（敵人越多/越廣 → 劍越多、鋪越開；
+	# 單體則集中落在該敵自身寬度內）。
+	var infos: Array[Dictionary] = []
+	var span_left: float = INF
+	var span_right: float = -INF
 	for w: Dictionary in target_widgets:
 		var wrap: Control = w["wrap"] as Control
-		heads.append(Vector2(
-			wrap.global_position.x + wrap.size.x / 2.0,
-			wrap.global_position.y + wrap.size.y * 0.22
-		))
-		head_wraps.append(wrap)
+		if wrap == null or not is_instance_valid(wrap):
+			continue
+		var left: float = wrap.global_position.x
+		var right: float = wrap.global_position.x + wrap.size.x
+		infos.append({
+			"center": (left + right) / 2.0,
+			"head_y": wrap.global_position.y + wrap.size.y * 0.22,
+			"wrap": wrap,
+		})
+		span_left = min(span_left, left)
+		span_right = max(span_right, right)
+	if infos.is_empty():
+		return
+	var span_width: float = max(1.0, span_right - span_left)
 
-	# 第二階段：下劍雨——多把劍從畫面上方垂直插落敵群頭頂
+	# 第二階段：下劍雨——劍從畫面上方垂直插落，沿敵群跨距均勻覆蓋
 	var spawn_rain: Callable = func() -> void:
-		var rain_count: int = 16
+		# 劍數隨敵群寬度縮放：單體 → 較少且集中；多體寬陣 → 較多且鋪滿
+		var rain_count: int = int(clamp(round(span_width / 28.0), 14.0, 36.0))
+		var step: float = span_width / float(rain_count)
 		for i: int in range(rain_count):
-			var head: Vector2 = heads[i % heads.size()]
-			var shake_wrap: Control = head_wraps[i % head_wraps.size()]
+			# 沿跨距均勻取點 + 半格抖動，覆蓋連續而不成格線
+			var drop_x: float = clamp(
+				span_left + step * (float(i) + 0.5) + randf_range(-step * 0.5, step * 0.5),
+				span_left, span_right)
+			# 落點歸屬最近中心的敵人 → 取其頭頂高度與 portrait（落地 shake）
+			var owner: Dictionary = infos[0]
+			var best_dx: float = INF
+			for info: Dictionary in infos:
+				var dx: float = abs(drop_x - float(info["center"]))
+				if dx < best_dx:
+					best_dx = dx
+					owner = info
+			var head_y: float = float(owner["head_y"])
+			var shake_wrap: Control = owner["wrap"] as Control
 			var sword: TextureRect = TextureRect.new()
 			sword.texture = sword_tex
 			sword.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -7895,15 +7928,15 @@ func _animate_wan_jian_jue_effect(card: CardData) -> void:
 			sword.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			sword.rotation = PI / 2.0  # 劍尖朝下
 
-			var drop_x: float = head.x + randf_range(-55.0, 55.0)
 			var start_pos: Vector2 = Vector2(drop_x, randf_range(-280.0, -150.0)) - sword_size / 2.0
-			var end_pos: Vector2 = Vector2(drop_x, head.y) - sword_size / 2.0
+			var end_pos: Vector2 = Vector2(drop_x, head_y) - sword_size / 2.0
 			sword.global_position = start_pos
 			sword.modulate.a = 0.0
 			add_child(sword)
 
 			var dur: float = randf_range(0.26, 0.4)
-			var delay: float = i * 0.05
+			# stagger 總窗口隨劍數收斂，避免多劍時拖太久
+			var delay: float = float(i) * min(0.05, 0.8 / float(rain_count))
 			var t: Tween = create_tween().set_parallel(true)
 			t.tween_property(sword, "global_position", end_pos, dur)\
 				.set_delay(delay).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)

@@ -52,7 +52,7 @@ static func gold_multiplier(level: int) -> float:
 	return 0.75 if level >= 4 else 1.0
 
 static func is_boss_id(enemy_id: String) -> bool:
-	return enemy_id in BOSS_IDS
+	return enemy_id in BOSS_IDS or enemy_id in ["miao_chieftain", "tomb_general", "zhenyu_mingwang"]
 
 static func describe(level: int) -> String:
 	if level <= 0:

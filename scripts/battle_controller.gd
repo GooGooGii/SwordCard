@@ -126,6 +126,11 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 			"vulnerable": 0,
 			"loot_table": GameData.loot_table_for(e.id),
 		})
+	var active_idx: int = 0
+	for i: int in range(enemies.size()):
+		if Ascension.is_boss_id(enemies[i].id):
+			active_idx = i
+			break
 	state = {
 		"players": players,
 		"active_player_index": clamp(run_state.active_character_index, 0, max(0, party_size - 1)),
@@ -133,16 +138,16 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"per_turn_energy": per_turn_energy,
 		# Multi-enemy state
 		"enemies": enemy_slots,
-		"active_enemy_index": 0,
+		"active_enemy_index": active_idx,
 		# 以下 enemy_* 是 alias，從 enemies[active_enemy_index] 複製出來
-		"enemy_name": enemy_slots[0]["name"],
-		"enemy_max_hp": enemy_slots[0]["max_hp"],
-		"enemy_hp": enemy_slots[0]["hp"],
+		"enemy_name": enemy_slots[active_idx]["name"],
+		"enemy_max_hp": enemy_slots[active_idx]["max_hp"],
+		"enemy_hp": enemy_slots[active_idx]["hp"],
 		"enemy_block": 0,
 		"enemy_poison": 0,
 		"enemy_weak": 0,
 		"enemy_vulnerable": 0,
-		"enemy_loot_table": enemy_slots[0]["loot_table"],
+		"enemy_loot_table": enemy_slots[active_idx]["loot_table"],
 		"energy": per_turn_energy,
 		"pending_draw": 0,
 		"turn": 0,

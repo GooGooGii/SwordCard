@@ -60,7 +60,7 @@ static func bosses() -> Array[EnemyData]:
 
 # Multi-Enemy Mode：召喚物（minions）— 由 boss 召喚出來的弱化版敵人
 static func minions() -> Array[EnemyData]:
-	return [_water_tentacle(), _red_eye_imp(), _zombie_thrall(), _centipede_brood(), _tower_wisp()]
+	return [_water_tentacle(), _red_eye_imp(), _zombie_thrall(), _centipede_brood(), _tower_wisp(), _miao_soldier()]
 
 # 統一 id → EnemyData 查表，給 BattleController.spawn_enemy 與其他系統用
 static func enemy_by_id(id: String) -> EnemyData:
@@ -935,7 +935,7 @@ static func _miao_chieftain() -> EnemyData:
 	enemy.id = "miao_chieftain"
 	enemy.display_name = "黑苗頭領"
 	enemy.max_hp = 96
-	enemy.portrait_path = "res://assets/art/enemies/gu_cultist.png"  # 借圖：待補黑苗頭領專屬
+	enemy.portrait_path = "res://assets/art/enemies/miao_chieftain.png"
 	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "苗刀劈砍 16", "effects": [{"kind": "damage", "amount": 16}]},
@@ -948,6 +948,21 @@ static func _miao_chieftain() -> EnemyData:
 		{"intent": "攝魂蠱 蠱毒 7 + 破綻 2", "effects": [{"kind": "poison", "amount": 7}, {"kind": "vulnerable", "amount": 2}]},
 		{"intent": "苗疆秘法 22", "effects": [{"kind": "block", "amount": 22}]},
 		{"intent": "奪命苗刀 31", "effects": [{"kind": "damage", "amount": 31}]}
+	]
+	return enemy
+
+# 黑苗頭領手下士兵小怪
+static func _miao_soldier() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "miao_soldier"
+	enemy.display_name = "黑苗士兵"
+	enemy.max_hp = 36
+	enemy.portrait_path = "res://assets/art/enemies/miao_soldier.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "苗刀劈 9", "effects": [{"kind": "damage", "amount": 9}]},
+		{"intent": "毒砂 蠱毒 2", "effects": [{"kind": "poison", "amount": 2}]},
+		{"intent": "橫掃 7", "effects": [{"kind": "damage", "amount": 7}]}
 	]
 	return enemy
 

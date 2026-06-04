@@ -194,14 +194,15 @@
 > 既有背景對應：act1 餘杭 / act3 蘇州 / act6 鎖妖塔 / act7 苗疆 / act8 拜月（皆有專屬美術）。
 > 補圖後執行 `godot --headless --path . --import` 重匯入即生效，程式已 `clamp(act, 1, 8)`。
 
-### B. 新 Boss 肖像（3 個，1 已完成，2 待補）🟡
+### B. 新 Boss 肖像（3 個，2 已完成，1 待補）🟡
 新增 3 個 boss 肖像（按 `portrait_path` 路徑新增即生效）：
 
 | Boss ID | 顯示名 | 目前借用/狀態 | 風格建議 |
 |---|---|---|---|
-| `miao_chieftain` | 黑苗頭領（仙靈島 boss）| `gu_cultist.png` | 手持苗刀、面容兇惡的黑苗頭領，統領黑苗士兵血洗仙靈島，陰險霸氣 |
+| `miao_chieftain` | 黑苗頭領（仙靈島 boss）| 🟢 已完成（專屬美術） | 手持苗刀、面容兇惡的黑苗頭領，統領黑苗士兵血洗仙靈島，陰險霸氣 |
 | `tomb_general` | 塚中亡將（將軍塚 boss）| `ancient_evil_spirit.png` | 殘甲執戈的亡將魂魄，陰森戰魂氣息 |
 | `zhenyu_mingwang` | 鎮獄明王（鎖妖塔 boss・正史）| 🟢 已完成（專屬美術） | 金剛怒目的鎮獄明王法相，鎖鏈降魔杵，莊嚴而威壓 |
+
 
 ### C. 新增 PAL1 小怪肖像（7 個）🟢 已全部完成
 八幕擴充為各幕補充的 PAL1 風格小怪，已全部補齊獨立的專屬水墨肖像（`assets/art/enemies/<id>.png`）：
