@@ -6190,6 +6190,7 @@ func _show_upgrade_confirm_overlay(card: CardData, on_confirm: Callable) -> void
 	var overlay: Control = Control.new()
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.top_level = true
 	# 必須 > deck_view 的 1500（commit f5be0c5 拉高的），否則升級確認會開在牌組檢視底下、看似「當掉」
 	overlay.z_index = 1600
 	add_child(overlay)
@@ -6207,6 +6208,9 @@ func _show_upgrade_confirm_overlay(card: CardData, on_confirm: Callable) -> void
 	col.add_theme_constant_override("separation", 18)
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
 	center.add_child(col)
+	
+	var confirm_title: Label = UIFactory.card_label("是否確認升級此卡牌？", 22, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	col.add_child(confirm_title)
 	# 卡片對照列
 	var stack: HBoxContainer = HBoxContainer.new()
 	stack.add_theme_constant_override("separation", 24)
