@@ -131,6 +131,8 @@ func _initialize() -> void:
 	_test_potion_use_heal(characters[0], enemies[0])
 	_test_potion_cure_poison(characters[0], enemies[0])
 	_test_potion_old_save_compat(characters)
+	_test_potion_replacement_logic(characters)
+	_test_shop_potion_replacement(characters)
 	_test_level_system(characters)
 	_test_level_unlock_cards()
 	# Multi-Enemy Mode（Phase 1+2 資料層 + AOE effects）
@@ -1344,6 +1346,111 @@ func _test_potion_old_save_compat(characters: Array[CharacterData]) -> void:
 	var rs: RunState = RunState.new()
 	_check(rs.from_dict(old_save, characters), "old save without potions field should load successfully")
 	_check(rs.potions.is_empty(), "old save should produce empty potions array, got %d" % rs.potions.size())
+
+func _test_potion_replacement_logic(characters: Array[CharacterData]) -> void:
+	var main_script = load("res://scripts/main.gd")
+	var main = main_script.new()
+	var state: RunState = RunState.new()
+	state.init_for(characters[0])
+	main.run_state = state
+	
+	# Fill potions
+	var all_potions: Array[Dictionary] = PotionCatalog.all()
+	state.potions.append(all_potions[0].duplicate()) # Potion 0
+	state.potions.append(all_potions[1].duplicate()) # Potion 1
+	state.potions.append(all_potions[2].duplicate()) # Potion 2
+	
+	_check(state.potions.size() == 3, "expected 3 potions initially")
+	
+	var new_potion: Dictionary = all_potions[3].duplicate()
+	
+	var done_called: bool = false
+	var on_done = func() -> void:
+		done_called = true
+		
+	main._show_potion_replacement_overlay(new_potion, on_done)
+	
+	# Verify overlay exists
+	_check(main._card_preview_overlay != null, "replacement overlay should be created")
+	
+	# Find replace button for first potion
+	var col_container = main._card_preview_overlay.get_child(1).get_child(0)
+	var exist_box = col_container.get_child(3)
+	var first_slot_panel = exist_box.get_child(0)
+	var first_slot_row = first_slot_panel.get_child(0)
+	var replace_btn = first_slot_row.get_child(2) as Button
+	
+	# Simulate replace click
+	replace_btn.pressed.emit()
+	
+	# Verify replacement
+	_check(done_called, "on_done should be called")
+	_check(state.potions.size() == 3, "should keep 3 potions")
+	_check(state.potions[0]["id"] == new_potion["id"], "first potion replaced")
+	_check(main._card_preview_overlay == null, "overlay should be hidden")
+	
+	# Test discard
+	done_called = false
+	main._show_potion_replacement_overlay(new_potion, on_done)
+	var col_container_disc = main._card_preview_overlay.get_child(1).get_child(0)
+	var discard_btn = col_container_disc.get_child(4) as Button
+	
+	# Simulate discard click
+	discard_btn.pressed.emit()
+	
+	_check(done_called, "on_done should be called on discard")
+	_check(state.potions[0]["id"] == new_potion["id"], "replaces should still be there")
+	_check(main._card_preview_overlay == null, "overlay should be freed")
+	
+	main.free()
+
+func _test_shop_potion_replacement(characters: Array[CharacterData]) -> void:
+	var main_script = load("res://scripts/main.gd")
+	var main = main_script.new()
+	var state: RunState = RunState.new()
+	state.init_for(characters[0])
+	main.run_state = state
+	
+	# Fill potions
+	var all_potions: Array[Dictionary] = PotionCatalog.all()
+	state.potions.append(all_potions[0].duplicate())
+	state.potions.append(all_potions[1].duplicate())
+	state.potions.append(all_potions[2].duplicate())
+	_check(state.potions.size() == 3, "expected 3 potions initially")
+	
+	# Setup shop inventory item
+	var potion_item = {
+		"potion": all_potions[3].duplicate(),
+		"price": 40,
+		"sold": false
+	}
+	state.gold = 100
+	
+	# Buy shop potion
+	main._buy_shop_potion(potion_item["potion"], potion_item, 40)
+	
+	# Check gold was deducted
+	_check(state.gold == 60, "gold should be deducted: expected 60, got %d" % state.gold)
+	# Check item was marked sold
+	_check(potion_item["sold"], "potion item should be marked sold")
+	
+	# Verify replacement overlay was created
+	_check(main._card_preview_overlay != null, "replacement overlay should be created when buying with full slots")
+	
+	# Simulate replacing the first potion (index 0)
+	var col_container = main._card_preview_overlay.get_child(1).get_child(0)
+	var exist_box = col_container.get_child(3)
+	var first_slot_panel = exist_box.get_child(0)
+	var first_slot_row = first_slot_panel.get_child(0)
+	var replace_btn = first_slot_row.get_child(2) as Button
+	replace_btn.pressed.emit()
+	
+	# Verify replacement occurred
+	_check(state.potions.size() == 3, "should still have 3 potions")
+	_check(state.potions[0]["id"] == all_potions[3]["id"], "first potion should be replaced by the bought potion")
+	_check(main._card_preview_overlay == null, "overlay should be hidden after replacement")
+	
+	main.free()
 
 func _test_level_system(characters: Array[CharacterData]) -> void:
 	# EXP 公式

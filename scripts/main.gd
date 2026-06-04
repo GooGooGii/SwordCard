@@ -3683,18 +3683,21 @@ func _complete_battle_victory() -> void:
 		# Boss 流程：遺物三選一 → 稀有卡三選一 → potion drop → 推進地圖
 		# （boss 永遠是該幕最後節點，故 card reward 必須在 act 轉場前插入）
 		_after_boss_relic_choice = func() -> void:
-			if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
-				if randf() < 0.6:
-					var all_p: Array[Dictionary] = PotionCatalog.all()
-					run_state.potions.append((all_p[randi() % all_p.size()]).duplicate())
-			_boss_card_reward = true
-			_after_card_reward = func() -> void:
-				run_state.encounter_index = run_state.encounter_index + 1
-				if run_state.act < 5:
-					show_act_complete()
-				else:
-					show_result(true)
-			show_card_reward()
+			var proceed_after_potion = func() -> void:
+				_boss_card_reward = true
+				_after_card_reward = func() -> void:
+					run_state.encounter_index = run_state.encounter_index + 1
+					if run_state.act < 5:
+						show_act_complete()
+					else:
+						show_result(true)
+				show_card_reward()
+			if randf() < 0.6:
+				var all_p: Array[Dictionary] = PotionCatalog.all()
+				var pot: Dictionary = (all_p[randi() % all_p.size()]).duplicate()
+				gain_potion_with_replace_dialog(pot, proceed_after_potion)
+			else:
+				proceed_after_potion.call()
 		show_boss_relic_choice(choices)
 		return
 	# 一般戰鬥：自動 25% 掉裝備
@@ -3702,18 +3705,21 @@ func _complete_battle_victory() -> void:
 	if dropped != null:
 		_add_relic_with_curse_effect(dropped)
 	# 藥品掉落：一般 20%
-	if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
-		if randf() < 0.2:
-			var all_potions: Array[Dictionary] = PotionCatalog.all()
-			run_state.potions.append((all_potions[randi() % all_potions.size()]).duplicate())
-	run_state.encounter_index = run_state.encounter_index + 1
-	if run_state.encounter_index >= run_state.encounter_choices.size():
-		if run_state.act < 5:
-			show_act_complete()
+	var proceed_after_potion = func() -> void:
+		run_state.encounter_index = run_state.encounter_index + 1
+		if run_state.encounter_index >= run_state.encounter_choices.size():
+			if run_state.act < 5:
+				show_act_complete()
+			else:
+				show_result(true)
 		else:
-			show_result(true)
+			show_card_reward()
+	if randf() < 0.2:
+		var all_potions: Array[Dictionary] = PotionCatalog.all()
+		var pot: Dictionary = (all_potions[randi() % all_potions.size()]).duplicate()
+		gain_potion_with_replace_dialog(pot, proceed_after_potion)
 	else:
-		show_card_reward()
+		proceed_after_potion.call()
 
 func _make_boss_relic_choices(boss_id: String) -> Array[RelicData]:
 	var choices: Array[RelicData] = []
@@ -4472,24 +4478,20 @@ func _resolve_observe_effects(effects: Array) -> String:
 					if healed_any:
 						parts.append("全隊回復 %d 點生命" % amount)
 			"gain_potion":
-				# 獲得一瓶藥草（背包滿則跳過）。可選 potion_id 指定特定藥；
+				# 獲得一瓶藥草（若藥格已滿，則在翻開時引導替換）。可選 potion_id 指定特定藥；
 				# 未指定或查無此 id 則退回隨機。
-				if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
-					var chosen: Dictionary = {}
-					var pid: String = String(effect.get("potion_id", ""))
-					if not pid.is_empty():
-						chosen = PotionCatalog.by_id(pid)
-					if chosen.is_empty():
-						var pool: Array[Dictionary] = PotionCatalog.all()
-						if not pool.is_empty():
-							chosen = pool[randi() % pool.size()] as Dictionary
-					if not chosen.is_empty():
-						chosen = chosen.duplicate()
-						run_state.potions.append(chosen)
-						parts.append("獲得藥草「%s」" % String(chosen.get("display_name", "?")))
-						_pending_item_reveals.append({"type": "potion", "potion": chosen})
-				else:
-					parts.append("藥袋已滿，無從收取")
+				var chosen: Dictionary = {}
+				var pid: String = String(effect.get("potion_id", ""))
+				if not pid.is_empty():
+					chosen = PotionCatalog.by_id(pid)
+				if chosen.is_empty():
+					var pool: Array[Dictionary] = PotionCatalog.all()
+					if not pool.is_empty():
+						chosen = pool[randi() % pool.size()] as Dictionary
+				if not chosen.is_empty():
+					chosen = chosen.duplicate()
+					parts.append("獲得藥草「%s」" % String(chosen.get("display_name", "?")))
+					_pending_item_reveals.append({"type": "potion", "potion": chosen})
 			"upgrade_random":
 				# 升級 1 張隨機未升級的卡（active 角色牌組）
 				var active_idx: int = run_state.active_character_index
@@ -5137,12 +5139,189 @@ func _show_item_reveal(entry: Dictionary, on_continue: Callable) -> void:
 
 	var btn_row: HBoxContainer = HBoxContainer.new()
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 16)
 	col.add_child(btn_row)
-	var ok_btn: Button = _button("收下")
-	ok_btn.pressed.connect(func() -> void:
+	
+	if item_type == "relic":
+		var ok_btn: Button = _button("收下")
+		ok_btn.pressed.connect(func() -> void:
+			_hide_card_preview()
+			on_continue.call())
+		btn_row.add_child(ok_btn)
+	else:
+		var potion: Dictionary = entry["potion"] as Dictionary
+		if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
+			var ok_btn: Button = _button("收下")
+			ok_btn.pressed.connect(func() -> void:
+				run_state.potions.append(potion.duplicate())
+				_refresh_potion_overlay_buttons()
+				_refresh_title_bar()
+				_hide_card_preview()
+				on_continue.call())
+			btn_row.add_child(ok_btn)
+		else:
+			# Slots full: choose to replace or discard
+			var rep_btn: Button = _button("替換已持有藥品")
+			rep_btn.pressed.connect(func() -> void:
+				_show_potion_replacement_overlay(potion, on_continue))
+			btn_row.add_child(rep_btn)
+			
+			var disc_btn: Button = _button("丟棄新藥品")
+			disc_btn.pressed.connect(func() -> void:
+				_hide_card_preview()
+				on_continue.call())
+			btn_row.add_child(disc_btn)
+
+func gain_potion_with_replace_dialog(potion: Dictionary, on_done: Callable) -> void:
+	if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
+		run_state.potions.append(potion.duplicate())
+		_refresh_potion_overlay_buttons()
+		_refresh_title_bar()
+		if battle != null:
+			_refresh_battle()
+			battle.add_log("獲得藥品「%s」" % String(potion.get("display_name", "")))
+		on_done.call()
+	else:
+		_show_potion_replacement_overlay(potion, on_done)
+
+func _show_potion_replacement_overlay(new_potion: Dictionary, on_done: Callable) -> void:
+	_hide_card_preview()
+	var overlay: Control = Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.z_index = 1700
+	add_child(overlay)
+	_card_preview_overlay = overlay
+
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0, 0, 0, 0.78)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.add_child(backdrop)
+
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+
+	var col: VBoxContainer = VBoxContainer.new()
+	col.add_theme_constant_override("separation", 18)
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.add_child(col)
+
+	col.add_child(_title("替換藥品", 26))
+	col.add_child(UIFactory.card_label("選擇一瓶已有的藥品來替換，或者放棄新藥品。", 14, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER))
+
+	# 1. Show the New Potion
+	var new_p_panel: PanelContainer = PanelContainer.new()
+	var new_p_color: Color = PotionCatalog.rarity_color(new_potion)
+	new_p_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("1b2016", 0.95), new_p_color, 2, 12))
+	col.add_child(new_p_panel)
+	
+	var new_row: HBoxContainer = HBoxContainer.new()
+	new_row.add_theme_constant_override("separation", 12)
+	new_p_panel.add_child(new_row)
+	
+	var new_icon: TextureRect = TextureRect.new()
+	new_icon.custom_minimum_size = Vector2(64, 64)
+	new_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	new_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	new_icon.texture = UIFactory.load_texture("res://assets/art/potions/%s.png" % String(new_potion.get("id", "")))
+	new_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	new_row.add_child(new_icon)
+	
+	var new_text_box: VBoxContainer = VBoxContainer.new()
+	new_text_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	new_row.add_child(new_text_box)
+	
+	var new_name_lbl: Label = Label.new()
+	new_name_lbl.text = "【新藥品】" + String(new_potion.get("display_name", ""))
+	new_name_lbl.add_theme_font_size_override("font_size", 16)
+	new_name_lbl.add_theme_color_override("font_color", new_p_color)
+	new_text_box.add_child(new_name_lbl)
+	
+	var new_desc_lbl: Label = Label.new()
+	new_desc_lbl.text = String(new_potion.get("description", ""))
+	new_desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	new_desc_lbl.add_theme_font_size_override("font_size", 13)
+	new_desc_lbl.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
+	new_desc_lbl.custom_minimum_size = Vector2(280, 0)
+	new_text_box.add_child(new_desc_lbl)
+
+	# 2. Show Existing Potions (3 slots)
+	var exist_box: VBoxContainer = VBoxContainer.new()
+	exist_box.add_theme_constant_override("separation", 8)
+	col.add_child(exist_box)
+
+	for i: int in range(run_state.potions.size()):
+		var old_potion: Dictionary = run_state.potions[i]
+		var old_color: Color = PotionCatalog.rarity_color(old_potion)
+		var old_panel: PanelContainer = PanelContainer.new()
+		old_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("161a24", 0.95), old_color, 1, 10))
+		exist_box.add_child(old_panel)
+		
+		var old_row: HBoxContainer = HBoxContainer.new()
+		old_row.add_theme_constant_override("separation", 12)
+		old_panel.add_child(old_row)
+		
+		var old_icon: TextureRect = TextureRect.new()
+		old_icon.custom_minimum_size = Vector2(48, 48)
+		old_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		old_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		old_icon.texture = UIFactory.load_texture("res://assets/art/potions/%s.png" % String(old_potion.get("id", "")))
+		old_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		old_row.add_child(old_icon)
+		
+		var old_text: VBoxContainer = VBoxContainer.new()
+		old_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		old_text.alignment = BoxContainer.ALIGNMENT_CENTER
+		old_row.add_child(old_text)
+		
+		var old_name_lbl: Label = Label.new()
+		old_name_lbl.text = String(old_potion.get("display_name", ""))
+		old_name_lbl.add_theme_font_size_override("font_size", 14)
+		old_name_lbl.add_theme_color_override("font_color", old_color)
+		old_text.add_child(old_name_lbl)
+		
+		var old_desc_lbl: Label = Label.new()
+		old_desc_lbl.text = String(old_potion.get("description", ""))
+		old_desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		old_desc_lbl.add_theme_font_size_override("font_size", 11)
+		old_desc_lbl.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
+		old_desc_lbl.custom_minimum_size = Vector2(200, 0)
+		old_text.add_child(old_desc_lbl)
+		
+		var rep_btn: Button = _button("替換此藥")
+		rep_btn.custom_minimum_size = Vector2(90, 32)
+		rep_btn.add_theme_font_size_override("font_size", 13)
+		var captured_idx: int = i
+		rep_btn.pressed.connect(func() -> void:
+			var old_name: String = String(run_state.potions[captured_idx].get("display_name", ""))
+			var new_name: String = String(new_potion.get("display_name", ""))
+			run_state.potions[captured_idx] = new_potion.duplicate()
+			if battle != null:
+				battle.add_log("藥格已滿，替換藥品：「%s」→「%s」" % [old_name, new_name])
+			_hide_card_preview()
+			_refresh_potion_overlay_buttons()
+			_refresh_title_bar()
+			if battle != null:
+				_refresh_battle()
+			on_done.call()
+		)
+		old_row.add_child(rep_btn)
+
+	# 3. Discard New Potion Button
+	var discard_btn: Button = _button("放棄新藥品")
+	discard_btn.custom_minimum_size = Vector2(160, 36)
+	discard_btn.add_theme_font_size_override("font_size", 14)
+	discard_btn.pressed.connect(func() -> void:
+		var new_name: String = String(new_potion.get("display_name", ""))
+		if battle != null:
+			battle.add_log("藥格已滿，放棄了新藥品「%s」。" % new_name)
 		_hide_card_preview()
-		on_continue.call())
-	btn_row.add_child(ok_btn)
+		on_done.call()
+	)
+	col.add_child(discard_btn)
 
 func _show_event_card_confirm(card: CardData, force_accept: bool, on_accept: Callable, on_skip: Callable = Callable()) -> void:
 	_hide_card_preview()
@@ -5366,7 +5545,7 @@ func _refresh_shop_ui_states() -> void:
 				var price: int = ref["price"]
 				var is_sold: bool = bool(item.get("sold", false))
 				var full: bool = run_state.potions.size() >= RunState.MAX_POTION_SLOTS
-				var can_buy: bool = run_state.gold >= price and not full and not is_sold
+				var can_buy: bool = run_state.gold >= price and not is_sold
 				var button: Button = ref["button"]
 				var panel: PanelContainer = ref["panel"]
 				button.disabled = not can_buy or is_sold
@@ -5378,7 +5557,7 @@ func _refresh_shop_ui_states() -> void:
 						button.pressed.disconnect(ref["pressed_callable"])
 				else:
 					if full:
-						button.tooltip_text = "藥格已滿（%d/%d）" % [run_state.potions.size(), RunState.MAX_POTION_SLOTS]
+						button.tooltip_text = "藥格已滿（%d/%d），購買後將替換已持有的藥品" % [run_state.potions.size(), RunState.MAX_POTION_SLOTS]
 					else:
 						button.tooltip_text = ""
 			"remove_service":
@@ -5518,8 +5697,8 @@ func _shop_potion_view(item: Dictionary) -> Control:
 	var price: int = _shop_apply_discount(int(item["price"]))
 	var full: bool = run_state.potions.size() >= RunState.MAX_POTION_SLOTS
 	var is_sold: bool = bool(item.get("sold", false))
-	var can_buy: bool = run_state.gold >= price and not full and not is_sold
-	var rarity_col: Color = PotionCatalog.rarity_color(potion)
+	var can_buy: bool = run_state.gold >= price and not is_sold
+	var rarity_col: Color = PotionCatalog.rarity_col(potion) if PotionCatalog.has_method("rarity_col") else PotionCatalog.rarity_color(potion)
 	
 	var panel: PanelContainer = UIFactory.make_panel()
 	panel.custom_minimum_size = Vector2(170, 250)
@@ -5558,7 +5737,7 @@ func _shop_potion_view(item: Dictionary) -> Control:
 	var buy_button: Button = _button(button_text)
 	buy_button.disabled = not can_buy or is_sold
 	if full and not is_sold:
-		buy_button.tooltip_text = "藥格已滿（%d/%d）" % [run_state.potions.size(), RunState.MAX_POTION_SLOTS]
+		buy_button.tooltip_text = "藥格已滿（%d/%d），購買後將替換已持有的藥品" % [run_state.potions.size(), RunState.MAX_POTION_SLOTS]
 	
 	var pressed_callable: Callable = func(): _show_shop_potion_confirm_overlay(potion, item, price)
 	if not is_sold:
@@ -5612,24 +5791,28 @@ func _show_shop_potion_confirm_overlay(potion: Dictionary, item: Dictionary, pri
 	btn_row.add_theme_constant_override("separation", 16)
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	col.add_child(btn_row)
-	var full: bool = run_state.potions.size() >= RunState.MAX_POTION_SLOTS
 	var cancel_btn: Button = _button("取消")
 	cancel_btn.pressed.connect(_hide_card_preview)
 	btn_row.add_child(cancel_btn)
 	var confirm_btn: Button = _button("購買")
-	confirm_btn.disabled = run_state.gold < price or full
+	confirm_btn.disabled = run_state.gold < price
 	confirm_btn.pressed.connect(func() -> void:
 		_hide_card_preview()
 		_buy_shop_potion(potion, item, price))
 	btn_row.add_child(confirm_btn)
 
 func _buy_shop_potion(potion: Dictionary, item: Dictionary, price: int) -> void:
-	if run_state.gold < price or run_state.potions.size() >= RunState.MAX_POTION_SLOTS:
+	if run_state.gold < price:
 		return
 	run_state.gold -= price
-	run_state.potions.append(potion.duplicate())
 	item["sold"] = true
-	_refresh_shop_ui_states()
+	if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
+		run_state.potions.append(potion.duplicate())
+		_refresh_shop_ui_states()
+	else:
+		_show_potion_replacement_overlay(potion, func() -> void:
+			_refresh_shop_ui_states()
+		)
 
 func _shop_curse_surcharge_mult() -> float:
 	var mult: float = 1.0
@@ -9447,8 +9630,7 @@ func _show_stolen_item_popup(item: Dictionary) -> void:
 			name_color = PotionCatalog.rarity_color(potion)
 			icon.texture = UIFactory.load_texture("res://assets/art/potions/%s.png" % potion_id)
 			if run_state.potions.size() >= RunState.MAX_POTION_SLOTS:
-				desc += "\n(藥格已滿，無法攜帶！)"
-				name_color = Color("a5a5a5")
+				desc += "\n(藥格已滿，請選擇替換或丟棄)"
 		else:
 			desc = "不知名的珍奇藥品。"
 	
@@ -9473,11 +9655,39 @@ func _show_stolen_item_popup(item: Dictionary) -> void:
 	
 	content_box.add_child(text_box)
 	
-	var btn: Button = _button("收下")
-	btn.custom_minimum_size = Vector2(80, 32)
-	btn.add_theme_font_size_override("font_size", 13)
-	btn.pressed.connect(popup.hide)
-	box.add_child(btn)
+	var btn_row: HBoxContainer = HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 12)
+	box.add_child(btn_row)
+	
+	if item_type == "potion" and run_state.potions.size() >= RunState.MAX_POTION_SLOTS:
+		var potion_id: String = String(item.get("potion_id", ""))
+		var potion: Dictionary = PotionCatalog.by_id(potion_id)
+		
+		var replace_btn: Button = _button("替換已持有藥品")
+		replace_btn.custom_minimum_size = Vector2(130, 32)
+		replace_btn.add_theme_font_size_override("font_size", 13)
+		replace_btn.pressed.connect(func() -> void:
+			popup.hide()
+			_show_potion_replacement_overlay(potion, func() -> void: pass)
+		)
+		btn_row.add_child(replace_btn)
+		
+		var discard_btn: Button = _button("丟棄新藥品")
+		discard_btn.custom_minimum_size = Vector2(100, 32)
+		discard_btn.add_theme_font_size_override("font_size", 13)
+		discard_btn.pressed.connect(func() -> void:
+			popup.hide()
+			if battle != null:
+				battle.add_log("藥格已滿，放棄了所偷得的藥品「%s」。" % item_name)
+		)
+		btn_row.add_child(discard_btn)
+	else:
+		var ok_btn: Button = _button("收下")
+		ok_btn.custom_minimum_size = Vector2(80, 32)
+		ok_btn.add_theme_font_size_override("font_size", 13)
+		ok_btn.pressed.connect(popup.hide)
+		btn_row.add_child(ok_btn)
 	
 	popup.add_child(box)
 	get_viewport().add_child(popup)
