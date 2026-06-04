@@ -5912,7 +5912,7 @@ func show_deck_view(mode: String = "view", custom_cards = null, custom_title: St
 	if deck_view_mode == "upgrade" or deck_view_mode == "shop_upgrade":
 		var filtered: Array = []
 		for c: CardData in target_cards:
-			if not c.upgraded:
+			if not c.upgraded and not CurseCatalog.is_curse(c):
 				filtered.append(c)
 		target_cards = filtered
 
