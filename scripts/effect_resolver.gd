@@ -221,6 +221,31 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			state["enemy_block"] = int(state["enemy_block"]) - blocked
 			state["enemy_hp"] = max(0, int(state["enemy_hp"]) - (modified - blocked))
 			log_lines.append("debuff 加成 +%d，造成 %d 點傷害。" % [bonus_per * layers, modified - blocked])
+		"consume_energy_damage_all":
+			var spent_all: int = int(state["energy"])
+			state["energy"] = 0
+			var base_all: int = max(0, amount * spent_all - int(state["player_weak"]))
+			var ce_slots: Array = state.get("enemies", []) as Array
+			if ce_slots.is_empty():
+				var dmg_single: int = base_all
+				if int(state["enemy_vulnerable"]) > 0:
+					dmg_single = int(ceil(dmg_single * 1.5))
+				state["enemy_hp"] = max(0, int(state["enemy_hp"]) - dmg_single)
+				log_lines.append("耗盡靈力，造成 %d 點傷害。" % dmg_single)
+			else:
+				_sync_active_slot_from_alias(state)
+				for ce_i: int in range(ce_slots.size()):
+					var ce_slot: Dictionary = ce_slots[ce_i] as Dictionary
+					if int(ce_slot["hp"]) <= 0:
+						continue
+					var ce_mod: int = base_all
+					if int(ce_slot["vulnerable"]) > 0:
+						ce_mod = int(ceil(ce_mod * 1.5))
+					var ce_blk: int = min(int(ce_slot["block"]), ce_mod)
+					ce_slot["block"] = int(ce_slot["block"]) - ce_blk
+					ce_slot["hp"] = max(0, int(ce_slot["hp"]) - (ce_mod - ce_blk))
+					log_lines.append("耗盡靈力，對 %s 造成 %d 點傷害。" % [String(ce_slot["name"]), ce_mod - ce_blk])
+				_sync_alias_from_active_slot(state)
 		"consume_energy_damage":
 			var spent: int = int(state["energy"])
 			state["energy"] = 0

@@ -111,7 +111,7 @@ static func _li_xiaoyao() -> CharacterData:
 		make_card("lxy_yujian", "御劍術", "李逍遙", 1, "attack", "造成 7 點傷害。", [{"kind": "damage", "amount": 7}]),
 		make_card("lxy_wanjian", "萬劍訣", "李逍遙", 2, "attack", "萬劍齊飛，對全體敵人造成 5 點傷害三次。", [{"kind": "damage_all", "amount": 5, "hits": 3}], "uncommon"),
 		make_card("lxy_feilong", "飛龍探雲手", "李逍遙", 1, "skill", "造成 4 點傷害，抽 1 張牌，回復 1 點靈力，並從敵人身上偷取一件物品。", [{"kind": "damage", "amount": 4}, {"kind": "draw", "amount": 1}, {"kind": "energy", "amount": 1}, {"kind": "steal"}]),
-		make_card("lxy_tianshi", "天師符法", "李逍遙", 1, "attack", "造成 9 點法術傷害。", [{"kind": "damage", "amount": 9}], "uncommon"),
+		make_card("lxy_tianshi", "天師符法", "李逍遙", 1, "attack", "符法天降，對全體敵人造成 9 點法術傷害。", [{"kind": "damage_all", "amount": 9}], "uncommon"),
 		make_card("lxy_jiushen", "酒神咒", "李逍遙", 3, "attack", "造成 28 點傷害，自身承受 8 點反噬。", [{"kind": "damage", "amount": 28}, {"kind": "self_damage", "amount": 8}], "rare"),
 		make_card("lxy_xianfeng", "仙風雲體", "李逍遙", 1, "skill", "獲得 8 點護體，抽 1 張牌。", [{"kind": "block", "amount": 8}, {"kind": "draw", "amount": 1}], "uncommon"),
 		make_card("lxy_zuimeng", "醉夢望月", "李逍遙", 2, "power", "本場戰鬥傷害提升 2。", [{"kind": "power", "amount": 2}], "uncommon"),
@@ -130,7 +130,7 @@ static func _li_xiaoyao() -> CharacterData:
 		make_card("lxy_wanjianguizong", "萬劍歸宗", "李逍遙", 1, "attack", "御劍齊出歸於一念，造成 4 點傷害三次。", [{"kind": "damage", "amount": 4, "hits": 3}], "uncommon"),
 		make_card("lxy_jianshen", "劍身合一", "李逍遙", 2, "power", "劍身合一，本場戰鬥傷害提升 2，獲得 6 點護體。", [{"kind": "power", "amount": 2}, {"kind": "block", "amount": 6}], "rare"),
 		make_card("lxy_tiangangqi", "天罡氣", "李逍遙", 1, "skill", "凝聚天罡護身之氣，獲得 14 點護體，抽 1 張牌。", [{"kind": "block", "amount": 14}, {"kind": "draw", "amount": 1}], "uncommon"),
-		make_card("lxy_tianjian", "天劍出鞘", "李逍遙", 2, "attack", "天劍出鞘，造成 20 點傷害。", [{"kind": "damage", "amount": 20}], "rare"),
+		make_card("lxy_tianjian", "天劍出鞘", "李逍遙", 2, "attack", "天劍出鞘，對全體敵人造成 20 點傷害。", [{"kind": "damage_all", "amount": 20}], "rare"),
 		make_card("lxy_xiaoyao_shenjian", "逍遙神劍", "李逍遙", 3, "attack", "御出逍遙神劍，造成 10 點傷害兩次，抽 2 張牌。", [{"kind": "damage", "amount": 10, "hits": 2}, {"kind": "draw", "amount": 2}], "rare"),
 		make_card("lxy_yuanlinggui", "元靈龜庇護", "李逍遙", 2, "skill", "靈龜護佑，回復 10 點生命並獲得 14 點護體。", [{"kind": "heal", "amount": 10}, {"kind": "block", "amount": 14}], "uncommon"),
 		make_card("lxy_zhenyuan", "真元凝聚", "李逍遙", 1, "skill", "凝聚真元之氣，抽 2 張牌並回復 4 點生命。", [{"kind": "draw", "amount": 2}, {"kind": "heal", "amount": 4}], "uncommon"),
@@ -165,7 +165,7 @@ static func _zhao_linger() -> CharacterData:
 	var cards: Array[CardData] = [
 		make_card("zl_guanyin", "觀音咒", "趙靈兒", 1, "skill", "回復 8 點生命。", [{"kind": "heal", "amount": 8}]),
 		make_card("zl_wuqi", "五氣朝元", "趙靈兒", 2, "skill", "全體仙術。全隊回復 10 點生命，自身獲得 6 點護體。", [{"kind": "heal_party", "amount": 10}, {"kind": "block", "amount": 6}], "uncommon"),
-		make_card("zl_xuanbing", "玄冰咒", "趙靈兒", 1, "attack", "造成 6 點傷害，使敵人虛弱 2 層。", [{"kind": "damage", "amount": 6}, {"kind": "weak", "amount": 2}], "uncommon"),
+		make_card("zl_xuanbing", "玄冰咒", "趙靈兒", 1, "attack", "玄冰寒徹全場，對全體敵人造成 6 點傷害並使其虛弱 2 層。", [{"kind": "damage_all", "amount": 6}, {"kind": "weak_all", "amount": 2}], "uncommon"),
 		make_card("zl_leizhou", "雷咒", "趙靈兒", 1, "attack", "造成 10 點傷害。", [{"kind": "damage", "amount": 10}]),
 		make_card("zl_mengshe", "夢蛇靈印", "趙靈兒", 2, "power", "夢蛇之力凝為靈印，本場戰鬥傷害提升 2，回復 4 點生命並抽 1 張牌。", [{"kind": "power", "amount": 2}, {"kind": "heal", "amount": 4}, {"kind": "draw", "amount": 1}], "rare"),
 		make_card("zl_fengling", "風靈符", "趙靈兒", 0, "skill", "抽 1 張牌。", [{"kind": "draw", "amount": 1}], "uncommon"),
@@ -188,12 +188,12 @@ static func _zhao_linger() -> CharacterData:
 		# 治療+護體一體（杖流續戰：靈族慈悲化作護身）
 		make_card("zl_ganlin", "甘霖咒", "趙靈兒", 1, "skill", "回復 6 點生命並獲得 6 點護體。", [{"kind": "heal", "amount": 6}, {"kind": "block", "amount": 6}], "uncommon"),
 		make_card("zl_diliebeng", "地裂崩", "趙靈兒", 3, "attack", "大地崩裂，對全體敵人造成 15 點傷害。", [{"kind": "damage_all", "amount": 15}], "rare"),
-		make_card("zl_fengxuebing", "風雪冰咒", "趙靈兒", 1, "attack", "冰雪風系仙術，造成 8 點傷害，使敵人虛弱 2 層。", [{"kind": "damage", "amount": 8}, {"kind": "weak", "amount": 2}], "uncommon"),
-		make_card("zl_kuanglei", "狂雷破", "趙靈兒", 2, "attack", "天雷狂擊，造成 11 點傷害兩次。", [{"kind": "damage", "amount": 11, "hits": 2}], "rare"),
+		make_card("zl_fengxuebing", "風雪冰天", "趙靈兒", 1, "attack", "風雪冰天席捲，對全體敵人造成 8 點傷害並使其虛弱 2 層。", [{"kind": "damage_all", "amount": 8}, {"kind": "weak_all", "amount": 2}], "uncommon"),
+		make_card("zl_kuanglei", "狂雷破", "趙靈兒", 2, "attack", "天雷狂擊，對全體敵人造成 11 點傷害兩次。", [{"kind": "damage_all", "amount": 11, "hits": 2}], "rare"),
 		make_card("zl_sanmeizhenhuo", "三昧真火", "趙靈兒", 2, "attack", "三昧真火燃天，對全體敵人造成 10 點傷害並施加 2 層破綻。", [{"kind": "damage_all", "amount": 10}, {"kind": "vulnerable_all", "amount": 2}], "rare"),
-		make_card("zl_taishan", "泰山壓頂", "趙靈兒", 2, "attack", "泰山壓頂之勢，造成 20 點傷害，施加 2 層破綻。", [{"kind": "damage", "amount": 20}, {"kind": "vulnerable", "amount": 2}], "rare"),
-		make_card("zl_wuleizhou", "五雷咒", "趙靈兒", 3, "attack", "五雷齊降，造成 6 點傷害五次。", [{"kind": "damage", "amount": 6, "hits": 5}], "rare"),
-		make_card("zl_xuanfengzhou", "旋風咒", "趙靈兒", 1, "skill", "旋風護體，獲得 10 點護體，使敵人虛弱 1 層。", [{"kind": "block", "amount": 10}, {"kind": "weak", "amount": 1}], "uncommon"),
+		make_card("zl_taishan", "泰山壓頂", "趙靈兒", 2, "attack", "泰山壓頂之勢，對全體敵人造成 20 點傷害並施加 2 層破綻。", [{"kind": "damage_all", "amount": 20}, {"kind": "vulnerable_all", "amount": 2}], "rare"),
+		make_card("zl_wuleizhou", "五雷咒", "趙靈兒", 3, "attack", "五雷齊降，對全體敵人造成 6 點傷害五次。", [{"kind": "damage_all", "amount": 6, "hits": 5}], "rare"),
+		make_card("zl_xuanfengzhou", "旋風咒", "趙靈兒", 1, "skill", "旋風捲場，獲得 10 點護體，使全體敵人虛弱 1 層。", [{"kind": "block", "amount": 10}, {"kind": "weak_all", "amount": 1}], "uncommon"),
 		make_card("zl_mengshe_ls", "夢蛇靈印★", "趙靈兒", 2, "power", "夢蛇靈印大成，本場戰鬥傷害提升 3，回復 6 點生命，抽 2 張牌。", [{"kind": "power", "amount": 3}, {"kind": "heal", "amount": 6}, {"kind": "draw", "amount": 2}], "rare"),
 		# 連打牌組（0 費 / 減靈耗升級）：連咒軸，art 暫借既有仙術卡
 		make_card("zl_xiaoleizhou", "小雷咒", "趙靈兒", 0, "attack", "造成 4 點傷害。", [{"kind": "damage", "amount": 4}]),
@@ -972,7 +972,7 @@ static func _tomb_general() -> EnemyData:
 	enemy.id = "tomb_general"
 	enemy.display_name = "塚中亡將"
 	enemy.max_hp = 110
-	enemy.portrait_path = "res://assets/art/enemies/ancient_evil_spirit.png"
+	enemy.portrait_path = "res://assets/art/enemies/tomb_general.png"
 	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "亡將揮戈 18", "effects": [{"kind": "damage", "amount": 18}]},
