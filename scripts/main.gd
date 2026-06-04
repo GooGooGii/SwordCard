@@ -58,6 +58,7 @@ var pause_menu: PauseMenu
 var pause_button: Button
 var debug_menu: DebugMenu
 var dbg_test_mode: bool = false
+var _shop_ui_refs: Array = []
 var battle_end_pending: bool = false
 var active_map_scroll: ScrollContainer = null
 var _map_drag_candidate: bool = false
@@ -5235,6 +5236,7 @@ func open_shop_node(is_black_shop: bool) -> void:
 	show_shop_node()
 
 func show_shop_node() -> void:
+	_shop_ui_refs = []
 	_play_bgm("shop")
 	_set_background("res://assets/art/event_bg.png")
 	_clear_root()
@@ -5270,7 +5272,9 @@ func show_shop_node() -> void:
 	# ── 第二列：遺物（最多 3 種，買掉/已持有則略過）──
 	var relic_views: Array[Control] = []
 	for rid: String in run_state.current_shop_relic_ids:
-		if rid.is_empty() or run_state.has_relic(rid):
+		if rid.is_empty():
+			continue
+		if run_state.has_relic(rid) and not run_state.current_shop_relic_sold_ids.has(rid):
 			continue
 		var relic: RelicData = RelicCatalog.by_id(rid)
 		if relic != null:
@@ -5297,11 +5301,11 @@ func show_shop_node() -> void:
 	var remove_price: int = _shop_apply_discount(75)
 	var upgrade_price: int = _shop_apply_discount(100)
 	other_row.add_child(_shop_service_panel(
-		"削牌服務", "從牌組中移除一張牌", remove_price,
+		"remove_service", "削牌服務", "從牌組中移除一張牌", remove_price,
 		run_state.shop_remove_used, run_state.deck.size() > 5,
 		func(): _open_shop_remove_service(remove_price)))
 	other_row.add_child(_shop_service_panel(
-		"強化服務", "升級牌組中的一張牌", upgrade_price,
+		"upgrade_service", "強化服務", "升級牌組中的一張牌", upgrade_price,
 		run_state.shop_upgrade_used, not _upgradeable_cards().is_empty(),
 		func(): _open_shop_upgrade_service(upgrade_price)))
 	other_row.add_child(_shop_nav_panel("牌組", "查看當前手札", "翻閱", show_deck_view))
@@ -5321,6 +5325,94 @@ func _make_non_button_scroll_transparent(node: Node) -> void:
 		elif child is Control:
 			(child as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_make_non_button_scroll_transparent(child)
+
+func _refresh_shop_ui_states() -> void:
+	_refresh_title_bar()
+	for ref: Dictionary in _shop_ui_refs:
+		var type: String = ref.get("type", "")
+		match type:
+			"card":
+				var item: Dictionary = ref["item"]
+				var price: int = ref["price"]
+				var is_sold: bool = bool(item.get("sold", false))
+				var can_buy: bool = run_state.gold >= price and not is_sold
+				var button: Button = ref["button"]
+				var panel: PanelContainer = ref["panel"]
+				var price_label: Label = ref["price_label"]
+				button.disabled = not can_buy or is_sold
+				if is_sold:
+					price_label.text = "已售出"
+					price_label.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
+					panel.modulate = Color(0.6, 0.6, 0.6, 0.7)
+					button.disabled = true
+					if button.is_connected("pressed", ref["pressed_callable"]):
+						button.pressed.disconnect(ref["pressed_callable"])
+			"relic":
+				var relic: RelicData = ref["relic"]
+				var price: int = ref["price"]
+				var is_sold: bool = run_state.current_shop_relic_sold_ids.has(relic.id)
+				var can_buy: bool = run_state.gold >= price and not is_sold
+				var button: Button = ref["button"]
+				var panel: PanelContainer = ref["panel"]
+				button.disabled = not can_buy or is_sold
+				if is_sold:
+					button.text = "已售出"
+					button.disabled = true
+					panel.modulate = Color(0.6, 0.6, 0.6, 0.7)
+					if button.is_connected("pressed", ref["pressed_callable"]):
+						button.pressed.disconnect(ref["pressed_callable"])
+			"potion":
+				var item: Dictionary = ref["item"]
+				var price: int = ref["price"]
+				var is_sold: bool = bool(item.get("sold", false))
+				var full: bool = run_state.potions.size() >= RunState.MAX_POTION_SLOTS
+				var can_buy: bool = run_state.gold >= price and not full and not is_sold
+				var button: Button = ref["button"]
+				var panel: PanelContainer = ref["panel"]
+				button.disabled = not can_buy or is_sold
+				if is_sold:
+					button.text = "已售出"
+					button.disabled = true
+					panel.modulate = Color(0.6, 0.6, 0.6, 0.7)
+					if button.is_connected("pressed", ref["pressed_callable"]):
+						button.pressed.disconnect(ref["pressed_callable"])
+				else:
+					if full:
+						button.tooltip_text = "藥格已滿（%d/%d）" % [run_state.potions.size(), RunState.MAX_POTION_SLOTS]
+					else:
+						button.tooltip_text = ""
+			"remove_service":
+				var price: int = ref["price"]
+				var used: bool = run_state.shop_remove_used
+				var available: bool = run_state.deck.size() > 5
+				var can_use: bool = available and run_state.gold >= price and not used
+				var button: Button = ref["button"]
+				var price_label: Label = ref["price_label"]
+				if used:
+					price_label.text = "（已使用）"
+					price_label.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
+					button.visible = false
+				else:
+					price_label.text = "價格：%d 銅錢" % price
+					price_label.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
+					button.visible = true
+					button.disabled = not can_use
+			"upgrade_service":
+				var price: int = ref["price"]
+				var used: bool = run_state.shop_upgrade_used
+				var available: bool = not _upgradeable_cards().is_empty()
+				var can_use: bool = available and run_state.gold >= price and not used
+				var button: Button = ref["button"]
+				var price_label: Label = ref["price_label"]
+				if used:
+					price_label.text = "（已使用）"
+					price_label.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
+					button.visible = false
+				else:
+					price_label.text = "價格：%d 銅錢" % price
+					price_label.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
+					button.visible = true
+					button.disabled = not can_use
 
 func _shop_section_label(text: String) -> Label:
 	return UIFactory.card_label("— %s —" % text, 16, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
@@ -5370,11 +5462,26 @@ func _shop_relic_view(relic: RelicData) -> Control:
 	box.add_child(UIFactory.card_label(relic.display_name, 17, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(UIFactory.card_label(relic.description, 12, Color("d8e0ec"), HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(UIFactory.card_label("價格：%d 銅錢" % price, 14, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER))
-	var can_buy: bool = run_state.gold >= price
-	var buy_button: Button = _button("買下裝備")
-	buy_button.disabled = not can_buy
-	buy_button.pressed.connect(func(): _buy_shop_relic(relic, price))
+	var is_sold: bool = run_state.current_shop_relic_sold_ids.has(relic.id)
+	var can_buy: bool = run_state.gold >= price and not is_sold
+	var button_text: String = "已售出" if is_sold else "買下裝備"
+	var buy_button: Button = _button(button_text)
+	buy_button.disabled = not can_buy or is_sold
+	var pressed_callable: Callable = func(): _buy_shop_relic(relic, price)
+	if not is_sold:
+		buy_button.pressed.connect(pressed_callable)
 	box.add_child(buy_button)
+	if is_sold:
+		panel.modulate = Color(0.6, 0.6, 0.6, 0.7)
+		buy_button.disabled = true
+	_shop_ui_refs.append({
+		"type": "relic",
+		"relic": relic,
+		"price": price,
+		"panel": panel,
+		"button": buy_button,
+		"pressed_callable": pressed_callable
+	})
 	return panel
 
 func _shop_relic_price(relic: RelicData) -> int:
@@ -5403,14 +5510,15 @@ func _buy_shop_relic(relic: RelicData, price: int) -> void:
 		return
 	run_state.gold -= price
 	run_state.add_relic(relic)
-	run_state.current_shop_relic_ids.erase(relic.id)  # 買掉這件就從貨架移除
-	show_shop_node()
+	run_state.current_shop_relic_sold_ids.append(relic.id)
+	_refresh_shop_ui_states()
 
 func _shop_potion_view(item: Dictionary) -> Control:
 	var potion: Dictionary = item["potion"] as Dictionary
 	var price: int = _shop_apply_discount(int(item["price"]))
 	var full: bool = run_state.potions.size() >= RunState.MAX_POTION_SLOTS
-	var can_buy: bool = run_state.gold >= price and not full
+	var is_sold: bool = bool(item.get("sold", false))
+	var can_buy: bool = run_state.gold >= price and not full and not is_sold
 	var rarity_col: Color = PotionCatalog.rarity_color(potion)
 	
 	var panel: PanelContainer = UIFactory.make_panel()
@@ -5446,12 +5554,29 @@ func _shop_potion_view(item: Dictionary) -> Control:
 	
 	box.add_child(UIFactory.card_label("價格：%d 銅錢" % price, 13, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER))
 	
-	var buy_button: Button = _button("買下藥品")
-	buy_button.disabled = not can_buy
-	if full:
+	var button_text: String = "已售出" if is_sold else "買下藥品"
+	var buy_button: Button = _button(button_text)
+	buy_button.disabled = not can_buy or is_sold
+	if full and not is_sold:
 		buy_button.tooltip_text = "藥格已滿（%d/%d）" % [run_state.potions.size(), RunState.MAX_POTION_SLOTS]
-	buy_button.pressed.connect(func(): _show_shop_potion_confirm_overlay(potion, item, price))
+	
+	var pressed_callable: Callable = func(): _show_shop_potion_confirm_overlay(potion, item, price)
+	if not is_sold:
+		buy_button.pressed.connect(pressed_callable)
 	box.add_child(buy_button)
+	
+	if is_sold:
+		panel.modulate = Color(0.6, 0.6, 0.6, 0.7)
+		buy_button.disabled = true
+		
+	_shop_ui_refs.append({
+		"type": "potion",
+		"item": item,
+		"price": price,
+		"panel": panel,
+		"button": buy_button,
+		"pressed_callable": pressed_callable
+	})
 	
 	return panel
 
@@ -5503,8 +5628,8 @@ func _buy_shop_potion(potion: Dictionary, item: Dictionary, price: int) -> void:
 		return
 	run_state.gold -= price
 	run_state.potions.append(potion.duplicate())
-	run_state.current_shop_potions.erase(item)
-	show_shop_node()
+	item["sold"] = true
+	_refresh_shop_ui_states()
 
 func _shop_curse_surcharge_mult() -> float:
 	var mult: float = 1.0
@@ -5550,7 +5675,7 @@ func _shop_nav_panel(title: String, description: String, button_text: String, on
 	box.add_child(btn)
 	return panel
 
-func _shop_service_panel(title: String, description: String, price: int, used: bool, available: bool, on_press: Callable) -> Control:
+func _shop_service_panel(type_key: String, title: String, description: String, price: int, used: bool, available: bool, on_press: Callable) -> Control:
 	var panel: PanelContainer = UIFactory.make_panel()
 	panel.custom_minimum_size = Vector2(180, 130)
 	var box: VBoxContainer = VBoxContainer.new()
@@ -5559,16 +5684,33 @@ func _shop_service_panel(title: String, description: String, price: int, used: b
 	panel.add_child(box)
 	box.add_child(UIFactory.card_label(title, 15, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(UIFactory.card_label(description, 11, Color("d8e0ec"), HORIZONTAL_ALIGNMENT_CENTER))
+	
+	var price_label: Label = UIFactory.card_label("", 12, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	box.add_child(price_label)
+	
+	var btn: Button = _button("使用服務")
+	btn.pressed.connect(on_press)
+	box.add_child(btn)
+	
+	# Determine initial state
 	if used:
-		box.add_child(UIFactory.card_label("（已使用）", 12, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_CENTER))
+		price_label.text = "（已使用）"
+		price_label.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
+		btn.visible = false
 	else:
-		box.add_child(UIFactory.card_label("價格：%d 銅錢" % price, 12, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER))
+		price_label.text = "價格：%d 銅錢" % price
+		price_label.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
 		var can_use: bool = available and run_state.gold >= price
-		var btn: Button = _button("使用服務")
 		btn.disabled = not can_use
-		if can_use:
-			btn.pressed.connect(on_press)
-		box.add_child(btn)
+		btn.visible = true
+		
+	_shop_ui_refs.append({
+		"type": type_key,
+		"price": price,
+		"panel": panel,
+		"price_label": price_label,
+		"button": btn
+	})
 	return panel
 
 func _open_shop_remove_service(price: int) -> void:
@@ -5590,7 +5732,7 @@ func _shop_deck_remove(card: CardData) -> void:
 			run_state.deck.remove_at(i)
 			break
 	close_deck_view()
-	show_shop_node()
+	_refresh_shop_ui_states()
 
 func _shop_deck_upgrade(card: CardData) -> void:
 	if run_state.gold < _deck_view_service_price or card.upgraded:
@@ -5603,7 +5745,7 @@ func _shop_deck_upgrade(card: CardData) -> void:
 			run_state.deck[i] = card.upgraded_copy()
 			break
 	close_deck_view()
-	show_shop_node()
+	_refresh_shop_ui_states()
 
 func _shop_item_view(item: Dictionary) -> Control:
 	var card: CardData = item["card"] as CardData
@@ -5623,13 +5765,32 @@ func _shop_item_view(item: Dictionary) -> Control:
 	panel.add_child(box)
 	if item.get("on_sale", false):
 		box.add_child(UIFactory.card_label("★ 特賣！五折優惠", 12, Color("ff5555"), HORIZONTAL_ALIGNMENT_CENTER))
-	var can_buy: bool = run_state.gold >= price
+	var is_sold: bool = bool(item.get("sold", false))
+	var can_buy: bool = run_state.gold >= price and not is_sold
 	var card_button: Button = _make_card_button(card, card.cost, Vector2(153, 287), can_buy, true)
-	card_button.disabled = not can_buy
-	card_button.pressed.connect(func(): _show_shop_buy_confirm_overlay(card, price))
+	card_button.disabled = not can_buy or is_sold
+	var pressed_callable: Callable = func(): _show_shop_buy_confirm_overlay(card, price)
+	if not is_sold:
+		card_button.pressed.connect(pressed_callable)
 	box.add_child(card_button)
-	var price_label: Label = UIFactory.card_label("價格：%d 銅錢" % price, 15, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	var price_text: String = "已售出" if is_sold else "價格：%d 銅錢" % price
+	var price_label: Label = UIFactory.card_label(price_text, 15, ThemeColors.TEXT_DIM if is_sold else ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	box.add_child(price_label)
+	
+	if is_sold:
+		panel.modulate = Color(0.6, 0.6, 0.6, 0.7)
+		card_button.disabled = true
+		
+	_shop_ui_refs.append({
+		"type": "card",
+		"item": item,
+		"price": price,
+		"panel": panel,
+		"button": card_button,
+		"price_label": price_label,
+		"pressed_callable": pressed_callable
+	})
+	
 	return panel
 
 func _show_shop_buy_confirm_overlay(card: CardData, price: int) -> void:
@@ -5681,9 +5842,9 @@ func buy_shop_card(card: CardData, price: int) -> void:
 	for i: int in range(run_state.current_shop_inventory.size()):
 		var item_card: CardData = run_state.current_shop_inventory[i]["card"] as CardData
 		if item_card == card:
-			run_state.current_shop_inventory.remove_at(i)
+			run_state.current_shop_inventory[i]["sold"] = true
 			break
-	show_shop_node()
+	_refresh_shop_ui_states()
 
 func _make_shop_inventory(is_black_shop: bool) -> Array[Dictionary]:
 	return ShopInventory.build(selected_character, is_black_shop)

@@ -24,6 +24,7 @@ var current_shop_inventory: Array[Dictionary] = []
 var current_shop_potions: Array[Dictionary] = []
 var current_shop_is_black: bool = false
 var current_shop_relic_ids: Array[String] = []  # 本商店販售的遺物 id（最多 3 種，買掉後移除）
+var current_shop_relic_sold_ids: Array[String] = []  # 本商店已售出的遺物 id
 var current_shop_node_index: int = -1      # 已開出貨架的 encounter_index；-1 = 尚未開店
 var shop_remove_used: bool = false         # 本商店削牌服務是否用過
 var shop_upgrade_used: bool = false        # 本商店強化服務是否用過
@@ -143,6 +144,7 @@ func init_for(chars: Variant) -> void:
 	current_shop_potions = []
 	current_shop_is_black = false
 	current_shop_relic_ids = []
+	current_shop_relic_sold_ids = []
 	current_shop_node_index = -1
 	shop_remove_used = false
 	shop_upgrade_used = false
@@ -262,6 +264,7 @@ func to_dict() -> Dictionary:
 		"current_shop_potions": current_shop_potions.duplicate(true),
 		"current_shop_is_black": current_shop_is_black,
 		"current_shop_relic_ids": current_shop_relic_ids.duplicate(),
+		"current_shop_relic_sold_ids": current_shop_relic_sold_ids.duplicate(),
 		"current_shop_node_index": current_shop_node_index,
 		"shop_remove_used": shop_remove_used,
 		"shop_upgrade_used": shop_upgrade_used,
@@ -347,6 +350,9 @@ func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> 
 	current_shop_relic_ids = []
 	for rid_v: Variant in (data.get("current_shop_relic_ids", []) as Array):
 		current_shop_relic_ids.append(String(rid_v))
+	current_shop_relic_sold_ids = []
+	for rid_v: Variant in (data.get("current_shop_relic_sold_ids", []) as Array):
+		current_shop_relic_sold_ids.append(String(rid_v))
 	# 舊存檔相容：單一 current_shop_relic_id → 併入清單
 	var legacy_rid: String = String(data.get("current_shop_relic_id", ""))
 	if not legacy_rid.is_empty() and not current_shop_relic_ids.has(legacy_rid):
@@ -502,7 +508,8 @@ func _serialize_shop_inventory() -> Array:
 		var card: CardData = item.get("card") as CardData
 		inventory_out.append({
 			"card": card.to_dict() if card != null else {},
-			"price": int(item.get("price", 0))
+			"price": int(item.get("price", 0)),
+			"sold": bool(item.get("sold", false))
 		})
 	return inventory_out
 
@@ -513,6 +520,7 @@ func _deserialize_shop_inventory(inventory_in: Array) -> Array[Dictionary]:
 		var card_dict: Dictionary = item.get("card", {}) as Dictionary
 		inventory_out.append({
 			"card": CardData.from_dict(card_dict),
-			"price": int(item.get("price", 0))
+			"price": int(item.get("price", 0)),
+			"sold": bool(item.get("sold", false))
 		})
 	return inventory_out
