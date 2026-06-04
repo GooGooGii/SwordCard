@@ -186,6 +186,13 @@ static func all() -> Array[Dictionary]:
 			"description": "回復 30 點生命，並提升本場攻擊力 +3。",
 			"effects": [{"kind": "heal", "amount": 30}, {"kind": "power", "amount": 3}]
 		},
+		{
+			"id": "jincan_wang",
+			"display_name": "金蠶王",
+			"rarity": "rare",
+			"description": "使當前角色等級 +1，並立即習得該等級解鎖的全部招式（若有）。",
+			"effects": [{"kind": "level_up"}]
+		},
 	]
 
 static func by_id(id: String) -> Dictionary:
@@ -196,7 +203,7 @@ static func by_id(id: String) -> Dictionary:
 
 # 戰鬥外仍有意義的 effect kind（回血、永久能力增益）。
 # heal / heal_party 直接補 run HP；未來若加 max_hp 等永久 buff 也列在此。
-const OUT_OF_BATTLE_VALUE_KINDS: Array[String] = ["heal", "heal_party", "max_hp"]
+const OUT_OF_BATTLE_VALUE_KINDS: Array[String] = ["heal", "heal_party", "max_hp", "level_up"]
 # 戰鬥外無作用、但也不浪費價值的 kind（清毒在無毒時是 noop）。
 const OUT_OF_BATTLE_NOOP_KINDS: Array[String] = ["cure_poison"]
 

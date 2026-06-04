@@ -133,6 +133,7 @@ func _initialize() -> void:
 	_test_potion_old_save_compat(characters)
 	_test_potion_replacement_logic(characters)
 	_test_shop_potion_replacement(characters)
+	_test_potion_jincan_wang(characters, enemies[0])
 	_test_level_system(characters)
 	_test_level_unlock_cards()
 	# Multi-Enemy Mode（Phase 1+2 資料層 + AOE effects）
@@ -1257,7 +1258,7 @@ func _test_deck_pile_views(characters: Array[CharacterData]) -> void:
 
 func _test_potion_catalog() -> void:
 	var all_potions: Array[Dictionary] = PotionCatalog.all()
-	_check(all_potions.size() == 26, "PotionCatalog should have 26 potions, got %d" % all_potions.size())
+	_check(all_potions.size() == 27, "PotionCatalog should have 27 potions, got %d" % all_potions.size())
 	var ids: Array[String] = []
 	for p: Dictionary in all_potions:
 		_check(p.has("id") and String(p["id"]).length() > 0, "potion missing id")
@@ -1452,6 +1453,49 @@ func _test_shop_potion_replacement(characters: Array[CharacterData]) -> void:
 	_check(state.potions[0]["id"] == all_potions[3]["id"], "first potion should be replaced by the bought potion")
 	_check(main._card_preview_overlay == null, "overlay should be hidden after replacement")
 	
+	main.free()
+
+func _test_potion_jincan_wang(characters: Array[CharacterData], enemy: EnemyData) -> void:
+	var main_script = load("res://scripts/main.gd")
+	var main = main_script.new()
+	var state: RunState = RunState.new()
+	state.init_for(characters[0])
+	main.run_state = state
+	
+	_check(state.character_levels[0] == 1, "initial level should be 1")
+	var initial_deck_size: int = state.character_decks[0].size()
+	
+	var pot: Dictionary = PotionCatalog.by_id("jincan_wang")
+	_check(not pot.is_empty(), "jincan_wang should exist in catalog")
+	state.potions.append(pot.duplicate())
+	
+	main._use_potion_out_of_battle(0)
+	
+	_check(state.character_levels[0] == 2, "level should be 2 after eating jincan_wang")
+	_check(state.character_exps[0] == LevelSystem.exp_required_for_level(2), "exp should be updated to L2 requirement")
+	
+	var unlocked_lv2: Array[CardData] = LevelSystem.unlock_cards_for(characters[0].id, 2)
+	var new_deck_size: int = state.character_decks[0].size()
+	_check(new_deck_size == initial_deck_size + unlocked_lv2.size(), "deck size should increase by the number of unlocked cards")
+	
+	var bc: BattleController = BattleController.new()
+	bc.setup(state, characters[0], enemy.clone())
+	main.battle = bc
+	
+	state.potions.append(pot.duplicate())
+	var battle_before_level: int = state.character_levels[0]
+	
+	main._use_potion(0)
+	
+	_check(state.character_levels[0] == battle_before_level + 1, "level should increase in battle")
+	
+	var unlocked_lv3: Array[CardData] = LevelSystem.unlock_cards_for(characters[0].id, 3)
+	_check(main.battle.deck != null, "battle deck should exist")
+	var discard_pile_size: int = main.battle.deck.discard_pile.size()
+	_check(discard_pile_size >= unlocked_lv3.size(), "unlocked cards should be added to battle discard pile")
+	
+	main.battle = null
+	bc.free()
 	main.free()
 
 func _test_level_system(characters: Array[CharacterData]) -> void:

@@ -23,6 +23,14 @@ static func exp_to_next_level(current_level: int) -> int:
 		return 0
 	return 15 * current_level
 
+static func exp_required_for_level(target_level: int) -> int:
+	var accumulated: int = 0
+	var level: int = 1
+	while level < target_level and level < MAX_LEVEL:
+		accumulated += exp_to_next_level(level)
+		level += 1
+	return accumulated
+
 static func level_from_exp(total_exp: int) -> int:
 	var level: int = 1
 	var accumulated: int = 0

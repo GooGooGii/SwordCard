@@ -3120,7 +3120,20 @@ func _use_potion(slot: int) -> void:
 	var before_hp: int = int(battle.state["player_hp"])
 	var before_block: int = int(battle.state["player_block"])
 	var _dead_before_pot: Array[int] = _snapshot_dead_bench()
-	var log_lines: Array[String] = battle.resolver.resolve_effects_list(effects, battle.state)
+	var log_lines: Array[String] = []
+	if potion.get("id") == "jincan_wang":
+		var active: int = run_state.active_character_index
+		var log_msg: String = _level_up_character_directly(active)
+		if not log_msg.is_empty():
+			log_lines.append(log_msg)
+			var char_data: CharacterData = run_state.characters[active]
+			var new_lv: int = run_state.character_levels[active]
+			var unlocked: Array[CardData] = LevelSystem.unlock_cards_for(char_data.id, new_lv)
+			if battle.deck != null:
+				for card in unlocked:
+					battle.deck.discard_pile.append(card.clone())
+	else:
+		log_lines = battle.resolver.resolve_effects_list(effects, battle.state)
 	_pending_revive_indices = _detect_revived(_dead_before_pot)
 	var drew: int = int(battle.state.get("pending_draw", 0))
 	if drew > 0:
@@ -3253,6 +3266,15 @@ func _use_potion_out_of_battle(slot: int) -> void:
 	if run_state == null or slot >= run_state.potions.size():
 		return
 	var potion: Dictionary = run_state.potions[slot]
+	if potion.get("id") == "jincan_wang":
+		var active: int = run_state.active_character_index
+		var log_msg: String = _level_up_character_directly(active)
+		run_state.potions.remove_at(slot)
+		_refresh_potion_overlay_buttons()
+		_refresh_title_bar()
+		if not log_msg.is_empty():
+			_show_level_up_popup(log_msg)
+		return
 	var active: int = clampi(run_state.active_character_index, 0, max(0, run_state.character_hps.size() - 1))
 	var total_healed: int = 0
 	for effect: Dictionary in (potion.get("effects", []) as Array):
@@ -3282,6 +3304,59 @@ func _use_potion_out_of_battle(slot: int) -> void:
 	_refresh_title_bar()
 	if total_healed > 0 and title_bar_hp_bar != null and is_instance_valid(title_bar_hp_bar):
 		_spawn_damage_popup(title_bar_hp_bar, total_healed, "heal")
+
+func _level_up_character_directly(idx: int) -> String:
+	if idx < 0 or idx >= run_state.characters.size():
+		return ""
+	var char_data: CharacterData = run_state.characters[idx]
+	var old_lv: int = run_state.character_levels[idx]
+	if old_lv >= LevelSystem.MAX_LEVEL:
+		return "【%s】已達到最高等級，無法繼續升級。" % char_data.display_name
+	
+	var new_lv: int = old_lv + 1
+	run_state.character_levels[idx] = new_lv
+	run_state.character_exps[idx] = LevelSystem.exp_required_for_level(new_lv)
+	
+	var unlocked: Array[CardData] = LevelSystem.unlock_cards_for(char_data.id, new_lv)
+	var deck_array: Array = run_state.character_decks[idx] as Array
+	var unlocked_names: Array[String] = []
+	for card in unlocked:
+		deck_array.append(card.clone())
+		unlocked_names.append(card.display_name)
+	
+	run_state.character_max_hps[idx] += 5
+	run_state.character_hps[idx] = run_state.character_max_hps[idx]
+	
+	var msg: String = "【%s】等級提升至 Lv %d！\n最大生命值提升 5 點並已回復至全滿。" % [char_data.display_name, new_lv]
+	if not unlocked_names.is_empty():
+		msg += "\n\n習得新招式：%s！" % "、".join(unlocked_names)
+	return msg
+
+func _show_level_up_popup(msg: String) -> void:
+	var popup: PopupPanel = _make_battle_popup()
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 12)
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	
+	box.add_child(UIFactory.card_label("金蠶仙力！等級提升", 18, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER))
+	
+	var desc: Label = UIFactory.card_label(msg, 14, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc.custom_minimum_size = Vector2(360, 0)
+	box.add_child(desc)
+	
+	var close_btn: Button = _button("確定")
+	close_btn.pressed.connect(popup.hide)
+	box.add_child(close_btn)
+	
+	popup.add_child(box)
+	var vp: Viewport = get_viewport()
+	if vp != null:
+		vp.add_child(popup)
+		popup.popup_hide.connect(popup.queue_free)
+		popup.popup_centered()
+	else:
+		popup.free()
 
 func _hp_bar_with_overlay(bar: ProgressBar, value_label: Label) -> Control:
 	var bar_height: int = 18 if _battle_compact else 22
@@ -6211,7 +6286,7 @@ func _act_title(act: int) -> String:
 func _act_complete_flavor(act: int) -> String:
 	match act:
 		1: return "餘杭山間的惡徒已被驅散，一行人沿江而行，傳聞水月宮所在的仙靈島就在前方雲霧之中。"
-		2: return "仙靈島的水霧散去，逍遙與靈兒的緣分自此牽起。眾人辭別水月宮，轉往繁華的蘇州城。"
+		2: return "黑苗血洗仙靈島、水月宮罹難，南詔公主趙靈兒被擄而去。逍遙拚死救下她，記憶雖仍有殘缺，仍決意護送她遠赴蘇州、再返苗疆尋母。"
 		3: return "蘇州城中結識了林月如與劉晉元，比武招親的風波方歇，前方的將軍塚卻透著陰森的試煉之氣。"
 		4: return "將軍塚的亡魂歸於沉寂，眾人取得試煉之證，循著地脈深入更幽暗的試煉窟。"
 		5: return "試煉窟底藏著五靈的奧義，眾人得其真傳，功力大進——而真正的試煉，在鎖妖塔等著。"
@@ -6977,16 +7052,20 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 			if tex != null:
 				player_portrait_image.texture = tex
 				UIFactory.ground_portrait(player_portrait_image)  # 換姿勢後重新貼地
-	_refresh_combatant_hp(player_hp_bar, player_hp_value, int(battle.state["player_hp"]), int(battle.state["player_max_hp"]))
-	_update_poison_preview(player_hp_bar, int(battle.state["player_hp"]), int(battle.state["player_max_hp"]), int(battle.state["player_poison"]))
-	player_block_badge.set_amount(int(battle.state["player_block"]))
-	player_status_line.text = UIFactory.status_summary(int(battle.state["player_poison"]), int(battle.state["player_weak"]), int(battle.state["player_vulnerable"]))
+	if player_hp_bar != null and is_instance_valid(player_hp_bar) and player_hp_value != null and is_instance_valid(player_hp_value):
+		_refresh_combatant_hp(player_hp_bar, player_hp_value, int(battle.state["player_hp"]), int(battle.state["player_max_hp"]))
+		_update_poison_preview(player_hp_bar, int(battle.state["player_hp"]), int(battle.state["player_max_hp"]), int(battle.state["player_poison"]))
+	if player_block_badge != null and is_instance_valid(player_block_badge):
+		player_block_badge.set_amount(int(battle.state["player_block"]))
+	if player_status_line != null and is_instance_valid(player_status_line):
+		player_status_line.text = UIFactory.status_summary(int(battle.state["player_poison"]), int(battle.state["player_weak"]), int(battle.state["player_vulnerable"]))
 	_refresh_bench_strip()
 	# Multi-Enemy: 迭代更新每個敵人的 widget（active 高亮、死敵 dim、HP/block/status）
 	_refresh_enemy_widgets()
 	if enemy_label != null and is_instance_valid(enemy_label):
 		enemy_label.text = ""
-	energy_orb.set_energy(int(battle.state["energy"]), int(battle.state.get("per_turn_energy", BattleController.BASE_TURN_ENERGY)))
+	if energy_orb != null and is_instance_valid(energy_orb):
+		energy_orb.set_energy(int(battle.state["energy"]), int(battle.state.get("per_turn_energy", BattleController.BASE_TURN_ENERGY)))
 	var buttons: Array[Button] = []
 	card_buttons.clear()
 	_hand_buttons_map.clear()
@@ -6998,20 +7077,23 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 		_hand_buttons_map[button] = card
 		if card == _selected_hand_card:
 			_selected_hand_button = button
-	var draw_source: Vector2 = Vector2(120.0, get_viewport_rect().size.y - 70.0)
-	hand_row.set_cards(buttons, animate_draw, draw_source)
-	if _selected_hand_button != null:
-		hand_row.set_selected_button(_selected_hand_button)
+	if hand_row != null and is_instance_valid(hand_row):
+		var draw_source: Vector2 = Vector2(120.0, get_viewport_rect().size.y - 70.0) if is_inside_tree() else Vector2.ZERO
+		hand_row.set_cards(buttons, animate_draw, draw_source)
+		if _selected_hand_button != null:
+			hand_row.set_selected_button(_selected_hand_button)
 	if log_label != null and is_instance_valid(log_label):
 		log_label.text = "\n".join(battle.battle_log.slice(max(0, battle.battle_log.size() - 4)))
 	_refresh_potion_buttons()
-	end_turn_button.disabled = false
+	if end_turn_button != null and is_instance_valid(end_turn_button):
+		end_turn_button.disabled = false
 
 func _refresh_combatant_hp(bar: ProgressBar, value_label: Label, hp: int, max_hp: int) -> void:
-	# 平滑 tween 到目標值。重複呼叫時前一個 tween 會被 kill 以避免累積。
-	# 文字 label 直接設定（不必 tween），讓玩家立刻看到數值；條色慢慢追上去更有「失血感」。
+	if value_label != null and is_instance_valid(value_label):
+		value_label.text = "%d / %d" % [hp, max_hp]
+	if bar == null or not is_instance_valid(bar):
+		return
 	var target: float = 0.0 if max_hp <= 0 else float(hp) / float(max_hp)
-	value_label.text = "%d / %d" % [hp, max_hp]
 	if bar.has_meta("hp_tween"):
 		var old_tween: Variant = bar.get_meta("hp_tween")
 		if old_tween is Tween and (old_tween as Tween).is_valid():

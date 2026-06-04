@@ -56,7 +56,7 @@ static func enemies() -> Array[EnemyData]:
 static func bosses() -> Array[EnemyData]:
 	return [_moon_worshipper(), _centipede_lord(), _witch_queen(),
 		_red_eye_demon(), _zombie_general(), _baiyue_lord(),
-		_water_serpent(), _tomb_general(), _zhenyu_mingwang()]
+		_miao_chieftain(), _tomb_general(), _zhenyu_mingwang()]
 
 # Multi-Enemy Mode：召喚物（minions）— 由 boss 召喚出來的弱化版敵人
 static func minions() -> Array[EnemyData]:
@@ -93,7 +93,7 @@ static func enemies_for_act(act: int) -> Array[EnemyData]:
 static func boss_for_act(act: int) -> EnemyData:
 	match act:
 		1: return _red_eye_demon()      # 餘杭山間：赤眼山魈
-		2: return _water_serpent()      # 仙靈島：水靈蛇妖
+		2: return _miao_chieftain()     # 仙靈島：黑苗頭領（正史·血洗仙靈島擄靈兒）
 		3: return _zombie_general()     # 蘇州城：殭屍大帥
 		4: return _tomb_general()       # 將軍塚：塚中亡將
 		5: return _witch_queen()        # 試煉窟：山靈巫后
@@ -929,25 +929,25 @@ static func _baiyue_lord() -> EnemyData:
 	enemy.summon_pool = ["water_tentacle"]
 	return enemy
 
-# 仙靈島 boss（第二幕）：水月宮鎮守的水靈蛇妖，呼應趙靈兒人蛇/女媧水族主題。
-static func _water_serpent() -> EnemyData:
+# 仙靈島 boss（第二幕）：PAL1 正史——黑苗血洗仙靈島、擄走南詔公主趙靈兒的黑苗頭領。
+static func _miao_chieftain() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
-	enemy.id = "water_serpent"
-	enemy.display_name = "水靈蛇妖"
+	enemy.id = "miao_chieftain"
+	enemy.display_name = "黑苗頭領"
 	enemy.max_hp = 96
-	enemy.portrait_path = "res://assets/art/enemies/serpent_demon.png"
+	enemy.portrait_path = "res://assets/art/enemies/gu_cultist.png"  # 借圖：待補黑苗頭領專屬
 	enemy.default_facing_left = true
 	enemy.actions = [
-		{"intent": "水蛇纏咬 15 + 蠱毒 3", "effects": [{"kind": "damage", "amount": 15}, {"kind": "poison", "amount": 3}]},
-		{"intent": "靈泉護鱗 16", "effects": [{"kind": "block", "amount": 16}]},
-		{"intent": "迷霧吐息 虛弱 2 + 破綻 1", "effects": [{"kind": "weak", "amount": 2}, {"kind": "vulnerable", "amount": 1}]},
-		{"intent": "蛟尾橫掃 22", "effects": [{"kind": "damage", "amount": 22}]}
+		{"intent": "苗刀劈砍 16", "effects": [{"kind": "damage", "amount": 16}]},
+		{"intent": "下蠱 蠱毒 4 + 破綻 1", "effects": [{"kind": "poison", "amount": 4}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "擒拿 14 + 虛弱 2", "effects": [{"kind": "damage", "amount": 14}, {"kind": "weak", "amount": 2}]},
+		{"intent": "黑苗結界 18", "effects": [{"kind": "block", "amount": 18}]}
 	]
 	enemy.phase_2_actions = [
-		{"intent": "水龍捲 27 + 虛弱 1", "effects": [{"kind": "damage", "amount": 27}, {"kind": "weak", "amount": 1}]},
-		{"intent": "靈島湧泉 蠱毒 6 + 破綻 2", "effects": [{"kind": "poison", "amount": 6}, {"kind": "vulnerable", "amount": 2}]},
-		{"intent": "盤踞護體 22", "effects": [{"kind": "block", "amount": 22}]},
-		{"intent": "怒濤吞噬 30", "effects": [{"kind": "damage", "amount": 30}]}
+		{"intent": "血洗狂攻 27 + 虛弱 1", "effects": [{"kind": "damage", "amount": 27}, {"kind": "weak", "amount": 1}]},
+		{"intent": "攝魂蠱 蠱毒 7 + 破綻 2", "effects": [{"kind": "poison", "amount": 7}, {"kind": "vulnerable", "amount": 2}]},
+		{"intent": "苗疆秘法 22", "effects": [{"kind": "block", "amount": 22}]},
+		{"intent": "奪命苗刀 31", "effects": [{"kind": "damage", "amount": 31}]}
 	]
 	return enemy
 

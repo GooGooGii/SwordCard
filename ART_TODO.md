@@ -199,7 +199,7 @@
 
 | Boss ID | 顯示名 | 目前借用/狀態 | 風格建議 |
 |---|---|---|---|
-| `water_serpent` | 水靈蛇妖（仙靈島 boss）| `serpent_demon.png` | 青碧水靈巨蛇，靈島水族妖氣，呼應趙靈兒人蛇主題 |
+| `miao_chieftain` | 黑苗頭領（仙靈島 boss・正史）| `gu_cultist.png` | 黑苗血洗仙靈島、擄走南詔公主靈兒的苗族頭領；苗刀蠱術、兇悍狠戾 |
 | `tomb_general` | 塚中亡將（將軍塚 boss）| `ancient_evil_spirit.png` | 殘甲執戈的亡將魂魄，陰森戰魂氣息 |
 | `zhenyu_mingwang` | 鎮獄明王（鎖妖塔 boss・正史）| 🟢 已完成（專屬美術） | 金剛怒目的鎮獄明王法相，鎖鏈降魔杵，莊嚴而威壓 |
 
