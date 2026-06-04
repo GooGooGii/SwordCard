@@ -25,14 +25,14 @@ static func colorless_cards() -> Array[CardData]:
 	var list: Array[CardData] = [
 		make_card("cl_xunjiezhan", "迅捷斬", "無門", 0, "attack", "造成 7 點傷害。", [{"kind": "damage", "amount": 7}], "uncommon"),
 		make_card("cl_hanfengjue", "寒鋒訣", "無門", 0, "attack", "造成 3 點傷害，抽 1 張牌。", [{"kind": "damage", "amount": 3}, {"kind": "draw", "amount": 1}], "uncommon"),
-		make_card("cl_hushenjue", "護身訣", "無門", 0, "skill", "獲得 6 點護體。", [{"kind": "block", "amount": 6}], "uncommon", "lxy_jianqi"),
-		make_card("cl_qiaojin", "巧勁", "無門", 0, "skill", "獲得 2 點護體，抽 1 張牌。", [{"kind": "block", "amount": 2}, {"kind": "draw", "amount": 1}], "uncommon", "zl_lingguang"),
-		make_card("cl_zhimingfu", "致盲符", "無門", 0, "skill", "使敵人虛弱 2 層。", [{"kind": "weak", "amount": 2}], "uncommon", "anu_mihun"),
-		make_card("cl_poshi", "破式", "無門", 0, "skill", "施加 2 層破綻。", [{"kind": "vulnerable", "amount": 2}], "uncommon", "lyr_juesha"),
-		make_card("cl_jinchuangtie", "金創藥帖", "無門", 0, "skill", "回復 5 點生命。打出後消耗。", [{"kind": "heal", "amount": 5}], "uncommon", "lxy_qiliao"),
-		make_card("cl_qimendunjia", "奇門遁甲", "無門", 0, "attack", "對全體敵人造成 8 點傷害。", [{"kind": "damage_all", "amount": 8}], "uncommon", "lxy_wanjian"),
-		make_card("cl_yunchou", "運籌帷幄", "無門", 0, "skill", "抽 3 張牌。打出後消耗。", [{"kind": "draw", "amount": 3}], "rare", "zl_lingxi"),
-		make_card("cl_huacaijianyi", "華彩劍意", "無門", 1, "power", "本回合每出 5 張牌，對全體敵人造成 10 點傷害。", [{"kind": "combo_strike", "amount": 10, "threshold": 5}], "rare", "lxy_jianshen"),
+		make_card("cl_hushenjue", "護身訣", "無門", 0, "skill", "獲得 6 點護體。", [{"kind": "block", "amount": 6}], "uncommon"),
+		make_card("cl_qiaojin", "巧勁", "無門", 0, "skill", "獲得 2 點護體，抽 1 張牌。", [{"kind": "block", "amount": 2}, {"kind": "draw", "amount": 1}], "uncommon"),
+		make_card("cl_zhimingfu", "致盲符", "無門", 0, "skill", "使敵人虛弱 2 層。", [{"kind": "weak", "amount": 2}], "uncommon"),
+		make_card("cl_poshi", "破式", "無門", 0, "skill", "施加 2 層破綻。", [{"kind": "vulnerable", "amount": 2}], "uncommon"),
+		make_card("cl_jinchuangtie", "金創藥帖", "無門", 0, "skill", "回復 5 點生命。打出後消耗。", [{"kind": "heal", "amount": 5}], "uncommon"),
+		make_card("cl_qimendunjia", "奇門遁甲", "無門", 0, "attack", "對全體敵人造成 8 點傷害。", [{"kind": "damage_all", "amount": 8}], "uncommon"),
+		make_card("cl_yunchou", "運籌帷幄", "無門", 0, "skill", "抽 3 張牌。打出後消耗。", [{"kind": "draw", "amount": 3}], "rare"),
+		make_card("cl_huacaijianyi", "華彩劍意", "無門", 1, "power", "本回合每出 5 張牌，對全體敵人造成 10 點傷害。", [{"kind": "combo_strike", "amount": 10, "threshold": 5}], "rare"),
 	]
 	# exhaust 標記（make_card 無此參數，直接設）
 	for c: CardData in list:

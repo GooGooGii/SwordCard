@@ -1,6 +1,6 @@
 # 卡圖待補清單
 
-最後更新：2026-06-03（新增 Batch 1 & 2 及部分 Batch 3 專屬卡圖對接，完成 19 張，剩餘 8 張待補）
+最後更新：2026-06-04（已補齊全部 27 張借圖卡牌的專屬插畫）
 
 ---
 
@@ -138,9 +138,9 @@
 
 ## 五、借圖待補與專屬卡圖進度（2026-06）
 
-本項目旨在為 27 張原本暫時「借圖（`art_id`）」的卡牌補齊專屬插畫。目前已完成 19 張，剩餘 8 張（由於 API 配額限制暫緩，將在重置後補齊）。
+本項目旨在為 27 張原本暫時「借圖（`art_id`）」的卡牌補齊專屬插畫。目前已完成全部 27 張卡牌，已無借圖情況。
 
-### 🟢 已完成專屬卡圖（19 張）
+### 🟢 已完成專屬卡圖（27 張）
 - **李逍遙（4 張，御劍連擊）**：
   - `lxy_jianjue` (劍訣) - 🟢 已完成專屬水墨圖
   - `lxy_huijian` (揮劍引氣) - 🟢 已完成專屬水墨圖
@@ -162,19 +162,20 @@
   - `anu_huguzhao` (護蠱罩) - 🟢 已完成專屬水墨圖
   - `anu_lianduzhen` (連環毒針) - 🟢 已完成專屬水墨圖
   - `anu_guzhang` (蠱瘴瀰漫) - 🟢 已完成專屬水墨圖
-- **無門派/Colorless（2 張，共同牌）**：
+- **無門派/Colorless（10 張，共同牌）**：
   - `cl_xunjiezhan` (迅捷斬) - 🟢 已完成專屬水墨圖
   - `cl_hanfengjue` (寒鋒訣) - 🟢 已完成專屬水墨圖
+  - `cl_hushenjue` (護身訣) - 🟢 已完成專屬水墨圖
+  - `cl_qiaojin` (巧勁) - 🟢 已完成專屬水墨圖
+  - `cl_zhimingfu` (致盲符) - 🟢 已完成專屬水墨圖
+  - `cl_poshi` (破式) - 🟢 已完成專屬水墨圖
+  - `cl_jinchuangtie` (金創藥帖) - 🟢 已完成專屬水墨圖
+  - `cl_qimendunjia` (奇門遁甲) - 🟢 已完成專屬水墨圖
+  - `cl_yunchou` (運籌帷幄) - 🟢 已完成專屬水墨圖
+  - `cl_huacaijianyi` (華彩劍意) - 🟢 已完成專屬水墨圖
 
-### 🔴 借圖待補（8 張，共同牌 colorless 移植 - 待配額重置後生成）
-- `cl_hushenjue` (護身訣) ← 借 `lxy_jianqi`
-- `cl_qiaojin` (巧勁) ← 借 `zl_lingguang`
-- `cl_zhimingfu` (致盲符) ← 借 `anu_mihun`
-- `cl_poshi` (破式) ← 借 `lyr_juesha`
-- `cl_jinchuangtie` (金創藥帖) ← 借 `lxy_qiliao`
-- `cl_qimendunjia` (奇門遁甲) ← 借 `lxy_wanjian`
-- `cl_yunchou` (運籌帷幄) ← 借 `zl_lingxi`
-- `cl_huacaijianyi` (華彩劍意) ← 借 `lxy_jianshen`
+### 🔴 借圖待補（0 張）
+已全部完成。
 
 ---
 
