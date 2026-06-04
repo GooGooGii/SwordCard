@@ -1495,7 +1495,6 @@ func _test_potion_jincan_wang(characters: Array[CharacterData], enemy: EnemyData
 	_check(discard_pile_size >= unlocked_lv3.size(), "unlocked cards should be added to battle discard pile")
 	
 	main.battle = null
-	bc.free()
 	main.free()
 
 func _test_level_system(characters: Array[CharacterData]) -> void:
