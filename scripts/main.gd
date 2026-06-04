@@ -6719,10 +6719,12 @@ func _show_battle_relics_popup() -> void:
 		var scroll: ScrollContainer = ScrollContainer.new()
 		scroll.custom_minimum_size = Vector2(440, 420)
 		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 		box.add_child(scroll)
 		var list: VBoxContainer = VBoxContainer.new()
 		list.add_theme_constant_override("separation", 8)
 		list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		list.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		scroll.add_child(list)
 		for r: RelicData in run_state.relics:
 			list.add_child(_relic_popup_entry(r))
@@ -6782,10 +6784,12 @@ func _show_map_status_popup() -> void:
 		var scroll: ScrollContainer = ScrollContainer.new()
 		scroll.custom_minimum_size = Vector2(440, 320)
 		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 		box.add_child(scroll)
 		var list: VBoxContainer = VBoxContainer.new()
 		list.add_theme_constant_override("separation", 8)
 		list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		list.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		scroll.add_child(list)
 		for relic: RelicData in run_state.relics:
 			list.add_child(_relic_popup_entry(relic))
@@ -6796,9 +6800,11 @@ func _show_map_status_popup() -> void:
 
 func _relic_popup_entry(relic: RelicData) -> Control:
 	var entry: PanelContainer = PanelContainer.new()
+	entry.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var border: Color = _relic_rarity_color_for_popup(relic)
 	entry.add_theme_stylebox_override("panel", UIFactory.style_box(Color("111926", 0.65), border, 1, 8))
 	var row: HBoxContainer = HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_theme_constant_override("separation", 12)
 	entry.add_child(row)
 	var icon: RelicIcon = RelicIcon.new()
@@ -6807,15 +6813,18 @@ func _relic_popup_entry(relic: RelicData) -> Control:
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE  # popup 已顯示說明，不需要再開一層
 	row.add_child(icon)
 	var text_box: VBoxContainer = VBoxContainer.new()
+	text_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text_box.add_theme_constant_override("separation", 2)
 	row.add_child(text_box)
 	var name_label: Label = Label.new()
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	name_label.text = relic.display_name
 	name_label.add_theme_font_size_override("font_size", 16)
 	name_label.add_theme_color_override("font_color", border)
 	text_box.add_child(name_label)
 	var desc: Label = Label.new()
+	desc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	desc.text = relic.description
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc.add_theme_font_size_override("font_size", 13)

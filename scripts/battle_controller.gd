@@ -919,7 +919,7 @@ func _apply_stolen_item(item: Dictionary) -> void:
 				else:
 					add_log("【飛龍探雲手】偷取失敗（藥品資料遺失）。")
 			else:
-				add_log("【飛龍探雲手】藥格已滿，%s 無法攜帶。" % item.get("display_name", "藥品"))
+				add_log("【飛龍探雲手】藥格已滿，選擇是否替換「%s」。" % item.get("display_name", "藥品"))
 
 func _apply_card_play_passive(card: CardData) -> void:
 	if character == null:
