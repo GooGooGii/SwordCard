@@ -506,7 +506,7 @@ static func _wild_bee() -> EnemyData:
 	enemy.id = "wild_bee"
 	enemy.display_name = "十里坡野蜂"
 	enemy.max_hp = 48
-	enemy.portrait_path = "res://assets/art/enemies/toxic_centipede.png"  # 借圖：待補蜂群專屬
+	enemy.portrait_path = "res://assets/art/enemies/wild_bee.png"  # 專屬野蜂美術
 	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "螫刺 8", "effects": [{"kind": "damage", "amount": 8}]},
@@ -521,7 +521,7 @@ static func _cave_bat() -> EnemyData:
 	enemy.id = "cave_bat"
 	enemy.display_name = "噬血蝠"
 	enemy.max_hp = 58
-	enemy.portrait_path = "res://assets/art/enemies/fox_spirit.png"  # 借圖：待補蝙蝠專屬
+	enemy.portrait_path = "res://assets/art/enemies/cave_bat.png"  # 專屬蝙蝠美術
 	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "撲咬 13", "effects": [{"kind": "damage", "amount": 13}]},
@@ -536,7 +536,7 @@ static func _water_imp() -> EnemyData:
 	enemy.id = "water_imp"
 	enemy.display_name = "靈島水妖"
 	enemy.max_hp = 70
-	enemy.portrait_path = "res://assets/art/enemies/water_tentacle.png"  # 借圖：待補水妖專屬
+	enemy.portrait_path = "res://assets/art/enemies/water_imp.png"  # 專屬水妖美術
 	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "水箭 14", "effects": [{"kind": "damage", "amount": 14}]},
@@ -551,7 +551,7 @@ static func _skeleton_soldier() -> EnemyData:
 	enemy.id = "skeleton_soldier"
 	enemy.display_name = "塚中骷髏兵"
 	enemy.max_hp = 82
-	enemy.portrait_path = "res://assets/art/enemies/tower_ghost_soldier.png"  # 借圖：待補骷髏兵專屬
+	enemy.portrait_path = "res://assets/art/enemies/skeleton_soldier.png"  # 專屬骷髏兵美術
 	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "鏽刀劈 16", "effects": [{"kind": "damage", "amount": 16}]},
@@ -566,7 +566,7 @@ static func _grave_fire() -> EnemyData:
 	enemy.id = "grave_fire"
 	enemy.display_name = "塚中鬼火"
 	enemy.max_hp = 64
-	enemy.portrait_path = "res://assets/art/enemies/tower_wisp.png"  # 借圖：待補鬼火專屬
+	enemy.portrait_path = "res://assets/art/enemies/grave_fire.png"  # 專屬鬼火美術
 	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "幽焰 15 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 15}, {"kind": "poison", "amount": 2}]},
@@ -581,7 +581,7 @@ static func _rock_guardian() -> EnemyData:
 	enemy.id = "rock_guardian"
 	enemy.display_name = "試煉石靈"
 	enemy.max_hp = 100
-	enemy.portrait_path = "res://assets/art/enemies/tower_demon.png"  # 借圖：待補石靈專屬
+	enemy.portrait_path = "res://assets/art/enemies/rock_guardian.png"  # 專屬石靈美術
 	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "巨岩砸 19", "effects": [{"kind": "damage", "amount": 19}]},
@@ -596,7 +596,7 @@ static func _trial_swordshade() -> EnemyData:
 	enemy.id = "trial_swordshade"
 	enemy.display_name = "試煉劍靈"
 	enemy.max_hp = 86
-	enemy.portrait_path = "res://assets/art/enemies/sword_spirit.png"  # 借圖：待補試煉劍靈專屬
+	enemy.portrait_path = "res://assets/art/enemies/trial_swordshade.png"  # 專屬試煉劍靈美術
 	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "試煉劍芒 18", "effects": [{"kind": "damage", "amount": 18}]},
@@ -980,7 +980,7 @@ static func _zhenyu_mingwang() -> EnemyData:
 	enemy.id = "zhenyu_mingwang"
 	enemy.display_name = "鎮獄明王"
 	enemy.max_hp = 124
-	enemy.portrait_path = "res://assets/art/enemies/tower_demon.png"
+	enemy.portrait_path = "res://assets/art/enemies/zhenyu_mingwang.png"
 	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "明王怒喝 20 + 破綻 1", "effects": [{"kind": "damage", "amount": 20}, {"kind": "vulnerable", "amount": 1}]},
