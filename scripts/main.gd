@@ -6082,9 +6082,9 @@ func _deck_view_card(card: CardData, mode: String = "view", count: int = 1) -> C
 	var button: Button = _make_card_button(card, card.cost, Vector2(153, 287), true, visually_enabled)
 	button.disabled = not selectable
 	if mode == "remove":
-		button.pressed.connect(func(): remove_card_from_deck(card))
+		button.pressed.connect(func(): _show_remove_confirm_overlay(card, func(): remove_card_from_deck(card)))
 	elif mode == "shop_remove":
-		button.pressed.connect(func(): _shop_deck_remove(card))
+		button.pressed.connect(func(): _show_remove_confirm_overlay(card, func(): _shop_deck_remove(card)))
 	elif mode == "upgrade" and not card.upgraded:
 		# 點擊 → 開啟「原 vs 升級後」對照 overlay，使用者確認後才升級
 		button.pressed.connect(func(): _show_upgrade_confirm_overlay(card, func(): upgrade_card_in_deck(card)))
@@ -6240,6 +6240,53 @@ func _show_upgrade_confirm_overlay(card: CardData, on_confirm: Callable) -> void
 	cancel_btn.pressed.connect(_hide_card_preview)
 	btn_row.add_child(cancel_btn)
 	var confirm_btn: Button = _button("確認升級")
+	confirm_btn.pressed.connect(func() -> void:
+		_hide_card_preview()
+		on_confirm.call())
+	btn_row.add_child(confirm_btn)
+
+func _show_remove_confirm_overlay(card: CardData, on_confirm: Callable) -> void:
+	# 移除畫面點卡片時彈出：卡片預覽，下方確認/取消按鈕
+	_hide_card_preview()  # 清除任何先前的 overlay（重用 _card_preview_overlay 欄位）
+	var overlay: Control = Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.top_level = true
+	# 必須 > deck_view 的 1500
+	overlay.z_index = 1600
+	add_child(overlay)
+	_card_preview_overlay = overlay
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0, 0, 0, 0.55)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.add_child(backdrop)
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+	var col: VBoxContainer = VBoxContainer.new()
+	col.add_theme_constant_override("separation", 18)
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.add_child(col)
+	
+	var confirm_title: Label = UIFactory.card_label("是否確認將此卡牌從牌組中移除？", 22, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	col.add_child(confirm_title)
+	
+	var big: Button = _make_card_button(card, card.cost, Vector2(224, 418), true, true)
+	big.disabled = true
+	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(big)
+	
+	# 確認 / 取消
+	var btn_row: HBoxContainer = HBoxContainer.new()
+	btn_row.add_theme_constant_override("separation", 16)
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.add_child(btn_row)
+	var cancel_btn: Button = _button("取消")
+	cancel_btn.pressed.connect(_hide_card_preview)
+	btn_row.add_child(cancel_btn)
+	var confirm_btn: Button = _button("確認移除")
 	confirm_btn.pressed.connect(func() -> void:
 		_hide_card_preview()
 		on_confirm.call())
