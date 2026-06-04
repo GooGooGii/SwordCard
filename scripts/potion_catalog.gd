@@ -81,6 +81,111 @@ static func all() -> Array[Dictionary]:
 			"description": "回復 25 點生命並清除所有蠱毒。",
 			"effects": [{"kind": "heal", "amount": 25}, {"kind": "cure_poison"}]
 		},
+		{
+			"id": "shexiang_wan",
+			"display_name": "麝香丸",
+			"rarity": "common",
+			"description": "清除所有負面狀態。",
+			"effects": [{"kind": "cure_debuff"}]
+		},
+		{
+			"id": "xiongdan_jiu",
+			"display_name": "雄膽酒",
+			"rarity": "common",
+			"description": "本場戰鬥攻擊力 +2，但受到 1 層虛弱。",
+			"effects": [{"kind": "power", "amount": 2}, {"kind": "weak", "amount": 1}]
+		},
+		{
+			"id": "xuehai_dan",
+			"display_name": "血海丹",
+			"rarity": "common",
+			"description": "回復 8 點生命，並獲得 5 點護體。",
+			"effects": [{"kind": "heal", "amount": 8}, {"kind": "block", "amount": 5}]
+		},
+		{
+			"id": "tianshi_fu",
+			"display_name": "天師符",
+			"rarity": "common",
+			"description": "施加敵人 1 層破綻與 1 層虛弱。",
+			"effects": [{"kind": "vulnerable", "amount": 1}, {"kind": "weak", "amount": 1}]
+		},
+		{
+			"id": "jiedu_cao",
+			"display_name": "解毒草",
+			"rarity": "common",
+			"description": "清除所有蠱毒，並回復 3 點生命。",
+			"effects": [{"kind": "cure_poison"}, {"kind": "heal", "amount": 3}]
+		},
+		{
+			"id": "xiancha_san",
+			"display_name": "仙茶散",
+			"rarity": "uncommon",
+			"description": "抽 2 張牌。",
+			"effects": [{"kind": "draw", "amount": 2}]
+		},
+		{
+			"id": "lingzhi_dan",
+			"display_name": "靈芝丹",
+			"rarity": "uncommon",
+			"description": "本回合靈力 +1，並抽 1 張牌。",
+			"effects": [{"kind": "energy", "amount": 1}, {"kind": "draw", "amount": 1}]
+		},
+		{
+			"id": "fumo_xiang",
+			"display_name": "伏魔香",
+			"rarity": "uncommon",
+			"description": "施加所有敵人 2 層虛弱。",
+			"effects": [{"kind": "weak_all", "amount": 2}]
+		},
+		{
+			"id": "shanhua_mijiu",
+			"display_name": "山花蜜酒",
+			"rarity": "uncommon",
+			"description": "全隊回復 10 點生命。",
+			"effects": [{"kind": "heal_party", "amount": 10}]
+		},
+		{
+			"id": "duhuo_dan",
+			"display_name": "毒活丸",
+			"rarity": "uncommon",
+			"description": "施加所有敵人 3 層蠱毒。",
+			"effects": [{"kind": "poison_all", "amount": 3}]
+		},
+		{
+			"id": "jiujie_changpu",
+			"display_name": "九節菖蒲",
+			"rarity": "rare",
+			"description": "救回第一個倒下的後排同伴（回復 15 點生命），若無人倒下則改為自己回復 15 點生命。",
+			"effects": [{"kind": "revive", "amount": 15}]
+		},
+		{
+			"id": "longxian_shi",
+			"display_name": "龍涎石",
+			"rarity": "rare",
+			"description": "獲得 25 點護體。",
+			"effects": [{"kind": "block", "amount": 25}]
+		},
+		{
+			"id": "shenxian_cha",
+			"display_name": "神仙茶",
+			"rarity": "rare",
+			"description": "本回合靈力 +3。",
+			"effects": [{"kind": "energy", "amount": 3}]
+		},
+		{
+			"id": "zijin_dan",
+			"display_name": "紫金丹",
+			"rarity": "rare",
+			"description": "全隊回復 20 點生命，並清除所有負面狀態。",
+			"effects": [{"kind": "heal_party", "amount": 20}, {"kind": "cure_debuff"}]
+		},
+		{
+			"id": "nvwa_yulu",
+			"display_name": "女媧玉露",
+			"rarity": "rare",
+			"description": "回復 30 點生命，並提升本場攻擊力 +3。",
+			"effects": [{"kind": "heal", "amount": 30}, {"kind": "power", "amount": 3}]
+		},
 	]
 
 static func by_id(id: String) -> Dictionary:
