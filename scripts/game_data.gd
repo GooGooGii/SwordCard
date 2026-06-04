@@ -49,11 +49,14 @@ static func colorless_card_by_id(id: String) -> CardData:
 static func enemies() -> Array[EnemyData]:
 	return [_bandit(), _beast(), _gu_cultist(), _sword_spirit(), _fox_spirit(), _serpent_demon(),
 		_zombie_soldier(), _toxic_centipede(), _tower_demon(), _tower_ghost_soldier(),
-		_baiyue_guard(), _ancient_evil_spirit()]
+		_baiyue_guard(), _ancient_evil_spirit(),
+		_wild_bee(), _cave_bat(), _water_imp(), _skeleton_soldier(), _grave_fire(),
+		_rock_guardian(), _trial_swordshade()]
 
 static func bosses() -> Array[EnemyData]:
 	return [_moon_worshipper(), _centipede_lord(), _witch_queen(),
-		_red_eye_demon(), _zombie_general(), _baiyue_lord()]
+		_red_eye_demon(), _zombie_general(), _baiyue_lord(),
+		_water_serpent(), _tomb_general(), _zhenyu_mingwang()]
 
 # Multi-Enemy Mode：召喚物（minions）— 由 boss 召喚出來的弱化版敵人
 static func minions() -> Array[EnemyData]:
@@ -74,22 +77,29 @@ static func enemy_by_id(id: String) -> EnemyData:
 			return m
 	return null
 
+# 八幕（PAL1 劇情順序）：餘杭 → 仙靈島 → 蘇州 → 將軍塚 → 試煉窟 → 鎖妖塔 → 苗疆 → 拜月
 static func enemies_for_act(act: int) -> Array[EnemyData]:
 	match act:
-		1: return [_bandit(), _beast()]
-		2: return [_sword_spirit(), _fox_spirit(), _zombie_soldier()]
-		3: return [_gu_cultist(), _serpent_demon(), _toxic_centipede()]
-		4: return [_tower_demon(), _tower_ghost_soldier()]
-		5: return [_moon_worshipper(), _baiyue_guard(), _ancient_evil_spirit()]
+		1: return [_bandit(), _beast(), _wild_bee()]                          # 餘杭山間
+		2: return [_serpent_demon(), _fox_spirit(), _sword_spirit(), _cave_bat(), _water_imp()] # 仙靈島
+		3: return [_sword_spirit(), _fox_spirit(), _zombie_soldier()]         # 蘇州城
+		4: return [_zombie_soldier(), _ancient_evil_spirit(), _skeleton_soldier(), _grave_fire()] # 將軍塚
+		5: return [_tower_demon(), _tower_ghost_soldier(), _rock_guardian(), _trial_swordshade()] # 試煉窟
+		6: return [_tower_demon(), _tower_ghost_soldier(), _ancient_evil_spirit()] # 鎖妖塔
+		7: return [_gu_cultist(), _serpent_demon(), _toxic_centipede()]       # 苗疆蠱土
+		8: return [_moon_worshipper(), _baiyue_guard(), _ancient_evil_spirit()] # 拜月決戰
 	return [_bandit(), _beast()]
 
 static func boss_for_act(act: int) -> EnemyData:
 	match act:
-		1: return _red_eye_demon()
-		2: return _zombie_general()
-		3: return _centipede_lord()
-		4: return _witch_queen()
-		5: return _baiyue_lord()
+		1: return _red_eye_demon()      # 餘杭山間：赤眼山魈
+		2: return _water_serpent()      # 仙靈島：水靈蛇妖
+		3: return _zombie_general()     # 蘇州城：殭屍大帥
+		4: return _tomb_general()       # 將軍塚：塚中亡將
+		5: return _witch_queen()        # 試煉窟：山靈巫后
+		6: return _zhenyu_mingwang()    # 鎖妖塔：鎮獄明王（正史）
+		7: return _centipede_lord()     # 苗疆蠱土：蜈蚣大王
+		8: return _baiyue_lord()        # 拜月決戰：拜月教主 → 水魔獸（phase 2）
 	return _red_eye_demon()
 
 static func _li_xiaoyao() -> CharacterData:
@@ -489,6 +499,112 @@ static func _beast() -> EnemyData:
 	]
 	return enemy
 
+# ── PAL1 小怪補充（八幕擴充）：借用近似肖像，專屬美術見 ART_TODO「六、B」──
+# 餘杭/十里坡：野蜂（PAL1 十里坡名怪「蜜蜂」）
+static func _wild_bee() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "wild_bee"
+	enemy.display_name = "十里坡野蜂"
+	enemy.max_hp = 48
+	enemy.portrait_path = "res://assets/art/enemies/toxic_centipede.png"  # 借圖：待補蜂群專屬
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "螫刺 8", "effects": [{"kind": "damage", "amount": 8}]},
+		{"intent": "亂舞 6 + 虛弱 1", "effects": [{"kind": "damage", "amount": 6}, {"kind": "weak", "amount": 1}]},
+		{"intent": "振翅 7", "effects": [{"kind": "block", "amount": 7}]}
+	]
+	return enemy
+
+# 仙靈島：洞窟噬血蝠（PAL1 仙靈島/洞窟蝙蝠）
+static func _cave_bat() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "cave_bat"
+	enemy.display_name = "噬血蝠"
+	enemy.max_hp = 58
+	enemy.portrait_path = "res://assets/art/enemies/fox_spirit.png"  # 借圖：待補蝙蝠專屬
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "撲咬 13", "effects": [{"kind": "damage", "amount": 13}]},
+		{"intent": "吸血 10", "effects": [{"kind": "damage", "amount": 10}]},
+		{"intent": "亂飛閃避 11", "effects": [{"kind": "block", "amount": 11}]}
+	]
+	return enemy
+
+# 仙靈島：水妖（PAL1 仙靈島水族小妖）
+static func _water_imp() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "water_imp"
+	enemy.display_name = "靈島水妖"
+	enemy.max_hp = 70
+	enemy.portrait_path = "res://assets/art/enemies/water_tentacle.png"  # 借圖：待補水妖專屬
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "水箭 14", "effects": [{"kind": "damage", "amount": 14}]},
+		{"intent": "纏縛 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]},
+		{"intent": "水幕護身 13", "effects": [{"kind": "block", "amount": 13}]}
+	]
+	return enemy
+
+# 將軍塚：骷髏兵（PAL1 經典不死系小怪）
+static func _skeleton_soldier() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "skeleton_soldier"
+	enemy.display_name = "塚中骷髏兵"
+	enemy.max_hp = 82
+	enemy.portrait_path = "res://assets/art/enemies/tower_ghost_soldier.png"  # 借圖：待補骷髏兵專屬
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "鏽刀劈 16", "effects": [{"kind": "damage", "amount": 16}]},
+		{"intent": "白骨盾 14", "effects": [{"kind": "block", "amount": 14}]},
+		{"intent": "亂骨突刺 11 + 破綻 1", "effects": [{"kind": "damage", "amount": 11}, {"kind": "vulnerable", "amount": 1}]}
+	]
+	return enemy
+
+# 將軍塚：塚中鬼火（PAL1「鬼火」）
+static func _grave_fire() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "grave_fire"
+	enemy.display_name = "塚中鬼火"
+	enemy.max_hp = 64
+	enemy.portrait_path = "res://assets/art/enemies/tower_wisp.png"  # 借圖：待補鬼火專屬
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "幽焰 15 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 15}, {"kind": "poison", "amount": 2}]},
+		{"intent": "鬼火縈繞 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]},
+		{"intent": "飄忽不定 12", "effects": [{"kind": "block", "amount": 12}]}
+	]
+	return enemy
+
+# 試煉窟：石靈守衛（PAL1「石頭怪」，高護體）
+static func _rock_guardian() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "rock_guardian"
+	enemy.display_name = "試煉石靈"
+	enemy.max_hp = 100
+	enemy.portrait_path = "res://assets/art/enemies/tower_demon.png"  # 借圖：待補石靈專屬
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "巨岩砸 19", "effects": [{"kind": "damage", "amount": 19}]},
+		{"intent": "岩甲 22", "effects": [{"kind": "block", "amount": 22}]},
+		{"intent": "崩石 14 + 破綻 1", "effects": [{"kind": "damage", "amount": 14}, {"kind": "vulnerable", "amount": 1}]}
+	]
+	return enemy
+
+# 試煉窟：試煉劍靈（PAL1 試煉窟守護劍意）
+static func _trial_swordshade() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "trial_swordshade"
+	enemy.display_name = "試煉劍靈"
+	enemy.max_hp = 86
+	enemy.portrait_path = "res://assets/art/enemies/sword_spirit.png"  # 借圖：待補試煉劍靈專屬
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "試煉劍芒 18", "effects": [{"kind": "damage", "amount": 18}]},
+		{"intent": "御劍守勢 15", "effects": [{"kind": "block", "amount": 15}]},
+		{"intent": "破式斬 13 + 虛弱 1", "effects": [{"kind": "damage", "amount": 13}, {"kind": "weak", "amount": 1}]}
+	]
+	return enemy
+
 static func _gu_cultist() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "gu_cultist"
@@ -811,6 +927,74 @@ static func _baiyue_lord() -> EnemyData:
 		{"intent": "滅世巨浪 37", "effects": [{"kind": "damage", "amount": 37}]}
 	]
 	enemy.summon_pool = ["water_tentacle"]
+	return enemy
+
+# 仙靈島 boss（第二幕）：水月宮鎮守的水靈蛇妖，呼應趙靈兒人蛇/女媧水族主題。
+static func _water_serpent() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "water_serpent"
+	enemy.display_name = "水靈蛇妖"
+	enemy.max_hp = 96
+	enemy.portrait_path = "res://assets/art/enemies/serpent_demon.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "水蛇纏咬 15 + 蠱毒 3", "effects": [{"kind": "damage", "amount": 15}, {"kind": "poison", "amount": 3}]},
+		{"intent": "靈泉護鱗 16", "effects": [{"kind": "block", "amount": 16}]},
+		{"intent": "迷霧吐息 虛弱 2 + 破綻 1", "effects": [{"kind": "weak", "amount": 2}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "蛟尾橫掃 22", "effects": [{"kind": "damage", "amount": 22}]}
+	]
+	enemy.phase_2_actions = [
+		{"intent": "水龍捲 27 + 虛弱 1", "effects": [{"kind": "damage", "amount": 27}, {"kind": "weak", "amount": 1}]},
+		{"intent": "靈島湧泉 蠱毒 6 + 破綻 2", "effects": [{"kind": "poison", "amount": 6}, {"kind": "vulnerable", "amount": 2}]},
+		{"intent": "盤踞護體 22", "effects": [{"kind": "block", "amount": 22}]},
+		{"intent": "怒濤吞噬 30", "effects": [{"kind": "damage", "amount": 30}]}
+	]
+	return enemy
+
+# 將軍塚 boss（第四幕）：塚中沉睡的亡將魂魄，呼應 PAL1 將軍塚試煉。
+static func _tomb_general() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "tomb_general"
+	enemy.display_name = "塚中亡將"
+	enemy.max_hp = 110
+	enemy.portrait_path = "res://assets/art/enemies/ancient_evil_spirit.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "亡將揮戈 18", "effects": [{"kind": "damage", "amount": 18}]},
+		{"intent": "怨魂哀嚎 虛弱 2 + 破綻 1", "effects": [{"kind": "weak", "amount": 2}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "塚甲不朽 20", "effects": [{"kind": "block", "amount": 20}]},
+		{"intent": "陰兵突陣 14 + 14", "effects": [{"kind": "damage", "amount": 14}, {"kind": "damage", "amount": 14}]}
+	]
+	enemy.phase_2_actions = [
+		{"intent": "戰魂暴怒 28 + 虛弱 1", "effects": [{"kind": "damage", "amount": 28}, {"kind": "weak", "amount": 1}]},
+		{"intent": "黃泉索命 22 + 破綻 2", "effects": [{"kind": "damage", "amount": 22}, {"kind": "vulnerable", "amount": 2}]},
+		{"intent": "召喚殭屍奴", "effects": [{"kind": "summon", "count": 1}]},
+		{"intent": "塚域崩裂 34", "effects": [{"kind": "damage", "amount": 34}]}
+	]
+	enemy.summon_pool = ["zombie_thrall"]
+	return enemy
+
+# 鎖妖塔 boss（第六幕）：PAL1 正史鎮獄明王，鎮守鎖妖塔、揭露靈兒人蛇身世之地。
+static func _zhenyu_mingwang() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "zhenyu_mingwang"
+	enemy.display_name = "鎮獄明王"
+	enemy.max_hp = 124
+	enemy.portrait_path = "res://assets/art/enemies/tower_demon.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "明王怒喝 20 + 破綻 1", "effects": [{"kind": "damage", "amount": 20}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "鎖妖鐵鏈 16 + 虛弱 2", "effects": [{"kind": "damage", "amount": 16}, {"kind": "weak", "amount": 2}]},
+		{"intent": "金剛法相 22", "effects": [{"kind": "block", "amount": 22}]},
+		{"intent": "降魔杵 28", "effects": [{"kind": "damage", "amount": 28}]}
+	]
+	enemy.phase_2_actions = [
+		{"intent": "明王金身 26", "effects": [{"kind": "block", "amount": 26}]},
+		{"intent": "鎮獄業火 32 + 破綻 2", "effects": [{"kind": "damage", "amount": 32}, {"kind": "vulnerable", "amount": 2}]},
+		{"intent": "召喚鎖妖塔殘魂", "effects": [{"kind": "summon", "count": 1}]},
+		{"intent": "怒目摧魂 38", "effects": [{"kind": "damage", "amount": 38}]}
+	]
+	enemy.summon_pool = ["tower_wisp"]
 	return enemy
 
 # Multi-Enemy Mode：召喚物 — 水妖觸手（拜月教主 phase 2 召出）

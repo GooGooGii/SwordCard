@@ -3,7 +3,8 @@ extends RefCounted
 
 const EVENT_VARIANTS: Array[String] = ["shrine", "spring", "talisman_cache", "treasure_chest", "ancestor_relic", "wandering_sage", "moonlit_pool", "broken_temple", "yokai_pact", "forgotten_altar", "ancient_battlefield", "alchemy_furnace", "ghost_forest", "immortal_ruins", "spirit_clan_ruins", "baiyue_altar", "tavern_acquaintance", "sword_tomb", "miao_healer", "shilipo_sword_god", "drunk_swordsman", "yinlong_cave", "yangzhou_officer", "xianling_shrine", "lingmiao", "flower_thief", "flower_spirit",
 	# PAL1 名場面（角色情感深度）
-	"jianling_whisper", "aqi_reunion", "tangyu_sparring", "jiang_waner_grief", "caiyi_butterfly"]
+	"jianling_whisper", "aqi_reunion", "tangyu_sparring", "jiang_waner_grief", "caiyi_butterfly",
+	"bijian_zhaoqin"]
 const FEMALE_ONLY_VARIANTS: Array[String] = ["flower_thief"]
 const MALE_ONLY_VARIANTS: Array[String] = ["flower_spirit"]
 const FEMALE_CHARACTER_IDS: Array[String] = ["zhao_linger", "lin_yueru", "anu"]
@@ -16,6 +17,9 @@ const ACT_ENCOUNTERS: Dictionary = {
 	3: [{"count": 1, "weight": 2}, {"count": 2, "weight": 3}],
 	4: [{"count": 1, "weight": 1}, {"count": 2, "weight": 3}, {"count": 3, "weight": 1}],
 	5: [{"count": 1, "weight": 1}, {"count": 2, "weight": 2}, {"count": 3, "weight": 2}],
+	6: [{"count": 1, "weight": 1}, {"count": 2, "weight": 2}, {"count": 3, "weight": 3}],
+	7: [{"count": 1, "weight": 1}, {"count": 2, "weight": 2}, {"count": 3, "weight": 3}],
+	8: [{"count": 2, "weight": 2}, {"count": 3, "weight": 3}],
 }
 const MIN_NORMAL_ROW_COUNT: int = 9
 const MAX_NORMAL_ROW_COUNT: int = 11

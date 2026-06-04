@@ -1,6 +1,6 @@
 # 卡圖待補清單
 
-最後更新：2026-06-04（已補齊全部 27 張借圖卡牌的專屬插畫）
+最後更新：2026-06-04（八幕擴充：新增 3 張戰鬥背景與 3 個 boss 肖像待補，見「六、八幕擴充美術」）
 
 ---
 
@@ -179,7 +179,46 @@
 
 ---
 
+## 六、八幕擴充美術（2026-06，🔴 待補）
+
+五幕擴充為八幕（依 PAL1 正史順序：餘杭 → 仙靈島 → 蘇州 → 將軍塚 → 試煉窟 → 鎖妖塔 → 苗疆 → 拜月）。
+既有 5 張背景已重新對應到正確幕號，**3 個新場景缺專屬戰鬥背景**，目前 fallback 通用底 `battle_bg.png`。
+
+### A. 戰鬥背景（3 張）🔴
+| 檔名 | 場景 | 風格建議 | 狀態 |
+|---|---|---|---|
+| `assets/art/battle_bg_act_2.png` | 仙靈島 / 水月宮 | 雲霧繚繞的水中仙島、宮闕倒影、靈氣氤氳，水墨青碧調 | 🔴 待補（暫用通用底）|
+| `assets/art/battle_bg_act_4.png` | 將軍塚 | 荒塚石碑、陰風殘旗、磷火幽光，蕭瑟灰褐調 | 🔴 待補（暫用通用底）|
+| `assets/art/battle_bg_act_5.png` | 試煉窟 | 地底洞窟、五靈法陣石壁、幽光石筍，神秘幽藍調 | 🔴 待補（暫用通用底）|
+
+> 既有背景對應：act1 餘杭 / act3 蘇州 / act6 鎖妖塔 / act7 苗疆 / act8 拜月（皆有專屬美術）。
+> 補圖後執行 `godot --headless --path . --import` 重匯入即生效，程式已 `clamp(act, 1, 8)`。
+
+### B. 新 Boss 肖像（3 個，目前借圖）🟡
+新增 3 個 boss 暫借既有敵人肖像，可後續補專屬圖（按 `portrait_path` 路徑新增即生效）：
+
+| Boss ID | 顯示名 | 目前借用 | 風格建議 |
+|---|---|---|---|
+| `water_serpent` | 水靈蛇妖（仙靈島 boss）| `serpent_demon.png` | 青碧水靈巨蛇，靈島水族妖氣，呼應趙靈兒人蛇主題 |
+| `tomb_general` | 塚中亡將（將軍塚 boss）| `ancient_evil_spirit.png` | 殘甲執戈的亡將魂魄，陰森戰魂氣息 |
+| `zhenyu_mingwang` | 鎮獄明王（鎖妖塔 boss・正史）| `tower_demon.png` | 金剛怒目的鎮獄明王法相，鎖鏈降魔杵，莊嚴而威壓 |
+
+### C. 新增 PAL1 小怪肖像（7 個，目前借圖）🟡
+八幕擴充為各幕補充的 PAL1 風格小怪，暫借近似肖像，路徑 `assets/art/enemies/<id>.png` 補上即生效：
+
+| 敵人 ID | 顯示名 | 出沒幕 | 目前借用 | PAL1 出處 / 風格建議 |
+|---|---|---|---|---|
+| `wild_bee` | 十里坡野蜂 | 1 餘杭山間 | `toxic_centipede.png` | PAL1 十里坡名怪「蜜蜂」；成群黃黑野蜂，輕快靈動 |
+| `cave_bat` | 噬血蝠 | 2 仙靈島 | `fox_spirit.png` | 仙靈島洞窟蝙蝠；張翼噬血、幽暗洞穴感 |
+| `water_imp` | 靈島水妖 | 2 仙靈島 | `water_tentacle.png` | 仙靈島水族小妖；半透明水靈、青碧水氣 |
+| `skeleton_soldier` | 塚中骷髏兵 | 4 將軍塚 | `tower_ghost_soldier.png` | PAL1 經典不死系；殘甲白骨、執鏽刀 |
+| `grave_fire` | 塚中鬼火 | 4 將軍塚 | `tower_wisp.png` | PAL1「鬼火」；飄忽幽綠磷火、無實體 |
+| `rock_guardian` | 試煉石靈 | 5 試煉窟 | `tower_demon.png` | PAL1「石頭怪」；岩石巨軀、厚重護甲感 |
+| `trial_swordshade` | 試煉劍靈 | 5 試煉窟 | `sword_spirit.png` | 試煉窟守護劍意；半透明御劍虛影 |
+
+---
+
 ## 補圖規格
 
-- 格式：PNG，存於 `assets/art/cards/<id>.png`
+- 格式：PNG，存於 `assets/art/cards/<id>.png`（卡圖）或 `assets/art/<檔名>.png`（背景）
 - 完成後補 `.import` 配置（`godot --headless --path . --import`）

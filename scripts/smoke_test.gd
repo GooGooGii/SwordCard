@@ -877,7 +877,7 @@ func _test_map_seed_determinism(enemies: Array[EnemyData], bosses: Array[EnemyDa
 
 func _test_map_encounter_groups(enemies: Array[EnemyData], bosses: Array[EnemyData]) -> void:
 	# 每幕地圖 battle 節點都要有 "enemies" 陣列（非空）；boss 節點仍用 "enemy"
-	for act: int in range(1, 6):
+	for act: int in range(1, 9):
 		seed(act * 31337)
 		var choices: Array[Array] = MapGenerator.generate(enemies, bosses, [], act)
 		var battle_count: int = 0
@@ -1029,19 +1029,20 @@ const BALANCE_BASELINES_LEVELED: Dictionary = {
 	# Lv10 vs 蜈蚣大王（HP 108）：上調後 random AI 限時內較難穩殺 → 67-83%
 	# Lv15 vs 山靈巫后（HP 92）：仍接近全 100%
 	# Lv20 vs 拜月教主（HP 136）：67-90%，最終 boss 壓力提升
-	# 2026-06 難度收斂後重測（敵人傷害 +15%）：Lv10/Lv20 對應 boss 勝率再下修。
-	"li_xiaoyao":  {5: 100, 10: 40,  15: 90,  20: 47},
-	"zhao_linger": {5: 100, 10: 40,  15: 93,  20: 53},
-	"lin_yueru":   {5: 100, 10: 50,  15: 100, 20: 87},
-	"anu":         {5: 100, 10: 87,  15: 100, 20: 93},
+	# 2026-06 八幕擴充後重測：LEVEL_TO_ACT 改對 act 2/4/6/8（水靈蛇妖 / 塚中亡將 / 鎮獄明王 / 拜月教主）。
+	# 故意調整：因 boss-per-act 重新配置，Lv10 改打塚中亡將（較蜈蚣大王易），勝率上修。
+	"li_xiaoyao":  {5: 100, 10: 87,  15: 97,  20: 50},
+	"zhao_linger": {5: 100, 10: 90,  15: 83,  20: 53},
+	"lin_yueru":   {5: 100, 10: 100, 15: 100, 20: 87},
+	"anu":         {5: 100, 10: 100, 15: 100, 20: 93},
 }
 
-# Lv → act 對應
+# Lv → act 對應（8 幕版：取樣早/中/中後/終幕代表 boss，含正史鎮獄明王與最終水魔獸）
 const LEVEL_TO_ACT: Dictionary = {
-	5: 2,
-	10: 3,
-	15: 4,
-	20: 5,
+	5: 2,   # 仙靈島：水靈蛇妖
+	10: 4,  # 將軍塚：塚中亡將
+	15: 6,  # 鎖妖塔：鎮獄明王（正史）
+	20: 8,  # 拜月決戰：拜月教主 → 水魔獸
 }
 
 func _test_balance_regression(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
@@ -1364,10 +1365,11 @@ func _test_potion_replacement_logic(characters: Array[CharacterData]) -> void:
 	
 	var new_potion: Dictionary = all_potions[3].duplicate()
 	
-	var done_called: bool = false
+	# 注意：GDScript lambda 以「值」捕獲 local 變數，故用 Array 容器讓回呼能寫回外層
+	var done_called: Array = [false]
 	var on_done = func() -> void:
-		done_called = true
-		
+		done_called[0] = true
+
 	main._show_potion_replacement_overlay(new_potion, on_done)
 	
 	# Verify overlay exists
@@ -1384,13 +1386,13 @@ func _test_potion_replacement_logic(characters: Array[CharacterData]) -> void:
 	replace_btn.pressed.emit()
 	
 	# Verify replacement
-	_check(done_called, "on_done should be called")
+	_check(done_called[0], "on_done should be called")
 	_check(state.potions.size() == 3, "should keep 3 potions")
 	_check(state.potions[0]["id"] == new_potion["id"], "first potion replaced")
 	_check(main._card_preview_overlay == null, "overlay should be hidden")
 	
 	# Test discard
-	done_called = false
+	done_called[0] = false
 	main._show_potion_replacement_overlay(new_potion, on_done)
 	var col_container_disc = main._card_preview_overlay.get_child(1).get_child(0)
 	var discard_btn = col_container_disc.get_child(4) as Button
@@ -1398,7 +1400,7 @@ func _test_potion_replacement_logic(characters: Array[CharacterData]) -> void:
 	# Simulate discard click
 	discard_btn.pressed.emit()
 	
-	_check(done_called, "on_done should be called on discard")
+	_check(done_called[0], "on_done should be called on discard")
 	_check(state.potions[0]["id"] == new_potion["id"], "replaces should still be there")
 	_check(main._card_preview_overlay == null, "overlay should be freed")
 	

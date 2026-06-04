@@ -3274,6 +3274,127 @@ const VARIANTS: Dictionary = {
 			},
 		},
 	},
+	# PAL1 名場面：蘇州城林家比武招親擂台。林天南為女兒林月如招親，逍遙誤上擂台勝月如。
+	"bijian_zhaoqin": {
+		"title": "比武招親",
+		"flavor": "蘇州城最熱鬧的街口搭起了高高的擂台，紅綢招展。台下人聲鼎沸——南武林盟主林天南為掌上明珠林月如擺下比武招親之局，台上紅衣女子按劍而立，神情睥睨，至今無一人能在她劍下走過十招。",
+		"character_flavors": {
+			"li_xiaoyao": "逍遙本是被人群推搡著擠上前，誰知腳下一絆，竟一頭栽上了擂台。台上紅衣女子冷冷拔劍：「既上了台，便接招吧！」逍遙叫苦不迭——他根本沒想招親，可這劍已經刺到了眼前。",
+			"lin_yueru": "月如立在自家擺的擂台上，看著台下那群眼冒紅光、卻沒一個入得了眼的男子，只覺索然無味。父親要她招親，她偏要打得這些人落花流水——她林月如的夫君，得先勝得了她的劍。",
+			"zhao_linger": "靈兒擠在人群裡看著台上颯爽的紅衣女子，眼裡滿是好奇。這般明媚張揚的女子，是她在仙靈島從未見過的。",
+			"anu": "阿奴對招親的熱鬧沒什麼興致，倒是台上那女子的劍法讓她多看了兩眼——快、狠、漂亮，是個真正會打的人。",
+		},
+		"heal": 0, "gain_cost": 6, "power": 2, "power_label": "較量",
+		"observe_text": "你在台下細看那紅衣女子的劍法。她出手凌厲卻不失章法，是名門正派的根基，招式間偶爾露出的嬌縱與不耐，又透著大小姐的脾性。這是個高傲卻磊落的對手——勝她不能靠陰招，只能靠真本事。",
+		"observe_effects": [{"kind": "power", "amount": 1}, {"kind": "heal", "amount": 3}],
+		"choices": ["power", "gain_card", "observe", "leave"],
+		"outcomes": {
+			"power": "你躍上擂台與紅衣女子交手。她的劍快而剛烈，逼得你全力應對，一場酣鬥下來雖未分高下，你的劍意卻在這勢均力敵的較量中精進了幾分。",
+			"gain_card": "你與台上女子鬥了數十回合，她忽然收劍而笑：「你這路數有點意思。」言罷將自家一式劍法拆解與你看——你竟在這場比武裡，悟得了一招新的劍術。",
+		},
+		"tree": {
+			"root": {
+				"prompt": "紅綢招展的招親擂台上，紅衣女子按劍睥睨，台下無人能在她劍下走過十招。「還有誰要上來？」她揚聲問道。",
+				"choices": [
+					{
+						"id": "challenge",
+						"label": "躍上擂台應戰",
+						"kind_hint": "battle",
+						"next": "node_duel",
+					},
+					{
+						"id": "watch_learn",
+						"label": "台下觀其劍法",
+						"kind_hint": "reward",
+						"requires": {"observe_token": true},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "power", "amount": 1},
+								{"kind": "gain_card_pool", "pool": "uncommon"},
+							],
+							"log": "你站在台下，把那女子的每一招都看進眼裡。名門劍法的章法在你心中漸漸清晰——不必上台，你也偷學了一手。",
+						},
+					},
+					{
+						"id": "lxy_stumble",
+						"label": "（李逍遙）被人群一推，誤上擂台",
+						"kind_hint": "reward",
+						"requires": {"character": ["li_xiaoyao"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "permanent_power", "amount": 2},
+								{"kind": "max_hp", "amount": 3},
+								{"kind": "gain_card_pool", "pool": "character"},
+							],
+							"log": "逍遙腳下一絆栽上擂台，慌亂中竟以一招歪打正著的御劍術盪開了月如的劍，台下哄然叫好。月如又驚又惱：「你叫什麼名字？」這一誤打誤撞的勝負，結下了一段啼笑皆非的緣。",
+						},
+					},
+					{
+						"id": "lyr_on_stage",
+						"label": "（林月如）正是台上之人，痛快打一場",
+						"kind_hint": "reward",
+						"requires": {"character": ["lin_yueru"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "permanent_power", "amount": 2},
+								{"kind": "upgrade_random"},
+							],
+							"log": "月如把台下那群庸手一一打落擂台，劍勢酣暢淋漓。父親要她招親，她偏要證明：能配得上她的，唯有勝得了她劍的人。一場盡興的廝殺，讓她的劍法又利了三分。",
+						},
+					},
+					{
+						"id": "leave",
+						"label": "看個熱鬧便走",
+						"kind_hint": "neutral",
+						"outcome": {"kind": "neutral", "effects": [], "log": "你在台下看了一陣熱鬧，搖頭笑了笑，擠出人群繼續趕路。"},
+					},
+				],
+			},
+			"nodes": {
+				"node_duel": {
+					"prompt": "你躍上擂台，紅衣女子眼睛一亮：「總算來個像樣的。」她挽了個劍花，當即攻來。",
+					"choices": [
+						{
+							"id": "fight_fair",
+							"label": "正面接下她的劍",
+							"kind_hint": "battle",
+							"outcome": {
+								"kind": "battle",
+								"battle": {
+									"enemy_id": "sword_spirit",
+									"enemy_hp_mult": 0.8,
+									"victory_effects": [
+										{"kind": "gain_card_pool", "pool": "rare"},
+										{"kind": "permanent_power", "amount": 2},
+									],
+									"defeat_effects": [
+										{"kind": "damage", "amount": 8},
+									],
+								},
+								"log": "她的劍又快又烈，每一招都不留情面。你提起全副本事——這是場真刀真槍的較量，輸贏全看劍上見真章。",
+							},
+						},
+						{
+							"id": "yield_gracefully",
+							"label": "點到為止，抱拳認輸",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "power", "amount": 1},
+									{"kind": "heal", "amount": 4},
+								],
+								"log": "鬥到酣處，你忽然收劍抱拳：「姑娘劍法高明，在下甘拜下風。」她一愣，旋即收劍冷哼，眼神裡卻多了一分認可。這一場切磋，彼此都有所得。",
+							},
+						},
+					],
+				},
+			},
+		},
+	},
 	# PAL1 名場面：彩依（蝶妖）為救書生劉晉元，散盡千年道行的「蝶戀」典故。
 	# 毒娘子（蜘蛛精）在正史由李逍遙、林月如所斬，此處作 callback 而非開戰。
 	"caiyi_butterfly": {

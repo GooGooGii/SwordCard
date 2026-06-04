@@ -557,7 +557,7 @@ func _battle_background_path() -> String:
 	var fallback_path: String = "res://assets/art/battle_bg.png"
 	if run_state == null:
 		return fallback_path
-	var act_index: int = clamp(int(run_state.act), 1, 5)
+	var act_index: int = clamp(int(run_state.act), 1, 8)
 	var act_path: String = "res://assets/art/battle_bg_act_%d.png" % act_index
 	if ResourceLoader.exists(act_path):
 		return act_path
@@ -3687,7 +3687,7 @@ func _complete_battle_victory() -> void:
 				_boss_card_reward = true
 				_after_card_reward = func() -> void:
 					run_state.encounter_index = run_state.encounter_index + 1
-					if run_state.act < 5:
+					if run_state.act < 8:
 						show_act_complete()
 					else:
 						show_result(true)
@@ -3708,7 +3708,7 @@ func _complete_battle_victory() -> void:
 	var proceed_after_potion = func() -> void:
 		run_state.encounter_index = run_state.encounter_index + 1
 		if run_state.encounter_index >= run_state.encounter_choices.size():
-			if run_state.act < 5:
+			if run_state.act < 8:
 				show_act_complete()
 			else:
 				show_result(true)
@@ -5698,7 +5698,7 @@ func _shop_potion_view(item: Dictionary) -> Control:
 	var full: bool = run_state.potions.size() >= RunState.MAX_POTION_SLOTS
 	var is_sold: bool = bool(item.get("sold", false))
 	var can_buy: bool = run_state.gold >= price and not is_sold
-	var rarity_col: Color = PotionCatalog.rarity_col(potion) if PotionCatalog.has_method("rarity_col") else PotionCatalog.rarity_color(potion)
+	var rarity_col: Color = PotionCatalog.rarity_color(potion)
 	
 	var panel: PanelContainer = UIFactory.make_panel()
 	panel.custom_minimum_size = Vector2(170, 250)
@@ -6138,7 +6138,7 @@ func _removable_cards() -> Array[CardData]:
 func advance_non_battle_node() -> void:
 	run_state.encounter_index = run_state.encounter_index + 1
 	if run_state.encounter_index >= run_state.encounter_choices.size():
-		if run_state.act < 5:
+		if run_state.act < 8:
 			show_act_complete()
 		else:
 			show_result(true)
@@ -6191,31 +6191,43 @@ func _act_numeral(act: int) -> String:
 		3: return "三"
 		4: return "四"
 		5: return "五"
+		6: return "六"
+		7: return "七"
+		8: return "八"
 	return str(act)
 
 func _act_title(act: int) -> String:
 	match act:
 		1: return "餘杭山間"
-		2: return "蘇州地底"
-		3: return "苗疆蠱土"
-		4: return "鎖妖塔"
-		5: return "拜月決戰"
+		2: return "仙靈島"
+		3: return "蘇州城"
+		4: return "將軍塚"
+		5: return "試煉窟"
+		6: return "鎖妖塔"
+		7: return "苗疆蠱土"
+		8: return "拜月決戰"
 	return ""
 
 func _act_complete_flavor(act: int) -> String:
 	match act:
-		1: return "餘杭山間的惡徒已被驅散，一行人踏上了通往蘇州的路途——誰知更大的困境正在前方等待。"
-		2: return "離開蘇州地底的殭屍之地，穿越險峻山路，苗疆蠱土的神秘與危險已在眼前。"
-		3: return "苗疆的蠱毒危機雖已解除，但真正的威脅遠不止如此，眾人向鎖妖塔進發，決意斬草除根。"
-		4: return "鎖妖塔的封印被破，邪神即將甦醒！為阻止拜月教主完成邪法，必須立刻趕赴教壇，決一死戰。"
+		1: return "餘杭山間的惡徒已被驅散，一行人沿江而行，傳聞水月宮所在的仙靈島就在前方雲霧之中。"
+		2: return "仙靈島的水霧散去，逍遙與靈兒的緣分自此牽起。眾人辭別水月宮，轉往繁華的蘇州城。"
+		3: return "蘇州城中結識了林月如與劉晉元，比武招親的風波方歇，前方的將軍塚卻透著陰森的試煉之氣。"
+		4: return "將軍塚的亡魂歸於沉寂，眾人取得試煉之證，循著地脈深入更幽暗的試煉窟。"
+		5: return "試煉窟底藏著五靈的奧義，眾人得其真傳，功力大進——而真正的試煉，在鎖妖塔等著。"
+		6: return "鎮獄明王伏誅，鎖妖塔的封印揭開了靈兒的人蛇身世。為追查拜月教主，一行人遠赴苗疆。"
+		7: return "苗疆的蠱毒危機雖已解除，巫后蒙冤、巫王被害的真相浮現。眾人直指拜月教壇，決意了結這一切。"
 	return ""
 
 func _act_next_name(act: int) -> String:
 	match act:
-		1: return "蘇州地底"
-		2: return "苗疆蠱土"
-		3: return "鎖妖塔"
-		4: return "拜月決戰"
+		1: return "仙靈島"
+		2: return "蘇州城"
+		3: return "將軍塚"
+		4: return "試煉窟"
+		5: return "鎖妖塔"
+		6: return "苗疆蠱土"
+		7: return "拜月決戰"
 	return "下一幕"
 
 func show_deck_view(mode: String = "view", custom_cards = null, custom_title: String = "") -> void:

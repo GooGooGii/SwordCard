@@ -2,22 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://battlebgact4"
-path="res://.godot/imported/battle_bg_act_4.png-8f1bb208d1e4f8e7601595474e7e1809.ctex"
+uid="uid://dee7v02jtf5io"
+path="res://.godot/imported/battle_bg_act_6.png-792fd4b953114015f2f85a4ebef5796a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/battle_bg_act_4.png"
-dest_files=["res://.godot/imported/battle_bg_act_4.png-8f1bb208d1e4f8e7601595474e7e1809.ctex"]
+source_file="res://assets/art/battle_bg_act_6.png"
+dest_files=["res://.godot/imported/battle_bg_act_6.png-792fd4b953114015f2f85a4ebef5796a.ctex"]
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
-compress/lossy_quality=0.5
+compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
