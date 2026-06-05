@@ -136,6 +136,7 @@ func _initialize() -> void:
 	_test_potion_jincan_wang(characters, enemies[0])
 	_test_level_system(characters)
 	_test_level_unlock_cards()
+	_test_ai_run_engine_smoke()
 	# Multi-Enemy Mode（Phase 1+2 資料層 + AOE effects）
 	_test_multi_enemy_setup(characters, enemies)
 	_test_multi_enemy_damage_routing(characters, enemies)
@@ -1192,6 +1193,56 @@ func _test_balance_leveled_progression(characters: Array[CharacterData]) -> void
 			_check(delta <= BALANCE_TOLERANCE_PP,
 				"leveled balance regression: %s Lv%d vs %s win rate %d%% drifted %d pp from baseline %d%% (tolerance %d pp)" %
 				[character.id, lv, boss.display_name, win_rate, delta, baseline, BALANCE_TOLERANCE_PP])
+
+func _test_ai_run_engine_smoke() -> void:
+	# AI 平衡驅動器防鏽測試：用內建啟發式 policy 同步跑完幾場 run（不走檔案協定），
+	# 確認狀態機能抵達終局、RunState 全程保持一致（hp/deck/gold 不爆）。
+	# 順帶在 shop / event 用「會買、會選」的 policy，確保購買與事件 outcome 的套用路徑不爛。
+	var seeds: Array[int] = [111, 222, 333]
+	for s: int in seeds:
+		var eng: AiRunEngine = AiRunEngine.new()
+		eng.setup(["li_xiaoyao"], 0, s)
+		var guard: int = 0
+		var reached_done: bool = false
+		while guard < 300000:
+			guard += 1
+			var v: Dictionary = eng.next_view()
+			if String(v.get("kind", "")) == "done":
+				reached_done = true
+				break
+			# 一致性 invariant（每個決策點都檢查）
+			_check(eng.run_state.character_hps.size() == eng.run_state.characters.size(),
+				"ai_run: hp array desync (seed %d)" % s)
+			_check(eng.run_state.gold >= 0, "ai_run: gold negative %d (seed %d)" % [eng.run_state.gold, s])
+			var choice: String = _ai_smoke_choice(v)
+			eng.apply(choice)
+		_check(reached_done, "ai_run: did not reach terminal state within guard (seed %d)" % s)
+		_check(not eng.result.is_empty(), "ai_run: empty result (seed %d)" % s)
+		_check(int(eng.result.get("final_act", 0)) >= 1, "ai_run: final_act < 1 (seed %d)" % s)
+		# 牌組不該被掏空
+		for cd: Variant in eng.run_state.character_decks:
+			_check((cd as Array).size() > 0, "ai_run: deck emptied (seed %d)" % s)
+		# transcript 有起點與終點
+		_check(eng.transcript.size() > 0, "ai_run: empty transcript (seed %d)" % s)
+
+# 比 auto_choice 更積極的測試 policy：商店買第一個能買的、事件挑第一個非 leave 的選項，
+# 把購買 / 事件 outcome 的套用路徑也跑到（auto_choice 在這兩處只會 leave）。
+func _ai_smoke_choice(view: Dictionary) -> String:
+	var kind: String = String(view.get("kind", ""))
+	var options: Array = view.get("options", []) as Array
+	if kind == "shop":
+		for o: Variant in options:
+			var id: String = String((o as Dictionary).get("id", ""))
+			if id.begins_with("card") or id.begins_with("relic") or id.begins_with("potion"):
+				return id
+		return "leave"
+	if kind == "event":
+		for o: Variant in options:
+			var id: String = String((o as Dictionary).get("id", ""))
+			if id != "leave":
+				return id
+		return "leave"
+	return AiRunEngine.auto_choice(view)
 
 func _simulate_random_battle(character: CharacterData, enemy_template: EnemyData, max_turns: int = 20, deck_override: Array[CardData] = []) -> bool:
 	var run_state: RunState = RunState.new()

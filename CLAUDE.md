@@ -63,6 +63,21 @@ godot --path . -s render_effects.gd       # 輸出 res://_<label>.png
 
 截圖用 Read 工具直接開圖檢視；看完自行刪除暫存 PNG（`_*.png` 及其 `.import`）。
 
+### AI 平衡驅動器（agent 親自玩一整個 run）
+
+`smoke_test.gd` 的隨機 AI 出牌會把平衡數字測歪（從不換人/指定目標/打 combo/規劃牌組）。
+要評估「會玩的人」的真實平衡時，用 **`tools/ai_run.gd`**：headless 跑一整個 run、在每個決策點
+（boon/地圖/戰鬥/獎勵/商店/奇遇/休息）停下，透過檔案協定（`_ai_view.json` ↔ `_ai_cmd.json`）
+把局面交給我決定，戰鬥用**真實 BattleController**。引擎在 `scripts/ai_run_engine.gd`。
+
+```bash
+godot --headless --path . -s tools/ai_run.gd            # 互動：我逐回合玩
+AIRUN_AUTO=1 godot --headless --path . -s tools/ai_run.gd  # 內建粗淺 policy 自動跑（僅煙霧驗證）
+```
+
+完整協定 / choice 寫法 / 失真說明見 **[`docs/AI_BALANCE_HARNESS.md`](docs/AI_BALANCE_HARNESS.md)**。
+玩完刪 `_ai_*.json` 暫存。`_test_ai_run_engine_smoke` 守住引擎不爛（既有隨機 AI regression 保留為 CI 防回歸）。
+
 ## Project Layout
 
 ```
