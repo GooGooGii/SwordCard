@@ -51,7 +51,13 @@ static func enemies() -> Array[EnemyData]:
 		_zombie_soldier(), _toxic_centipede(), _tower_demon(), _tower_ghost_soldier(),
 		_baiyue_guard(), _ancient_evil_spirit(),
 		_wild_bee(), _cave_bat(), _water_imp(), _skeleton_soldier(), _grave_fire(),
-		_rock_guardian(), _trial_swordshade()]
+		_rock_guardian(), _trial_swordshade(),
+		_thief(), _tree_demon(), _xing_tian(), _black_impermanence(), _white_impermanence(),
+		_viper(), _flying_skull(), _cleaver_granny(), _man_eating_flower(), _gourd_sage(), _puppet_girl(),
+		_green_snake(), _grass_spider(), _lantern_ghost(), _hydra_snake(), _flying_snake(),
+		_baby_toad(), _poison_toad(), _vampire_giant(), _scorpion(), _female_thief(),
+		_birdman(), _demihuman_villager(), _five_eyed_demon(), _unicorn_demon(), _pincer_demon(),
+		_jumping_frog(), _fire_kirin_whelp(), _ice_beast(), _man_eater_beast(), _two_headed_snake()]
 
 static func bosses() -> Array[EnemyData]:
 	return [_moon_worshipper(), _centipede_lord(), _witch_queen(),
@@ -80,14 +86,14 @@ static func enemy_by_id(id: String) -> EnemyData:
 # 八幕（PAL1 劇情順序）：餘杭 → 仙靈島 → 蘇州 → 將軍塚 → 試煉窟 → 鎖妖塔 → 苗疆 → 拜月
 static func enemies_for_act(act: int) -> Array[EnemyData]:
 	match act:
-		1: return [_bandit(), _beast(), _wild_bee()]                          # 餘杭山間
-		2: return [_serpent_demon(), _fox_spirit(), _sword_spirit(), _cave_bat(), _water_imp()] # 仙靈島
-		3: return [_sword_spirit(), _fox_spirit(), _zombie_soldier()]         # 蘇州城
-		4: return [_zombie_soldier(), _ancient_evil_spirit(), _skeleton_soldier(), _grave_fire()] # 將軍塚
-		5: return [_tower_demon(), _tower_ghost_soldier(), _rock_guardian(), _trial_swordshade()] # 試煉窟
-		6: return [_tower_demon(), _tower_ghost_soldier(), _ancient_evil_spirit()] # 鎖妖塔
-		7: return [_gu_cultist(), _serpent_demon(), _toxic_centipede()]       # 苗疆蠱土
-		8: return [_moon_worshipper(), _baiyue_guard(), _ancient_evil_spirit()] # 拜月決戰
+		1: return [_bandit(), _beast(), _wild_bee(), _thief(), _viper(), _green_snake(), _grass_spider(), _lantern_ghost()]                          # 餘杭山間
+		2: return [_serpent_demon(), _fox_spirit(), _sword_spirit(), _cave_bat(), _water_imp(), _tree_demon(), _viper(), _man_eating_flower(), _baby_toad()] # 仙靈島
+		3: return [_sword_spirit(), _fox_spirit(), _zombie_soldier(), _thief(), _cleaver_granny(), _hydra_snake(), _flying_snake(), _poison_toad(), _female_thief()]         # 蘇州城
+		4: return [_zombie_soldier(), _ancient_evil_spirit(), _skeleton_soldier(), _grave_fire(), _black_impermanence(), _white_impermanence(), _cleaver_granny(), _flying_skull(), _vampire_giant()] # 將軍塚
+		5: return [_tower_demon(), _tower_ghost_soldier(), _rock_guardian(), _trial_swordshade(), _xing_tian(), _gourd_sage(), _scorpion(), _fire_kirin_whelp(), _ice_beast()] # 試煉窟
+		6: return [_tower_demon(), _tower_ghost_soldier(), _ancient_evil_spirit(), _xing_tian(), _black_impermanence(), _white_impermanence(), _flying_skull(), _gourd_sage(), _five_eyed_demon(), _unicorn_demon(), _pincer_demon(), _jumping_frog()] # 鎖妖塔
+		7: return [_gu_cultist(), _serpent_demon(), _toxic_centipede(), _tree_demon(), _man_eating_flower(), _puppet_girl(), _birdman(), _demihuman_villager()]       # 苗疆蠱土
+		8: return [_moon_worshipper(), _baiyue_guard(), _ancient_evil_spirit(), _puppet_girl(), _man_eater_beast(), _two_headed_snake()] # 拜月決戰
 	return [_bandit(), _beast()]
 
 static func boss_for_act(act: int) -> EnemyData:
@@ -468,6 +474,161 @@ static func loot_table_for(enemy_id: String) -> Array[Dictionary]:
 			return [
 				{"type": "potion", "potion_id": "xianren_xue",  "display_name": "仙人遺血"},
 				{"type": "potion", "potion_id": "yuehun_cao",   "display_name": "月魂草"},
+			]
+		"thief":
+			return [
+				{"type": "gold",   "amount": 50,              "display_name": "50 銅錢"},
+				{"type": "potion", "potion_id": "jinchuang_yao","display_name": "金瘡藥"},
+			]
+		"tree_demon":
+			return [
+				{"type": "potion", "potion_id": "xiongdan_jiu", "display_name": "雄膽酒"},
+				{"type": "potion", "potion_id": "jiedu_san",   "display_name": "解毒散"},
+			]
+		"xing_tian":
+			return [
+				{"type": "potion", "potion_id": "lingli_dan",   "display_name": "靈力丹"},
+				{"type": "gold",   "amount": 30,              "display_name": "30 銅錢"},
+			]
+		"black_impermanence":
+			return [
+				{"type": "potion", "potion_id": "huti_fu",      "display_name": "護體符"},
+				{"type": "potion", "potion_id": "tianling_dan",  "display_name": "天靈丹"},
+			]
+		"white_impermanence":
+			return [
+				{"type": "potion", "potion_id": "jiedu_san",    "display_name": "解毒散"},
+				{"type": "gold",   "amount": 25,              "display_name": "25 銅錢"},
+			]
+		"viper":
+			return [
+				{"type": "potion", "potion_id": "xiongdan_jiu", "display_name": "雄膽酒"},
+				{"type": "potion", "potion_id": "jiedu_cao",   "display_name": "解毒草"},
+			]
+		"flying_skull":
+			return [
+				{"type": "potion", "potion_id": "huti_fu",      "display_name": "護體符"},
+				{"type": "gold",   "amount": 20,              "display_name": "20 銅錢"},
+			]
+		"cleaver_granny":
+			return [
+				{"type": "gold",   "amount": 35,              "display_name": "35 銅錢"},
+				{"type": "potion", "potion_id": "shexiang_wan", "display_name": "麝香丸"},
+			]
+		"man_eating_flower":
+			return [
+				{"type": "potion", "potion_id": "xiongdan_jiu", "display_name": "雄膽酒"},
+				{"type": "gold",   "amount": 25,              "display_name": "25 銅錢"},
+			]
+		"gourd_sage":
+			return [
+				{"type": "potion", "potion_id": "lingli_dan",   "display_name": "靈力丹"},
+				{"type": "potion", "potion_id": "xiancha_san",  "display_name": "仙茶散"},
+			]
+		"puppet_girl":
+			return [
+				{"type": "potion", "potion_id": "lingshe_dan",  "display_name": "靈蛇膽"},
+				{"type": "potion", "potion_id": "duhuo_dan",    "display_name": "毒活丸"},
+			]
+		"green_snake":
+			return [
+				{"type": "potion", "potion_id": "jiedu_cao",    "display_name": "解毒草"},
+				{"type": "gold",   "amount": 15,              "display_name": "15 銅錢"},
+			]
+		"grass_spider":
+			return [
+				{"type": "potion", "potion_id": "jiedu_cao",    "display_name": "解毒草"},
+				{"type": "gold",   "amount": 10,              "display_name": "10 銅錢"},
+			]
+		"lantern_ghost":
+			return [
+				{"type": "potion", "potion_id": "shexiang_wan", "display_name": "麝香丸"},
+				{"type": "gold",   "amount": 12,              "display_name": "12 銅錢"},
+			]
+		"hydra_snake":
+			return [
+				{"type": "potion", "potion_id": "lingshe_dan",  "display_name": "靈蛇膽"},
+				{"type": "gold",   "amount": 25,              "display_name": "25 銅錢"},
+			]
+		"flying_snake":
+			return [
+				{"type": "potion", "potion_id": "lingshe_dan",  "display_name": "靈蛇膽"},
+				{"type": "gold",   "amount": 20,              "display_name": "20 銅錢"},
+			]
+		"baby_toad":
+			return [
+				{"type": "potion", "potion_id": "jiedu_cao",    "display_name": "解毒草"},
+				{"type": "gold",   "amount": 18,              "display_name": "18 銅錢"},
+			]
+		"poison_toad":
+			return [
+				{"type": "potion", "potion_id": "jiedu_san",    "display_name": "解毒散"},
+				{"type": "gold",   "amount": 22,              "display_name": "22 銅錢"},
+			]
+		"vampire_giant":
+			return [
+				{"type": "potion", "potion_id": "huti_fu",      "display_name": "護體符"},
+				{"type": "gold",   "amount": 30,              "display_name": "30 銅錢"},
+			]
+		"scorpion":
+			return [
+				{"type": "potion", "potion_id": "jiedu_san",    "display_name": "解毒散"},
+				{"type": "gold",   "amount": 20,              "display_name": "20 銅錢"},
+			]
+		"female_thief":
+			return [
+				{"type": "potion", "potion_id": "jinchuang_yao","display_name": "金瘡藥"},
+				{"type": "gold",   "amount": 60,              "display_name": "60 銅錢"},
+			]
+		"birdman":
+			return [
+				{"type": "potion", "potion_id": "xiancha_san",  "display_name": "仙茶散"},
+				{"type": "gold",   "amount": 25,              "display_name": "25 銅錢"},
+			]
+		"demihuman_villager":
+			return [
+				{"type": "potion", "potion_id": "xiongdan_jiu", "display_name": "雄膽酒"},
+				{"type": "gold",   "amount": 25,              "display_name": "25 銅錢"},
+			]
+		"five_eyed_demon":
+			return [
+				{"type": "potion", "potion_id": "huti_fu",      "display_name": "護體符"},
+				{"type": "potion", "potion_id": "tianling_dan",  "display_name": "天靈丹"},
+			]
+		"unicorn_demon":
+			return [
+				{"type": "potion", "potion_id": "hugu_jiu",     "display_name": "虎骨酒"},
+				{"type": "gold",   "amount": 30,              "display_name": "30 銅錢"},
+			]
+		"pincer_demon":
+			return [
+				{"type": "potion", "potion_id": "huti_fu",      "display_name": "護體符"},
+				{"type": "gold",   "amount": 30,              "display_name": "30 銅錢"},
+			]
+		"jumping_frog":
+			return [
+				{"type": "potion", "potion_id": "jiedu_san",    "display_name": "解毒散"},
+				{"type": "gold",   "amount": 20,              "display_name": "20 銅錢"},
+			]
+		"fire_kirin_whelp":
+			return [
+				{"type": "potion", "potion_id": "hugu_jiu",     "display_name": "虎骨酒"},
+				{"type": "gold",   "amount": 25,              "display_name": "25 銅錢"},
+			]
+		"ice_beast":
+			return [
+				{"type": "potion", "potion_id": "huti_fu",      "display_name": "護體符"},
+				{"type": "gold",   "amount": 25,              "display_name": "25 銅錢"},
+			]
+		"man_eater_beast":
+			return [
+				{"type": "potion", "potion_id": "tianling_dan",  "display_name": "天靈丹"},
+				{"type": "gold",   "amount": 35,              "display_name": "35 銅錢"},
+			]
+		"two_headed_snake":
+			return [
+				{"type": "potion", "potion_id": "lingshe_dan",  "display_name": "靈蛇膽"},
+				{"type": "gold",   "amount": 30,              "display_name": "30 銅錢"},
 			]
 	return []
 
@@ -1078,5 +1239,438 @@ static func _tower_wisp() -> EnemyData:
 	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "魂吸 4 + 蠱毒 1", "effects": [{"kind": "damage", "amount": 4}, {"kind": "poison", "amount": 1}]},
+	]
+	return enemy
+
+static func _thief() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "thief"
+	enemy.display_name = "小偷"
+	enemy.max_hp = 62
+	enemy.portrait_path = "res://assets/art/enemies/thief.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "探雲手 8", "effects": [{"kind": "damage", "amount": 8}]},
+		{"intent": "防守 7", "effects": [{"kind": "block", "amount": 7}]},
+		{"intent": "劫財 12 + 破綻 1", "effects": [{"kind": "damage", "amount": 12}, {"kind": "vulnerable", "amount": 1}]}
+	]
+	return enemy
+
+static func _tree_demon() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "tree_demon"
+	enemy.display_name = "樹妖"
+	enemy.max_hp = 76
+	enemy.portrait_path = "res://assets/art/enemies/tree_demon.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "纏繞 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]},
+		{"intent": "藤鞭 12", "effects": [{"kind": "damage", "amount": 12}]},
+		{"intent": "妖藤護體 15", "effects": [{"kind": "block", "amount": 15}]},
+		{"intent": "毒根突刺 9 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 9}, {"kind": "poison", "amount": 2}]}
+	]
+	return enemy
+
+static func _xing_tian() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "xing_tian"
+	enemy.display_name = "刑天"
+	enemy.max_hp = 98
+	enemy.portrait_path = "res://assets/art/enemies/xing_tian.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "巨斧猛擊 22", "effects": [{"kind": "damage", "amount": 22}]},
+		{"intent": "刑天戰盾 16", "effects": [{"kind": "block", "amount": 16}]},
+		{"intent": "狂暴橫掃 14 + 破綻 1", "effects": [{"kind": "damage", "amount": 14}, {"kind": "vulnerable", "amount": 1}]}
+	]
+	return enemy
+
+static func _black_impermanence() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "black_impermanence"
+	enemy.display_name = "黑無常"
+	enemy.max_hp = 84
+	enemy.portrait_path = "res://assets/art/enemies/black_impermanence.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "勾魂索 14 + 虛弱 1", "effects": [{"kind": "damage", "amount": 14}, {"kind": "weak", "amount": 1}]},
+		{"intent": "奪魄掌 18", "effects": [{"kind": "damage", "amount": 18}]},
+		{"intent": "無常結界 14", "effects": [{"kind": "block", "amount": 14}]}
+	]
+	return enemy
+
+static func _white_impermanence() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "white_impermanence"
+	enemy.display_name = "白無常"
+	enemy.max_hp = 84
+	enemy.portrait_path = "res://assets/art/enemies/white_impermanence.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "哭喪棒 13 + 破綻 1", "effects": [{"kind": "damage", "amount": 13}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "無常索命 16 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 16}, {"kind": "poison", "amount": 2}]},
+		{"intent": "陰煞護身 15", "effects": [{"kind": "block", "amount": 15}]}
+	]
+	return enemy
+
+static func _viper() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "viper"
+	enemy.display_name = "毒蛇"
+	enemy.max_hp = 42
+	enemy.portrait_path = "res://assets/art/enemies/viper.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "毒砂咬 5 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 5}, {"kind": "poison", "amount": 2}]},
+		{"intent": "盤繞 6", "effects": [{"kind": "block", "amount": 6}]}
+	]
+	return enemy
+
+static func _flying_skull() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "flying_skull"
+	enemy.display_name = "飛頭蠻"
+	enemy.max_hp = 72
+	enemy.portrait_path = "res://assets/art/enemies/flying_skull.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "幽冥鬼火 14", "effects": [{"kind": "damage", "amount": 14}]},
+		{"intent": "飛頭詛咒 虛弱 1 + 破綻 1", "effects": [{"kind": "weak", "amount": 1}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "飄忽 10", "effects": [{"kind": "block", "amount": 10}]}
+	]
+	return enemy
+
+static func _cleaver_granny() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "cleaver_granny"
+	enemy.display_name = "菜刀婆婆"
+	enemy.max_hp = 80
+	enemy.portrait_path = "res://assets/art/enemies/cleaver_granny.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "亂砍 5x3", "effects": [{"kind": "damage", "amount": 5}, {"kind": "damage", "amount": 5}, {"kind": "damage", "amount": 5}]},
+		{"intent": "揮刀 10", "effects": [{"kind": "block", "amount": 10}]},
+		{"intent": "飛躍砍 16", "effects": [{"kind": "damage", "amount": 16}]}
+	]
+	return enemy
+
+static func _man_eating_flower() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "man_eating_flower"
+	enemy.display_name = "狂暴食人花"
+	enemy.max_hp = 92
+	enemy.portrait_path = "res://assets/art/enemies/man_eating_flower.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "撕咬 16", "effects": [{"kind": "damage", "amount": 16}]},
+		{"intent": "花藤護甲 18", "effects": [{"kind": "block", "amount": 18}]},
+		{"intent": "消化液 10 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 10}, {"kind": "poison", "amount": 2}]}
+	]
+	return enemy
+
+static func _gourd_sage() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "gourd_sage"
+	enemy.display_name = "靈葫仙翁"
+	enemy.max_hp = 88
+	enemy.portrait_path = "res://assets/art/enemies/gourd_sage.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "葫蘆結界 16", "effects": [{"kind": "block", "amount": 16}]},
+		{"intent": "收妖葫蘆 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]},
+		{"intent": "神葫仙芒 18", "effects": [{"kind": "damage", "amount": 18}]}
+	]
+	return enemy
+
+static func _puppet_girl() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "puppet_girl"
+	enemy.display_name = "傀儡女"
+	enemy.max_hp = 82
+	enemy.portrait_path = "res://assets/art/enemies/puppet_girl.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "傀儡咒 破綻 2 + 虛弱 1", "effects": [{"kind": "vulnerable", "amount": 2}, {"kind": "weak", "amount": 1}]},
+		{"intent": "飛針 6x2", "effects": [{"kind": "damage", "amount": 6}, {"kind": "damage", "amount": 6}]},
+		{"intent": "替身草偶 14", "effects": [{"kind": "block", "amount": 14}]},
+		{"intent": "降蠱 蠱毒 3", "effects": [{"kind": "poison", "amount": 3}]}
+	]
+	return enemy
+
+static func _green_snake() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "green_snake"
+	enemy.display_name = "綠松蛇"
+	enemy.max_hp = 44
+	enemy.portrait_path = "res://assets/art/enemies/green_snake.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "毒咬 4 + 蠱毒 1", "effects": [{"kind": "damage", "amount": 4}, {"kind": "poison", "amount": 1}]},
+		{"intent": "纏繞 6", "effects": [{"kind": "block", "amount": 6}]}
+	]
+	return enemy
+
+static func _grass_spider() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "grass_spider"
+	enemy.display_name = "草蛛"
+	enemy.max_hp = 38
+	enemy.portrait_path = "res://assets/art/enemies/grass_spider.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "吐絲 5 + 虛弱 1", "effects": [{"kind": "damage", "amount": 5}, {"kind": "weak", "amount": 1}]},
+		{"intent": "草網 5", "effects": [{"kind": "block", "amount": 5}]}
+	]
+	return enemy
+
+static func _lantern_ghost() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "lantern_ghost"
+	enemy.display_name = "燈籠怪"
+	enemy.max_hp = 40
+	enemy.portrait_path = "res://assets/art/enemies/lantern_ghost.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "燈火 6", "effects": [{"kind": "damage", "amount": 6}]},
+		{"intent": "熱浪 5 + 破綻 1", "effects": [{"kind": "damage", "amount": 5}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "燈影 6", "effects": [{"kind": "block", "amount": 6}]}
+	]
+	return enemy
+
+static func _hydra_snake() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "hydra_snake"
+	enemy.display_name = "九頭蛇"
+	enemy.max_hp = 72
+	enemy.portrait_path = "res://assets/art/enemies/hydra_snake.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "狂毒噬 10 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 10}, {"kind": "poison", "amount": 2}]},
+		{"intent": "蛇尾掃 14", "effects": [{"kind": "damage", "amount": 14}]},
+		{"intent": "盤鱗 12", "effects": [{"kind": "block", "amount": 12}]}
+	]
+	return enemy
+
+static func _flying_snake() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "flying_snake"
+	enemy.display_name = "飛蛇"
+	enemy.max_hp = 60
+	enemy.portrait_path = "res://assets/art/enemies/flying_snake.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "俯衝 12", "effects": [{"kind": "damage", "amount": 12}]},
+		{"intent": "毒液 8 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 8}, {"kind": "poison", "amount": 2}]},
+		{"intent": "滑翔 10", "effects": [{"kind": "block", "amount": 10}]}
+	]
+	return enemy
+
+static func _baby_toad() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "baby_toad"
+	enemy.display_name = "小蛤蟆"
+	enemy.max_hp = 50
+	enemy.portrait_path = "res://assets/art/enemies/baby_toad.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "跳躍砸 8", "effects": [{"kind": "damage", "amount": 8}]},
+		{"intent": "泡泡 虛弱 1", "effects": [{"kind": "weak", "amount": 1}]},
+		{"intent": "縮身 8", "effects": [{"kind": "block", "amount": 8}]}
+	]
+	return enemy
+
+static func _poison_toad() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "poison_toad"
+	enemy.display_name = "毒蟾蜍"
+	enemy.max_hp = 78
+	enemy.portrait_path = "res://assets/art/enemies/poison_toad.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "蟾毒吐息 11 + 蠱毒 3", "effects": [{"kind": "damage", "amount": 11}, {"kind": "poison", "amount": 3}]},
+		{"intent": "巨舌鞭笞 15", "effects": [{"kind": "damage", "amount": 15}]},
+		{"intent": "蟾皮護身 12", "effects": [{"kind": "block", "amount": 12}]}
+	]
+	return enemy
+
+static func _vampire_giant() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "vampire_giant"
+	enemy.display_name = "吸血巨人"
+	enemy.max_hp = 92
+	enemy.portrait_path = "res://assets/art/enemies/vampire_giant.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "狂暴巨拳 20", "effects": [{"kind": "damage", "amount": 20}]},
+		{"intent": "吸血齧咬 12", "effects": [{"kind": "damage", "amount": 12}]},
+		{"intent": "骨甲 16", "effects": [{"kind": "block", "amount": 16}]}
+	]
+	return enemy
+
+static func _scorpion() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "scorpion"
+	enemy.display_name = "毒蠍子"
+	enemy.max_hp = 68
+	enemy.portrait_path = "res://assets/art/enemies/scorpion.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "蠍尾針 12 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 12}, {"kind": "poison", "amount": 2}]},
+		{"intent": "巨鉗夾 14", "effects": [{"kind": "damage", "amount": 14}]},
+		{"intent": "堅殼 10", "effects": [{"kind": "block", "amount": 10}]}
+	]
+	return enemy
+
+static func _female_thief() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "female_thief"
+	enemy.display_name = "女飛賊"
+	enemy.max_hp = 70
+	enemy.portrait_path = "res://assets/art/enemies/female_thief.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "雙匕急刺 7x2", "effects": [{"kind": "damage", "amount": 7}, {"kind": "damage", "amount": 7}]},
+		{"intent": "迷煙 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]},
+		{"intent": "飛燕卸力 12", "effects": [{"kind": "block", "amount": 12}]}
+	]
+	return enemy
+
+static func _birdman() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "birdman"
+	enemy.display_name = "鳥人"
+	enemy.max_hp = 84
+	enemy.portrait_path = "res://assets/art/enemies/birdman.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "利爪俯衝 15", "effects": [{"kind": "damage", "amount": 15}]},
+		{"intent": "尖嘴啄擊 11 + 破綻 1", "effects": [{"kind": "damage", "amount": 11}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "疾風振翅 13", "effects": [{"kind": "block", "amount": 13}]}
+	]
+	return enemy
+
+static func _demihuman_villager() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "demihuman_villager"
+	enemy.display_name = "半妖村民"
+	enemy.max_hp = 75
+	enemy.portrait_path = "res://assets/art/enemies/demihuman_villager.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "鋤頭重擊 15", "effects": [{"kind": "damage", "amount": 15}]},
+		{"intent": "半妖狂怒 12 + 虛弱 1", "effects": [{"kind": "damage", "amount": 12}, {"kind": "weak", "amount": 1}]},
+		{"intent": "退守 11", "effects": [{"kind": "block", "amount": 11}]}
+	]
+	return enemy
+
+static func _five_eyed_demon() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "five_eyed_demon"
+	enemy.display_name = "五眼魔"
+	enemy.max_hp = 88
+	enemy.portrait_path = "res://assets/art/enemies/five_eyed_demon.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "五眼邪光 16 + 破綻 1", "effects": [{"kind": "damage", "amount": 16}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "魔光干涉 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]},
+		{"intent": "魔影重重 14", "effects": [{"kind": "block", "amount": 14}]}
+	]
+	return enemy
+
+static func _unicorn_demon() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "unicorn_demon"
+	enemy.display_name = "獨角獸"
+	enemy.max_hp = 90
+	enemy.portrait_path = "res://assets/art/enemies/unicorn_demon.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "獨角頂撞 21", "effects": [{"kind": "damage", "amount": 21}]},
+		{"intent": "雷角電擊 15 + 虛弱 1", "effects": [{"kind": "damage", "amount": 15}, {"kind": "weak", "amount": 1}]},
+		{"intent": "聖獸屏障 15", "effects": [{"kind": "block", "amount": 15}]}
+	]
+	return enemy
+
+static func _pincer_demon() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "pincer_demon"
+	enemy.display_name = "夾子怪"
+	enemy.max_hp = 94
+	enemy.portrait_path = "res://assets/art/enemies/pincer_demon.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "巨鉗剪切 18", "effects": [{"kind": "damage", "amount": 18}]},
+		{"intent": "夾子撞擊 14 + 破綻 1", "effects": [{"kind": "damage", "amount": 14}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "鐵甲防護 20", "effects": [{"kind": "block", "amount": 20}]}
+	]
+	return enemy
+
+static func _jumping_frog() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "jumping_frog"
+	enemy.display_name = "跳跳蛙"
+	enemy.max_hp = 70
+	enemy.portrait_path = "res://assets/art/enemies/jumping_frog.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "跳躍砸 12", "effects": [{"kind": "damage", "amount": 12}]},
+		{"intent": "毒腺突刺 8 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 8}, {"kind": "poison", "amount": 2}]},
+		{"intent": "黏液阻礙 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]}
+	]
+	return enemy
+
+static func _fire_kirin_whelp() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "fire_kirin_whelp"
+	enemy.display_name = "火麒麟幼獸"
+	enemy.max_hp = 86
+	enemy.portrait_path = "res://assets/art/enemies/fire_kirin_whelp.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "烈焰爪 16", "effects": [{"kind": "damage", "amount": 16}]},
+		{"intent": "幼獸火吼 12 + 破綻 1", "effects": [{"kind": "damage", "amount": 12}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "赤炎護身 14", "effects": [{"kind": "block", "amount": 14}]}
+	]
+	return enemy
+
+static func _ice_beast() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "ice_beast"
+	enemy.display_name = "冰青獸"
+	enemy.max_hp = 86
+	enemy.portrait_path = "res://assets/art/enemies/ice_beast.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "玄冰擊 15", "effects": [{"kind": "damage", "amount": 15}]},
+		{"intent": "寒氣吐息 11 + 虛弱 1", "effects": [{"kind": "damage", "amount": 11}, {"kind": "weak", "amount": 1}]},
+		{"intent": "冰壁 15", "effects": [{"kind": "block", "amount": 15}]}
+	]
+	return enemy
+
+static func _man_eater_beast() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "man_eater_beast"
+	enemy.display_name = "食人獸"
+	enemy.max_hp = 100
+	enemy.portrait_path = "res://assets/art/enemies/man_eater_beast.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "撕裂吞噬 24", "effects": [{"kind": "damage", "amount": 24}]},
+		{"intent": "深淵咆哮 16 + 虛弱 1", "effects": [{"kind": "damage", "amount": 16}, {"kind": "weak", "amount": 1}]},
+		{"intent": "暴獸重鎧 18", "effects": [{"kind": "block", "amount": 18}]}
+	]
+	return enemy
+
+static func _two_headed_snake() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "two_headed_snake"
+	enemy.display_name = "雙頭蛇"
+	enemy.max_hp = 96
+	enemy.portrait_path = "res://assets/art/enemies/two_headed_snake.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
+		{"intent": "雙頭噬 10x2 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 10}, {"kind": "damage", "amount": 10}, {"kind": "poison", "amount": 2}]},
+		{"intent": "毒牙鞭打 16", "effects": [{"kind": "damage", "amount": 16}]},
+		{"intent": "鱗甲防護 16", "effects": [{"kind": "block", "amount": 16}]}
 	]
 	return enemy

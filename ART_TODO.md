@@ -219,7 +219,57 @@
 
 ---
 
+## 七、多元小怪擴充（31 個，5 🟢 已完成 / 26 🔴 借圖待補）
+
+為了對齊 PAL1 中的經典小怪，擴充了 31 個經典敵人。其中 5 個已生成專屬美術圖，其餘 26 個因 AI 圖片生成額度限制，暫時複製既有敵人美術作為 placeholder 借圖。
+
+### A. 🟢 已完成專屬美術（5 個）
+已生成專屬去背水墨圖檔（`assets/art/enemies/<id>.png`）：
+
+| 敵人 ID | 顯示名 | 出沒幕 | 狀態 | PAL1 出處 / 說明 |
+|---|---|---|---|---|
+| `thief` | 小偷 | 1, 3 | 🟢 已完成（專屬美術） | 經典苗疆小偷/盜賊，技能包含偷竊玩家金錢 |
+| `tree_demon` | 樹妖 | 2, 7 | 🟢 已完成（專屬美術） | 經典樹妖怪，技能以纏繞與毒素為主 |
+| `xing_tian` | 刑天 | 5, 6 | 🟢 已完成（專屬美術） | 巨大無頭戰神，手持巨斧，擁有高傷害與重擊能力 |
+| `black_impermanence` | 黑無常 | 4, 6 | 🟢 已完成（專屬美術） | 地府勾魂使者，使用哭喪棒與鬼火攻擊，帶虛弱與破綻 |
+| `white_impermanence` | 白無常 | 4, 6 | 🟢 已完成（專屬美術） | 地府勾魂使者，使用索命鏈與陰毒，能吸取玩家靈力 |
+
+### B. 🔴 借圖待補（26 個）
+以下 26 個敵人目前暫時借用其他小怪的圖像，待未來額度恢復後需繪製專屬插畫：
+
+| 敵人 ID | 顯示名 | 出沒幕 | 目前借用圖檔 | 狀態 | PAL1 出處 / 說明 |
+|---|---|---|---|---|---|
+| `viper` | 毒蛇 | 1, 2 | `serpent_demon.png` | 🔴 借圖待補 | 經典紅/綠小蛇，造成毒素傷害 |
+| `man_eating_flower` | 狂暴食人花 | 2, 7 | `tree_demon.png` | 🔴 借圖待補 | 經典食人花，擁有強力的撕咬與流血/毒素效果 |
+| `cleaver_granny` | 菜刀婆婆 | 3, 4 | `skeleton_soldier.png` | 🔴 借圖待補 | 手持菜刀的怨靈老婆婆，高防守與多次割裂 |
+| `flying_skull` | 飛頭蠻 | 4, 6 | `grave_fire.png` | 🔴 借圖待補 | 漂浮的骷髏頭，噴吐鬼火與詛咒 |
+| `gourd_sage` | 靈葫仙翁 | 5, 6 | `rock_guardian.png` | 🔴 借圖待補 | 葫蘆化身的老翁，能給自己防禦與反射傷害 |
+| `puppet_girl` | 傀儡女 | 7, 8 | `trial_swordshade.png` | 🔴 借圖待補 | 被絲線操控的傀儡少女，具備連擊與多重防禦 |
+| `green_snake` | 綠松蛇 | 1 | `serpent_demon.png` | 🔴 借圖待補 | 十里坡經典綠色小蛇，以叮咬與微量毒素為主 |
+| `grass_spider` | 草蛛 | 1 | `wild_bee.png` | 🔴 借圖待補 | 隱藏在草叢中的小蜘蛛，噴吐蛛網造成虛弱 |
+| `lantern_ghost` | 燈籠怪 | 1 | `grave_fire.png` | 🔴 借圖待補 | 飄浮的紅燈籠妖怪，噴吐小火球與致盲 |
+| `hydra_snake` | 九頭蛇 | 3 | `serpent_demon.png` | 🔴 借圖待補 | 擁用意象的多頭蛇，造成多次中毒攻擊 |
+| `flying_snake` | 飛蛇 | 3 | `serpent_demon.png` | 🔴 借圖待補 | 有翼的飛蛇，行動敏捷，容易造成破綻 |
+| `baby_toad` | 小蛤蟆 | 2 | `water_imp.png` | 🔴 借圖待補 | 靈島水邊的小青蛙，吐舌攻擊 |
+| `poison_toad` | 毒蟾蜍 | 3 | `water_imp.png` | 🔴 借圖待補 | 劇毒的大蟾蜍，噴灑毒霧 |
+| `vampire_giant` | 吸血巨人 | 4 | `skeleton_soldier.png` | 🔴 借圖待補 | 巨大的吸血殭屍，吸取玩家生命值 |
+| `scorpion` | 毒蠍子 | 5 | `wild_bee.png` | 🔴 借圖待補 | 試煉窟中的毒蠍，尾刺帶有烈性劇毒 |
+| `female_thief` | 女飛賊 | 3 | `thief.png` | 🔴 借圖待補 | 身手敏捷的女賊，會偷取玩家金錢並迅速防守 |
+| `birdman` | 鳥人 | 7 | `trial_swordshade.png` | 🔴 借圖待補 | 雙翼的人型怪物，俯衝風刃攻擊 |
+| `demihuman_villager` | 半妖村民 | 7 | `skeleton_soldier.png` | 🔴 借圖待補 | 被魔氣侵蝕的半人半妖村民，狂暴亂擊 |
+| `five_eyed_demon` | 五眼魔 | 6 | `grave_fire.png` | 🔴 借圖待補 | 擁有多隻魔眼的怪物，凝視造成強力虛弱與破綻 |
+| `unicorn_demon` | 獨角獸 | 6 | `rock_guardian.png` | 🔴 借圖待補 | 鎖妖塔的獨角怪獸，雷霆撞擊 |
+| `pincer_demon` | 夾子怪 | 6 | `rock_guardian.png` | 🔴 借圖待補 | 巨鉗怪獸，能重擊玩家並削弱格擋 |
+| `jumping_frog` | 跳跳蛙 | 6 | `water_imp.png` | 🔴 借圖待補 | 鎖妖塔的奇異青蛙，跳躍踩踏 |
+| `fire_kirin_whelp` | 火麒麟幼獸 | 5 | `grave_fire.png` | 🔴 借圖待補 | 火麒麟的年幼後代，吐息帶火焰與灼燒 |
+| `ice_beast` | 冰青獸 | 5 | `water_imp.png` | 🔴 借圖待補 | 冰原上的青色靈獸，冰甲防禦與寒冰吐息 |
+| `man_eater_beast` | 食人獸 | 8 | `tree_demon.png` | 🔴 借圖待補 | 拜月教壇周圍的巨大凶獸，吞噬重擊 |
+| `two_headed_snake` | 雙頭蛇 | 8 | `serpent_demon.png` | 🔴 借圖待補 | 雙頭毒蛇，兩次連擊並附帶劇毒 |
+
+---
+
 ## 補圖規格
 
 - 格式：PNG，存於 `assets/art/cards/<id>.png`（卡圖）或 `assets/art/<檔名>.png`（背景）
 - 完成後補 `.import` 配置（`godot --headless --path . --import`）
+

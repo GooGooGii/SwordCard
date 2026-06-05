@@ -2836,14 +2836,14 @@ func _count_battle_leaves_in_tree(ed: Dictionary) -> int:
 	return count
 
 func _test_stealing_system() -> void:
-	# 1. 驗證 80% (10/12) 的一般遭遇敵人身上可以偷到東西
+	# 1. 驗證 (41/43) 的一般遭遇敵人身上可以偷到東西
 	var enemies: Array[EnemyData] = GameData.enemies()
 	var count_with_loot: int = 0
 	for e: EnemyData in enemies:
 		var lt: Array[Dictionary] = GameData.loot_table_for(e.id)
 		if not lt.is_empty():
 			count_with_loot += 1
-	_check(count_with_loot == 10, "Expected exactly 10 out of 12 regular enemies to have loot, got %d" % count_with_loot)
+	_check(count_with_loot == 41, "Expected exactly 41 out of 43 regular enemies to have loot, got %d" % count_with_loot)
 	
 	# 2. 驗證有少數幾個身上帶好幾項東西 (例如 bandit 有 3 項)
 	var bandit_lt: Array[Dictionary] = GameData.loot_table_for("bandit")
