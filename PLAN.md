@@ -208,7 +208,7 @@ Event Branching（event_runner tree walk ×7 / observe_token ×3 / curse ×6）
 - [x] **卡片出牌動畫** — 已實作（根據 effect 自動判斷飛向）
 - [x] **戰鬥手感反饋** — HP bar tween / 能量珠 pulse / 狀態浮字 / 重擊震動 / Block pulse 已實作
 - [ ] **main.gd Phase 1 重構繼續** — Bestiary 已抽出（68 行），剩餘 ~8 個 screen 待抽（main_menu / character_select / progress_screen / event_node / shop_node / battle_scene / deck_view / result）
-- [ ] **音效（SFX）** — bus 與音量設定已就緒，**0 個音檔**。需 4-8 個 SFX（打牌、命中、治療、被打、end turn、勝利、boss 變身、召喚）
+- [x] **音效（SFX）** — `tools/compose_sfx.py` 程序化生成 13 個 WAV；`AudioManager.play_sfx()` round-robin 池 + 缺檔安全 + 35ms 去重；11 個觸發點串接（打牌/命中/治療/被打/護體/end turn/變身/召喚/藥品/勝/敗）。對照表見 `assets/audio/sfx/README.md`。button / card_select 已生成備用未串接
 
 ### 低優先（長期）
 - [ ] **第六幕 epilogue / 後日談** — 通關後可選地圖？

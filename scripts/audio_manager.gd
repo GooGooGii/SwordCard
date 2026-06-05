@@ -5,13 +5,21 @@ extends Node
 # 音檔放 assets/audio/bgm/<track_id>.ogg；缺檔自動靜音不 crash。
 
 const BGM_DIR: String = "res://assets/audio/bgm/"
+const SFX_DIR: String = "res://assets/audio/sfx/"
 const CROSSFADE_SEC: float = 0.8
 const FADE_OUT_SEC: float = 0.4
+const SFX_POOL_SIZE: int = 6  # 同時可疊放的一次性音效數
 
 var _players: Array[AudioStreamPlayer] = []
 var _active_idx: int = 0
 var _current_track: String = ""
 var _tween: Tween = null
+
+# SFX：一次性音效播放池（round-robin），缺檔靜默 skip
+var _sfx_players: Array[AudioStreamPlayer] = []
+var _sfx_idx: int = 0
+var _sfx_cache: Dictionary = {}  # id -> AudioStream（缺檔存 null，避免反覆 disk probe）
+var _sfx_min_gap: Dictionary = {}  # id -> 上次播放的引擎毫秒（防同幀重複疊太多）
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS  # 暫停時音樂繼續
@@ -21,6 +29,38 @@ func _ready() -> void:
 		p.volume_db = -80.0
 		add_child(p)
 		_players.append(p)
+	for i in range(SFX_POOL_SIZE):
+		var sp: AudioStreamPlayer = AudioStreamPlayer.new()
+		sp.bus = "SFX"
+		add_child(sp)
+		_sfx_players.append(sp)
+
+# 播一次性音效。sfx_id 對應 assets/audio/sfx/<id>.wav。缺檔靜默不 crash。
+func play_sfx(sfx_id: String) -> void:
+	if sfx_id == "":
+		return
+	# 同一音效 35ms 內不重複觸發（連擊分次扣血會短時間連發，避免轟鳴）
+	var now_ms: int = Time.get_ticks_msec()
+	if _sfx_min_gap.has(sfx_id) and now_ms - int(_sfx_min_gap[sfx_id]) < 35:
+		return
+	_sfx_min_gap[sfx_id] = now_ms
+	var stream: AudioStream = _load_sfx(sfx_id)
+	if stream == null:
+		return
+	var player: AudioStreamPlayer = _sfx_players[_sfx_idx]
+	_sfx_idx = (_sfx_idx + 1) % _sfx_players.size()
+	player.stream = stream
+	player.play()
+
+func _load_sfx(sfx_id: String) -> AudioStream:
+	if _sfx_cache.has(sfx_id):
+		return _sfx_cache[sfx_id]
+	var path: String = SFX_DIR + sfx_id + ".wav"
+	var stream: AudioStream = null
+	if ResourceLoader.exists(path):
+		stream = load(path) as AudioStream
+	_sfx_cache[sfx_id] = stream  # 含 null（缺檔），避免下次再探 disk
+	return stream
 
 func play_bgm(track_id: String) -> void:
 	if track_id == _current_track:

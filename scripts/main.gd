@@ -572,6 +572,11 @@ func _play_bgm(track: String) -> void:
 	if am != null:
 		am.play_bgm(track)
 
+func _sfx(sfx_id: String) -> void:
+	var am: Node = get_node_or_null("/root/AudioManager")
+	if am != null:
+		am.play_sfx(sfx_id)
+
 func show_main_menu() -> void:
 	selected_party_ids.clear()  # 進主選單清掉 character_select 的暫存隊伍
 	_hide_title_bar()
@@ -2482,6 +2487,7 @@ func _animate_portrait_switch() -> void:
 # Boss 進入 phase 2 時播放變身動畫（如拜月教主→水魔獸）。
 # 由 BattleController.phase_transitioned signal 觸發。
 func _on_phase_transitioned(new_name: String) -> void:
+	_sfx("boss_phase")
 	if enemy_portrait_wrap == null or not is_instance_valid(enemy_portrait_wrap):
 		return
 	# 1. 大幅震動 + 藍紫色光芒閃爍（水妖意象）
@@ -2603,6 +2609,7 @@ func _build_enemy_row(parent: HBoxContainer) -> void:
 func _rebuild_enemy_row_in_place() -> void:
 	if battle == null or enemy_row_container == null or not is_instance_valid(enemy_row_container):
 		return
+	_sfx("summon")
 	for child: Node in enemy_row_container.get_children():
 		child.queue_free()
 	enemy_widgets.clear()
@@ -3123,6 +3130,7 @@ func _use_potion(slot: int) -> void:
 	if battle == null or slot >= run_state.potions.size():
 		return
 	var potion: Dictionary = run_state.potions[slot]
+	_sfx("potion")
 	var effects: Array = potion.get("effects", []) as Array
 	var before_hp: int = int(battle.state["player_hp"])
 	var before_block: int = int(battle.state["player_block"])
@@ -3307,6 +3315,7 @@ func _use_potion_out_of_battle(slot: int) -> void:
 					total_healed += amount
 			# cure_poison 等 noop：戰鬥外無毒可清，略過
 	run_state.potions.remove_at(slot)
+	_sfx("potion")
 	_refresh_potion_overlay_buttons()
 	_refresh_title_bar()
 	if total_healed > 0 and title_bar_hp_bar != null and is_instance_valid(title_bar_hp_bar):
@@ -3497,7 +3506,8 @@ func play_card(card: CardData, source_button: Button = null) -> void:
 	if not bool(result["affordable"]):
 		_refresh_battle()
 		return
-	
+	_sfx("card_play")
+
 	# Set temporary pose for action feedback
 	if card.card_type == "attack":
 		_temporary_player_pose = "attack"
@@ -3598,6 +3608,7 @@ func end_player_turn() -> void:
 	_end_turn_warning_id = 0
 	end_turn_button.text = "結束回合"
 	end_turn_button.disabled = true
+	_sfx("end_turn")
 	_animate_hand_discard()
 	# Multi-Enemy 模式：begin_enemy_phase 回傳每隻敵人的 action（陣列）
 	# Phase 4 UI 才會每敵顯示獨立 intent；目前先取 active 敵 (或首個非空) 作 preview
@@ -6733,6 +6744,7 @@ func _show_remove_confirm_overlay(card: CardData, on_confirm: Callable) -> void:
 func show_result(victory: bool) -> void:
 	_hide_title_bar()
 	_play_bgm("victory" if victory else "defeat")
+	_sfx("victory" if victory else "defeat")
 	if victory:
 		Ascension.mark_cleared(run_state.ascension_level)
 		SaveManager.clear()
@@ -7644,14 +7656,17 @@ func _show_state_feedback(before: Dictionary, multi_hit: int = 1) -> void:
 	if player_hp_delta < 0:
 		UIFactory.shake_node(player_portrait_wrap, 7.0, 0.28)
 		_spawn_damage_popup(player_portrait_wrap, abs(player_hp_delta), "damage")
+		_sfx("player_hurt")
 		var pmax: int = int(bs.get("player_max_hp", 1))
 		if pmax > 0 and abs(player_hp_delta) >= int(pmax * 0.20):
 			UIFactory.shake_node(player_portrait_wrap, 18.0, 0.45)
 	elif player_hp_delta > 0:
 		_spawn_damage_popup(player_portrait_wrap, player_hp_delta, "heal")
+		_sfx("heal")
 	if player_block_delta > 0:
 		UIFactory.flash_node(player_portrait_wrap, Color(1.2, 1.35, 1.55), 0.22)
 		_spawn_damage_popup(player_portrait_wrap, player_block_delta, "block")
+		_sfx("block")
 	if player_poison_delta > 0:
 		_spawn_damage_popup(player_portrait_wrap, player_poison_delta, "poison")
 	if player_weak_delta > 0:
@@ -7698,6 +7713,7 @@ func _show_enemy_slot_feedback(widget: Dictionary, before_slot: Dictionary, cur_
 		else:
 			UIFactory.shake_node(wrap, 7.0, 0.28)
 			_spawn_damage_popup(wrap, abs(hp_delta), "damage")
+			_sfx("attack_hit")
 			if heavy:
 				UIFactory.shake_node(wrap, 18.0, 0.45)
 	if block_delta > 0:
@@ -7739,6 +7755,7 @@ func _spawn_damage_popup_staggered(target: Control, total: int, hits: int, heavy
 			if not is_instance_valid(target):
 				return
 			_spawn_damage_popup(target, chunk, "damage")
+			_sfx("attack_hit")
 			UIFactory.shake_node(target, 14.0 if heavy else 6.0, 0.2))
 
 # feedback 浮字包在 0 高度的 plain Control 裡：plain Control 不把子節點 min size 算進自己的
