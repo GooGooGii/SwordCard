@@ -57,7 +57,10 @@ func setup(party_ids: Array, ascension: int = 0, run_seed: int = 0) -> void:
 			run_state.character_max_hps[i] = new_max
 			run_state.character_hps[i] = new_max
 	run_state.encounter_choices = _make_encounter_choices()
-	randomize()
+	# 注意：不呼叫 randomize()。平衡測試要「同 seed 完全可重現」——保持 seeded RNG 串流貫穿
+	# 整個 run（抽牌 / 敵人行動皆確定性），policy A/B 比較才乾淨。（real game 在 main.gd 才
+	# randomize；此引擎僅供離線量測。）
+	seed(seed_for_run)
 	_phase = "boon"
 	_ctx = {"boons": _make_boon_choices()}
 	_log("run_start", {
@@ -1231,35 +1234,247 @@ func _log(event: String, data: Dictionary) -> void:
 # 內建啟發式 policy（smoke test 與無人值守模式用；比隨機 AI 略聰明，但仍很粗淺）。
 # 回傳給 apply() 的 choice 字串。手動模式不會用到這個。
 # ──────────────────────────────────────────────────────────────────────────
+# 取字串中某關鍵字後面緊接的整數（如 "傷害 26" → 26）；找不到回 -1。
+static func _num_after(text: String, keyword: String) -> int:
+	var idx: int = text.find(keyword)
+	if idx < 0:
+		return -1
+	var rest: String = text.substr(idx + keyword.length())
+	var num: String = ""
+	for ch: String in rest:
+		if ch >= "0" and ch <= "9":
+			num += ch
+		elif not num.is_empty():
+			break
+	return int(num) if not num.is_empty() else -1
+
+# 改良啟發式 policy（取代原本「打第一張負擔得起的牌」）。逐 action 評估、回傳當下最佳動作；
+# 由 auto 迴圈反覆呼叫直到本回合 end。重點：致命就擋、能殺就集火、阿奴疊毒留爆點、能力早放、
+# 商店優先拿遺物、血低就補。
 static func auto_choice(view: Dictionary) -> String:
 	var kind: String = String(view.get("kind", ""))
 	var options: Array = view.get("options", []) as Array
+	var run: Dictionary = view.get("run", {}) as Dictionary
+	var party: Array = run.get("party", []) as Array
+	var p0: Dictionary = (party[0] if not party.is_empty() else {}) as Dictionary
+	var hp_ratio: float = float(p0.get("hp", 1)) / max(1.0, float(p0.get("max_hp", 1)))
+	var deck_size: int = int(p0.get("deck_size", 0))
 	match kind:
 		"battle_turn":
-			# 找第一個負擔得起的出牌；需要目標就指向第一個活敵
-			var enemies: Array = (view.get("state", {}) as Dictionary).get("enemies", []) as Array
-			var first_alive: int = -1
-			for e_v: Variant in enemies:
-				if bool((e_v as Dictionary).get("alive", false)):
-					first_alive = int((e_v as Dictionary).get("idx", 0))
-					break
-			var hand: Array = (view.get("state", {}) as Dictionary).get("hand", []) as Array
-			var energy: int = int((view.get("state", {}) as Dictionary).get("energy", 0))
-			for c_v: Variant in hand:
-				var c: Dictionary = c_v as Dictionary
-				if int(c.get("cost", 99)) <= energy:
-					var cmd: String = "play %d" % int(c.get("idx", 0))
-					if bool(c.get("needs_target", false)) and first_alive >= 0:
-						cmd += " %d" % first_alive
-					return cmd
-			return "end"
+			return _auto_battle(view)
 		"rest":
+			# 血低先補；血健康就打磨一張牌
+			if hp_ratio < 0.6:
+				return "heal"
+			for o_v: Variant in options:
+				if String((o_v as Dictionary).get("id", "")).begins_with("upgrade"):
+					return String((o_v as Dictionary).get("id", "heal"))
 			return "heal"
-		"event", "shop":
-			return "leave"
-		"reward", "boon", "boss_relic", "map":
-			# 取第一個選項
+		"map":
+			# 只在「快死」時才繞去休息（門檻壓低，避免避戰導致練不夠 / boss 前太弱）；
+			# 否則正常推進取第一個節點。
+			if hp_ratio < 0.3:
+				for o_v: Variant in options:
+					if String((o_v as Dictionary).get("node_type", "")) == "rest":
+						return str((o_v as Dictionary).get("id", 0))
+			if not options.is_empty():
+				return str((options[0] as Dictionary).get("id", 0))
+			return "skip"
+		"reward":
+			# 牌組過肥（>=28）就略過避免稀釋；否則拿第一張
+			if deck_size >= 28:
+				return "skip"
 			if not options.is_empty():
 				return str((options[0] as Dictionary).get("id", "skip"))
 			return "skip"
+		"boon":
+			var pref: Array = ["extra_card", "remove_starter", "starting_potion", "extra_gold"]
+			for want: String in pref:
+				for o_v: Variant in options:
+					if String((o_v as Dictionary).get("id", "")) == want:
+						return want
+			if not options.is_empty():
+				return str((options[0] as Dictionary).get("id", "skip"))
+			return "skip"
+		"boss_relic":
+			if not options.is_empty():
+				return str((options[0] as Dictionary).get("id", "skip"))
+			return "skip"
+		"shop":
+			# 優先買遺物（純增益、不肥牌）；其次在牌組不太肥時買一張卡；否則離開
+			for o_v: Variant in options:
+				if String((o_v as Dictionary).get("id", "")).begins_with("relic "):
+					return String((o_v as Dictionary).get("id", "leave"))
+			if deck_size < 22:
+				for o_v: Variant in options:
+					if String((o_v as Dictionary).get("id", "")).begins_with("card "):
+						return String((o_v as Dictionary).get("id", "leave"))
+			return "leave"
+		"event":
+			# 取第一個選項（多為主要互動）
+			if not options.is_empty():
+				return str((options[0] as Dictionary).get("id", "leave"))
+			return "leave"
 	return "skip"
+
+# 單一回合內的「下一個最佳動作」。
+static func _auto_battle(view: Dictionary) -> String:
+	var st: Dictionary = view.get("state", {}) as Dictionary
+	var energy: int = int(st.get("energy", 0))
+	var players: Array = st.get("players", []) as Array
+	var ap: int = int(st.get("active_player", 0))
+	var me: Dictionary = (players[ap] if ap < players.size() else {}) as Dictionary
+	var hp: int = int(me.get("hp", 1))
+	var block: int = int(me.get("block", 0))
+	var max_hp: int = int(me.get("max_hp", 1))
+	var turn: int = int(view.get("run", {}).get("floor", 0))  # 非關鍵，僅供早放能力判斷
+
+	# 活著的敵人
+	var enemies: Array = st.get("enemies", []) as Array
+	var alive: Array = []
+	for e_v: Variant in enemies:
+		if bool((e_v as Dictionary).get("alive", false)):
+			alive.append(e_v as Dictionary)
+	var incoming: int = 0
+	for e: Variant in alive:
+		incoming += int((e as Dictionary).get("predicted_damage", 0))
+
+	# 分類手牌（只看負擔得起的）
+	var hand: Array = st.get("hand", []) as Array
+	var blocks: Array = []   # {idx, val}
+	var attacks: Array = []  # {idx, dmg, needs_target}
+	var poisons: Array = []  # {idx, needs_target} 施毒牌
+	var bursts: Array = []   # {idx, needs_target} 引爆牌
+	var buffs: Array = []    # {idx} 能力/引擎/抽牌
+	var heals_self: Array = []  # {idx}
+	for c_v: Variant in hand:
+		var c: Dictionary = c_v as Dictionary
+		if int(c.get("cost", 99)) > energy:
+			continue
+		var idx: int = int(c.get("idx", 0))
+		var desc: String = String(c.get("desc", ""))
+		var prev: String = String(c.get("preview", ""))
+		var type: String = String(c.get("type", ""))
+		var nt: bool = bool(c.get("needs_target", false))
+		var is_burst: bool = desc.find("引爆") >= 0
+		var is_poison: bool = (not is_burst) and (desc.find("蠱毒") >= 0 or prev.find("蠱毒") >= 0)
+		var blk: int = _num_after(prev, "護體")
+		var dmg: int = _num_after(prev, "傷害")
+		var heal: int = _num_after(prev, "治療")
+		if is_burst:
+			bursts.append({"idx": idx, "nt": nt})
+		if is_poison:
+			poisons.append({"idx": idx, "nt": nt})
+		if blk > 0:
+			blocks.append({"idx": idx, "val": blk})
+		if heal > 0:
+			heals_self.append({"idx": idx})
+		if dmg > 0:
+			attacks.append({"idx": idx, "dmg": dmg, "nt": nt})
+		# 能力 / 引擎 / 抽牌 / 加能量 — 真正的「發展型」增益才早放（嚴格分類，避免誤殺攻擊牌）
+		if type == "能力" or desc.find("每回合") >= 0 or desc.find("攻擊力") >= 0 or desc.find("力量") >= 0 \
+				or desc.find("抽") >= 0 or desc.find("靈力") >= 0:
+			buffs.append({"idx": idx})
+
+	# 集火目標：先選「這回合打得死」的；否則威脅最高（predicted_damage）；否則血最少
+	var best_atk_dmg: int = 0
+	for a: Variant in attacks:
+		best_atk_dmg = max(best_atk_dmg, int((a as Dictionary).get("dmg", 0)))
+	var focus: int = -1
+	var focus_killable: bool = false
+	var best_threat: int = -1
+	var lowest_hp: int = 1 << 30
+	for e: Variant in alive:
+		var ed: Dictionary = e as Dictionary
+		var eidx: int = int(ed.get("idx", 0))
+		var ehp: int = int(ed.get("hp", 0)) + int(ed.get("block", 0))
+		if best_atk_dmg >= ehp and not focus_killable:
+			focus = eidx; focus_killable = true
+		var threat: int = int(ed.get("predicted_damage", 0))
+		if not focus_killable:
+			if threat > best_threat:
+				best_threat = threat; focus = eidx
+			if ehp < lowest_hp:
+				lowest_hp = ehp
+	if focus < 0 and not alive.is_empty():
+		focus = int((alive[0] as Dictionary).get("idx", 0))
+
+	# focus 敵人的毒層（給阿奴留爆點用）
+	var focus_poison: int = 0
+	for e: Variant in alive:
+		if int((e as Dictionary).get("idx", -1)) == focus:
+			focus_poison = int((e as Dictionary).get("poison", 0))
+
+	var lethal: bool = incoming > hp + block
+	var heavy: bool = incoming >= int(max_hp * 0.33)
+	var atk_kill: Dictionary = _max_by(attacks, "dmg") if not attacks.is_empty() else {}
+
+	# ── 決策優先序 ──
+	# 1. 引爆：毒層夠大就引爆（多敵留高層數；剩單敵時門檻放寬，把毒變成即時傷害收尾）
+	if not bursts.is_empty() and (focus_poison >= 6 or (alive.size() == 1 and focus_poison >= 4)):
+		var b: Dictionary = bursts[0]
+		return "play %d %d" % [int(b["idx"]), focus] if bool(b["nt"]) else "play %d" % int(b["idx"])
+	# 2. 致命威脅：能殺掉威脅源就先殺（除去傷害優於硬擋）→ 否則補血藥 → 否則疊滿格擋
+	if lethal:
+		if focus_killable and not atk_kill.is_empty():
+			return "play %d %d" % [int(atk_kill["idx"]), focus] if bool(atk_kill["nt"]) else "play %d" % int(atk_kill["idx"])
+		var pot: String = _auto_pick_potion(view, ["回復", "生命", "護體", "治療"])
+		if pot != "":
+			return pot
+		if not blocks.is_empty():
+			var bb: Dictionary = _max_by(blocks, "val")
+			return "play %d" % int(bb["idx"])
+	# 3. 集火能殺 → 殺（減少下回合進場傷害）
+	if focus_killable and not atk_kill.is_empty():
+		return "play %d %d" % [int(atk_kill["idx"]), focus] if bool(atk_kill["nt"]) else "play %d" % int(atk_kill["idx"])
+	# 4. 重擊將至 → 先擋（避免被打殘）
+	if heavy and not blocks.is_empty():
+		var bb2: Dictionary = _max_by(blocks, "val")
+		return "play %d" % int(bb2["idx"])
+	# 4.5 血量危險（<25%）且有補血藥 → 主動回血（緊急保命，不浪費）
+	if hp < int(max_hp * 0.25):
+		var hpot: String = _auto_pick_potion(view, ["回復", "生命", "治療"])
+		if hpot != "":
+			return hpot
+	# 5. 發展型能力（力量 / 毒引擎 / 抽牌 / 加能量）— 安全時早放滾雪球
+	if not buffs.is_empty():
+		return "play %d" % int((buffs[0] as Dictionary)["idx"])
+	# 6. 阿奴疊毒：對 focus 施毒讓毒滾起來
+	if not poisons.is_empty():
+		var ps: Dictionary = poisons[0]
+		return "play %d %d" % [int(ps["idx"]), focus] if bool(ps["nt"]) else "play %d" % int(ps["idx"])
+	# 7. 最大傷害攻擊打 focus
+	if not attacks.is_empty():
+		return "play %d %d" % [int(atk_kill["idx"]), focus] if bool(atk_kill["nt"]) else "play %d" % int(atk_kill["idx"])
+	# 8. 還有格擋就擋（沒事做時的保底防禦）
+	if not blocks.is_empty():
+		return "play %d" % int((blocks[0] as Dictionary)["idx"])
+	# 9. 保底：手上還有任何負擔得起的牌就打（避免擱置可用資源）
+	for c_v: Variant in hand:
+		var c: Dictionary = c_v as Dictionary
+		if int(c.get("cost", 99)) <= energy:
+			var cmd: String = "play %d" % int(c.get("idx", 0))
+			if bool(c.get("needs_target", false)):
+				cmd += " %d" % focus
+			return cmd
+	# 10. 沒有有效動作 → 結束回合
+	return "end"
+
+static func _max_by(arr: Array, key: String) -> Dictionary:
+	var best: Dictionary = arr[0] as Dictionary
+	for v: Variant in arr:
+		if int((v as Dictionary).get(key, 0)) > int(best.get(key, 0)):
+			best = v as Dictionary
+	return best
+
+# 從 battle view 的 options 找符合關鍵字的藥品動作（如補血），回傳 "potion i"；無則 ""。
+static func _auto_pick_potion(view: Dictionary, keywords: Array) -> String:
+	for o_v: Variant in (view.get("options", []) as Array):
+		var o: Dictionary = o_v as Dictionary
+		if not String(o.get("id", "")).begins_with("potion"):
+			continue
+		var detail: String = String(o.get("detail", "")) + String(o.get("label", ""))
+		for k: Variant in keywords:
+			if detail.find(String(k)) >= 0:
+				return String(o.get("id", ""))
+	return ""
