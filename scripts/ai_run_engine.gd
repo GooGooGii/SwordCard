@@ -1373,6 +1373,7 @@ static func _auto_battle(view: Dictionary) -> String:
 		if int(c.get("cost", 99)) > energy:
 			continue
 		var idx: int = int(c.get("idx", 0))
+		var ccost: int = int(c.get("cost", 0))
 		var desc: String = String(c.get("desc", ""))
 		var prev: String = String(c.get("preview", ""))
 		var type: String = String(c.get("type", ""))
@@ -1389,9 +1390,9 @@ static func _auto_battle(view: Dictionary) -> String:
 		if blk > 0:
 			blocks.append({"idx": idx, "val": blk})
 		if heal > 0:
-			heals_self.append({"idx": idx})
+			heals_self.append({"idx": idx, "cost": ccost})
 		if dmg > 0:
-			attacks.append({"idx": idx, "dmg": dmg, "nt": nt})
+			attacks.append({"idx": idx, "dmg": dmg, "nt": nt, "cost": ccost})
 		# 能力 / 引擎 / 抽牌 / 加能量 — 真正的「發展型」增益才早放（嚴格分類，避免誤殺攻擊牌）
 		if type == "能力" or desc.find("每回合") >= 0 or desc.find("攻擊力") >= 0 or desc.find("力量") >= 0 \
 				or desc.find("抽") >= 0 or desc.find("靈力") >= 0:
@@ -1457,8 +1458,14 @@ static func _auto_battle(view: Dictionary) -> String:
 		if not blocks.is_empty():
 			var bb: Dictionary = _max_by(blocks, "val")
 			return "play %d" % int(bb["idx"])
-	# 3. 集火能殺 → 殺（減少下回合進場傷害）
+	# 3. 集火能殺 → 殺（減少下回合進場傷害）。
+	#    但若這一擊就終結戰鬥（最後一隻、可斬殺），且回血後仍打得死、又沒滿血 →
+	#    先用治療牌（靈血咒）回血再補刀：穩贏的最後一回合先把 HP 帶進下一場（會玩的人習慣）。
 	if focus_killable and not atk_kill.is_empty():
+		if alive.size() == 1 and hp < max_hp and not heals_self.is_empty():
+			var hc: Dictionary = heals_self[0]
+			if int(hc.get("cost", 0)) + int(atk_kill.get("cost", 0)) <= energy:
+				return "play %d" % int(hc["idx"])
 		return "play %d %d" % [int(atk_kill["idx"]), focus] if bool(atk_kill["nt"]) else "play %d" % int(atk_kill["idx"])
 	# 4. 重擊將至 → 先擋（避免被打殘）
 	if heavy and not blocks.is_empty():
@@ -1469,6 +1476,9 @@ static func _auto_battle(view: Dictionary) -> String:
 		var hpot: String = _auto_pick_potion(view, ["回復", "生命", "治療"])
 		if hpot != "":
 			return hpot
+	# 4.6 低血量（<50%）→ 用治療牌（靈血咒）回血續命，不硬撐到危險才補（會玩的人習慣）
+	if hp < int(max_hp * 0.5) and not heals_self.is_empty():
+		return "play %d" % int((heals_self[0] as Dictionary)["idx"])
 	# 5. 發展型能力（力量 / 毒引擎 / 抽牌 / 加能量）— 安全時早放滾雪球
 	if not buffs.is_empty():
 		return "play %d" % int((buffs[0] as Dictionary)["idx"])
