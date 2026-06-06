@@ -1313,12 +1313,17 @@ static func auto_choice(view: Dictionary) -> String:
 					return String((o_v as Dictionary).get("id", "heal"))
 			return "heal"
 		"map":
-			# 只在「快死」時才繞去休息（門檻壓低，避免避戰導致練不夠 / boss 前太弱）；
-			# 否則正常推進取第一個節點。
+			# 快死（<30%）→ 繞去休息（門檻壓低，避免避戰導致練不夠 / boss 前太弱）。
 			if hp_ratio < 0.3:
 				for o_v: Variant in options:
 					if String((o_v as Dictionary).get("node_type", "")) == "rest":
 						return str((o_v as Dictionary).get("id", 0))
+			# 錢多（≥150，足夠買遺物）→ 優先走商店把遺物買光（會玩的人習慣；商店分支會逐件買光）。
+			if int(run.get("gold", 0)) >= 150:
+				for o_v: Variant in options:
+					if String((o_v as Dictionary).get("node_type", "")) == "shop":
+						return str((o_v as Dictionary).get("id", 0))
+			# 否則正常推進取第一個節點。
 			if not options.is_empty():
 				return str((options[0] as Dictionary).get("id", 0))
 			return "skip"
