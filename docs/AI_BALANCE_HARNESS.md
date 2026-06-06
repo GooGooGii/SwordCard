@@ -41,6 +41,7 @@ AIRUN_AUTO=1 godot --headless --path . -s tools/ai_run.gd
 | `AIRUN_SEED` | `0` | run seed，0=隨機 |
 | `AIRUN_AUTO` | `0` | `1`=用內建 policy 自動跑完，不等檔案 |
 | `AIRUN_AUTO_BATTLE` | `off` | 混合委派（見下）：`off`=每個戰鬥回合都問 agent；`normal`=自動打非 boss 戰、boss 戰交給 agent；`all`=自動打所有戰鬥、agent 只決定 meta |
+| `AIRUN_REWIND` | `3` | auto 自動打戰敗時，倒回幾個 agent 決策點交還 agent（見下）；`0`=關閉、輸了就直接判 run 失敗 |
 | `AIRUN_SESSION` | （空） | 多開時的 session 名；空=用 repo 根 legacy 檔名，非空=用 `_ai_runs/<session>/` 隔離 |
 
 ## 混合委派（加速：少 round-trip）
@@ -63,6 +64,21 @@ round-trip，是互動模式最大的時間成本。
 > 取捨：啟發式 policy 的戰術不如真人精算（尤其阿奴毒流這種 setup-payoff 牌組）。
 > 要量測「會玩的人」的**戰鬥**真實上限時用 `off`（或只對關鍵戰用 agent、其餘 `auto`）；
 > 要快速評估「**整個 run 的策略線**（牌組/路線/獎勵）」時用 `normal` / `all` 最划算。
+
+### 倒帶交還（rewind）：auto 戰敗不直接判輸
+
+啟發式 policy 打輸的一場，會玩的人可能能救。所以 auto 自動打導致**全滅**時，驅動器
+不直接判 run 失敗，而是**倒帶交還 agent**：
+
+1. 用**同 seed 重建引擎**、重放到「戰敗前 `AIRUN_REWIND` 個 agent 決策點」。引擎是 seed
+   確定性的 → 重放**完全重現**原局面（抽牌 / 敵人行動一致），agent 靠**重新決策**翻盤。
+2. 倒帶後**關閉自動戰鬥**、agent 全程接手——可重選獎勵 / 換路線 / 親自逐回合打那場戰鬥。
+   仍可逐場 `choice: "auto"` 重新加速有把握的戰鬥。
+3. 防呆：最多倒帶 `MAX_REWINDS=3` 次（agent 重打也一直輸時不無限迴圈）。
+
+> 注意：倒帶會改變後續 RNG 消耗（agent 的新決策 → 新的抽牌序列），但給定
+> `(seed, agent 的新 choice 序列)` 仍完全可重現。`AIRUN_REWIND=0` 可關閉此功能，
+> 讓 auto 戰敗即終局（純跑分用途、不要 agent 介入時）。
 
 ## 檔案協定（互動模式）
 

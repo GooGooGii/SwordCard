@@ -44,11 +44,26 @@ var _auto_battle_mode: String = "off"
 # agent 隨需委派：在某個 battle_turn 寫 choice="auto" → 該場剩餘回合自動打完
 var _force_auto_this_battle: bool = false
 
+# 倒帶重放（rewind）：auto 自動打導致全滅時，用同 seed 重建引擎、重放到「前 N 個 agent
+# 決策點」再交還 agent。引擎是 seed 確定性的 → 重放完全重現原局面（抽牌/敵人行動一致），
+# agent 靠重新決策（換牌/換路線/親自打）翻盤。倒帶後關閉自動戰鬥、agent 全程接手。
+var _rewind_n: int = 3              # 倒回幾個 agent 決策點（AIRUN_REWIND；<=0 關閉此功能）
+var _rewinds_done: int = 0
+const MAX_REWINDS: int = 3          # 防呆：agent 重打也一直輸時的上限
+var _history: Array = []           # 所有套用過的 choice 字串（agent + auto），依序，供重放
+var _checkpoints: Array = []       # 每個 agent-surfaced 決策點當下的 _history.size()
+# 重建用：記住 setup 參數與「實際採用」的 seed（原 seed=0 時引擎挑了 randi，必須沿用同值）
+var _party: Array = []
+var _asc: int = 0
+var _resolved_seed: int = 0
+
 func _initialize() -> void:
 	_auto = OS.get_environment("AIRUN_AUTO") == "1"
 	var abm: String = OS.get_environment("AIRUN_AUTO_BATTLE").strip_edges().to_lower()
 	if abm in ["normal", "all"]:
 		_auto_battle_mode = abm
+	if OS.get_environment("AIRUN_REWIND").is_valid_int():
+		_rewind_n = int(OS.get_environment("AIRUN_REWIND"))
 	_resolve_paths()
 	var party_env: String = OS.get_environment("AIRUN_PARTY")
 	if party_env.is_empty():
@@ -66,6 +81,10 @@ func _initialize() -> void:
 
 	_engine = AiRunEngine.new()
 	_engine.setup(party, asc, run_seed)
+	# 記住重建參數；run_seed=0 時引擎挑了 randi，沿用其實際值才能重放重現
+	_party = party.duplicate()
+	_asc = asc
+	_resolved_seed = _engine.run_state.map_seed
 	print("[ai_run] session=%s party=%s asc=%d seed=%s auto=%s" % [
 		(_session if not _session.is_empty() else "(root)"), str(party), asc, str(run_seed), str(_auto)])
 	if not _session.is_empty():
@@ -130,6 +149,7 @@ func _poll_loop() -> void:
 			_emit_next_view()
 			_force_auto_this_battle = false
 		else:
+			_history.append(choice_str)
 			_engine.apply(choice_str)
 			_emit_next_view()
 
@@ -147,18 +167,51 @@ func _emit_next_view() -> void:
 	var view: Dictionary = _engine.next_view()
 	# 混合委派：把不需要 agent 智慧的例行戰鬥回合用啟發式自動打掉，只在 meta 決策 /
 	# boss 戰停下交給 agent。一場雜兵戰可省下 20-40 次 round-trip。
+	var auto_played: bool = false
 	var auto_guard: int = 0
 	while _should_auto_play(view) and auto_guard < 100000:
 		auto_guard += 1
-		_engine.apply(AiRunEngine.auto_choice(view))
+		var ac: String = AiRunEngine.auto_choice(view)
+		_history.append(ac)
+		_engine.apply(ac)
+		auto_played = true
 		view = _engine.next_view()
 	if String(view.get("kind", "")) == "done":
+		# auto 自動打導致全滅 → 倒帶交還 agent（而非直接判 run 失敗）
+		if auto_played and not bool(_engine.result.get("victory", false)) \
+				and _rewind_n > 0 and _rewinds_done < MAX_REWINDS:
+			_rewind_and_handoff()
+			return
 		_finish_and_quit()
 		return
 	_seq += 1
+	_checkpoints.append(_history.size())  # 此 agent 決策點對應的 history 長度（供倒帶定位）
 	view["seq"] = _seq
 	_write_json(VIEW_PATH, view)
 	print("[ai_run] seq=%d kind=%s phase=%s" % [_seq, view.get("kind", "?"), view.get("phase_label", "")])
+
+# auto 戰敗 → 用同 seed 重建引擎、重放到「前 _rewind_n 個 agent 決策點」，交還 agent。
+func _rewind_and_handoff() -> void:
+	_rewinds_done += 1
+	var cp_index: int = max(0, _checkpoints.size() - _rewind_n)
+	var target_len: int = int(_checkpoints[cp_index]) if cp_index < _checkpoints.size() else 0
+	var replay: Array = _history.slice(0, target_len)
+	print("[ai_run] REWIND #%d：auto 戰敗，倒回 %d 個 agent 決策點（重放 %d/%d 個 choice）。auto 已關閉、交還 agent。" % [
+		_rewinds_done, _checkpoints.size() - cp_index, target_len, _history.size()])
+	# 同 seed 重建 → 完全重現；逐步 next_view→apply 重放（鏡像原驅動順序，確保 _ctx 被建好）
+	_engine = AiRunEngine.new()
+	_engine.setup(_party, _asc, _resolved_seed)
+	for c_v: Variant in replay:
+		var v: Dictionary = _engine.next_view()
+		if String(v.get("kind", "")) == "done":
+			break
+		_engine.apply(c_v)
+	_history = replay
+	_checkpoints = _checkpoints.slice(0, cp_index)
+	# 倒帶後關閉自動戰鬥：agent 全程接手（仍可逐場 choice="auto" 重新加速）
+	_auto_battle_mode = "off"
+	_force_auto_this_battle = false
+	_emit_next_view()
 
 # 是否該由啟發式自動打這個戰鬥回合（而非交給 agent）。
 func _should_auto_play(view: Dictionary) -> bool:
