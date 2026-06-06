@@ -24,3 +24,14 @@ desktop.ini
 
 # Scratch / experimental output
 tmp/
+
+# AI balance harness 暫存協定檔（單開根目錄 / 多開 _ai_runs/<session>/）
+_ai_view.json
+_ai_cmd.json
+_ai_result.json
+_ai_transcript.json
+_ai_err.txt
+_ai_runs/
+
+# render-probe 暫存截圖
+_*.png

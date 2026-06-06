@@ -10,29 +10,36 @@ extends SceneTree
 #   AIRUN_ASC=0                       # ascension 難度，預設 0
 #   AIRUN_SEED=0                      # run seed，0=隨機
 #   AIRUN_AUTO=0                      # 1=用內建啟發式 policy 自動跑完（不等檔案）
+#   AIRUN_SESSION=                    # 多開時的 session 名（見下）。空=用 repo 根目錄 legacy 檔名
 #
-# 檔案協定（repo 根目錄）：
+# 檔案協定（單開 / AIRUN_SESSION 為空時用 repo 根目錄 legacy 檔名）：
 #   _ai_view.json — 本驅動器寫出，{ seq, kind, phase_label, run, state, options, [terminal,result] }
 #   _ai_cmd.json  — 由我（agent）寫入，{ seq, choice }；choice 是給 engine.apply 的字串
 #
-# 流程：寫出 _ai_view.json（seq=N），等我寫 _ai_cmd.json（seq=N）→ 套用 → 推進 →
-#       寫出新的 _ai_view.json（seq=N+1）。run 結束寫 _ai_result.json + _ai_transcript.json 後 quit。
+# 多 agent 同時測試：每個 godot 程序帶不同 AIRUN_SESSION（如 A / li_s1 / 任意字串），
+#   協定檔改放 res://_ai_runs/<session>/{view,cmd,result,transcript}.json，彼此不衝突。
+#   搭配各自不同的 AIRUN_PARTY / AIRUN_SEED / AIRUN_ASC 即可平行跑多組組合。
 #
-# 看完自行刪除 _ai_*.json 暫存檔（同 render_effects.gd 的清理慣例）。
+# 流程：寫出 view（seq=N），等我寫 cmd（seq=N）→ 套用 → 推進 →
+#       寫出新的 view（seq=N+1）。run 結束寫 result + transcript 後 quit。
+#
+# 看完自行刪除暫存檔（單開：_ai_*.json；多開：整個 _ai_runs/<session>/ 目錄）。
 # ---------------------------------------------------------------------------
 
-const VIEW_PATH := "res://_ai_view.json"
-const CMD_PATH := "res://_ai_cmd.json"
-const RESULT_PATH := "res://_ai_result.json"
-const TRANSCRIPT_PATH := "res://_ai_transcript.json"
+var VIEW_PATH := "res://_ai_view.json"
+var CMD_PATH := "res://_ai_cmd.json"
+var RESULT_PATH := "res://_ai_result.json"
+var TRANSCRIPT_PATH := "res://_ai_transcript.json"
 
 var _engine: AiRunEngine
 var _seq: int = 0
 var _auto: bool = false
 var _done: bool = false
+var _session: String = ""
 
 func _initialize() -> void:
 	_auto = OS.get_environment("AIRUN_AUTO") == "1"
+	_resolve_paths()
 	var party_env: String = OS.get_environment("AIRUN_PARTY")
 	if party_env.is_empty():
 		party_env = "li_xiaoyao"
@@ -49,7 +56,10 @@ func _initialize() -> void:
 
 	_engine = AiRunEngine.new()
 	_engine.setup(party, asc, run_seed)
-	print("[ai_run] party=%s asc=%d seed=%s auto=%s" % [str(party), asc, str(run_seed), str(_auto)])
+	print("[ai_run] session=%s party=%s asc=%d seed=%s auto=%s" % [
+		(_session if not _session.is_empty() else "(root)"), str(party), asc, str(run_seed), str(_auto)])
+	if not _session.is_empty():
+		print("[ai_run] protocol dir: res://_ai_runs/%s/" % _session)
 
 	if _auto:
 		_run_auto()
@@ -60,6 +70,26 @@ func _initialize() -> void:
 	_emit_next_view()
 	await _poll_loop()
 	quit(0)
+
+# 依 AIRUN_SESSION 決定協定檔路徑。空 → repo 根 legacy 檔名（向後相容）；
+# 非空 → res://_ai_runs/<session>/，各 session 互不干擾。
+func _resolve_paths() -> void:
+	_session = OS.get_environment("AIRUN_SESSION").strip_edges()
+	if _session.is_empty():
+		return  # 維持 legacy 根目錄檔名
+	# 清理 session 名，只留檔名安全字元
+	var safe: String = ""
+	for c: String in _session:
+		safe += c if (c.to_lower() != c.to_upper() or c.is_valid_int() or c == "_" or c == "-") else "_"
+	_session = safe
+	var dir_rel: String = "_ai_runs/%s" % _session
+	var abs_dir: String = ProjectSettings.globalize_path("res://" + dir_rel)
+	DirAccess.make_dir_recursive_absolute(abs_dir)
+	var base: String = "res://%s/" % dir_rel
+	VIEW_PATH = base + "view.json"
+	CMD_PATH = base + "cmd.json"
+	RESULT_PATH = base + "result.json"
+	TRANSCRIPT_PATH = base + "transcript.json"
 
 # 互動模式主迴圈：每幀輪詢 _ai_cmd.json，對上 seq 就套用、推進、寫新 view
 func _poll_loop() -> void:

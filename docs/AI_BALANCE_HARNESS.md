@@ -40,8 +40,11 @@ AIRUN_AUTO=1 godot --headless --path . -s tools/ai_run.gd
 | `AIRUN_ASC` | `0` | ascension 難度層級 |
 | `AIRUN_SEED` | `0` | run seed，0=隨機 |
 | `AIRUN_AUTO` | `0` | `1`=用內建 policy 自動跑完，不等檔案 |
+| `AIRUN_SESSION` | （空） | 多開時的 session 名；空=用 repo 根 legacy 檔名，非空=用 `_ai_runs/<session>/` 隔離 |
 
-## 檔案協定（互動模式，repo 根目錄）
+## 檔案協定（互動模式）
+
+**單開**（`AIRUN_SESSION` 為空，repo 根目錄）：
 
 | 檔 | 寫入方 | 內容 |
 |---|---|---|
@@ -49,6 +52,9 @@ AIRUN_AUTO=1 godot --headless --path . -s tools/ai_run.gd
 | `_ai_cmd.json` | 我（agent） | `{ seq, choice }` — 我的決策（`choice` 是給 `apply()` 的字串） |
 | `_ai_result.json` | 驅動器 | run 結束的終局摘要 |
 | `_ai_transcript.json` | 驅動器 | 逐事件紀錄 |
+
+**多開**（設 `AIRUN_SESSION=<name>`）：上述四檔改放 `_ai_runs/<name>/{view,cmd,result,transcript}.json`，
+各 session 互不干擾。`_ai_runs/` 已在 `.gitignore`。
 
 **循環**：驅動器寫 `_ai_view.json`（seq=N）→ 我讀局面、寫 `_ai_cmd.json`（**seq 必須等於 N**）→
 驅動器套用、推進、寫出新的 `_ai_view.json`（seq=N+1）。我每次寫完 cmd 後**重讀 `_ai_view.json`**
@@ -80,6 +86,36 @@ AIRUN_AUTO=1 godot --headless --path . -s tools/ai_run.gd
 4. 重讀 `_ai_view.json` 確認 seq 前進，回到 2。
 5. 看到 `kind: done` 或 `_ai_result.json` 出現即結束；讀 transcript 寫報告。
 6. 完事 `taskkill` godot、刪除 `_ai_*.json` 暫存（同 render-probe 清理慣例）。
+
+## 多 agent 同時測試（平行掃多組組合）
+
+要一次評估「不同角色 × 不同 seed × 不同難度」的矩陣時，平行開多個驅動器、每個由一個 subagent
+親自玩，可大幅縮短牆鐘時間。每個驅動器用獨立 `AIRUN_SESSION`，協定檔自動隔離到 `_ai_runs/<session>/`。
+
+**啟動 N 個背景驅動器**（各帶不同 session / party / seed）：
+
+```bash
+# 範例：4 角色各跑一場（同 seed 比角色，或不同 seed 比運氣）
+AIRUN_SESSION=li  AIRUN_PARTY=li_xiaoyao  AIRUN_SEED=1001 godot --headless --path . -s tools/ai_run.gd   # 背景
+AIRUN_SESSION=zl  AIRUN_PARTY=zhao_linger AIRUN_SEED=1001 godot --headless --path . -s tools/ai_run.gd   # 背景
+AIRUN_SESSION=lyr AIRUN_PARTY=lin_yueru   AIRUN_SEED=1001 godot --headless --path . -s tools/ai_run.gd   # 背景
+AIRUN_SESSION=anu AIRUN_PARTY=anu         AIRUN_SEED=1001 godot --headless --path . -s tools/ai_run.gd   # 背景
+```
+
+> Windows PowerShell：用 `$env:AIRUN_SESSION="li"; $env:AIRUN_PARTY="li_xiaoyao"; ...` 設好再呼叫，
+> 或用 `Start-Job` 把每個程序丟到背景。多個 godot headless 程序彼此獨立，共用唯讀的 `.godot` import
+> cache，互不干擾。
+
+**派 subagent 各玩一個 session**：對每個 session 派一個 subagent，指令它「只讀 / 寫
+`_ai_runs/<session>/view.json` ↔ `cmd.json`，依 `kind` 做真實策略決策，直到 `result.json` 出現」，
+最後把該 session 的 `result.json` + `transcript.json` 摘要回報。主控彙整成平衡矩陣。
+
+要點：
+- 每個 subagent **只碰自己 session 的目錄**，避免互踩。
+- seq 對齊邏輯不變（view seq=N → cmd seq=N → view seq=N+1），只是路徑換成 session 目錄。
+- 全部跑完後刪 `_ai_runs/`（或各自 session 子目錄）清理。
+- 想比「角色強弱」固定同一組 seed；想比「運氣區間」同角色掃多個 seed。配合不同聰明程度的
+  subagent 指令，即可重現「聰明選擇＋運氣」的難度光譜（見 balance methodology 記憶）。
 
 ## 失真說明（drift caveats）
 
