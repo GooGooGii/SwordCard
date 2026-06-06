@@ -155,6 +155,8 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"lin_block_used": false,
 		"player_thorns": 0,  # 反擊（Thorns）：被攻擊時反彈 N 點傷害給攻擊者，不衰減
 		"poison_per_turn": 0,  # 毒引擎（StS Noxious Fumes 式）：每回合開始對全體敵人施毒
+		"poison_on_attack": 0,  # 蠱刃：攻擊無格擋敵人時每段施毒（damage / damage_all 讀取）
+		"corpse_poison": false,  # 屍蠱：中毒敵人死亡時殘餘蠱毒隨機轉移給其他敵人
 		"damage_taken_reduction": 0,
 		"damage_out_bonus": 0,
 		"block_bonus": 0,
@@ -573,10 +575,37 @@ func play_card(card: CardData) -> Dictionary:
 	_sync_state_to_active_enemy()  # 單體敵人 effects 寫回 active slot
 	# 連打引擎結算：此時 active slot 已從 alias 刷新，combo strike 讀 slots 才正確。
 	_check_combo_strike()
+	_process_corpse_poison()  # 屍蠱：剛被打死的中毒敵人殘餘毒轉移給活敵
 	_check_active_enemy_death()  # active 敵被打死 → 自動換到下一個活敵
 	return {"affordable": true, "before_card": before_card, "ended": is_battle_over(), "stolen_item": stolen_item}
 
 # active 敵 HP <= 0 時，自動切換 active 到第一個活敵
+# 屍蠱：掃描剛死且仍帶蠱毒的敵人，把殘餘蠱毒隨機轉移給一個還活著的敵人（轉移後清零，只轉一次）。
+# 由 play_card（傷害後）與 begin_enemy_phase（毒 tick 後）呼叫，僅在 state["corpse_poison"] 開啟時生效。
+func _process_corpse_poison() -> void:
+	if not bool(state.get("corpse_poison", false)):
+		return
+	var slots: Array = state.get("enemies", []) as Array
+	var living: Array[int] = []
+	for i: int in range(slots.size()):
+		if int((slots[i] as Dictionary)["hp"]) > 0:
+			living.append(i)
+	if living.is_empty():
+		return
+	var moved: bool = false
+	for i: int in range(slots.size()):
+		var slot: Dictionary = slots[i] as Dictionary
+		if int(slot["hp"]) <= 0 and int(slot.get("poison", 0)) > 0:
+			var carried: int = int(slot["poison"])
+			slot["poison"] = 0
+			var t: int = living[randi() % living.size()]
+			var tgt: Dictionary = slots[t] as Dictionary
+			tgt["poison"] = int(tgt.get("poison", 0)) + carried
+			add_log("屍蠱：%s 殘餘 %d 層蠱毒轉移給 %s！" % [String(slot["name"]), carried, String(tgt["name"])])
+			moved = true
+	if moved:
+		_sync_active_enemy_to_state()
+
 func _check_active_enemy_death() -> void:
 	var enemy_slots: Array = state.get("enemies", []) as Array
 	var idx: int = _active_enemy_index()
@@ -630,6 +659,7 @@ func begin_enemy_phase() -> Array[Dictionary]:
 	var poison_engine: int = int(state.get("poison_per_turn", 0))
 	if poison_engine > 0:
 		add_logs(resolver.resolve_effects_list([{"kind": "poison_all", "amount": poison_engine}], state))
+	_process_corpse_poison()  # 屍蠱：毒死的敵人殘餘毒轉移給活敵
 	_check_active_enemy_death()  # 毒死 active 敵 → 換到下一個活敵
 	_sync_state_to_active()
 	if is_victory():

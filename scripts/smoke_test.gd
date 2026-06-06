@@ -134,6 +134,10 @@ func _initialize() -> void:
 	_test_potion_replacement_logic(characters)
 	_test_shop_potion_replacement(characters)
 	_test_potion_jincan_wang(characters, enemies[0])
+	# 阿奴毒流 combo 三張（蠱毒催化 / 蠱刃淬煉 / 蠱蟲寄屍）
+	_test_poison_multiply(characters[3], enemies[0])
+	_test_poison_on_attack(characters[3], enemies[0])
+	_test_corpse_poison(characters[3], enemies)
 	_test_level_system(characters)
 	_test_level_unlock_cards()
 	_test_ai_run_engine_smoke()
@@ -1675,6 +1679,61 @@ func _test_multi_enemy_aoe_damage(characters: Array[CharacterData], enemies: Arr
 		_check(after == hp_before[i] - 8, "enemy[%d] HP %d → %d expected %d" % [i, hp_before[i], after, hp_before[i] - 8])
 	# alias 應同步 active (idx 0)
 	_check(int(bc.state["enemy_hp"]) == int((bc.state["enemies"][0] as Dictionary)["hp"]), "alias enemy_hp should sync to active after AOE")
+
+func _test_poison_multiply(character: CharacterData, enemy: EnemyData) -> void:
+	# 蠱毒催化：毒層翻倍；升級 2→3 倍
+	var bc: BattleController = BattleController.new()
+	var rs: RunState = RunState.new()
+	rs.init_for(character)
+	bc.setup(rs, character, enemy.clone())
+	bc.start_turn()
+	bc.state["enemy_poison"] = 4
+	bc.resolver._resolve_effect({"kind": "poison_multiply", "amount": 2}, bc.state)
+	_check(int(bc.state["enemy_poison"]) == 8, "poison_multiply x2: 4->8, got %d" % int(bc.state["enemy_poison"]))
+	# 無毒時應無效（仍為 0）
+	bc.state["enemy_poison"] = 0
+	bc.resolver._resolve_effect({"kind": "poison_multiply", "amount": 2}, bc.state)
+	_check(int(bc.state["enemy_poison"]) == 0, "poison_multiply on 0 poison stays 0")
+	# 升級：amount 2 → 3
+	var cat: CardData = null
+	for c: CardData in character.reward_pool:
+		if c.id == "anu_cuihua":
+			cat = c
+	_check(cat != null, "anu_cuihua should be in anu reward pool")
+	if cat != null:
+		var up: CardData = cat.upgraded_copy()
+		_check(int(up.effects[0]["amount"]) == 3, "upgraded poison_multiply should be 3, got %d" % int(up.effects[0]["amount"]))
+
+func _test_poison_on_attack(character: CharacterData, enemy: EnemyData) -> void:
+	# 蠱刃淬煉：攻擊無格擋敵人每段施 1 毒；有格擋的段不施
+	var bc: BattleController = BattleController.new()
+	var rs: RunState = RunState.new()
+	rs.init_for(character)
+	bc.setup(rs, character, enemy.clone())
+	bc.start_turn()
+	bc.state["poison_on_attack"] = 1
+	bc.state["enemy_block"] = 0
+	bc.state["enemy_poison"] = 0
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 5, "hits": 2}, bc.state)
+	_check(int(bc.state["enemy_poison"]) == 2, "poison_on_attack: 2 unblocked hits -> +2 poison, got %d" % int(bc.state["enemy_poison"]))
+	# 有格擋時不施毒
+	bc.state["enemy_block"] = 99
+	bc.state["enemy_poison"] = 0
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 5, "hits": 2}, bc.state)
+	_check(int(bc.state["enemy_poison"]) == 0, "poison_on_attack: blocked hits add no poison, got %d" % int(bc.state["enemy_poison"]))
+
+func _test_corpse_poison(character: CharacterData, enemies: Array[EnemyData]) -> void:
+	# 蠱蟲寄屍：中毒的死敵殘餘毒轉移給活敵（2 敵 → 必轉給唯一活敵，確定性）
+	var bc: BattleController = _make_multi_battle(character, [enemies[0], enemies[1]])
+	bc.state["corpse_poison"] = true
+	var e0: Dictionary = bc.state["enemies"][0] as Dictionary
+	var e1: Dictionary = bc.state["enemies"][1] as Dictionary
+	e0["hp"] = 0
+	e0["poison"] = 5
+	e1["poison"] = 0
+	bc._process_corpse_poison()
+	_check(int(e1["poison"]) == 5, "corpse_poison: 5 poison transferred to living enemy, got %d" % int(e1["poison"]))
+	_check(int(e0["poison"]) == 0, "corpse_poison: dead enemy poison cleared, got %d" % int(e0["poison"]))
 
 func _test_multi_enemy_aoe_status(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
 	# poison_all / weak_all / vulnerable_all 應對全敵套 (skip 已死)

@@ -119,18 +119,26 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				# （block 跨段遞減、vulnerable 為 >0 即 ×1.5 不逐段衰減，與單擊一致）。
 				var hits: int = max(1, int(effect.get("hits", 1)))
 				var total_dealt: int = 0
+				var poison_on_atk: int = int(state.get("poison_on_attack", 0))  # 蠱刃：攻擊無格擋敵人每段施毒
+				var atk_poison_added: int = 0
 				for _h: int in range(hits):
 					var modified: int = max(0, amount + int(state["player_power"]) - int(state["player_weak"])) + int(state.get("damage_out_bonus", 0))
 					if int(state["enemy_vulnerable"]) > 0:
 						modified = int(ceil(modified * 1.5))
+					var unblocked: bool = int(state["enemy_block"]) <= 0  # 此段命中時敵人無格擋
 					var blocked: int = min(int(state["enemy_block"]), modified)
 					state["enemy_block"] = int(state["enemy_block"]) - blocked
 					state["enemy_hp"] = max(0, int(state["enemy_hp"]) - (modified - blocked))
 					total_dealt += modified - blocked
+					if poison_on_atk > 0 and unblocked:
+						state["enemy_poison"] = int(state["enemy_poison"]) + poison_on_atk
+						atk_poison_added += poison_on_atk
 				if hits > 1:
 					log_lines.append("連擊 %d 段，共造成 %d 點傷害。" % [hits, total_dealt])
 				else:
 					log_lines.append("造成 %d 點傷害。" % total_dealt)
+				if atk_poison_added > 0:
+					log_lines.append("蠱刃淬煉：施加 %d 層蠱毒。" % atk_poison_added)
 		"block":
 			if from_enemy:
 				state["enemy_block"] = int(state["enemy_block"]) + amount
@@ -198,6 +206,24 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			# 實際每回合施毒由 BattleController.start_turn 讀 state["poison_per_turn"] 執行。
 			state["poison_per_turn"] = int(state.get("poison_per_turn", 0)) + amount
 			log_lines.append("瘴蠱纏身：每回合開始對所有敵人施加 %d 層蠱毒。" % amount)
+		"poison_on_attack":
+			# 蠱刃（持久能力）：攻擊無格擋的敵人時每段施 amount 層蠱毒。
+			# 實際施毒在 damage / damage_all 路徑讀 state["poison_on_attack"] 執行。
+			state["poison_on_attack"] = int(state.get("poison_on_attack", 0)) + amount
+			log_lines.append("蠱刃淬煉：攻擊無格擋的敵人時，每次攻擊施加 %d 層蠱毒。" % amount)
+		"corpse_poison":
+			# 屍蠱（持久能力）：中毒的敵人死亡時，殘餘蠱毒隨機轉移給另一個敵人。
+			# 實際轉移在 BattleController._process_corpse_poison() 執行（需多敵 + RNG）。
+			state["corpse_poison"] = true
+			log_lines.append("蠱蟲寄屍：中毒的敵人死亡時，殘餘蠱毒將隨機轉移給其他敵人。")
+		"poison_multiply":
+			# 蠱毒催化（StS Catalyst 式）：使目標敵人現有蠱毒層數翻 amount 倍。
+			var cur_poison: int = int(state["enemy_poison"])
+			if cur_poison > 0:
+				state["enemy_poison"] = cur_poison * amount
+				log_lines.append("蠱毒催化：%s 的蠱毒翻為 %d 層。" % [state["enemy_name"], cur_poison * amount])
+			else:
+				log_lines.append("蠱毒催化：目標無蠱毒，無效。")
 		"combo_strike":
 			# 連打引擎（StS Panache 式）：持久能力，本回合每出 threshold 張牌對全體敵人造成傷害。
 			# 實際計數與結算由 BattleController.play_card 讀 state["combo_strike_*"] 執行。
@@ -308,6 +334,7 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			var totals: Array[int] = []
 			for _i: int in range(slots.size()):
 				totals.append(0)
+			var poison_on_atk_all: int = int(state.get("poison_on_attack", 0))  # 蠱刃：AOE 每段對無格擋敵人施毒
 			for _h: int in range(hits):
 				for i: int in range(slots.size()):
 					var slot: Dictionary = slots[i] as Dictionary
@@ -316,10 +343,13 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 					var modified: int = max(0, amount + int(state["player_power"]) - int(state["player_weak"])) + int(state.get("damage_out_bonus", 0))
 					if int(slot["vulnerable"]) > 0:
 						modified = int(ceil(modified * 1.5))
+					var unblocked: bool = int(slot["block"]) <= 0
 					var blocked: int = min(int(slot["block"]), modified)
 					slot["block"] = int(slot["block"]) - blocked
 					slot["hp"] = max(0, int(slot["hp"]) - (modified - blocked))
 					totals[i] = int(totals[i]) + (modified - blocked)
+					if poison_on_atk_all > 0 and unblocked:
+						slot["poison"] = int(slot["poison"]) + poison_on_atk_all
 			for i: int in range(slots.size()):
 				var slot: Dictionary = slots[i] as Dictionary
 				if int(totals[i]) > 0:

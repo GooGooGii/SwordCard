@@ -111,6 +111,7 @@ func _should_upgrade_amount(kind: String) -> bool:
 		"power",
 		"consume_energy_damage",
 		"poison_burst",
+		"poison_multiply",
 		"revive"
 	]
 
@@ -157,6 +158,8 @@ func _upgraded_amount(kind: String, amount: int) -> int:
 			return amount + 1
 		"weak", "poison", "power":
 			return amount + 1
+		"poison_multiply":
+			return amount + 1  # 蠱毒催化：2 倍 → 3 倍
 		"consume_energy_damage", "poison_burst":
 			return amount + 2
 		_:
