@@ -421,6 +421,7 @@ func _view_battle() -> Dictionary:
 			"detail": String(run_state.potions[i].get("description", ""))})
 	options.append({"id": "end", "label": "結束回合", "detail": "進入敵方行動"})
 	return {"kind": "battle_turn", "phase_label": "戰鬥 第%d回合" % int(s.get("turn", 0)),
+		"is_boss": bool(_ctx.get("is_boss", false)),
 		"run": _run_context(),
 		"state": {"energy": s.get("energy", 0), "draw_pile": dm.draw_pile.size(),
 			"discard_pile": dm.discard_pile.size(), "players": players, "enemies": enemies,

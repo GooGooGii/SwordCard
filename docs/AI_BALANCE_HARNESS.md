@@ -40,7 +40,29 @@ AIRUN_AUTO=1 godot --headless --path . -s tools/ai_run.gd
 | `AIRUN_ASC` | `0` | ascension 難度層級 |
 | `AIRUN_SEED` | `0` | run seed，0=隨機 |
 | `AIRUN_AUTO` | `0` | `1`=用內建 policy 自動跑完，不等檔案 |
+| `AIRUN_AUTO_BATTLE` | `off` | 混合委派（見下）：`off`=每個戰鬥回合都問 agent；`normal`=自動打非 boss 戰、boss 戰交給 agent；`all`=自動打所有戰鬥、agent 只決定 meta |
 | `AIRUN_SESSION` | （空） | 多開時的 session 名；空=用 repo 根 legacy 檔名，非空=用 `_ai_runs/<session>/` 隔離 |
+
+## 混合委派（加速：少 round-trip）
+
+一整個 8 幕 run ≈ 500 個決策點，其中**絕大多數是雜兵戰逐張出牌**——這些用內建啟發式 policy
+就能打贏，不需要 agent 逐張思考。每個決策點都是一次 `Read view → 決策 → Write cmd` 的
+round-trip，是互動模式最大的時間成本。
+
+**混合委派**讓例行戰鬥交給啟發式自動打、只把需要 agent 智慧的 meta 決策（加護/路線/獎勵/
+商店/事件/休息）與 boss 戰 surface 出來。實測一趟 zhao_linger run：引擎內部 498 步，
+`AIRUN_AUTO_BATTLE=normal` 下 agent 只需處理 ~100 個決策點、`battle_turn` 僅 4 次（皆 boss）；
+`all` 模式更只剩純 meta（map / reward / event…），雜兵戰一個都不 surface。
+
+兩種觸發方式（可並用）：
+
+1. **env 級**：`AIRUN_AUTO_BATTLE=normal`（甜蜜點，保留 boss 戰術交給 agent）或 `all`（最快）。
+2. **agent 隨需**：在任一 `battle_turn` 寫 `choice: "auto"` → 該場戰鬥**剩餘回合**全部交給啟發式
+   打完，下一個 view 直接跳到戰後（獎勵/地圖）。適合 agent 看一眼局面、判斷「這場穩贏」就一鍵帶過。
+
+> 取捨：啟發式 policy 的戰術不如真人精算（尤其阿奴毒流這種 setup-payoff 牌組）。
+> 要量測「會玩的人」的**戰鬥**真實上限時用 `off`（或只對關鍵戰用 agent、其餘 `auto`）；
+> 要快速評估「**整個 run 的策略線**（牌組/路線/獎勵）」時用 `normal` / `all` 最划算。
 
 ## 檔案協定（互動模式）
 
@@ -68,7 +90,7 @@ AIRUN_AUTO=1 godot --headless --path . -s tools/ai_run.gd
 |---|---|---|
 | `boon` | 起始加護選項 | boon id，或 `skip` |
 | `map` | 當前列可前往的節點 | 節點 index（如 `2`） |
-| `battle_turn` | energy / 手牌(含 cost·效果·需否目標·預覽) / 我方·敵方 HP·護體·狀態·intent·預測傷害 | `play <手牌index> [敵index]`、`switch <隊伍index>`、`potion <藥格>`、`end` |
+| `battle_turn` | energy / 手牌(含 cost·效果·需否目標·預覽) / 我方·敵方 HP·護體·狀態·intent·預測傷害；另帶 `is_boss` 旗標 | `play <手牌index> [敵index]`、`switch <隊伍index>`、`potion <藥格>`、`end`、`auto`（把這場剩餘回合委派給啟發式打完）|
 | `reward` | 卡牌三選一 | 卡 index，或 `skip` |
 | `boss_relic` | Boss 遺物三選一 | relic id，或 `skip` |
 | `rest` | 調息 / 打磨 | `heal`，或 `upgrade <可升級index>` |

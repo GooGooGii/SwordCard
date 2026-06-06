@@ -36,9 +36,19 @@ var _seq: int = 0
 var _auto: bool = false
 var _done: bool = false
 var _session: String = ""
+# 混合委派：例行戰鬥用內建啟發式自動打、只把 meta 決策與 boss 戰交給 agent，大幅減少 round-trip。
+#   off    = 每個戰鬥回合都問 agent（原行為）
+#   normal = 自動打非 boss 戰鬥，boss 戰仍交給 agent（預設甜蜜點）
+#   all    = 自動打所有戰鬥，agent 只決定 meta（最快，戰術失真換速度）
+var _auto_battle_mode: String = "off"
+# agent 隨需委派：在某個 battle_turn 寫 choice="auto" → 該場剩餘回合自動打完
+var _force_auto_this_battle: bool = false
 
 func _initialize() -> void:
 	_auto = OS.get_environment("AIRUN_AUTO") == "1"
+	var abm: String = OS.get_environment("AIRUN_AUTO_BATTLE").strip_edges().to_lower()
+	if abm in ["normal", "all"]:
+		_auto_battle_mode = abm
 	_resolve_paths()
 	var party_env: String = OS.get_environment("AIRUN_PARTY")
 	if party_env.is_empty():
@@ -113,8 +123,15 @@ func _poll_loop() -> void:
 		if int(cmd.get("seq", -1)) != _seq:
 			continue  # 還沒對上當前 seq
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(CMD_PATH))
-		_engine.apply(cmd.get("choice", "skip"))
-		_emit_next_view()
+		var choice_str: String = str(cmd.get("choice", "skip")).strip_edges()
+		if choice_str == "auto":
+			# agent 隨需把這場戰鬥剩餘回合委派給啟發式打完
+			_force_auto_this_battle = true
+			_emit_next_view()
+			_force_auto_this_battle = false
+		else:
+			_engine.apply(choice_str)
+			_emit_next_view()
 
 func _run_auto() -> void:
 	var guard: int = 0
@@ -128,6 +145,13 @@ func _run_auto() -> void:
 
 func _emit_next_view() -> void:
 	var view: Dictionary = _engine.next_view()
+	# 混合委派：把不需要 agent 智慧的例行戰鬥回合用啟發式自動打掉，只在 meta 決策 /
+	# boss 戰停下交給 agent。一場雜兵戰可省下 20-40 次 round-trip。
+	var auto_guard: int = 0
+	while _should_auto_play(view) and auto_guard < 100000:
+		auto_guard += 1
+		_engine.apply(AiRunEngine.auto_choice(view))
+		view = _engine.next_view()
 	if String(view.get("kind", "")) == "done":
 		_finish_and_quit()
 		return
@@ -135,6 +159,17 @@ func _emit_next_view() -> void:
 	view["seq"] = _seq
 	_write_json(VIEW_PATH, view)
 	print("[ai_run] seq=%d kind=%s phase=%s" % [_seq, view.get("kind", "?"), view.get("phase_label", "")])
+
+# 是否該由啟發式自動打這個戰鬥回合（而非交給 agent）。
+func _should_auto_play(view: Dictionary) -> bool:
+	if String(view.get("kind", "")) != "battle_turn":
+		return false
+	if _force_auto_this_battle:
+		return true
+	match _auto_battle_mode:
+		"all": return true
+		"normal": return not bool(view.get("is_boss", false))
+		_: return false
 
 func _finish_and_quit() -> void:
 	_write_json(RESULT_PATH, _engine.result)
