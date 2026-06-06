@@ -1265,6 +1265,31 @@ static func _num_after(text: String, keyword: String) -> int:
 			break
 	return int(num) if not num.is_empty() else -1
 
+# 解析 preview 的「傷害」總值，含多段：CardFormat.live_preview_text 把多段寫成
+# "傷害 V×H"（每段值×段數），單純 _num_after 只會讀到 V、漏掉 ×H → 嚴重低估多段攻擊、
+# 害 focus_killable / atk_kill 誤判。這裡讀到該段內的所有數字（V 及可選 H）相乘回傳總傷。
+static func _preview_total_damage(text: String) -> int:
+	var idx: int = text.find("傷害")
+	if idx < 0:
+		return -1
+	var rest: String = text.substr(idx + 2)  # "傷害".length() == 2
+	var nums: Array[int] = []
+	var cur: String = ""
+	for ch: String in rest:
+		if ch >= "0" and ch <= "9":
+			cur += ch
+			continue
+		if not cur.is_empty():
+			nums.append(int(cur))
+			cur = ""
+		if ch == "/":  # 進入下一個效果區段（" / " 分隔）→ 停止
+			break
+	if not cur.is_empty():
+		nums.append(int(cur))
+	if nums.is_empty():
+		return -1
+	return nums[0] * nums[1] if nums.size() >= 2 else nums[0]
+
 # 改良啟發式 policy（取代原本「打第一張負擔得起的牌」）。逐 action 評估、回傳當下最佳動作；
 # 由 auto 迴圈反覆呼叫直到本回合 end。重點：致命就擋、能殺就集火、阿奴疊毒留爆點、能力早放、
 # 商店優先拿遺物、血低就補。
@@ -1358,7 +1383,6 @@ static func _auto_battle(view: Dictionary) -> String:
 	var hp: int = int(me.get("hp", 1))
 	var block: int = int(me.get("block", 0))
 	var max_hp: int = int(me.get("max_hp", 1))
-	var turn: int = int(view.get("run", {}).get("floor", 0))  # 非關鍵，僅供早放能力判斷
 
 	# 活著的敵人
 	var enemies: Array = st.get("enemies", []) as Array
@@ -1391,7 +1415,7 @@ static func _auto_battle(view: Dictionary) -> String:
 		var is_burst: bool = desc.find("引爆") >= 0
 		var is_poison: bool = (not is_burst) and (desc.find("蠱毒") >= 0 or prev.find("蠱毒") >= 0)
 		var blk: int = _num_after(prev, "護體")
-		var dmg: int = _num_after(prev, "傷害")
+		var dmg: int = _preview_total_damage(prev)  # 多段攻擊算總傷（含 ×段數），勿用 _num_after 漏掉段數
 		var heal: int = _num_after(prev, "治療")
 		if is_burst:
 			bursts.append({"idx": idx, "nt": nt})
@@ -1415,7 +1439,6 @@ static func _auto_battle(view: Dictionary) -> String:
 	var focus: int = -1
 	var focus_killable: bool = false
 	var best_threat: int = -1
-	var lowest_hp: int = 1 << 30
 	for e: Variant in alive:
 		var ed: Dictionary = e as Dictionary
 		var eidx: int = int(ed.get("idx", 0))
@@ -1426,8 +1449,6 @@ static func _auto_battle(view: Dictionary) -> String:
 		if not focus_killable:
 			if threat > best_threat:
 				best_threat = threat; focus = eidx
-			if ehp < lowest_hp:
-				lowest_hp = ehp
 	if focus < 0 and not alive.is_empty():
 		focus = int((alive[0] as Dictionary).get("idx", 0))
 
