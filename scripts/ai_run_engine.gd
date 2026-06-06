@@ -1322,10 +1322,20 @@ static func auto_choice(view: Dictionary) -> String:
 				return str((options[0] as Dictionary).get("id", "skip"))
 			return "skip"
 		"shop":
-			# 優先買遺物（純增益、不肥牌）；其次在牌組不太肥時買一張卡；否則離開
+			# 優先買遺物（純增益、不肥牌）
 			for o_v: Variant in options:
 				if String((o_v as Dictionary).get("id", "")).begins_with("relic "):
 					return String((o_v as Dictionary).get("id", "leave"))
+			# 血量偏低（<60%）→ 買一瓶補血藥備用（生存優先於擴牌）
+			if hp_ratio < 0.6:
+				for o_v: Variant in options:
+					var o: Dictionary = o_v as Dictionary
+					if not String(o.get("id", "")).begins_with("potion "):
+						continue
+					var info: String = String(o.get("detail", "")) + String(o.get("label", ""))
+					if info.find("回復") >= 0 or info.find("生命") >= 0 or info.find("治療") >= 0:
+						return String(o.get("id", "leave"))
+			# 其次在牌組不太肥時買一張卡；否則離開
 			if deck_size < 22:
 				for o_v: Variant in options:
 					if String((o_v as Dictionary).get("id", "")).begins_with("card "):
@@ -1458,6 +1468,21 @@ static func _auto_battle(view: Dictionary) -> String:
 		if not blocks.is_empty():
 			var bb: Dictionary = _max_by(blocks, "val")
 			return "play %d" % int(bb["idx"])
+	# 2.5 進攻藥只在 boss 戰用（雜兵浪費珍貴消耗品）：未斬殺前先用力量藥（沒力量時）/
+	#     破綻藥（focus 還沒破綻時）放大整場輸出——越早用、整場受益越多。
+	if bool(view.get("is_boss", false)) and not focus_killable:
+		if int(me.get("power", 0)) < 3:
+			var ppot: String = _auto_pick_potion(view, ["攻擊力", "傷害提升"])
+			if ppot != "":
+				return ppot
+		var focus_vuln: int = 0
+		for e: Variant in alive:
+			if int((e as Dictionary).get("idx", -1)) == focus:
+				focus_vuln = int((e as Dictionary).get("vulnerable", 0))
+		if focus_vuln == 0:
+			var vpot: String = _auto_pick_potion(view, ["破綻"])
+			if vpot != "":
+				return vpot
 	# 3. 集火能殺 → 殺（減少下回合進場傷害）。
 	#    但若這一擊就終結戰鬥（最後一隻、可斬殺），且回血後仍打得死、又沒滿血 →
 	#    先用治療牌（靈血咒）回血再補刀：穩贏的最後一回合先把 HP 帶進下一場（會玩的人習慣）。
@@ -1500,6 +1525,16 @@ static func _auto_battle(view: Dictionary) -> String:
 			if bool(c.get("needs_target", false)):
 				cmd += " %d" % focus
 			return cmd
+	# 9.5 功能藥（最後手段，避免擱置）：能量耗盡但手牌還有牌想打 → 靈力藥解鎖；
+	#     手牌將盡 → 抽牌藥（月魂草）續手。雜兵 / boss 皆可用（非珍貴進攻藥）。
+	if energy == 0 and hand.size() > 0:
+		var epot: String = _auto_pick_potion(view, ["靈力"])
+		if epot != "":
+			return epot
+	if hand.size() <= 2 and int(st.get("draw_pile", 0)) > 0:
+		var dpot: String = _auto_pick_potion(view, ["抽 "])
+		if dpot != "":
+			return dpot
 	# 10. 沒有有效動作 → 結束回合
 	return "end"
 
