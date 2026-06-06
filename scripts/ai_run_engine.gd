@@ -1399,21 +1399,33 @@ static func _auto_battle(view: Dictionary) -> String:
 	if focus < 0 and not alive.is_empty():
 		focus = int((alive[0] as Dictionary).get("idx", 0))
 
-	# focus 敵人的毒層（給阿奴留爆點用）
+	# focus 敵人的毒層 + 有效 HP（給阿奴判斷引爆時機用）
 	var focus_poison: int = 0
+	var focus_ehp: int = 1 << 30
+	var has_poison_engine: bool = int(st.get("poison_per_turn", 0)) > 0
 	for e: Variant in alive:
-		if int((e as Dictionary).get("idx", -1)) == focus:
-			focus_poison = int((e as Dictionary).get("poison", 0))
+		var ed0: Dictionary = e as Dictionary
+		if int(ed0.get("idx", -1)) == focus:
+			focus_poison = int(ed0.get("poison", 0))
+			focus_ehp = int(ed0.get("hp", 0)) + int(ed0.get("block", 0))
 
 	var lethal: bool = incoming > hp + block
 	var heavy: bool = incoming >= int(max_hp * 0.33)
 	var atk_kill: Dictionary = _max_by(attacks, "dmg") if not attacks.is_empty() else {}
 
 	# ── 決策優先序 ──
-	# 1. 引爆：毒層夠大就引爆（多敵留高層數；剩單敵時門檻放寬，把毒變成即時傷害收尾）
-	if not bursts.is_empty() and (focus_poison >= 6 or (alive.size() == 1 and focus_poison >= 4)):
-		var b: Dictionary = bursts[0]
-		return "play %d %d" % [int(b["idx"]), focus] if bool(b["nt"]) else "play %d" % int(b["idx"])
+	# 1. 引爆：毒流的關鍵在「讓毒滾起來持續 tick」，過早引爆會清空 DoT、自廢武功。
+	#    只在以下情形才炸：(a) 引爆可斬殺 focus（毒層×3 ≥ 有效 HP）；
+	#    (b) 沒有毒引擎且毒層偏高（無法持續補毒，落袋為安）；
+	#    (c) 毒層極高、tick 邊際遞減（衰減 1/回合會浪費，直接變現）。
+	#    有毒引擎時門檻拉很高，讓蠱瘴瀰漫每回合疊毒、毒層持續高檔 tick。
+	if not bursts.is_empty():
+		var burst_dmg: int = focus_poison * 3
+		var burst_lethal: bool = burst_dmg >= focus_ehp
+		var overstacked: bool = focus_poison >= (18 if has_poison_engine else 10)
+		if burst_lethal or overstacked:
+			var b: Dictionary = bursts[0]
+			return "play %d %d" % [int(b["idx"]), focus] if bool(b["nt"]) else "play %d" % int(b["idx"])
 	# 2. 致命威脅：能殺掉威脅源就先殺（除去傷害優於硬擋）→ 否則補血藥 → 否則疊滿格擋
 	if lethal:
 		if focus_killable and not atk_kill.is_empty():
