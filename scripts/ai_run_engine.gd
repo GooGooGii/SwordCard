@@ -714,7 +714,8 @@ func _view_rest() -> Dictionary:
 	var up: Array = _upgradeable()
 	for i: int in range(up.size()):
 		var c: CardData = up[i] as CardData
-		options.append({"id": "upgrade %d" % i, "label": "打磨：%s" % c.display_name, "detail": c.description})
+		options.append({"id": "upgrade %d" % i, "label": "打磨：%s" % c.display_name, "detail": c.description,
+			"cost": c.cost, "card_type": c.card_type})
 	return {"kind": "rest", "phase_label": "清修片刻", "run": _run_context(),
 		"state": {"heal_amount": run_state.pending_rest_heal}, "options": options}
 
@@ -1305,13 +1306,28 @@ static func auto_choice(view: Dictionary) -> String:
 		"battle_turn":
 			return _auto_battle(view)
 		"rest":
-			# 血低先補；血健康就打磨一張牌
+			# 血低（<60%）先補；血已很多就打磨牌。
 			if hp_ratio < 0.6:
 				return "heal"
+			# 升級最常用 / CP 值最高的牌先（會玩的人習慣）：低費＝每回合常打、升級回報滾最多次；
+			# 攻擊 / 能力（輸出 / 引擎）比技能更值得強化。挑分數最高的 upgrade 選項。
+			var best_up: String = ""
+			var best_up_score: int = -999
 			for o_v: Variant in options:
-				if String((o_v as Dictionary).get("id", "")).begins_with("upgrade"):
-					return String((o_v as Dictionary).get("id", "heal"))
-			return "heal"
+				var o: Dictionary = o_v as Dictionary
+				if not String(o.get("id", "")).begins_with("upgrade"):
+					continue
+				var score: int = 0
+				match String(o.get("card_type", "")):
+					"attack", "power": score += 2
+					"skill": score += 1
+				var ucost: int = int(o.get("cost", 2))
+				if ucost <= 1: score += 2     # 低費常打，升級回報最多次
+				elif ucost == 2: score += 1
+				if score > best_up_score:
+					best_up_score = score
+					best_up = String(o.get("id", ""))
+			return best_up if best_up != "" else "heal"
 		"map":
 			# 快死（<30%）→ 繞去休息（門檻壓低，避免避戰導致練不夠 / boss 前太弱）。
 			if hp_ratio < 0.3:
