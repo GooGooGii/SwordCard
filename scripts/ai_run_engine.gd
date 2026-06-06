@@ -32,6 +32,16 @@ var battle: BattleController = null
 var _ctx: Dictionary = {}           # phase-specific 暫存（reward cards、boss flag、event tree 位置…）
 var _step_count: int = 0
 const MAX_STEPS: int = 100000        # 跑飛防呆
+# 啟發式 policy「心中想組成的牌組」目標張數，依流派而異（起始皆 12）：
+# 速攻/多段要精簡（抽牌一致性）、引擎/續航流要厚一點（湊齊 win-con 需要更多牌）。
+# 達標就略過獎勵保持精簡。實測：齊頭 18 張會餓死阿奴毒流（→0%）、卻大補李逍遙速攻。
+const AUTO_TARGET_DECK_BY_ID: Dictionary = {
+	"li_xiaoyao": 17,   # 力量+多段速攻：越精簡越穩定抽到連擊
+	"zhao_linger": 18,  # 術法 AOE：中庸
+	"lin_yueru": 26,    # 續航+反擊：偏好厚牌組（工具/防禦/反擊牌多多益善，實測精簡反而變弱）
+	"anu": 23,          # 毒流引擎：需要多張毒源才能 ramp 起來
+}
+const AUTO_TARGET_DECK_DEFAULT: int = 18
 
 # ──────────────────────────────────────────────────────────────────────────
 # 建立 run（鏡像 main.gd start_run，去掉 UI / boon 畫面）
@@ -122,6 +132,7 @@ func _run_context() -> Dictionary:
 	var party: Array = []
 	for i: int in range(run_state.characters.size()):
 		party.append({
+			"id": run_state.characters[i].id,
 			"name": run_state.characters[i].display_name,
 			"hp": run_state.character_hps[i],
 			"max_hp": run_state.character_max_hps[i],
@@ -670,7 +681,7 @@ func _view_reward() -> Dictionary:
 	for i: int in range(cards.size()):
 		var c: CardData = cards[i] as CardData
 		options.append({"id": i, "label": "%s [%s] 耗%d" % [c.display_name, CardFormat.card_rarity_name(c), c.cost],
-			"detail": c.description})
+			"detail": c.description, "rarity": c.rarity, "card_type": c.card_type, "cost": c.cost})
 	options.append({"id": "skip", "label": "略過（不拿牌）", "detail": "保持牌組精簡"})
 	return {"kind": "reward", "phase_label": "卡牌獎勵" + ("（Boss）" if bool(_ctx.get("boss_card", false)) else ""),
 		"run": _run_context(), "state": {}, "options": options}
@@ -1282,8 +1293,12 @@ static func auto_choice(view: Dictionary) -> String:
 				return str((options[0] as Dictionary).get("id", 0))
 			return "skip"
 		"reward":
-			# 牌組過肥（>=28）就略過避免稀釋；否則拿第一張
-			if deck_size >= 28:
+			# 真玩家會保持牌組精簡（牌少→更穩定抽到 win-con），不會每場都拿。
+			# 達到目標張數就略過、保持精簡；未達標才拿（pool 已 shuffle → 無偏隨機選哪張）。
+			# 註：別自作聰明挑「稀有」或「便宜攻擊」——實測都比隨機選差（per-character
+			# win-con 判斷是啟發式做不到、得靠互動 agent 的事）。option 已附 rarity/card_type/cost。
+			var target: int = int(AUTO_TARGET_DECK_BY_ID.get(String(p0.get("id", "")), AUTO_TARGET_DECK_DEFAULT))
+			if deck_size >= target:
 				return "skip"
 			if not options.is_empty():
 				return str((options[0] as Dictionary).get("id", "skip"))
