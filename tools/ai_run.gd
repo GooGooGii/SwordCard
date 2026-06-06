@@ -36,11 +36,15 @@ var _seq: int = 0
 var _auto: bool = false
 var _done: bool = false
 var _session: String = ""
-# 混合委派：例行戰鬥用內建啟發式自動打、只把 meta 決策與 boss 戰交給 agent，大幅減少 round-trip。
+# 混合委派：例行決策用內建啟發式自動跑、只把關鍵決策交給 agent，大幅減少 round-trip。
 #   off    = 每個戰鬥回合都問 agent（原行為）
-#   normal = 自動打非 boss 戰鬥，boss 戰仍交給 agent（預設甜蜜點）
+#   normal = 自動打非 boss 戰鬥，boss 戰 + 所有 meta 交給 agent（甜蜜點）
 #   all    = 自動打所有戰鬥，agent 只決定 meta（最快，戰術失真換速度）
+#   focus  = agent 只管「關鍵」決策：boss 戰 + 牌組變更（獎勵/加護/boss 遺物）+ 商店 + 奇遇；
+#            雜兵戰 / 地圖 / 休息全自動。聚焦在「牌組構築 + 關鍵戰」，round-trip 最少。
 var _auto_battle_mode: String = "off"
+# focus 模式下交給啟發式自動的 view kind（battle_turn 另依 is_boss 判斷）
+const FOCUS_AUTO_KINDS: Array = ["map", "rest"]
 # agent 隨需委派：在某個 battle_turn 寫 choice="auto" → 該場剩餘回合自動打完
 var _force_auto_this_battle: bool = false
 
@@ -57,13 +61,22 @@ var _party: Array = []
 var _asc: int = 0
 var _resolved_seed: int = 0
 
+# 每幕完成暫停（incremental reporting）：每跑完一幕就 surface 一個 act_complete view，
+# 帶該 run 至今的 context + transcript，讓 agent 寫一份分析報告、再決定 continue / stop。
+# 避免一口氣跑完 8 幕太久、想停就停。
+var _act_pause: bool = true
+var _acts_reported: int = 0        # 已出過報告的最高「完成幕」
+var _awaiting_act_ack: bool = false  # 正等 agent 對 act_complete 回 continue/stop
+
 func _initialize() -> void:
 	_auto = OS.get_environment("AIRUN_AUTO") == "1"
 	var abm: String = OS.get_environment("AIRUN_AUTO_BATTLE").strip_edges().to_lower()
-	if abm in ["normal", "all"]:
+	if abm in ["normal", "all", "focus"]:
 		_auto_battle_mode = abm
 	if OS.get_environment("AIRUN_REWIND").is_valid_int():
 		_rewind_n = int(OS.get_environment("AIRUN_REWIND"))
+	# 每幕完成暫停出報告（互動模式預設開；AIRUN_ACT_PAUSE=0 關閉）
+	_act_pause = OS.get_environment("AIRUN_ACT_PAUSE") != "0" and not _auto
 	_resolve_paths()
 	var party_env: String = OS.get_environment("AIRUN_PARTY")
 	if party_env.is_empty():
@@ -143,7 +156,16 @@ func _poll_loop() -> void:
 			continue  # 還沒對上當前 seq
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(CMD_PATH))
 		var choice_str: String = str(cmd.get("choice", "skip")).strip_edges()
-		if choice_str == "auto":
+		if _awaiting_act_ack:
+			# 對 act_complete 暫停的回應：stop=提前結算、其餘=繼續下一幕
+			_awaiting_act_ack = false
+			if choice_str == "stop":
+				print("[ai_run] agent 要求停止，提前結算（act %d）。" % _acts_reported)
+				_engine.stop_early("agent_stopped_act_%d" % _acts_reported)
+				_finish_and_quit()
+			else:
+				_emit_next_view()
+		elif choice_str == "auto":
 			# agent 隨需把這場戰鬥剩餘回合委派給啟發式打完
 			_force_auto_this_battle = true
 			_emit_next_view()
@@ -164,17 +186,22 @@ func _run_auto() -> void:
 		_engine.apply(choice)
 
 func _emit_next_view() -> void:
+	# 剛跨入新一幕（agent 打完 boss 或 auto 推進）→ 先暫停出報告
+	if _emit_act_report_if_boundary():
+		return
 	var view: Dictionary = _engine.next_view()
-	# 混合委派：把不需要 agent 智慧的例行戰鬥回合用啟發式自動打掉，只在 meta 決策 /
-	# boss 戰停下交給 agent。一場雜兵戰可省下 20-40 次 round-trip。
+	# 混合委派：把不需要 agent 智慧的例行決策用啟發式自動跑掉，只在關鍵決策停下交給 agent。
 	var auto_played: bool = false
 	var auto_guard: int = 0
 	while _should_auto_play(view) and auto_guard < 100000:
 		auto_guard += 1
 		var ac: String = AiRunEngine.auto_choice(view)
 		_history.append(ac)
+		auto_played = auto_played or String(view.get("kind", "")) == "battle_turn"
 		_engine.apply(ac)
-		auto_played = true
+		# auto 自動推進跨入新一幕 → 暫停出報告（下次 continue 再續跑）
+		if _emit_act_report_if_boundary():
+			return
 		view = _engine.next_view()
 	if String(view.get("kind", "")) == "done":
 		# auto 自動打導致全滅 → 倒帶交還 agent（而非直接判 run 失敗）
@@ -189,6 +216,32 @@ func _emit_next_view() -> void:
 	view["seq"] = _seq
 	_write_json(VIEW_PATH, view)
 	print("[ai_run] seq=%d kind=%s phase=%s" % [_seq, view.get("kind", "?"), view.get("phase_label", "")])
+
+# 若剛完成一幕（run_state.act 已遞增到尚未出報告的幕之後），surface 一個 act_complete
+# 暫停 view 給 agent（帶 context + transcript 供寫分析報告），回傳是否已 surface。
+func _emit_act_report_if_boundary() -> bool:
+	if not _act_pause or _awaiting_act_ack:
+		return false
+	var completed: int = _engine.run_state.act - 1  # act 從 1 起；推進到 N+1 表示第 N 幕完成
+	if completed <= _acts_reported:
+		return false
+	_acts_reported = completed
+	_awaiting_act_ack = true
+	_seq += 1
+	var report_view: Dictionary = {
+		"seq": _seq,
+		"kind": "act_complete",
+		"phase_label": "第 %d 幕完成 — 暫停分析" % completed,
+		"act_completed": completed,
+		"run": _engine._run_context(),
+		"transcript": _engine.transcript,
+		"options": [
+			{"id": "continue", "label": "繼續下一幕", "detail": "寫完報告後續跑"},
+			{"id": "stop", "label": "停止並結算", "detail": "提前結束這個 run"}],
+	}
+	_write_json(VIEW_PATH, report_view)
+	print("[ai_run] ACT %d COMPLETE — 暫停分析（回 continue 續跑 / stop 結算）" % completed)
+	return true
 
 # auto 戰敗 → 用同 seed 重建引擎、重放到「前 _rewind_n 個 agent 決策點」，交還 agent。
 func _rewind_and_handoff() -> void:
@@ -213,16 +266,23 @@ func _rewind_and_handoff() -> void:
 	_force_auto_this_battle = false
 	_emit_next_view()
 
-# 是否該由啟發式自動打這個戰鬥回合（而非交給 agent）。
+# 是否該由啟發式自動跑這個決策點（而非交給 agent）。
 func _should_auto_play(view: Dictionary) -> bool:
-	if String(view.get("kind", "")) != "battle_turn":
-		return false
-	if _force_auto_this_battle:
+	var kind: String = String(view.get("kind", ""))
+	if _force_auto_this_battle and kind == "battle_turn":
 		return true
 	match _auto_battle_mode:
-		"all": return true
-		"normal": return not bool(view.get("is_boss", false))
-		_: return false
+		"all":
+			return kind == "battle_turn"
+		"normal":
+			return kind == "battle_turn" and not bool(view.get("is_boss", false))
+		"focus":
+			# agent 只管 boss 戰 + 牌組變更 + 商店 + 奇遇；雜兵戰 / 地圖 / 休息自動
+			if kind == "battle_turn":
+				return not bool(view.get("is_boss", false))
+			return kind in FOCUS_AUTO_KINDS
+		_:
+			return false
 
 func _finish_and_quit() -> void:
 	_write_json(RESULT_PATH, _engine.result)

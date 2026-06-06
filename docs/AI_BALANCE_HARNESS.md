@@ -40,8 +40,9 @@ AIRUN_AUTO=1 godot --headless --path . -s tools/ai_run.gd
 | `AIRUN_ASC` | `0` | ascension 難度層級 |
 | `AIRUN_SEED` | `0` | run seed，0=隨機 |
 | `AIRUN_AUTO` | `0` | `1`=用內建 policy 自動跑完，不等檔案 |
-| `AIRUN_AUTO_BATTLE` | `off` | 混合委派（見下）：`off`=每個戰鬥回合都問 agent；`normal`=自動打非 boss 戰、boss 戰交給 agent；`all`=自動打所有戰鬥、agent 只決定 meta |
+| `AIRUN_AUTO_BATTLE` | `off` | 混合委派（見下）：`off`=每個戰鬥回合都問 agent；`normal`=自動打非 boss 戰、boss 戰交給 agent；`all`=自動打所有戰鬥、agent 只決定 meta；`focus`=agent 只管 boss 戰 + 牌組變更（獎勵/加護/boss 遺物）+ 商店 + 奇遇，雜兵戰/地圖/休息全自動 |
 | `AIRUN_REWIND` | `3` | auto 自動打戰敗時，倒回幾個 agent 決策點交還 agent（見下）；`0`=關閉、輸了就直接判 run 失敗 |
+| `AIRUN_ACT_PAUSE` | `1` | 每跑完一幕暫停、surface `act_complete` 給 agent 寫分析報告再決定 continue/stop（見下）；`0`=不暫停、一路跑完。`AIRUN_AUTO=1` 下強制關閉 |
 | `AIRUN_SESSION` | （空） | 多開時的 session 名；空=用 repo 根 legacy 檔名，非空=用 `_ai_runs/<session>/` 隔離 |
 
 ## 混合委派（加速：少 round-trip）
@@ -80,6 +81,28 @@ round-trip，是互動模式最大的時間成本。
 > `(seed, agent 的新 choice 序列)` 仍完全可重現。`AIRUN_REWIND=0` 可關閉此功能，
 > 讓 auto 戰敗即終局（純跑分用途、不要 agent 介入時）。
 
+### `focus` 模式：agent 只管關鍵決策
+
+平衡的關鍵變數是**牌組構築**與**關鍵戰**，不是走哪條路、要不要休息。`AIRUN_AUTO_BATTLE=focus`
+讓 agent **只決定**：boss 戰 + 牌組變更（卡牌獎勵 / 起始加護 / boss 遺物）+ 商店 + 奇遇；
+其餘（雜兵戰 / 地圖 / 休息）全交給啟發式自動。round-trip 比 `normal` 更少、聚焦在「會玩的人
+真正動腦的地方」。
+
+> 為什麼牌組變更要交給 agent：啟發式選牌很笨——挑稀有 / 挑便宜攻擊實測都比無偏隨機選更差，
+> 因為好的選牌需要 per-character win-con 判斷（如阿奴要湊毒源、李逍遙要精簡速攻）。
+> 這正是 agent 該接手的事。reward option 附 `rarity` / `card_type` / `cost` 供 agent 評估。
+
+### 每幕暫停出報告（incremental reporting）
+
+一整個 8 幕 run 很長。`AIRUN_ACT_PAUSE=1`（預設）讓驅動器**每跑完一幕就暫停**：surface 一個
+`act_complete` view，帶該 run 至今的 context（全隊 HP / deck / relics / gold）+ 完整 `transcript`。
+agent 據此**寫一份該幕的平衡分析報告**，再回 `continue` 續跑下一幕、或 `stop` 提前結算。
+
+好處：(1) 想停就停，不必跑完整個 run；(2) 邊跑邊累積每幕觀察，報告品質比「跑完才回頭看」高；
+(3) 配合 `focus` 模式，一個 run 的 agent 互動點壓到最低（每幕 boss + 牌組決策 + 1 次幕末報告）。
+
+`stop` 時 `result.json` 的 `reason` 記 `agent_stopped_act_N`、`final_act` 反映停在第幾幕。
+
 ## 檔案協定（互動模式）
 
 **單開**（`AIRUN_SESSION` 為空，repo 根目錄）：
@@ -112,6 +135,7 @@ round-trip，是互動模式最大的時間成本。
 | `rest` | 調息 / 打磨 | `heal`，或 `upgrade <可升級index>` |
 | `event` | 事件樹節點 prompt + 可見選項 | 選項 id（樹會自動往下走 / 結算 outcome） |
 | `shop` | 卡/遺物/藥/服務 | `card <i>`、`relic <id>`、`potion <i>`、`remove`→`remove <deckidx>`、`upgrade`→`upgrade <i>`、`cancel`、`leave` |
+| `act_complete` | 剛完成的幕號 `act_completed` + `run`（全隊 HP/deck/relics/gold）+ `transcript`（至今全紀錄） | `continue`（續跑下一幕）或 `stop`（提前結算結束 run）。收到時先寫一份該幕分析報告再回應 |
 | `done` | — | （終局，無需回應） |
 
 每個 view 都帶 `run`（act / floor / gold / 全隊 HP / relics / potions / observe_tokens），給全局視野。

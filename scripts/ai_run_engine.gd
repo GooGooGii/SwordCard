@@ -1198,6 +1198,11 @@ func _act_complete() -> void:
 	run_state.encounter_choices = _make_encounter_choices()
 	_log("act_complete", {"completed_act": completed, "next_act": run_state.act})
 
+# agent 在 act_complete 暫停時選擇 stop → 提前結算（非戰敗，只是中止量測）。
+func stop_early(reason: String = "agent_stopped") -> void:
+	if _phase != "done":
+		_finish(false, reason)
+
 func _finish(victory: bool, reason: String) -> void:
 	_phase = "done"
 	var party: Array = []
