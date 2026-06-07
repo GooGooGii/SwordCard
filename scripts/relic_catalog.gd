@@ -74,6 +74,10 @@ static func _generals() -> Array[RelicData]:
 		[{"trigger": "battle_start", "effects": [{"kind": "enemy_vulnerable", "amount": 2}]}], Color("9bd8ff")))
 	l.append(_make("zhen_hun_ling", "鎮魂鈴", "戰鬥開始封印敵人法術 1 回合（無法施法）。", "uncommon",
 		[{"trigger": "battle_start", "effects": [{"kind": "enemy_silence", "amount": 1}]}], Color("c8b46f")))
+	l.append(_make("ning_shen_yu", "凝神玉", "本場戰鬥免疫虛弱（敵人無法弱化你）。", "uncommon",
+		[{"trigger": "battle_start", "effects": [{"kind": "immune_weak"}]}], Color("d4b86a")))
+	l.append(_make("jin_zhong_zhao", "金鐘罩", "本場戰鬥免疫破綻（敵人無法增加你的受傷）。", "uncommon",
+		[{"trigger": "battle_start", "effects": [{"kind": "immune_vulnerable"}]}], Color("c0c0c8")))
 	l.append(_make("ning_qi_dan", "凝氣丹", "戰鬥開始多 1 點靈力（僅第 1 回合）。", "uncommon",
 		[{"trigger": "battle_start", "effects": [{"kind": "self_energy", "amount": 1}]}], ThemeColors.BORDER_GOLD))
 	l.append(_make("feng_hun_yu", "風魂玉", "本場戰鬥傷害 +1。", "rare",

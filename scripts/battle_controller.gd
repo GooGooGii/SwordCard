@@ -180,6 +180,8 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"draw_next_turn_bonus": 0,
 		"card_played_counts": {},
 		"last_attacker_index": 0,  # 林月如反擊指向的敵人
+		"player_weak_immune": false,       # 凝神玉（STS Ginger）：免疫敵方施加的虛弱
+		"player_vulnerable_immune": false, # 金鐘罩（STS Turnip）：免疫敵方施加的破綻
 		"steal_result": {}
 	}
 	# 若 active 死了（舊存檔載入後可能發生），自動跳到第一個活的
@@ -1102,6 +1104,12 @@ func _apply_trigger_effects(effects: Array, relic_name: String) -> void:
 				state["enemy_berserk"] = int(state.get("enemy_berserk", 0)) + amount
 				_sync_state_to_active_enemy()
 				add_log("【%s】敵人陷入瘋魔 %d 回合。" % [relic_name, amount])
+			"immune_weak":
+				state["player_weak_immune"] = true
+				add_log("【%s】本場免疫虛弱。" % relic_name)
+			"immune_vulnerable":
+				state["player_vulnerable_immune"] = true
+				add_log("【%s】本場免疫破綻。" % relic_name)
 			"block_carry":
 				state["next_turn_block"] = int(state.get("next_turn_block", 0)) + amount
 				add_log("【%s】保留 %d 護體到下回合。" % [relic_name, amount])

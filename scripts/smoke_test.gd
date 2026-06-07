@@ -166,6 +166,7 @@ func _initialize() -> void:
 	_test_stun(characters, enemies)
 	_test_silence(characters)
 	_test_berserk(characters)
+	_test_debuff_immunity(characters, enemies)
 	# 連擊 multi-hit（阿奴刀流 / 引擎地基）
 	_test_multi_hit_damage(characters, enemies)
 	_test_anu_blade_cards(characters)
@@ -2059,6 +2060,23 @@ func _test_stun(characters: Array[CharacterData], enemies: Array[EnemyData]) -> 
 	bc.resolve_enemy_phase(actions)
 	_check(int((bc.state["enemies"][0] as Dictionary).get("stunned", 0)) == 0, "stun should decrement to 0 after the skipped turn")
 	_check(int(bc.state["player_hp"]) == hp_before, "player should take no damage from a stunned enemy")
+
+func _test_debuff_immunity(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# 凝神玉 / 金鐘罩：免疫敵方施加的虛弱 / 破綻（STS Ginger / Turnip）
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0]])
+	bc.start_turn()
+	# 無免疫：敵施虛弱/破綻照常生效
+	bc.resolver.resolve_enemy_action({"effects": [{"kind": "weak", "amount": 2}]}, bc.state)
+	_check(int(bc.state["player_weak"]) == 2, "weak should apply without immunity")
+	bc.resolver.resolve_enemy_action({"effects": [{"kind": "vulnerable", "amount": 2}]}, bc.state)
+	_check(int(bc.state["player_vulnerable"]) == 2, "vulnerable should apply without immunity")
+	# 開啟免疫後不再增加
+	bc.state["player_weak_immune"] = true
+	bc.state["player_vulnerable_immune"] = true
+	bc.resolver.resolve_enemy_action({"effects": [{"kind": "weak", "amount": 3}]}, bc.state)
+	bc.resolver.resolve_enemy_action({"effects": [{"kind": "vulnerable", "amount": 3}]}, bc.state)
+	_check(int(bc.state["player_weak"]) == 2, "weak immune: layers should not increase")
+	_check(int(bc.state["player_vulnerable"]) == 2, "vulnerable immune: layers should not increase")
 
 func _test_silence(characters: Array[CharacterData]) -> void:
 	# 禁言：無傷害的法術招被跳過，攻擊招仍可施放

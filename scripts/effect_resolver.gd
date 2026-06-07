@@ -191,15 +191,21 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				log_lines.append("施加 %d 層蠱毒。" % poison_amount)
 		"weak":
 			if from_enemy:
-				state["player_weak"] = int(state["player_weak"]) + amount
-				log_lines.append("你受到 %d 層虛弱。" % amount)
+				if bool(state.get("player_weak_immune", false)):
+					log_lines.append("（凝神）免疫虛弱。")
+				else:
+					state["player_weak"] = int(state["player_weak"]) + amount
+					log_lines.append("你受到 %d 層虛弱。" % amount)
 			else:
 				state["enemy_weak"] = int(state["enemy_weak"]) + amount
 				log_lines.append("敵人受到 %d 層虛弱。" % amount)
 		"vulnerable":
 			if from_enemy:
-				state["player_vulnerable"] = int(state["player_vulnerable"]) + amount
-				log_lines.append("你受到 %d 層破綻。" % amount)
+				if bool(state.get("player_vulnerable_immune", false)):
+					log_lines.append("（金鐘罩）免疫破綻。")
+				else:
+					state["player_vulnerable"] = int(state["player_vulnerable"]) + amount
+					log_lines.append("你受到 %d 層破綻。" % amount)
 			else:
 				state["enemy_vulnerable"] = int(state["enemy_vulnerable"]) + amount
 				log_lines.append("敵人受到 %d 層破綻。" % amount)
