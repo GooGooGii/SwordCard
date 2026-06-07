@@ -161,6 +161,7 @@ func _build_pause_menu() -> void:
 	pause_menu = PauseMenu.new()
 	add_child(pause_menu)
 	pause_menu.resume_requested.connect(_on_resume_requested)
+	pause_menu.main_menu_requested.connect(_on_main_menu_requested)
 	pause_menu.abandon_requested.connect(_on_abandon_requested)
 	pause_menu.quit_requested.connect(_on_quit_requested)
 
@@ -432,6 +433,13 @@ func _dbg_toggle_test_mode() -> void:
 
 func _on_resume_requested() -> void:
 	pause_menu.close()
+
+func _on_main_menu_requested() -> void:
+	# 保留存檔回主選單（可日後「舊的回憶」續玩），與「放棄冒險」清檔不同
+	pause_menu.close()
+	if run_state != null and run_state.character != null:
+		SaveManager.save(run_state)
+	show_main_menu()
 
 func _on_abandon_requested() -> void:
 	pause_menu.close()
@@ -4537,6 +4545,9 @@ func _show_event_tree_node(node_id: String) -> void:
 		var kind: String = EventRunner.leaf_kind(choice)
 		var badge: Dictionary = EventRunner.badge_for_kind(kind)
 		var badge_text: String = String(badge.get("text", ""))
+		# Event Redesign：hide_badge 的選項刻意隱藏「機緣/風險」徽章，做成「不知後果」的神秘選項。
+		if bool(choice.get("hide_badge", false)):
+			badge_text = "❔ 未知"
 		# 副標：徽章 + observe token 提示（若有）
 		var subtitle_parts: Array[String] = []
 		if not badge_text.is_empty():
@@ -4559,6 +4570,18 @@ func _build_event_context() -> Dictionary:
 	if run_state != null:
 		for r: RelicData in run_state.relics:
 			relic_ids.append(r.id)
+	var arch: String = ""
+	var hp_frac: float = 1.0
+	var act_n: int = 1
+	var free_slots: int = 0
+	var flags: Dictionary = {}
+	if run_state != null:
+		arch = run_state.deck_archetype()
+		if run_state.max_hp > 0:
+			hp_frac = float(run_state.hp) / float(run_state.max_hp)
+		act_n = run_state.act
+		free_slots = max(0, run_state.effective_potion_slots() - run_state.potions.size())
+		flags = run_state.event_flags
 	return EventRunner.build_context(
 		active_char_id,
 		run_state.gold if run_state != null else 0,
@@ -4566,6 +4589,11 @@ func _build_event_context() -> Dictionary:
 		run_state.observe_tokens if run_state != null else 0,
 		relic_ids,
 		d_size,
+		arch,
+		hp_frac,
+		act_n,
+		free_slots,
+		flags,
 	)
 
 func _on_event_tree_choice_selected(choice: Dictionary) -> void:
@@ -4826,6 +4854,11 @@ func _resolve_observe_effects(effects: Array) -> String:
 					d3.remove_at(idx_to_remove)
 					if lost != null:
 						parts.append("失去「%s」" % lost.display_name)
+			"set_flag":
+				# Event Redesign：設定長尾旗標（不顯示在摘要，靜默記錄供後續事件 requires 用）
+				var flag_id: String = String(effect.get("flag", ""))
+				if not flag_id.is_empty():
+					run_state.set_event_flag(flag_id, effect.get("value", true))
 			"act_modifier":
 				push_warning("[event tree] act_modifier not implemented (P6): %s" % str(effect.get("id", "?")))
 	if parts.is_empty():

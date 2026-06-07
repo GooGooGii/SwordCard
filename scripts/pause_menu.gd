@@ -2,6 +2,7 @@ class_name PauseMenu
 extends CanvasLayer
 
 signal resume_requested
+signal main_menu_requested
 signal abandon_requested
 signal quit_requested
 
@@ -96,6 +97,9 @@ func _build_main_panel() -> VBoxContainer:
 	var settings: Button = _menu_button("設定")
 	settings.pressed.connect(_show_settings)
 	box.add_child(settings)
+	var main_menu: Button = _menu_button("回主選單")
+	main_menu.pressed.connect(func() -> void: main_menu_requested.emit())
+	box.add_child(main_menu)
 	var abandon: Button = _menu_button("放棄冒險")
 	abandon.pressed.connect(func() -> void: abandon_requested.emit())
 	box.add_child(abandon)
