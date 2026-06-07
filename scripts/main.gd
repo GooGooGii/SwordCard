@@ -5308,7 +5308,7 @@ func _show_potion_replacement_overlay(new_potion: Dictionary, on_done: Callable)
 	center.add_child(col)
 
 	col.add_child(_title("替換藥品", 26))
-	col.add_child(UIFactory.card_label("選擇一瓶已有的藥品來替換，或者放棄新藥品。", 14, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER))
+	col.add_child(UIFactory.card_label("替換一瓶已有藥品、當場使用，或放棄新藥品。", 14, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER))
 
 	# 1. Show the New Potion
 	var new_p_panel: PanelContainer = PanelContainer.new()
@@ -5408,7 +5408,28 @@ func _show_potion_replacement_overlay(new_potion: Dictionary, on_done: Callable)
 		)
 		old_row.add_child(rep_btn)
 
-	# 3. Discard New Potion Button
+	# 3. Use New Potion Button —— 戰鬥中任何藥可用；戰鬥外僅限 usable_outside_battle 的藥
+	var can_use_now: bool = battle != null or PotionCatalog.usable_outside_battle(new_potion)
+	if can_use_now:
+		var use_btn: Button = _button("立即使用新藥品")
+		use_btn.custom_minimum_size = Vector2(160, 36)
+		use_btn.add_theme_font_size_override("font_size", 14)
+		use_btn.pressed.connect(func() -> void:
+			# 暫存進背包成第 4 瓶，交給既有 slot-based 使用邏輯（會自動移除，背包回到 3 瓶）
+			run_state.potions.append(new_potion.duplicate())
+			var temp_slot: int = run_state.potions.size() - 1
+			if battle != null:
+				battle.add_log("藥格已滿，當場使用了新藥品「%s」。" % String(new_potion.get("display_name", "")))
+			_hide_card_preview()
+			if battle != null:
+				_use_potion(temp_slot)
+			else:
+				_use_potion_out_of_battle(temp_slot)
+			on_done.call()
+		)
+		col.add_child(use_btn)
+
+	# 4. Discard New Potion Button
 	var discard_btn: Button = _button("放棄新藥品")
 	discard_btn.custom_minimum_size = Vector2(160, 36)
 	discard_btn.add_theme_font_size_override("font_size", 14)
