@@ -323,6 +323,26 @@
 > 補圖後執行 `godot --headless --path . --import` 重匯入即生效；`map_node_icon._load_node_texture()`
 > 會自動優先採用。legend 顏色已設為 `Color("e2728c")`（暗紅）、節點標記為「精」。
 
+## 八之二、敵人意圖圖示（🔴 待補，2026-06-08 新增）
+
+戰鬥中敵人頭頂意圖改為「圖示制」（仿 Slay the Spire）。程式已就緒：
+`scripts/main.gd` 意圖列會載入 `CardFormat.INTENT_ICON_DIR`（=`res://assets/ui/intent/`）
+下對應的 icon，**找不到圖時自動 fallback 現行文字徽章**——所以補圖前遊戲照常運作，
+補圖後自動變圖示。每個意圖最多並排 3 個 icon + 招式名/傷害數。
+
+| 檔名 | 意圖類別 | 對應 effect | 風格建議 |
+|---|---|---|---|
+| `assets/ui/intent/attack.png` | 攻擊 | damage / damage_all | 出鞘利刃／劍尖，紅金色調 |
+| `assets/ui/intent/defend.png` | 防守 | block | 護盾／護體靈光，青藍色調 |
+| `assets/ui/intent/control.png` | 控制 | stun / silence / berserk | 鎖鏈纏繞或封印符咒（眩暈星亦可），紫色調 |
+| `assets/ui/intent/debuff.png` | 異常 | poison / weak / vulnerable（含 _all）| 向下骷髏／毒滴，暗綠色調 |
+| `assets/ui/intent/buff.png` | 強化 | power | 向上箭頭／攥拳氣勁，橙紅色調 |
+| `assets/ui/intent/heal.png` | 治療 | heal / heal_party | 十字／綠色生機靈光 |
+| `assets/ui/intent/summon.png` | 召喚 | summon | 召喚法陣／鬼影浮現，幽紫色調 |
+
+規格：**64×64 透明 PNG**，扁平簡潔可在 16–22px 縮放下辨識，水墨／國風色感與既有 UI 一致。
+補圖後執行 `godot --headless --path . --import` 重匯入即生效（程式 `UIFactory.load_texture` 會自動採用）。
+
 ## 九、道具／藥品圖示優化（🟢 已全部完成）
 
 | 檔名 | 用途 | 目前狀態 | 備註 |

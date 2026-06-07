@@ -88,6 +88,43 @@ static func intent_badge(action: Dictionary) -> String:
 		badges.append("[行動]")
 	return " ".join(badges)
 
+# 意圖圖示分類：回傳該 action 命中的 icon 類別 key（優先序），對應圖檔
+# res://assets/ui/intent/<key>.png。main.gd 取前幾個顯示為 icon；圖未補時 fallback 文字。
+const INTENT_ICON_DIR: String = "res://assets/ui/intent/"
+static func intent_icon_names(action: Dictionary) -> Array[String]:
+	var has_damage: bool = false
+	var has_block: bool = false
+	var has_status: bool = false
+	var has_control: bool = false
+	var has_buff: bool = false
+	var has_heal: bool = false
+	var has_summon: bool = false
+	for effect: Dictionary in (action.get("effects", []) as Array):
+		match String(effect.get("kind", "")):
+			"damage", "damage_all":
+				has_damage = true
+			"block":
+				has_block = true
+			"poison", "weak", "vulnerable", "poison_all", "weak_all", "vulnerable_all":
+				has_status = true
+			"stun", "silence", "berserk":
+				has_control = true
+			"power":
+				has_buff = true
+			"heal", "heal_party":
+				has_heal = true
+			"summon":
+				has_summon = true
+	var keys: Array[String] = []
+	if has_damage: keys.append("attack")
+	if has_block: keys.append("defend")
+	if has_control: keys.append("control")
+	if has_status: keys.append("debuff")
+	if has_buff: keys.append("buff")
+	if has_heal: keys.append("heal")
+	if has_summon: keys.append("summon")
+	return keys
+
 static func enemy_action_effect_summary(action: Dictionary) -> String:
 	var effects: Array = action.get("effects", []) as Array
 	var parts: Array[String] = []

@@ -2687,11 +2687,26 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	# 浮動 feedback label（傷害數字、狀態提示）
 	var feedback_label: Label = UIFactory.feedback_label()
 	col.add_child(_wrap_feedback_label(feedback_label))
-	# 意圖標籤 (顯示於頭頂上)
+	# 意圖列（顯示於頭頂上）：icon(s) + 文字。icon 圖未補時自動 fallback 純文字徽章。
+	var intent_size: int = 10 if (_battle_compact or total >= 2) else 12
+	var intent_row: HBoxContainer = HBoxContainer.new()
+	intent_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	intent_row.add_theme_constant_override("separation", 2)
+	var intent_icons: Array = []
+	var icon_px: float = 16.0 if (_battle_compact or total >= 2) else 22.0
+	for _ii: int in range(3):
+		var ic: TextureRect = TextureRect.new()
+		ic.custom_minimum_size = Vector2(icon_px, icon_px)
+		ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		ic.visible = false
+		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		intent_row.add_child(ic)
+		intent_icons.append(ic)
 	var intent_label: Label = UIFactory.card_label("",
-		10 if (_battle_compact or total >= 2) else 12,
-		ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-	col.add_child(intent_label)
+		intent_size, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	intent_row.add_child(intent_label)
+	col.add_child(intent_row)
 	# portrait wrap（含 block badge）
 	var wrap: Control = Control.new()
 	wrap.custom_minimum_size = portrait_size
@@ -2745,6 +2760,7 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 		"status_line": status_line,
 		"feedback_label": feedback_label,
 		"intent_label": intent_label,
+		"intent_icons": intent_icons,
 		"enemy_idx": idx,
 	}
 
@@ -2802,9 +2818,26 @@ func _refresh_enemy_widgets() -> void:
 		if intent_label != null and is_instance_valid(intent_label):
 			var enemy_idx: int = int(w["enemy_idx"])
 			var action: Dictionary = battle._action_for_enemy(enemy_idx)
+			var intent_icons: Array = w.get("intent_icons", []) as Array
 			if action.is_empty() or int(slot["hp"]) <= 0:
 				intent_label.text = ""
+				for ic_v: Variant in intent_icons:
+					(ic_v as TextureRect).visible = false
 			else:
+				# 意圖 icon：取分類前 N 個，有圖則顯示 icon、文字省去徽章；無圖 fallback 文字徽章
+				var cats: Array[String] = CardFormat.intent_icon_names(action)
+				var shown_icon: bool = false
+				for ii: int in range(intent_icons.size()):
+					var ic: TextureRect = intent_icons[ii] as TextureRect
+					var tex: Texture2D = null
+					if ii < cats.size():
+						tex = UIFactory.load_texture(CardFormat.INTENT_ICON_DIR + cats[ii] + ".png")
+					if tex != null:
+						ic.texture = tex
+						ic.visible = true
+						shown_icon = true
+					else:
+						ic.visible = false
 				var badge_str: String = CardFormat.intent_badge(action)
 				var intent_name: String = String(action.get("intent", ""))
 				var damage_text: String = ""
@@ -2827,7 +2860,10 @@ func _refresh_enemy_widgets() -> void:
 						damage_text = " 實受%d" % dealt
 					else:
 						damage_text = " %d點" % dealt
-				intent_label.text = "%s %s%s" % [badge_str, intent_name, damage_text]
+				if shown_icon:
+					intent_label.text = "%s%s" % [intent_name, damage_text]
+				else:
+					intent_label.text = "%s %s%s" % [badge_str, intent_name, damage_text]
 		
 		# 判斷生死與消失邏輯
 		var hp_now: int = int(slot["hp"])
