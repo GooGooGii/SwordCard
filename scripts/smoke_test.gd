@@ -138,6 +138,10 @@ func _initialize() -> void:
 	_test_poison_multiply(characters[3], enemies[0])
 	_test_poison_on_attack(characters[3], enemies[0])
 	_test_corpse_poison(characters[3], enemies)
+	# 技能/能力多樣化：翻倍 / 蓄勢 / 每回合引擎 / 回合結束 AOE
+	_test_block_multiply(characters[1], enemies[0])
+	_test_next_attack_mult(characters[0], enemies[0])
+	_test_turn_engines(characters[0], enemies[0])
 	_test_level_system(characters)
 	_test_level_unlock_cards()
 	_test_ai_run_engine_smoke()
@@ -1734,6 +1738,61 @@ func _test_corpse_poison(character: CharacterData, enemies: Array[EnemyData]) ->
 	bc._process_corpse_poison()
 	_check(int(e1["poison"]) == 5, "corpse_poison: 5 poison transferred to living enemy, got %d" % int(e1["poison"]))
 	_check(int(e0["poison"]) == 0, "corpse_poison: dead enemy poison cleared, got %d" % int(e0["poison"]))
+
+func _test_block_multiply(character: CharacterData, enemy: EnemyData) -> void:
+	# 聚靈訣：護體翻倍；無護體時無效
+	var bc: BattleController = BattleController.new()
+	var rs: RunState = RunState.new()
+	rs.init_for(character)
+	bc.setup(rs, character, enemy.clone())
+	bc.start_turn()
+	bc.state["player_block"] = 6
+	bc.resolver._resolve_effect({"kind": "block_multiply", "amount": 2}, bc.state)
+	_check(int(bc.state["player_block"]) == 12, "block_multiply x2: 6->12, got %d" % int(bc.state["player_block"]))
+	bc.state["player_block"] = 0
+	bc.resolver._resolve_effect({"kind": "block_multiply", "amount": 2}, bc.state)
+	_check(int(bc.state["player_block"]) == 0, "block_multiply on 0 stays 0")
+
+func _test_next_attack_mult(character: CharacterData, enemy: EnemyData) -> void:
+	# 蓄劍式：下一張攻擊翻倍，且只生效一次
+	var bc: BattleController = BattleController.new()
+	var rs: RunState = RunState.new()
+	rs.init_for(character)
+	bc.setup(rs, character, enemy.clone())
+	bc.start_turn()
+	bc.state["enemy_hp"] = 100
+	bc.state["enemy_block"] = 0
+	bc.state["player_power"] = 0
+	bc.resolver._resolve_effect({"kind": "next_attack_mult", "amount": 2}, bc.state)
+	_check(int(bc.state["next_attack_mult"]) == 2, "next_attack_mult should be set to 2")
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 10}, bc.state)
+	_check(int(bc.state["enemy_hp"]) == 80, "10 dmg x2 -> -20 (100->80), got %d" % int(bc.state["enemy_hp"]))
+	_check(int(bc.state["next_attack_mult"]) == 1, "next_attack_mult consumed after one attack")
+	# 第二次攻擊不再翻倍
+	bc.state["enemy_hp"] = 100
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 10}, bc.state)
+	_check(int(bc.state["enemy_hp"]) == 90, "second attack not doubled (100->90), got %d" % int(bc.state["enemy_hp"]))
+
+func _test_turn_engines(character: CharacterData, enemy: EnemyData) -> void:
+	# power_per_turn / block_per_turn 在 start_turn 套用；end_turn_damage 在 begin_enemy_phase 套用
+	var bc: BattleController = BattleController.new()
+	var rs: RunState = RunState.new()
+	rs.init_for(character)
+	bc.setup(rs, character, enemy.clone())
+	bc.start_turn()
+	var power_before: int = int(bc.state["player_power"])
+	bc.state["power_per_turn"] = 1
+	bc.state["block_per_turn"] = 5
+	bc.start_turn()
+	_check(int(bc.state["player_power"]) == power_before + 1, "power_per_turn +1 at start_turn, got %d" % int(bc.state["player_power"]))
+	_check(int(bc.state["player_block"]) >= 5, "block_per_turn +5 at start_turn, got %d" % int(bc.state["player_block"]))
+	# end_turn_damage：回合結束對敵固定傷害
+	bc.state["end_turn_damage"] = 6
+	(bc.state["enemies"][0] as Dictionary)["hp"] = 100
+	(bc.state["enemies"][0] as Dictionary)["block"] = 0
+	bc._sync_active_enemy_to_state()
+	bc.begin_enemy_phase()
+	_check(int((bc.state["enemies"][0] as Dictionary)["hp"]) == 94, "end_turn_damage 6 (100->94), got %d" % int((bc.state["enemies"][0] as Dictionary)["hp"]))
 
 func _test_multi_enemy_aoe_status(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
 	# poison_all / weak_all / vulnerable_all 應對全敵套 (skip 已死)

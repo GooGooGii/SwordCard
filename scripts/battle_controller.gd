@@ -157,6 +157,10 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"poison_per_turn": 0,  # 毒引擎（StS Noxious Fumes 式）：每回合開始對全體敵人施毒
 		"poison_on_attack": 0,  # 蠱刃：攻擊無格擋敵人時每段施毒（damage / damage_all 讀取）
 		"corpse_poison": false,  # 屍蠱：中毒敵人死亡時殘餘蠱毒隨機轉移給其他敵人
+		"power_per_turn": 0,  # 劍意滋長（Demon Form）：每回合開始 +N 力量
+		"block_per_turn": 0,  # 靈光普照（Metallicize）：每回合開始 +N 護體
+		"end_turn_damage": 0,  # 五雷轟頂（Combust）：回合結束對全體敵人造成 N 傷害
+		"next_attack_mult": 1,  # 蓄劍式（Vigor）：下一張攻擊傷害倍率（damage 路徑消耗）
 		"damage_taken_reduction": 0,
 		"damage_out_bonus": 0,
 		"block_bonus": 0,
@@ -445,6 +449,13 @@ func start_turn() -> Dictionary:
 	# Block carry-over (玄武魂) — 套到 active player
 	state["player_block"] = int(state.get("next_turn_block", 0))
 	state["next_turn_block"] = 0
+	# 持久能力引擎：每回合開始 +力量（劍意滋長）/ +護體（靈光普照）
+	if int(state.get("power_per_turn", 0)) > 0:
+		state["player_power"] = int(state["player_power"]) + int(state["power_per_turn"])
+		add_log("劍意滋長：攻擊力 +%d。" % int(state["power_per_turn"]))
+	if int(state.get("block_per_turn", 0)) > 0:
+		state["player_block"] = int(state["player_block"]) + int(state["block_per_turn"])
+		add_log("靈光普照：獲得 %d 護體。" % int(state["block_per_turn"]))
 	state["enemy_block"] = 0
 	state["pending_draw"] = 0
 	state["lin_block_used"] = false
@@ -647,6 +658,24 @@ func begin_enemy_phase() -> Array[Dictionary]:
 	# Multi-Enemy 模式：每隻活敵各預備一招，回傳陣列（死敵 = empty dict）
 	# 1v1 退化情況：array size == 1
 	_fire_relic_triggers("turn_end")
+	# 五雷轟頂（Combust）：回合結束對全體敵人造成「固定」雷傷（不吃力量、不觸發蠱刃/蓄劍）
+	var end_dmg: int = int(state.get("end_turn_damage", 0))
+	if end_dmg > 0:
+		var et_slots: Array = state.get("enemies", []) as Array
+		var et_hit: bool = false
+		for i: int in range(et_slots.size()):
+			var et_slot: Dictionary = et_slots[i] as Dictionary
+			if int(et_slot["hp"]) <= 0:
+				continue
+			var et_blocked: int = min(int(et_slot.get("block", 0)), end_dmg)
+			et_slot["block"] = int(et_slot.get("block", 0)) - et_blocked
+			et_slot["hp"] = max(0, int(et_slot["hp"]) - (end_dmg - et_blocked))
+			et_hit = true
+		if et_hit:
+			add_log("五雷轟頂：對全體敵人降下 %d 點雷傷！" % end_dmg)
+			_sync_active_enemy_to_state()
+			_process_corpse_poison()
+			_check_active_enemy_death()
 	if deck != null:
 		deck.discard_hand()
 	if int(state["player_weak"]) > 0:

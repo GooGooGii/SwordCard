@@ -246,6 +246,52 @@
 
 ---
 
+## 五、技能/能力牌多樣化（Skill/Power Variety）
+
+> 問題（2026-06 盤點）：技能卡約 50 張，效果壓倒性集中在 **護體/抽牌/回血** 數值堆疊。
+> 李逍遙/趙靈兒/林月如 的技能 ~80% 是「獲得 X 護體 [＋抽/＋回血]」、彼此只差數字，
+> 無決策、無 combo、打出去無爽感。阿奴反而最有趣（疊毒→催化→引爆→死敵轉毒有機制軸）。
+> 根因：引擎其實支援 thorns/combo_strike/steal/power/poison_engine，卻沒做成技能；
+> 而「牌庫操作/蓄勢/條件觸發」家族完全空白。
+
+### 對照第一章 7 大機制家族
+
+| 家族 | SwordCard 現況 |
+|---|---|
+| 1 翻倍 | `poison_multiply`(阿奴) ✅；缺護體翻倍 |
+| 2 牌庫操作 | ❌ 空白（無複製/置頂/戰鬥內升級/變0費）|
+| 3 持續引擎 | `poison_engine`/`combo_strike` 各 1-2 張；缺 力量/護體每回合、回合結束 AOE |
+| 4 消耗/費用 | 有 exhaust 欄位但少 payoff |
+| 5 蓄勢/下張強化 | ❌ 空白 |
+| 6 條件觸發 | ❌ 空白 |
+| 7 架式 | 不採用（偏離 PAL1）|
+
+### 角色技能主題（PAL1 × 家族）
+
+- **李逍遙**（御劍 setup + 酒神 + 偷）：蓄劍式(下張攻擊翻倍)、劍意滋長(每回合+力量)、醉飲狂歌(棄牌得力量)、御劍相承(複製攻擊)
+- **趙靈兒**（靈族神術 + 元素印記）：聚靈訣(護體翻倍)、靈光普照(每回合得護體)、五雷轟頂(回合結束AOE)、雷靈印(被擊反雷)
+- **林月如**（反擊 + 連武架式）：劍舞架式(每出攻擊得護體)、霜刃反擊(大量荊棘)、鐵骨樁(獲護體額外+2)
+- **阿奴**（蠱毒，已豐富）：催化/蠱刃/寄屍已實作
+
+### 實作分層（由易到難）＋狀態
+
+| 層 | 新 effect kind | 卡 | 狀態 |
+|---|---|---|---|
+| 1 | `block_multiply`（仿 poison_multiply）| 趙靈兒 聚靈訣 | ✅ 完成 |
+| 2 | `power_per_turn` / `block_per_turn` / `end_turn_damage_all`（仿 poison_per_turn「每回合讀旗標」pattern）| 李 劍意滋長(power_per_turn)、趙 靈光普照(block_per_turn)、趙 五雷轟頂(end_turn_damage_all)；林 霜刃反擊(複用 thorns)| ✅ 完成 |
+| 3 | `next_attack_mult`（state 旗標 + damage 路徑消耗）| 李 蓄劍式 | ✅ 完成 |
+| 2b | block-on-attack-played / self block_bonus（給林 劍舞架式 / 鐵骨樁）| 林 劍舞架式、鐵骨樁 | 待做（需小新 kind）|
+| 4 | 牌庫操作（複製/置頂/戰鬥內升級，動 DeckManager）| 御劍相承、醉飲狂歌 等 | 未排程 |
+
+> 已落地（2026-06）：5 個新 effect kind（`block_multiply` / `power_per_turn` / `block_per_turn` /
+> `end_turn_damage_all` / `next_attack_mult`）＋ 6 張新技能/能力卡（李 蓄劍式・劍意滋長、
+> 趙 聚靈訣・靈光普照・五雷轟頂、林 霜刃反擊）。`next_attack_mult` 由 damage / damage_all 路徑消耗；
+> `power_per_turn` / `block_per_turn` 在 start_turn 套用；`end_turn_damage_all` 在 begin_enemy_phase
+> 以「固定傷害」結算（不吃力量、不觸發蠱刃/蓄劍）。升級：block_per_turn / end_turn_damage_all 走數值升級，
+> 其餘走減耗升級。smoke test +6 覆蓋。
+
+每層做完：smoke 覆蓋新 kind、batch sanity、卡片有 art（借圖或新繪）。
+
 ## 資料來源
 
 - [Keywords — Slay the Spire Wiki (Fandom)](https://slay-the-spire.fandom.com/wiki/Keywords)

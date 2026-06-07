@@ -121,10 +121,12 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				var total_dealt: int = 0
 				var poison_on_atk: int = int(state.get("poison_on_attack", 0))  # 蠱刃：攻擊無格擋敵人每段施毒
 				var atk_poison_added: int = 0
+				var na_mult: int = max(1, int(state.get("next_attack_mult", 1)))  # 蓄劍式：下一張攻擊傷害翻倍
 				for _h: int in range(hits):
 					var modified: int = max(0, amount + int(state["player_power"]) - int(state["player_weak"])) + int(state.get("damage_out_bonus", 0))
 					if int(state["enemy_vulnerable"]) > 0:
 						modified = int(ceil(modified * 1.5))
+					modified *= na_mult
 					var unblocked: bool = int(state["enemy_block"]) <= 0  # 此段命中時敵人無格擋
 					var blocked: int = min(int(state["enemy_block"]), modified)
 					state["enemy_block"] = int(state["enemy_block"]) - blocked
@@ -133,6 +135,8 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 					if poison_on_atk > 0 and unblocked:
 						state["enemy_poison"] = int(state["enemy_poison"]) + poison_on_atk
 						atk_poison_added += poison_on_atk
+				if na_mult > 1:
+					state["next_attack_mult"] = 1  # 消耗蓄勢
 				if hits > 1:
 					log_lines.append("連擊 %d 段，共造成 %d 點傷害。" % [hits, total_dealt])
 				else:
@@ -224,6 +228,32 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				log_lines.append("蠱毒催化：%s 的蠱毒翻為 %d 層。" % [state["enemy_name"], cur_poison * amount])
 			else:
 				log_lines.append("蠱毒催化：目標無蠱毒，無效。")
+		"block_multiply":
+			# 聚靈訣（StS Entrench 式）：當前護體翻 amount 倍。
+			var cur_block: int = int(state["player_block"])
+			if cur_block > 0:
+				state["player_block"] = cur_block * amount
+				log_lines.append("聚靈：護體翻為 %d 點。" % (cur_block * amount))
+			else:
+				log_lines.append("聚靈：目前無護體，無效。")
+		"power_per_turn":
+			# 劍意滋長（StS Demon Form 式）：持久能力，每回合開始 +amount 力量。
+			# 實際每回合加力由 BattleController.start_turn 讀 state["power_per_turn"] 執行。
+			state["power_per_turn"] = int(state.get("power_per_turn", 0)) + amount
+			log_lines.append("劍意滋長：每回合開始攻擊力 +%d。" % amount)
+		"block_per_turn":
+			# 靈光普照（StS Metallicize 式）：持久能力，每回合開始得 amount 護體。
+			state["block_per_turn"] = int(state.get("block_per_turn", 0)) + amount
+			log_lines.append("靈光普照：每回合開始獲得 %d 護體。" % amount)
+		"end_turn_damage_all":
+			# 五雷轟頂（StS Combust 式）：持久能力，回合結束對全體敵人造成 amount 傷害。
+			# 實際結算由 BattleController.begin_enemy_phase 讀 state["end_turn_damage"] 執行。
+			state["end_turn_damage"] = int(state.get("end_turn_damage", 0)) + amount
+			log_lines.append("五雷蓄勢：每回合結束對所有敵人降下 %d 點雷傷。" % amount)
+		"next_attack_mult":
+			# 蓄劍式（StS Setup/Vigor 式）：下一張攻擊牌傷害翻 amount 倍（由 damage 路徑消耗）。
+			state["next_attack_mult"] = max(1, amount)
+			log_lines.append("蓄劍式：下一張攻擊牌傷害變為 %d 倍。" % max(1, amount))
 		"combo_strike":
 			# 連打引擎（StS Panache 式）：持久能力，本回合每出 threshold 張牌對全體敵人造成傷害。
 			# 實際計數與結算由 BattleController.play_card 讀 state["combo_strike_*"] 執行。
@@ -335,6 +365,7 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			for _i: int in range(slots.size()):
 				totals.append(0)
 			var poison_on_atk_all: int = int(state.get("poison_on_attack", 0))  # 蠱刃：AOE 每段對無格擋敵人施毒
+			var na_mult_all: int = max(1, int(state.get("next_attack_mult", 1)))  # 蓄劍式：下一張攻擊翻倍
 			for _h: int in range(hits):
 				for i: int in range(slots.size()):
 					var slot: Dictionary = slots[i] as Dictionary
@@ -343,6 +374,7 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 					var modified: int = max(0, amount + int(state["player_power"]) - int(state["player_weak"])) + int(state.get("damage_out_bonus", 0))
 					if int(slot["vulnerable"]) > 0:
 						modified = int(ceil(modified * 1.5))
+					modified *= na_mult_all
 					var unblocked: bool = int(slot["block"]) <= 0
 					var blocked: int = min(int(slot["block"]), modified)
 					slot["block"] = int(slot["block"]) - blocked
@@ -350,6 +382,8 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 					totals[i] = int(totals[i]) + (modified - blocked)
 					if poison_on_atk_all > 0 and unblocked:
 						slot["poison"] = int(slot["poison"]) + poison_on_atk_all
+			if na_mult_all > 1:
+				state["next_attack_mult"] = 1  # 消耗蓄勢
 			for i: int in range(slots.size()):
 				var slot: Dictionary = slots[i] as Dictionary
 				if int(totals[i]) > 0:
