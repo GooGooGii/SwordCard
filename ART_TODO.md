@@ -289,6 +289,28 @@
 
 ---
 
+## 七之二、PAL1 對齊新增小怪（⬜ 暫借圖，待補專屬美術）
+
+依 PAL1 各地點正史補的 9 隻小怪。目前**暫借既有肖像**讓功能可玩，待補各自的去背水墨專屬圖
+（路徑：`assets/art/enemies/<id>.png`，補圖後 `--import` 即生效，需把 `portrait_path` 改回各自 id）。
+
+| 敵人 ID | 顯示名 | 出沒幕 | 暫借圖 | 待補專屬美術風格 |
+|---|---|---|---|---|
+| `bee_cocoon` | 蜂蛹 | 1 | `wild_bee.png` | 米色繭狀蜂蛹，掛在枝上、半透蠕動感（十里坡）|
+| `leaf_sprite` | 綠葉小妖 | 1 | `tree_demon.png` | 嫩綠葉片組成的小妖精，最低階草系雜兵 |
+| `grass_sprite` | 草精 | 2 | `tree_demon.png` | 仙靈島藤草凝成的小精怪，纏蔓造型 |
+| `thug` | 打手 | 3 | `bandit.png` | 蘇州市井惡霸打手，粗布短打、拳套悶棍 |
+| `miao_maiden` | 長鞭苗女 | 2,7,8 | `miao_soldier.png` | 苗疆女戰士，長鞭+毒鏢、苗銀飾，民族風 |
+| `octopus_imp` | 短腿章魚 | 8 | `water_tentacle.png` | 水底迷宮短腿章魚怪，圓身多腕 |
+| `clam_spirit` | 蚌殼精 | 8 | `water_imp.png` | 巨蚌開合、內含珍珠光，高防水族 |
+| `conch_maiden` | 海螺女 | 8 | `fox_spirit.png` | 海螺殼下的女妖，音波攻擊、鱗甲 |
+| `turtle_demon` | 傻仔龜 | 8 | `rock_guardian.png` | 憨態大龜怪，厚殼縮防、噴水 |
+
+> 補圖步驟：把 `assets/art/enemies/<id>.png` 放入 → 將 `game_data.gd` 對應 builder 的
+> `portrait_path` 由暫借檔改回 `res://assets/art/enemies/<id>.png` → `--import`。
+
+---
+
 ## 八、UI / 地圖節點圖示（🟢 已全部完成）
 
 地圖節點圖示由 `scripts/map_node_icon.gd` 繪製：優先載入 `res://assets/ui/node_<type>.png`，
@@ -306,6 +328,21 @@
 | 檔名 | 用途 | 目前狀態 | 備註 |
 |---|---|---|---|
 | `assets/art/potions/fentian_zhu.png` | 藥品「焚天珠」 | 🟢 已重製（專屬美術） | 升級為精緻 3D 立體水墨火球風格，帶有毒氣與火花特效 |
+
+---
+
+## 十、現行敘事插畫派清單（後續轉折衷派）
+
+工作定義：人物主導、完整場景、偏劇照式敘事構圖的卡圖，後續統一往「折衷派」收斂
+（保留完成度與戲劇張力，但減少過滿場景，回到 `ART_GUIDE` 強調的器物 / 術式 / 意境主導）。
+
+> 2026-06-07：原本那批極簡派卡圖已先重繪回較完整的 `ART_GUIDE` 方向；
+> 本節列的是下一階段要優化成折衷派的敘事插畫稿，不和極簡派重繪混在一起。
+
+- 李逍遙：`lxy_feilong`、`lxy_huijian`、`lxy_jianjue`、`lxy_jianzhen`、`lxy_jianshen`、`lxy_jiulong`、`lxy_jiushen`、`lxy_lianhuanjian`、`lxy_liepo`、`lxy_linghuo`、`lxy_qingfeng`、`lxy_tiangangqi`、`lxy_tianjian`、`lxy_wanjian`、`lxy_wanjianguizong`、`lxy_xianfeng`、`lxy_xiaoyao_shenjian`、`lxy_xiaoyao_you`、`lxy_yuanlinggui`、`lxy_yufengbu`、`lxy_yujian`、`lxy_zhenyuan`、`lxy_zuilong`、`lxy_zuimeng`
+- 趙靈兒：`zl_bingzhou`、`zl_diliebeng`、`zl_fengling`、`zl_fengxuebing`、`zl_ganlin`、`zl_guanyin`、`zl_huanyu`、`zl_huguangzhou`、`zl_huihun`、`zl_jingang`、`zl_kuanglei`、`zl_leiguang`、`zl_lianzhuzhou`、`zl_lingguang`、`zl_lingxi`、`zl_mengshe`、`zl_mengshe_ls`、`zl_nvwa`、`zl_sanmeizhenhuo`、`zl_shenlei`、`zl_shuiling`、`zl_shuiyin`、`zl_taishan`、`zl_tianlei`、`zl_wuqi`、`zl_xiaoleizhou`、`zl_xuanbing`、`zl_xuanfengzhou`、`zl_yanzhou`、`zl_yinlingfu`
+- 林月如：`lyr_bianying`、`lyr_fanji`、`lyr_fenghuan`、`lyr_huaci`、`lyr_jici`、`lyr_jinchan`、`lyr_juesha`、`lyr_kuaijian`、`lyr_lianhuan`、`lyr_lielong`、`lyr_ningshen`、`lyr_poqian`、`lyr_qiankun`、`lyr_qiebushan`、`lyr_qijianzhi`、`lyr_qijuejianqi`、`lyr_shenfa`、`lyr_shuangjianci`、`lyr_tianv`、`lyr_tieyi`、`lyr_tongqianbiao`、`lyr_wanlikuang`、`lyr_xuanjian`、`lyr_yiyang`、`lyr_yuanlinggui`、`lyr_yuehua`、`lyr_zhanlong`
+- 阿奴：`anu_baizu`、`anu_baozhagu`、`anu_cuifeng`、`anu_cuihua`、`anu_duohun`、`anu_duwu`、`anu_duzhen`、`anu_gudaocui`、`anu_guijiang`、`anu_guling`、`anu_gushen`、`anu_guwang`、`anu_guxue`、`anu_guzhang`、`anu_huguzhao`、`anu_jiedu`、`anu_jishigu`、`anu_lianduzhen`、`anu_lingxue`、`anu_mihun`、`anu_sandu`、`anu_sanshigu`、`anu_shuhun`、`anu_wangushitian`、`anu_wangyou`、`anu_wanyi`、`anu_wanyi_ls`、`anu_wuyuezhan`、`anu_xuerenwu`、`anu_yanshazhou`、`anu_yindu`
 
 ---
 

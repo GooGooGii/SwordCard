@@ -63,7 +63,132 @@ static func enemies() -> Array[EnemyData]:
 		_green_snake(), _grass_spider(), _lantern_ghost(), _hydra_snake(), _flying_snake(),
 		_baby_toad(), _poison_toad(), _vampire_giant(), _scorpion(), _female_thief(),
 		_birdman(), _demihuman_villager(), _five_eyed_demon(), _unicorn_demon(), _pincer_demon(),
-		_jumping_frog(), _fire_kirin_whelp(), _ice_beast(), _man_eater_beast(), _two_headed_snake()]
+		_jumping_frog(), _fire_kirin_whelp(), _ice_beast(), _man_eater_beast(), _two_headed_snake(),
+		_bee_cocoon(), _leaf_sprite(), _grass_sprite(), _thug(), _miao_maiden(),
+		_octopus_imp(), _clam_spirit(), _conch_maiden(), _turtle_demon()]
+
+# === PAL1 對齊補充小怪（借用既有肖像，專屬美術見 ART_TODO） ===
+static func _bee_cocoon() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "bee_cocoon"
+	enemy.portrait_scale = 0.72  # 小型：蜂蛹（借 wild_bee 圖）
+	enemy.display_name = "蜂蛹"
+	enemy.max_hp = 30
+	enemy.portrait_path = "res://assets/art/enemies/wild_bee.png"
+	enemy.actions = [
+		{"intent": "蠕動撞 6", "effects": [{"kind": "damage", "amount": 6}]},
+		{"intent": "結繭 12", "effects": [{"kind": "block", "amount": 12}]},
+		{"intent": "孵化毒針 8 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 8}, {"kind": "poison", "amount": 2}]}
+	]
+	return enemy
+
+static func _leaf_sprite() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "leaf_sprite"
+	enemy.portrait_scale = 0.78  # 小型：綠葉小妖（借 tree_demon 圖）
+	enemy.display_name = "綠葉小妖"
+	enemy.max_hp = 26
+	enemy.portrait_path = "res://assets/art/enemies/tree_demon.png"
+	enemy.actions = [
+		{"intent": "葉刃 8", "effects": [{"kind": "damage", "amount": 8}]},
+		{"intent": "孢子 蠱毒 2", "effects": [{"kind": "poison", "amount": 2}]},
+		{"intent": "光合護 8", "effects": [{"kind": "block", "amount": 8}]}
+	]
+	return enemy
+
+static func _grass_sprite() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "grass_sprite"
+	enemy.portrait_scale = 0.8  # 小型：草精（借 tree_demon 圖）
+	enemy.display_name = "草精"
+	enemy.max_hp = 34
+	enemy.portrait_path = "res://assets/art/enemies/tree_demon.png"
+	enemy.actions = [
+		{"intent": "藤鞭抽 10", "effects": [{"kind": "damage", "amount": 10}]},
+		{"intent": "纏繞 虛弱 1", "effects": [{"kind": "weak", "amount": 1}]},
+		{"intent": "紮根 10", "effects": [{"kind": "block", "amount": 10}]}
+	]
+	return enemy
+
+static func _thug() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "thug"
+	enemy.display_name = "打手"
+	enemy.max_hp = 58
+	enemy.portrait_path = "res://assets/art/enemies/bandit.png"
+	enemy.actions = [
+		{"intent": "拳打 13", "effects": [{"kind": "damage", "amount": 13}]},
+		{"intent": "悶棍 11 + 破綻 1", "effects": [{"kind": "damage", "amount": 11}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "抱架 12", "effects": [{"kind": "block", "amount": 12}]}
+	]
+	return enemy
+
+static func _miao_maiden() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "miao_maiden"
+	enemy.display_name = "長鞭苗女"
+	enemy.max_hp = 62
+	enemy.portrait_path = "res://assets/art/enemies/miao_soldier.png"
+	enemy.actions = [
+		{"intent": "長鞭抽 13 + 破綻 1", "effects": [{"kind": "damage", "amount": 13}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "苗女毒鏢 11 + 蠱毒 3", "effects": [{"kind": "damage", "amount": 11}, {"kind": "poison", "amount": 3}]},
+		{"intent": "騰挪 11", "effects": [{"kind": "block", "amount": 11}]}
+	]
+	return enemy
+
+static func _octopus_imp() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "octopus_imp"
+	enemy.portrait_scale = 0.9  # 水族：短腿章魚（借 water_tentacle 圖）
+	enemy.display_name = "短腿章魚"
+	enemy.max_hp = 58
+	enemy.portrait_path = "res://assets/art/enemies/water_tentacle.png"
+	enemy.actions = [
+		{"intent": "觸腕纏 14", "effects": [{"kind": "damage", "amount": 14}]},
+		{"intent": "墨噴 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]},
+		{"intent": "吸盤護 12", "effects": [{"kind": "block", "amount": 12}]}
+	]
+	return enemy
+
+static func _clam_spirit() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "clam_spirit"
+	enemy.display_name = "蚌殼精"
+	enemy.max_hp = 72
+	enemy.portrait_path = "res://assets/art/enemies/water_imp.png"
+	enemy.actions = [
+		{"intent": "蚌夾 15", "effects": [{"kind": "damage", "amount": 15}]},
+		{"intent": "閉殼 22", "effects": [{"kind": "block", "amount": 22}]},
+		{"intent": "珍珠光 12 + 破綻 1", "effects": [{"kind": "damage", "amount": 12}, {"kind": "vulnerable", "amount": 1}]}
+	]
+	return enemy
+
+static func _conch_maiden() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "conch_maiden"
+	enemy.display_name = "海螺女"
+	enemy.max_hp = 64
+	enemy.portrait_path = "res://assets/art/enemies/fox_spirit.png"
+	enemy.actions = [
+		{"intent": "海螺音波 13 + 虛弱 1", "effects": [{"kind": "damage", "amount": 13}, {"kind": "weak", "amount": 1}]},
+		{"intent": "纏絲 16", "effects": [{"kind": "damage", "amount": 16}]},
+		{"intent": "護鱗 13", "effects": [{"kind": "block", "amount": 13}]}
+	]
+	return enemy
+
+static func _turtle_demon() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "turtle_demon"
+	enemy.portrait_scale = 1.1  # 水族：傻仔龜（借 rock_guardian 圖）
+	enemy.display_name = "傻仔龜"
+	enemy.max_hp = 84
+	enemy.portrait_path = "res://assets/art/enemies/rock_guardian.png"
+	enemy.actions = [
+		{"intent": "龜殼撞 15", "effects": [{"kind": "damage", "amount": 15}]},
+		{"intent": "縮殼 24", "effects": [{"kind": "block", "amount": 24}]},
+		{"intent": "噴水 12 + 虛弱 1", "effects": [{"kind": "damage", "amount": 12}, {"kind": "weak", "amount": 1}]}
+	]
+	return enemy
 
 static func bosses() -> Array[EnemyData]:
 	return [_moon_worshipper(), _centipede_lord(), _witch_queen(),
@@ -92,14 +217,14 @@ static func enemy_by_id(id: String) -> EnemyData:
 # 八幕（PAL1 劇情順序）：餘杭 → 仙靈島 → 蘇州 → 將軍塚 → 試煉窟 → 鎖妖塔 → 苗疆 → 拜月
 static func enemies_for_act(act: int) -> Array[EnemyData]:
 	match act:
-		1: return [_bandit(), _beast(), _wild_bee(), _thief(), _viper(), _green_snake(), _grass_spider(), _lantern_ghost()]                          # 餘杭山間
-		2: return [_serpent_demon(), _fox_spirit(), _sword_spirit(), _cave_bat(), _water_imp(), _viper(), _man_eating_flower(), _baby_toad()] # 仙靈島（樹妖依正史屬苗疆假扮巫王線，移至第 7 幕）
-		3: return [_sword_spirit(), _fox_spirit(), _zombie_soldier(), _thief(), _cleaver_granny(), _hydra_snake(), _flying_snake(), _poison_toad(), _female_thief()]         # 蘇州城
+		1: return [_bandit(), _beast(), _wild_bee(), _bee_cocoon(), _leaf_sprite(), _thief(), _viper(), _green_snake(), _grass_spider(), _lantern_ghost()] # 餘杭山間
+		2: return [_serpent_demon(), _fox_spirit(), _sword_spirit(), _cave_bat(), _water_imp(), _grass_sprite(), _miao_soldier(), _miao_maiden(), _viper(), _man_eating_flower(), _baby_toad()] # 仙靈島（黑苗血洗仙靈島，苗兵/苗女登場；樹妖移至第 7 幕）
+		3: return [_bandit(), _thug(), _thief(), _female_thief(), _cleaver_granny()] # 蘇州城（正史為人類城鎮，以盜賊/打手為主，不放妖獸）
 		4: return [_zombie_soldier(), _ancient_evil_spirit(), _skeleton_soldier(), _grave_fire(), _cleaver_granny(), _flying_skull(), _vampire_giant()] # 將軍塚
-		5: return [_rock_guardian(), _trial_swordshade(), _gourd_sage(), _scorpion(), _fire_kirin_whelp(), _ice_beast()] # 試煉窟（塔妖/塔鬼兵/刑天/無常依正史只在鎖妖塔）
+		5: return [_rock_guardian(), _trial_swordshade(), _jumping_frog(), _gourd_sage(), _scorpion(), _fire_kirin_whelp(), _ice_beast()] # 試煉窟（跳跳蛙為正史招牌怪；塔妖/刑天/無常只在鎖妖塔）
 		6: return [_tower_demon(), _tower_ghost_soldier(), _ancient_evil_spirit(), _xing_tian(), _black_impermanence(), _white_impermanence(), _flying_skull(), _gourd_sage(), _five_eyed_demon(), _unicorn_demon(), _pincer_demon(), _jumping_frog()] # 鎖妖塔
-		7: return [_gu_cultist(), _serpent_demon(), _toxic_centipede(), _tree_demon(), _man_eating_flower(), _puppet_girl(), _birdman(), _demihuman_villager()]       # 苗疆蠱土
-		8: return [_moon_worshipper(), _baiyue_guard(), _ancient_evil_spirit(), _puppet_girl(), _man_eater_beast(), _two_headed_snake()] # 拜月決戰
+		7: return [_gu_cultist(), _miao_soldier(), _miao_maiden(), _serpent_demon(), _toxic_centipede(), _tree_demon(), _man_eating_flower(), _puppet_girl(), _birdman(), _demihuman_villager()] # 苗疆蠱土
+		8: return [_moon_worshipper(), _baiyue_guard(), _miao_soldier(), _miao_maiden(), _octopus_imp(), _clam_spirit(), _conch_maiden(), _turtle_demon(), _ancient_evil_spirit(), _puppet_girl()] # 拜月決戰（水底迷宮水族 + 拜月/黑苗）
 	return [_bandit(), _beast()]
 
 # 精英敵人候選：取該幕一般敵中 max_hp 最高的前 3 名（精英 = 強化版一般戰，不另造敵人）。
