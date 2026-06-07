@@ -142,6 +142,8 @@ func _initialize() -> void:
 	_test_block_multiply(characters[1], enemies[0])
 	_test_next_attack_mult(characters[0], enemies[0])
 	_test_turn_engines(characters[0], enemies[0])
+	_test_block_per_attack(characters[2], enemies[0])
+	_test_self_block_bonus(characters[2], enemies[0])
 	_test_level_system(characters)
 	_test_level_unlock_cards()
 	_test_ai_run_engine_smoke()
@@ -1793,6 +1795,38 @@ func _test_turn_engines(character: CharacterData, enemy: EnemyData) -> void:
 	bc._sync_active_enemy_to_state()
 	bc.begin_enemy_phase()
 	_check(int((bc.state["enemies"][0] as Dictionary)["hp"]) == 94, "end_turn_damage 6 (100->94), got %d" % int((bc.state["enemies"][0] as Dictionary)["hp"]))
+
+func _test_block_per_attack(character: CharacterData, enemy: EnemyData) -> void:
+	# 劍舞架式：每出一張攻擊牌得護體；技能牌不觸發
+	var bc: BattleController = BattleController.new()
+	var rs: RunState = RunState.new()
+	rs.init_for(character)
+	bc.setup(rs, character, enemy.clone())
+	bc.start_turn()
+	bc.state["block_per_attack"] = 3
+	bc.state["player_block"] = 0
+	bc.state["energy"] = 9
+	var atk: CardData = GameData.make_card("t_atk", "測試攻擊", character.id, 0, "attack", "造成 4 點傷害。", [{"kind": "damage", "amount": 4}])
+	var skl: CardData = GameData.make_card("t_skl", "測試技能", character.id, 0, "skill", "抽 1 張牌。", [{"kind": "draw", "amount": 1}])
+	if bc.deck != null:
+		bc.deck.hand.append(atk)
+		bc.deck.hand.append(skl)
+	bc.play_card(atk)
+	_check(int(bc.state["player_block"]) == 3, "block_per_attack: attack grants 3 block, got %d" % int(bc.state["player_block"]))
+	bc.play_card(skl)
+	_check(int(bc.state["player_block"]) == 3, "block_per_attack: skill grants no block (still 3), got %d" % int(bc.state["player_block"]))
+
+func _test_self_block_bonus(character: CharacterData, enemy: EnemyData) -> void:
+	# 鐵骨樁：獲得護體額外 +amount
+	var bc: BattleController = BattleController.new()
+	var rs: RunState = RunState.new()
+	rs.init_for(character)
+	bc.setup(rs, character, enemy.clone())
+	bc.start_turn()
+	bc.state["player_block"] = 0
+	bc.resolver._resolve_effect({"kind": "self_block_bonus", "amount": 2}, bc.state)
+	bc.resolver._resolve_effect({"kind": "block", "amount": 5}, bc.state)
+	_check(int(bc.state["player_block"]) == 7, "self_block_bonus: block 5 +2 = 7, got %d" % int(bc.state["player_block"]))
 
 func _test_multi_enemy_aoe_status(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
 	# poison_all / weak_all / vulnerable_all 應對全敵套 (skip 已死)

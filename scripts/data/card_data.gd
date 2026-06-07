@@ -114,6 +114,8 @@ func _should_upgrade_amount(kind: String) -> bool:
 		"poison_multiply",
 		"block_per_turn",
 		"end_turn_damage_all",
+		"block_per_attack",
+		"self_block_bonus",
 		"revive"
 	]
 

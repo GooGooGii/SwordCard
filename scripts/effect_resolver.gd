@@ -254,6 +254,15 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			# 蓄劍式（StS Setup/Vigor 式）：下一張攻擊牌傷害翻 amount 倍（由 damage 路徑消耗）。
 			state["next_attack_mult"] = max(1, amount)
 			log_lines.append("蓄劍式：下一張攻擊牌傷害變為 %d 倍。" % max(1, amount))
+		"block_per_attack":
+			# 劍舞架式（持久能力）：本場每出一張攻擊牌獲得 amount 護體。
+			# 實際加護體由 BattleController.play_card 讀 state["block_per_attack"] 執行。
+			state["block_per_attack"] = int(state.get("block_per_attack", 0)) + amount
+			log_lines.append("劍舞架式：每出一張攻擊牌獲得 %d 護體。" % amount)
+		"self_block_bonus":
+			# 鐵骨樁（StS Dexterity 式）：本場每次獲得護體額外 +amount（block 效果讀 block_bonus）。
+			state["block_bonus"] = int(state.get("block_bonus", 0)) + amount
+			log_lines.append("鐵骨樁：每次獲得護體額外 +%d。" % amount)
 		"combo_strike":
 			# 連打引擎（StS Panache 式）：持久能力，本回合每出 threshold 張牌對全體敵人造成傷害。
 			# 實際計數與結算由 BattleController.play_card 讀 state["combo_strike_*"] 執行。

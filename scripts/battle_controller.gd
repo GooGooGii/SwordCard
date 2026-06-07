@@ -161,6 +161,7 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"block_per_turn": 0,  # 靈光普照（Metallicize）：每回合開始 +N 護體
 		"end_turn_damage": 0,  # 五雷轟頂（Combust）：回合結束對全體敵人造成 N 傷害
 		"next_attack_mult": 1,  # 蓄劍式（Vigor）：下一張攻擊傷害倍率（damage 路徑消耗）
+		"block_per_attack": 0,  # 劍舞架式：每出一張攻擊牌獲得 N 護體（play_card 讀取）
 		"damage_taken_reduction": 0,
 		"damage_out_bonus": 0,
 		"block_bonus": 0,
@@ -568,6 +569,11 @@ func play_card(card: CardData) -> Dictionary:
 	})
 	# 連打計數（華彩 combo_strike）：先 +1，結算移到下方 alias 同步後（避免讀到未刷新的 active slot）。
 	state["cards_this_turn"] = int(state.get("cards_this_turn", 0)) + 1
+	# 劍舞架式：每出一張攻擊牌獲得護體
+	if card.card_type == "attack" and int(state.get("block_per_attack", 0)) > 0:
+		var bpa: int = int(state["block_per_attack"])
+		state["player_block"] = int(state["player_block"]) + bpa
+		add_log("劍舞架式：出招成勢，獲得 %d 護體。" % bpa)
 	if deck != null:
 		# 能力牌 STS 規則：打完本場消失（不進棄牌堆、不會再洗回手裡）；
 		# power 增益已套到 player_power 持續整場，不需卡片本體留下。
