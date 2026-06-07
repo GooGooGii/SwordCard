@@ -4859,6 +4859,20 @@ func _resolve_observe_effects(effects: Array) -> String:
 				var flag_id: String = String(effect.get("flag", ""))
 				if not flag_id.is_empty():
 					run_state.set_event_flag(flag_id, effect.get("value", true))
+			"revive":
+				# 救回第一個倒下的後排（回 amount HP）；無人倒下時改回 active amount HP
+				var revived: bool = false
+				for i: int in range(run_state.character_hps.size()):
+					if run_state.character_hps[i] <= 0:
+						run_state.character_hps[i] = min(run_state.character_max_hps[i], max(1, amount))
+						revived = true
+						parts.append("救回倒下的同伴（%d 生命）" % run_state.character_hps[i])
+						break
+				if not revived:
+					var actual_r: int = min(amount, run_state.max_hp - run_state.hp)
+					run_state.hp = min(run_state.max_hp, run_state.hp + amount)
+					if actual_r > 0:
+						parts.append("回復 %d 點生命" % actual_r)
 			"act_modifier":
 				push_warning("[event tree] act_modifier not implemented (P6): %s" % str(effect.get("id", "?")))
 	if parts.is_empty():

@@ -2566,11 +2566,11 @@ func _test_anu_blade_cards(characters: Array[CharacterData]) -> void:
 # ──────────────────────────────────────────────────────────────────────
 
 func _test_event_runner_has_tree() -> void:
-	# spring 有 tree；某個還沒做 tree 的事件（如 shrine）沒有
+	# spring 有 tree；無 tree 欄位的 dict（Event Redesign 後所有事件皆有 tree，
+	# 故以合成的扁平 dict 驗證 fallback 偵測）should回 false
 	var spring: Dictionary = EventData.for_variant("spring")
 	_check(EventRunner.has_tree(spring), "spring should have tree schema")
-	var legacy: Dictionary = EventData.for_variant("lingmiao")
-	_check(not EventRunner.has_tree(legacy), "lingmiao should still use legacy flat schema")
+	_check(not EventRunner.has_tree({"title": "x", "choices": ["heal"]}), "tree-less dict should report has_tree=false")
 
 func _test_event_runner_root_choices() -> void:
 	var spring: Dictionary = EventData.for_variant("spring")
@@ -2649,8 +2649,8 @@ func _test_event_runner_leaf_detection() -> void:
 	_check(String(EventRunner.badge_for_kind("gamble")["text"]).contains("賭運"))
 
 func _test_event_runner_legacy_fallback() -> void:
-	# 還沒做 tree 的 event：has_tree=false、get_node 回空 dict、不爆炸
-	var legacy_ed: Dictionary = EventData.for_variant("lingmiao")
+	# 無 tree 的 dict：has_tree=false、get_node 回空 dict、不爆炸
+	var legacy_ed: Dictionary = {"title": "x", "choices": ["heal", "leave"]}
 	_check(not EventRunner.has_tree(legacy_ed))
 	_check(EventRunner.get_node(legacy_ed, "root").is_empty())
 	_check(EventRunner.get_node(legacy_ed, "node_anything").is_empty())

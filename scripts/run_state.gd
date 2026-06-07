@@ -40,6 +40,10 @@ var map_seed: int = 0
 # 戰鬥 start_turn 時消費並清空。儲存格式：[{kind:"energy",amount:1}, {kind:"block",amount:5}, ...]
 var observe_tokens: int = 3
 var next_battle_buffs: Array[Dictionary] = []
+# Event Redesign (Phase 3)：跨事件的長尾旗標。記錄「欠某人人情 / 結了梁子 / 撿了某詛咒 /
+# 與某妖立契」等，供後續事件的 requires.event_flag / not_event_flag 檢定，做回訪與後果。
+# 純加欄位，舊存檔 from_dict 用 data.get("event_flags", {}) 後援，不升 SAVE_VERSION。
+var event_flags: Dictionary = {}
 # pending_event_return：若非空表示當前進行的戰鬥是事件樹觸發的，戰鬥結束時要
 # 結算 victory_effects / defeat_effects 並回地圖，而非走標準 victory 流程。
 # 結構：{victory_effects: Array, defeat_effects: Array}
@@ -157,6 +161,7 @@ func init_for(chars: Variant) -> void:
 	observe_tokens = OBSERVE_TOKEN_START
 	next_battle_buffs.clear()
 	pending_event_return = {}
+	event_flags = {}
 	# 每人各拿自己的 starter weapon
 	for c: CharacterData in party:
 		var weapons: Array[RelicData] = RelicCatalog.weapons_for_character(c.id)
@@ -278,6 +283,7 @@ func to_dict() -> Dictionary:
 		"map_seed": map_seed,
 		"observe_tokens": observe_tokens,
 		"next_battle_buffs": next_battle_buffs.duplicate(),
+		"event_flags": event_flags.duplicate(true),
 	}
 
 func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> bool:
@@ -381,7 +387,56 @@ func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> 
 	for buff_v: Variant in (data.get("next_battle_buffs", []) as Array):
 		if buff_v is Dictionary:
 			next_battle_buffs.append(buff_v as Dictionary)
+	event_flags = (data.get("event_flags", {}) as Dictionary).duplicate(true)
 	return true
+
+# Event Redesign：設定 / 查詢長尾旗標。value 預設 true，亦可存數值（例如人情次數）。
+func set_event_flag(flag: String, value: Variant = true) -> void:
+	if flag.is_empty():
+		return
+	event_flags[flag] = value
+
+func has_event_flag(flag: String) -> bool:
+	return event_flags.has(flag) and bool(event_flags[flag])
+
+# Event Redesign：判定 active 角色牌組的主導原型，給 requires.deck_archetype 用。
+# 回傳 "poison" / "block" / "power" / "attack" 之一，或 ""（無明顯主導）。
+# 規則：統計各原型 effect 出現的卡數，最高者需 >= 3 張且 >= 次高 +1 才算主導。
+func deck_archetype() -> String:
+	var d: Array[CardData] = deck
+	if d.size() < 4:
+		return ""
+	var counts: Dictionary = {"poison": 0, "block": 0, "power": 0, "attack": 0}
+	for card: CardData in d:
+		if card == null:
+			continue
+		var seen: Dictionary = {}
+		for e: Dictionary in card.effects:
+			var k: String = String(e.get("kind", ""))
+			if k.begins_with("poison"):
+				seen["poison"] = true
+			elif k.begins_with("block"):
+				seen["block"] = true
+			elif k == "power":
+				seen["power"] = true
+			elif k == "damage" or k == "damage_all" or k == "consume_energy_damage" or k == "poison_burst":
+				seen["attack"] = true
+		for key: String in seen:
+			counts[key] = int(counts[key]) + 1
+	var best: String = ""
+	var best_n: int = 0
+	var second_n: int = 0
+	for key: String in counts:
+		var n: int = int(counts[key])
+		if n > best_n:
+			second_n = best_n
+			best_n = n
+			best = key
+		elif n > second_n:
+			second_n = n
+	if best_n >= 3 and best_n >= second_n + 1:
+		return best
+	return ""
 
 # Event Branching：消費 1 個 observe token。回傳是否成功（0 token 時 false）
 func consume_observe_token() -> bool:

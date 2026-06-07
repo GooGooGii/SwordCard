@@ -84,6 +84,15 @@ static func visible_choices(node: Dictionary, context: Dictionary) -> Array:
 #   max_power:        int             — run_state.power_bonus <= N（給「殺心太重者不允」用）
 #   observe_token:    bool            — true 時要求 context.observe_tokens >= 1
 #   min_deck_size:    int             — deck_size >= N
+#   ── Event Redesign（讀 build / 狀態 / 長尾旗標）──
+#   deck_archetype:   Array[String]   — context.deck_archetype 必須在內（毒/劍/格擋流分歧）
+#   hp_below:         float           — context.hp_frac < N（瀕死才開放孤注選項；0.0–1.0）
+#   hp_above:         float           — context.hp_frac > N
+#   min_act:          int             — context.act >= N
+#   max_act:          int             — context.act <= N
+#   has_potion_slot:  bool            — true 時要求 context.potion_free_slots >= 1
+#   event_flag:       String/Array    — 持有此旗標（Array → 任一即可）
+#   not_event_flag:   String/Array    — 不可持有此旗標（Array → 全部都沒有才通過）
 static func eval_requires(requires: Dictionary, context: Dictionary) -> bool:
 	if requires.is_empty():
 		return true
@@ -133,6 +142,57 @@ static func eval_requires(requires: Dictionary, context: Dictionary) -> bool:
 	if requires.has("min_deck_size"):
 		if int(context.get("deck_size", 0)) < int(requires["min_deck_size"]):
 			return false
+	# ── Event Redesign ──
+	# deck_archetype（Array → active 牌組原型必須在內）
+	if requires.has("deck_archetype"):
+		var arch_allowed: Array = requires["deck_archetype"] as Array
+		var arch: String = String(context.get("deck_archetype", ""))
+		if not arch_allowed.is_empty() and not (arch in arch_allowed):
+			return false
+	# hp_below / hp_above（hp_frac = hp / max_hp，0.0–1.0）
+	if requires.has("hp_below"):
+		if float(context.get("hp_frac", 1.0)) >= float(requires["hp_below"]):
+			return false
+	if requires.has("hp_above"):
+		if float(context.get("hp_frac", 1.0)) <= float(requires["hp_above"]):
+			return false
+	# min_act / max_act
+	if requires.has("min_act"):
+		if int(context.get("act", 1)) < int(requires["min_act"]):
+			return false
+	if requires.has("max_act"):
+		if int(context.get("act", 1)) > int(requires["max_act"]):
+			return false
+	# has_potion_slot（true → 至少 1 個空藥格）
+	if requires.has("has_potion_slot") and bool(requires["has_potion_slot"]):
+		if int(context.get("potion_free_slots", 0)) < 1:
+			return false
+	# event_flag（持有；Array → 任一即可）
+	if requires.has("event_flag"):
+		var flags: Dictionary = context.get("event_flags", {}) as Dictionary
+		var need_flag: Variant = requires["event_flag"]
+		if need_flag is String:
+			if not bool(flags.get(String(need_flag), false)):
+				return false
+		elif need_flag is Array:
+			var any_ok: bool = false
+			for f: Variant in need_flag as Array:
+				if bool(flags.get(String(f), false)):
+					any_ok = true
+					break
+			if not any_ok:
+				return false
+	# not_event_flag（不可持有；Array → 全部都沒有才通過）
+	if requires.has("not_event_flag"):
+		var flags2: Dictionary = context.get("event_flags", {}) as Dictionary
+		var ban_flag: Variant = requires["not_event_flag"]
+		if ban_flag is String:
+			if bool(flags2.get(String(ban_flag), false)):
+				return false
+		elif ban_flag is Array:
+			for f: Variant in ban_flag as Array:
+				if bool(flags2.get(String(f), false)):
+					return false
 	return true
 
 # 葉節點：有 outcome（無論 next 是否存在；outcome 優先）
@@ -179,7 +239,12 @@ static func build_context(
 	power_bonus: int,
 	observe_tokens: int,
 	relic_ids: Array,
-	deck_size: int
+	deck_size: int,
+	deck_archetype: String = "",
+	hp_frac: float = 1.0,
+	act: int = 1,
+	potion_free_slots: int = 0,
+	event_flags: Dictionary = {}
 ) -> Dictionary:
 	return {
 		"character_id": character_id,
@@ -188,4 +253,9 @@ static func build_context(
 		"observe_tokens": observe_tokens,
 		"relic_ids": relic_ids.duplicate(),
 		"deck_size": deck_size,
+		"deck_archetype": deck_archetype,
+		"hp_frac": hp_frac,
+		"act": act,
+		"potion_free_slots": potion_free_slots,
+		"event_flags": event_flags.duplicate(true),
 	}

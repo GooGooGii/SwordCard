@@ -41,6 +41,32 @@ static func _has_male_character(character_ids: Array[String]) -> bool:
 			return true
 	return false
 
+# Event Redesign（Phase 4）：依稀有度加權挑事件。rare 事件權重 1，common 權重 5，
+# 讓「能重塑整場 run」的稀有奇遇不常出現、遇到時更有記憶點。
+static func event_pick_weight(variant: String) -> int:
+	match EventData.rarity_of(variant):
+		"rare":
+			return 1
+		"uncommon":
+			return 3
+		_:
+			return 5
+
+static func _pick_event_variant(event_pool: Array[String]) -> String:
+	if event_pool.is_empty():
+		return "shrine"
+	var total: int = 0
+	for v: String in event_pool:
+		total += event_pick_weight(v)
+	if total <= 0:
+		return event_pool[randi_range(0, event_pool.size() - 1)]
+	var roll: int = randi_range(0, total - 1)
+	for v: String in event_pool:
+		roll -= event_pick_weight(v)
+		if roll < 0:
+			return v
+	return event_pool[event_pool.size() - 1]
+
 static func _build_event_pool(has_female: bool, has_male: bool) -> Array[String]:
 	var pool: Array[String] = []
 	for v: String in EVENT_VARIANTS:
@@ -177,7 +203,7 @@ static func _make_map_node(node_type: String, node_index: int, normal_enemies: A
 		node_data["enemies"] = elite_node
 		node_data["is_elite"] = true
 	elif node_type == "event":
-		node_data["event_variant"] = event_pool[randi_range(0, event_pool.size() - 1)]
+		node_data["event_variant"] = _pick_event_variant(event_pool)
 	elif node_type == "shop":
 		node_data["black_market"] = randf() < BLACK_SHOP_CHANCE
 	return node_data
