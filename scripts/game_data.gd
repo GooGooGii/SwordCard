@@ -335,7 +335,7 @@ static func _anu() -> CharacterData:
 		# 連打牌組（0 費 / 減靈耗升級）：蠱毒連擊軸，art 暫借既有蠱術卡
 		make_card("anu_sandu", "散蠱", "阿奴", 0, "skill", "施加 2 層蠱毒。", [{"kind": "poison", "amount": 2}]),
 		make_card("anu_yindu", "引蠱", "阿奴", 0, "attack", "造成 3 點傷害，抽 1 張牌。", [{"kind": "damage", "amount": 3}, {"kind": "draw", "amount": 1}], "uncommon"),
-		make_card("anu_huguzhao", "玉蟲結繭", "阿奴", 0, "skill", "獲得 4 點護體。", [{"kind": "block", "amount": 4}]),
+		make_card("anu_huguzhao", "逆影遁法", "阿奴", 0, "skill", "獲得 4 點護體。", [{"kind": "block", "amount": 4}]),
 		make_card("anu_lianduzhen", "攢針亂射", "阿奴", 1, "attack", "造成 3 點傷害兩次，施加 1 層蠱毒。", [{"kind": "damage", "amount": 3, "hits": 2}, {"kind": "poison", "amount": 1}], "uncommon", "", true),
 		# 毒流 combo 三張（StS Catalyst / Noxious / Sporic 對齊，art 暫借既有蠱術卡）：
 		# 蠱毒催化＝翻倍毒層、蠱刃淬煉＝攻擊無格擋敵人疊毒、蠱蟲寄屍＝死敵殘毒轉移（多敵 combo）。
@@ -345,9 +345,11 @@ static func _anu() -> CharacterData:
 		# 鬼／冥 系（苗巫邪術·厲鬼冥河）：已補正式插圖
 		make_card("anu_guiling_zhuansheng", "鬼靈轉生", "阿奴", 2, "skill", "驅鬼靈轉生，救回 1 名倒下的同伴（25 HP 上場）；若無人倒下，改為自己回復 25 生命。", [{"kind": "revive", "amount": 25}], "rare"),
 		make_card("anu_minghe_yindu", "冥河引渡", "阿奴", 2, "attack", "冥河引渡亡魂，對全體敵人造成 8 點傷害並施加 3 層蠱毒。", [{"kind": "damage_all", "amount": 8}, {"kind": "poison_all", "amount": 3}], "rare"),
-		make_card("anu_suoming_egui", "索命厲鬼", "阿奴", 1, "attack", "索命厲鬼撲身，造成 9 點傷害並使敵人虛弱 2 層。", [{"kind": "damage", "amount": 9}, {"kind": "weak", "amount": 2}], "uncommon"),
+		make_card("anu_suoming_egui", "幽魂噬影", "阿奴", 1, "attack", "幽魂噬影撲身，造成 9 點傷害並使敵人虛弱 2 層。", [{"kind": "damage", "amount": 9}, {"kind": "weak", "amount": 2}], "uncommon"),
 		make_card("anu_youming_shigu", "幽冥蝕骨", "阿奴", 2, "skill", "幽冥之毒蝕骨，施加 7 層蠱毒並使敵人破綻 2 層。", [{"kind": "poison", "amount": 7}, {"kind": "vulnerable", "amount": 2}], "uncommon"),
 		make_card("anu_guihuo_liaoyuan", "鬼火燎原", "阿奴", 3, "attack", "鬼火燎原，對全體敵人造成 7 點傷害兩次並施加 2 層蠱毒。", [{"kind": "damage_all", "amount": 7, "hits": 2}, {"kind": "poison_all", "amount": 2}], "rare"),
+		# 蝶毒群控（呼應單體的「醉蝶迷魂」，補阿奴缺的 AOE 虛弱）：art 暫借醉蝶迷魂
+		make_card("anu_huadie_guimeng", "化蝶歸夢", "阿奴", 1, "skill", "化蝶入夢，使全體敵人虛弱 2 層並抽 1 張牌。", [{"kind": "weak_all", "amount": 2}, {"kind": "draw", "amount": 1}], "uncommon", "anu_mihun"),
 	]
 	# HP 66→82：阿奴是「長戰持續傷害」毒龜流，毒需要時間 ramp+tick，必須夠肉才撐得到
 	# 毒生效（pilot 實測：66 HP 對上 +15% 傷害的多敵戰撐不過 3 回合就被消耗死）。
