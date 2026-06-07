@@ -1004,9 +1004,11 @@ const BALANCE_BASELINES_MID: Dictionary = {
 	# 牌組變薄 → 御劍/萬劍/天師等高傷卡抽率提升，對蜈蚣大王勝率躍升（故意調整，commit faffda4 之後改的）
 	# 2026-06 難度收斂（多分層 AI 測試）：敵人傷害再 +15% 把中手清關拉到 ~25-45%。
 	# random AI 起始牌組對上調後的蜈蚣大王，限時勝率再下修（故意調整，重測觀測值）。
+	# lin_yueru 50→70：林月如姿態 power（block-per-attack / dexterity）buff 後，
+	# random AI 中手清關率上升（故意調整，重測觀測值）。
 	"li_xiaoyao": 13,
 	"zhao_linger": 30,
-	"lin_yueru": 50,
+	"lin_yueru": 70,
 	"anu": 87
 }
 # 全升級起始牌組 vs 山賊頭目。升級應嚴格 >= 基礎勝率，預期全 100%。
@@ -1985,23 +1987,28 @@ func _test_summon_unknown_id(characters: Array[CharacterData], enemies: Array[En
 	_check(bc.enemies.size() == 1, "no enemy added")
 
 func _test_summon_from_boss_pool(characters: Array[CharacterData]) -> void:
-	# 拜月教主 phase 2 的「召喚水妖觸手」action 應觸發 spawn
-	# 模擬：把拜月教主 phase 2 強制啟動，再走 begin/resolve_enemy_phase
-	var moon: EnemyData = GameData.boss_for_act(5)
-	var bc: BattleController = _make_multi_battle(characters[0], [moon])
+	# 掃描所有 boss，找出任一擁有 summon 招式的 boss 來測。
+	# 不寫死 boss_for_act(N)：boss 對位洗牌（PAL1 對齊）時此測試仍穩。
+	var summon_boss: EnemyData = null
+	var summon_idx: int = -1
+	for b: EnemyData in GameData.bosses():
+		for i: int in range(b.phase_2_actions.size()):
+			var effs: Array = (b.phase_2_actions[i] as Dictionary).get("effects", []) as Array
+			for ef: Variant in effs:
+				if String((ef as Dictionary).get("kind", "")) == "summon":
+					summon_boss = b
+					summon_idx = i
+					break
+			if summon_idx >= 0:
+				break
+		if summon_boss != null:
+			break
+	_check(summon_boss != null, "at least one boss should have a summon action in phase_2_actions")
+	if summon_boss == null:
+		return
+	var bc: BattleController = _make_multi_battle(characters[0], [summon_boss])
 	# 強制 phased + action_index 指向召喚招式
 	bc.enemy_phased[0] = true
-	# 找召喚招式在 phase_2_actions 的 index
-	var summon_idx: int = -1
-	for i: int in range(moon.phase_2_actions.size()):
-		var effs: Array = (moon.phase_2_actions[i] as Dictionary).get("effects", []) as Array
-		for ef: Variant in effs:
-			if String((ef as Dictionary).get("kind", "")) == "summon":
-				summon_idx = i
-				break
-		if summon_idx >= 0:
-			break
-	_check(summon_idx >= 0, "boss phase_2_actions should include a summon action")
 	bc.enemy_action_indices[0] = summon_idx
 	# 跑回合
 	bc.start_turn()
@@ -2010,9 +2017,11 @@ func _test_summon_from_boss_pool(characters: Array[CharacterData]) -> void:
 	bc.resolve_enemy_phase(actions)
 	# 召喚成功 → 戰場 +1（前提：未到 cap）
 	_check(bc.enemies.size() == size_before + 1, "summon action should add 1 enemy; got %d → %d" % [size_before, bc.enemies.size()])
+	if bc.enemies.size() != size_before + 1:
+		return  # 召喚失敗就不再存取新敵 slot，避免陣列越界
 	# 新敵應在 summon_pool 內
 	var new_id: String = String((bc.state["enemies"][size_before] as Dictionary)["id"])
-	_check(new_id in moon.summon_pool, "summoned id should be from boss summon_pool; got '%s'" % new_id)
+	_check(new_id in summon_boss.summon_pool, "summoned id should be from boss summon_pool; got '%s'" % new_id)
 	_check(bc.enemies[size_before].is_summoned, "spawned enemy should have is_summoned = true")
 
 func _test_multi_hit_damage(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
@@ -2728,16 +2737,16 @@ func _test_boss_relic_choices(character: CharacterData) -> void:
 	# 規則：boss 專屬神器排第一（若未持有），剩餘從 generals 補滿 3 個
 	var rs: RunState = RunState.new()
 	rs.init_for(character)
-	# 1. 對 centipede_lord boss：第一個選項應是 wugong_jia（蜈蚣甲），且帶 gu_du curse
+	# 1. 對 centipede_lord boss（現對位石長老）：第一個選項應是 wugong_jia，且帶 gu_du curse
 	var boss_id: String = "centipede_lord"
 	var artifact: RelicData = null
 	for a: RelicData in RelicCatalog.artifacts():
 		if a.boss_id == boss_id and not rs.has_relic(a.id):
 			artifact = a.clone()
 			break
-	_check(artifact != null, "centipede_lord should have an artifact in catalog")
+	_check(artifact != null, "centipede_lord boss should have an artifact in catalog")
 	if artifact != null:
-		_check(artifact.id == "wugong_jia", "centipede_lord artifact should be wugong_jia")
+		_check(artifact.id == "wugong_jia", "centipede_lord artifact should still be wugong_jia")
 		_check(artifact.curse_on_acquire == "gu_du",
 			"wugong_jia curse_on_acquire should be gu_du, got: %s" % artifact.curse_on_acquire)
 	# 2. 填滿 3 個選項的邏輯
@@ -3106,4 +3115,3 @@ func _test_stealing_system() -> void:
 	}
 	test_resolver._resolve_effect({"kind": "steal"}, empty_state, false)
 	_check(empty_state["steal_result"].is_empty(), "Stealing from empty loot table should return empty result")
-
