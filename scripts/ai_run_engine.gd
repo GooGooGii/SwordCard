@@ -61,9 +61,10 @@ func setup(party_ids: Array, ascension: int = 0, run_seed: int = 0) -> void:
 	run_state.map_seed = seed_for_run
 	run_state.init_for(party)
 	var hp_mult: float = Ascension.starting_hp_multiplier(run_state.ascension_level)
-	if hp_mult != 1.0:
+	var hp_flat: int = Ascension.max_hp_flat_penalty(run_state.ascension_level)
+	if hp_mult != 1.0 or hp_flat > 0:
 		for i: int in range(run_state.character_max_hps.size()):
-			var new_max: int = max(1, int(round(float(run_state.character_max_hps[i]) * hp_mult)))
+			var new_max: int = max(1, int(round(float(run_state.character_max_hps[i]) * hp_mult)) - hp_flat)
 			run_state.character_max_hps[i] = new_max
 			run_state.character_hps[i] = new_max
 	run_state.encounter_choices = _make_encounter_choices()
@@ -1016,14 +1017,14 @@ func _relic_by_id(id: String) -> RelicData:
 	return null
 
 func _shop_discount(base: int) -> int:
-	var price: int = base
+	var price: float = float(base) * Ascension.shop_price_multiplier(run_state.ascension_level)  # A16 漲價
 	for r: RelicData in run_state.relics:
 		for t: Dictionary in r.triggers:
 			if String(t.get("trigger", "")) == "permanent":
 				for e: Dictionary in (t.get("effects", []) as Array):
 					if String(e.get("kind", "")) == "shop_discount":
-						price -= int(e.get("amount", 0))
-	return max(10, price)
+						price -= float(e.get("amount", 0))
+	return max(10, int(round(price)))
 
 func _shop_relic_price(relic: RelicData) -> int:
 	var base: int = 70

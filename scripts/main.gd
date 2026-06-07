@@ -1263,11 +1263,12 @@ func start_run(party_or_char: Variant) -> void:
 	seed(seed_for_run)
 	run_state.map_seed = seed_for_run
 	run_state.init_for(party)
-	# 套 ascension starting_hp 倍率到每個角色
+	# 套 ascension starting_hp 倍率（A6）+ 最大 HP 平鋪扣減（A14）到每個角色
 	var hp_mult: float = Ascension.starting_hp_multiplier(run_state.ascension_level)
-	if hp_mult != 1.0:
+	var hp_flat: int = Ascension.max_hp_flat_penalty(run_state.ascension_level)
+	if hp_mult != 1.0 or hp_flat > 0:
 		for i: int in range(run_state.character_max_hps.size()):
-			var new_max: int = max(1, int(round(float(run_state.character_max_hps[i]) * hp_mult)))
+			var new_max: int = max(1, int(round(float(run_state.character_max_hps[i]) * hp_mult)) - hp_flat)
 			run_state.character_max_hps[i] = new_max
 			run_state.character_hps[i] = new_max
 	run_state.encounter_choices = _make_encounter_choices()
@@ -5822,7 +5823,7 @@ func _shop_relic_price(relic: RelicData) -> int:
 			for e: Dictionary in (t.get("effects", []) as Array):
 				if String(e.get("kind", "")) == "shop_discount":
 					base -= int(e.get("amount", 0))
-	return max(10, int(ceil(float(base) * _shop_curse_surcharge_mult())))
+	return max(10, int(ceil(float(base) * _shop_curse_surcharge_mult() * Ascension.shop_price_multiplier(run_state.ascension_level))))
 
 func _buy_shop_relic(relic: RelicData, price: int) -> void:
 	if run_state.gold < price:
@@ -5981,7 +5982,7 @@ func _shop_apply_discount(base_price: int) -> int:
 			for e: Dictionary in (t.get("effects", []) as Array):
 				if String(e.get("kind", "")) == "shop_discount":
 					price -= int(e.get("amount", 0))
-	return max(10, int(ceil(float(price) * _shop_curse_surcharge_mult())))
+	return max(10, int(ceil(float(price) * _shop_curse_surcharge_mult() * Ascension.shop_price_multiplier(run_state.ascension_level))))
 
 # 商店導覽面板（翻閱 / 離店）：與服務面板同樣的水墨navy框，取代原本格格不入的米色事件按鈕。
 func _shop_nav_panel(title: String, description: String, button_text: String, on_press: Callable) -> Control:
