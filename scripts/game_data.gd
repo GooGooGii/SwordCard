@@ -268,6 +268,9 @@ static func _lin_yueru() -> CharacterData:
 		make_card("lyr_shuangjianci", "鴛鴦雙劍", "林月如", 1, "attack", "造成 5 點傷害兩次。", [{"kind": "damage", "amount": 5, "hits": 2}], "uncommon", "", true),
 		# 反擊軸（thorns 複用，做成 payoff）：荊棘流錨點
 		make_card("lyr_shuangren", "霜刃反擊", "林月如", 1, "skill", "凝霜於刃，獲得 8 點荊棘（被攻擊時反彈傷害給攻擊者）。", [{"kind": "thorns", "amount": 8}], "uncommon", "lyr_fanji"),
+		# 連武架式 / 鐵骨（StS Demon Form 護體版 / Dexterity，art 暫借既有卡）
+		make_card("lyr_jianwu", "劍舞架式", "林月如", 1, "power", "舞劍成勢，本場戰鬥每出一張攻擊牌獲得 3 點護體。", [{"kind": "block_per_attack", "amount": 3}], "uncommon", "lyr_shenfa"),
+		make_card("lyr_tiegu", "鐵骨樁", "林月如", 1, "power", "紮穩鐵骨樁步，本場戰鬥每次獲得護體額外 +2。", [{"kind": "self_block_bonus", "amount": 2}], "uncommon", "lyr_tieyi"),
 	]
 	var character: CharacterData = _character("lin_yueru", "林月如", 72, "鞭劍武學、連擊、反擊與內勁治療。", cards)
 	# PAL1 對齊：10 basic + 2 uncommon + 0 rare
@@ -329,6 +332,12 @@ static func _anu() -> CharacterData:
 		make_card("anu_cuihua", "毒入膏肓", "阿奴", 1, "skill", "使目標敵人的蠱毒層數變為 2 倍。", [{"kind": "poison_multiply", "amount": 2}], "rare"),
 		make_card("anu_gudaocui", "五毒淬刃", "阿奴", 1, "power", "攻擊無格擋的敵人時，每次攻擊施加 1 層蠱毒（多段攻擊每段各 1 層）。", [{"kind": "poison_on_attack", "amount": 1}], "uncommon", "", true),
 		make_card("anu_jishigu", "借屍還蠱", "阿奴", 1, "power", "中毒的敵人死亡時，將其殘餘蠱毒隨機轉移給另一個敵人。", [{"kind": "corpse_poison"}], "uncommon", "", true),
+		# 鬼／冥 系（苗巫邪術·厲鬼冥河）：art 暫借既有阿奴卡，未來補正式插圖
+		make_card("anu_guiling_zhuansheng", "鬼靈轉生", "阿奴", 2, "skill", "驅鬼靈轉生，救回 1 名倒下的同伴（25 HP 上場）；若無人倒下，改為自己回復 25 生命。", [{"kind": "revive", "amount": 25}], "rare", "anu_guijiang"),
+		make_card("anu_minghe_yindu", "冥河引渡", "阿奴", 2, "attack", "冥河引渡亡魂，對全體敵人造成 8 點傷害並施加 3 層蠱毒。", [{"kind": "damage_all", "amount": 8}, {"kind": "poison_all", "amount": 3}], "rare", "anu_wangushitian"),
+		make_card("anu_suoming_egui", "索命厲鬼", "阿奴", 1, "attack", "索命厲鬼撲身，造成 9 點傷害並使敵人虛弱 2 層。", [{"kind": "damage", "amount": 9}, {"kind": "weak", "amount": 2}], "uncommon", "anu_duohun"),
+		make_card("anu_youming_shigu", "幽冥蝕骨", "阿奴", 2, "skill", "幽冥之毒蝕骨，施加 7 層蠱毒並使敵人破綻 2 層。", [{"kind": "poison", "amount": 7}, {"kind": "vulnerable", "amount": 2}], "uncommon", "anu_sanshigu"),
+		make_card("anu_guihuo_liaoyuan", "鬼火燎原", "阿奴", 3, "attack", "鬼火燎原，對全體敵人造成 7 點傷害兩次並施加 2 層蠱毒。", [{"kind": "damage_all", "amount": 7, "hits": 2}, {"kind": "poison_all", "amount": 2}], "rare", "anu_yanshazhou"),
 	]
 	# HP 66→82：阿奴是「長戰持續傷害」毒龜流，毒需要時間 ramp+tick，必須夠肉才撐得到
 	# 毒生效（pilot 實測：66 HP 對上 +15% 傷害的多敵戰撐不過 3 回合就被消耗死）。
@@ -679,6 +688,7 @@ static func _beast() -> EnemyData:
 static func _wild_bee() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "wild_bee"
+	enemy.portrait_scale = 0.78  # 小型：野蜂
 	enemy.display_name = "十里坡野蜂"
 	enemy.max_hp = 48
 	enemy.portrait_path = "res://assets/art/enemies/wild_bee.png"  # 專屬野蜂美術
@@ -694,6 +704,7 @@ static func _wild_bee() -> EnemyData:
 static func _cave_bat() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "cave_bat"
+	enemy.portrait_scale = 0.8  # 小型：洞穴蝙蝠
 	enemy.display_name = "噬血蝠"
 	enemy.max_hp = 58
 	enemy.portrait_path = "res://assets/art/enemies/cave_bat.png"  # 專屬蝙蝠美術
@@ -1216,6 +1227,7 @@ static func _water_tentacle() -> EnemyData:
 static func _red_eye_imp() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "red_eye_imp"
+	enemy.portrait_scale = 0.78  # 召喚物：赤眼幼魈（小）
 	enemy.display_name = "赤眼幼魈"
 	enemy.max_hp = 18
 	enemy.portrait_path = "res://assets/art/enemies/red_eye_imp.png"
@@ -1244,6 +1256,7 @@ static func _zombie_thrall() -> EnemyData:
 static func _centipede_brood() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "centipede_brood"
+	enemy.portrait_scale = 0.75  # 召喚物：蜈蚣幼蟲（小）
 	enemy.display_name = "蜈蚣幼蟲"
 	enemy.max_hp = 14
 	enemy.portrait_path = "res://assets/art/enemies/centipede_brood.png"
