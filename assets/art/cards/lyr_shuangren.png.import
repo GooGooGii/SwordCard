@@ -2,10 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://l5dfq3lycdyd"
+path="res://.godot/imported/lyr_shuangren.png-766153095a4b5221f504ef11bfb25337.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/lyr_shuangren.png"
+dest_files=["res://.godot/imported/lyr_shuangren.png-766153095a4b5221f504ef11bfb25337.ctex"]
 
 [params]
 

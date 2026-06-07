@@ -2,10 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://hmiie1t8j5sk"
+path="res://.godot/imported/lxy_linzhen.png-9cd7f6944a527786b26b7f6c0116b9d3.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/lxy_linzhen.png"
+dest_files=["res://.godot/imported/lxy_linzhen.png-9cd7f6944a527786b26b7f6c0116b9d3.ctex"]
 
 [params]
 

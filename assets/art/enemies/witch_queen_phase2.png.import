@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c8kuvf2bthi0b"
-path="res://.godot/imported/lyr_jianwu.png-4bc044e20dabf6bc3fa47dc8a2365c92.ctex"
+uid="uid://dn6o5egh18m5j"
+path="res://.godot/imported/witch_queen_phase2.png-b95db8bb03b378e58476601838cc159a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/cards/lyr_jianwu.png"
-dest_files=["res://.godot/imported/lyr_jianwu.png-4bc044e20dabf6bc3fa47dc8a2365c92.ctex"]
+source_file="res://assets/art/enemies/witch_queen_phase2.png"
+dest_files=["res://.godot/imported/witch_queen_phase2.png-b95db8bb03b378e58476601838cc159a.ctex"]
 
 [params]
 

@@ -2,10 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://b83c5xrj3fnpn"
+path="res://.godot/imported/lxy_jianyi.png-e0e2bff2e87cf61a0607409331b42852.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/lxy_jianyi.png"
+dest_files=["res://.godot/imported/lxy_jianyi.png-e0e2bff2e87cf61a0607409331b42852.ctex"]
 
 [params]
 

@@ -2,10 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://csb3p3br78nu0"
+path="res://.godot/imported/anu_huadie_guimeng.png-4b1340b59a8796c64565461e3dc68ca2.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/anu_huadie_guimeng.png"
+dest_files=["res://.godot/imported/anu_huadie_guimeng.png-4b1340b59a8796c64565461e3dc68ca2.ctex"]
 
 [params]
 
