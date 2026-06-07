@@ -33,6 +33,7 @@ func _sync_active_slot_from_alias(state: Dictionary) -> void:
 	slot["poison"] = int(state.get("enemy_poison", slot["poison"]))
 	slot["weak"] = int(state.get("enemy_weak", slot["weak"]))
 	slot["vulnerable"] = int(state.get("enemy_vulnerable", slot["vulnerable"]))
+	slot["stunned"] = int(state.get("enemy_stunned", slot.get("stunned", 0)))
 
 # Multi-Enemy alias 同步：把 enemies[active_enemy_index] slot 寫到 state["enemy_*"] alias
 # 多體效果結算後呼叫，讓後續單體 effect 看到正確 active 值
@@ -47,6 +48,7 @@ func _sync_alias_from_active_slot(state: Dictionary) -> void:
 	state["enemy_poison"] = int(slot["poison"])
 	state["enemy_weak"] = int(slot["weak"])
 	state["enemy_vulnerable"] = int(slot["vulnerable"])
+	state["enemy_stunned"] = int(slot.get("stunned", 0))
 
 # 向後相容：tick 敵 + 玩家 poison（smoke 單元測試與舊呼叫點用）。
 # 遊戲實際流程改用分離時機：tick_enemy_statuses 在敵人階段開始、
@@ -197,6 +199,11 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			else:
 				state["enemy_vulnerable"] = int(state["enemy_vulnerable"]) + amount
 				log_lines.append("敵人受到 %d 層破綻。" % amount)
+		"stun":
+			# 暈眩：敵人接下來 amount 個回合無法行動（玩家專用，不對玩家施放）
+			if not from_enemy:
+				state["enemy_stunned"] = int(state.get("enemy_stunned", 0)) + amount
+				log_lines.append("敵人陷入暈眩，%d 回合無法行動！" % amount)
 		"draw":
 			state["pending_draw"] = int(state["pending_draw"]) + amount
 			log_lines.append("抽 %d 張牌。" % amount)

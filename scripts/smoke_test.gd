@@ -162,6 +162,7 @@ func _initialize() -> void:
 	_test_summon_cap(characters, enemies)
 	_test_summon_unknown_id(characters, enemies)
 	_test_summon_from_boss_pool(characters)
+	_test_stun(characters, enemies)
 	# 連擊 multi-hit（阿奴刀流 / 引擎地基）
 	_test_multi_hit_damage(characters, enemies)
 	_test_anu_blade_cards(characters)
@@ -1986,6 +1987,21 @@ func _test_multi_enemy_per_enemy_phase(characters: Array[CharacterData]) -> void
 	bc._sync_active_enemy_to_state()
 	bc._check_phase_transition()
 	_check(bc.enemy_phased[1], "zombie should now phase too")
+
+func _test_stun(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# 暈眩：施加 stun → 敵人下個 enemy phase 跳過出手、stun 層數 -1、玩家不掉血
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0]])
+	bc.start_turn()
+	# 對 active 敵施加 1 層暈眩（玩家方效果）
+	bc.resolver.resolve_effects_list([{"kind": "stun", "amount": 1}], bc.state)
+	bc._sync_state_to_active_enemy()
+	_check(int((bc.state["enemies"][0] as Dictionary).get("stunned", 0)) == 1, "stun should set enemy slot stunned = 1")
+	var hp_before: int = int(bc.state["player_hp"])
+	var actions: Array[Dictionary] = bc.begin_enemy_phase()
+	_check(actions.size() >= 1 and actions[0].is_empty(), "stunned enemy should produce empty action (skip)")
+	bc.resolve_enemy_phase(actions)
+	_check(int((bc.state["enemies"][0] as Dictionary).get("stunned", 0)) == 0, "stun should decrement to 0 after the skipped turn")
+	_check(int(bc.state["player_hp"]) == hp_before, "player should take no damage from a stunned enemy")
 
 func _test_summon_basic(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
 	# spawn_enemy("water_tentacle") → enemies +1，state["enemies"] +1

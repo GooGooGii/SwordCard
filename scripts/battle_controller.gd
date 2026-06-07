@@ -124,6 +124,7 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 			"poison": 0,
 			"weak": 0,
 			"vulnerable": 0,
+			"stunned": 0,
 			"loot_table": GameData.loot_table_for(e.id),
 		})
 	var active_idx: int = 0
@@ -147,6 +148,7 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"enemy_poison": 0,
 		"enemy_weak": 0,
 		"enemy_vulnerable": 0,
+		"enemy_stunned": 0,
 		"enemy_loot_table": enemy_slots[active_idx]["loot_table"],
 		"energy": per_turn_energy,
 		"pending_draw": 0,
@@ -216,6 +218,7 @@ func _sync_active_enemy_to_state() -> void:
 	state["enemy_poison"] = slot["poison"]
 	state["enemy_weak"] = slot["weak"]
 	state["enemy_vulnerable"] = slot["vulnerable"]
+	state["enemy_stunned"] = slot.get("stunned", 0)
 	state["enemy_loot_table"] = slot["loot_table"]
 
 # 把 state["enemy_*"] 寫回 enemies[active_enemy_index] slot
@@ -231,6 +234,7 @@ func _sync_state_to_active_enemy() -> void:
 	slot["poison"] = int(state.get("enemy_poison", slot["poison"]))
 	slot["weak"] = int(state.get("enemy_weak", slot["weak"]))
 	slot["vulnerable"] = int(state.get("enemy_vulnerable", slot["vulnerable"]))
+	slot["stunned"] = int(state.get("enemy_stunned", slot.get("stunned", 0)))
 	# name / max_hp / loot_table 不變
 
 # 玩家主動切換 active enemy（drag-to-play / click portrait 觸發）
@@ -342,6 +346,7 @@ func snapshot_state() -> Dictionary:
 			"poison": int(s.get("poison", 0)),
 			"weak": int(s.get("weak", 0)),
 			"vulnerable": int(s.get("vulnerable", 0)),
+			"stunned": int(s.get("stunned", 0)),
 		})
 	return {
 		"player_hp": int(state["player_hp"]),
@@ -741,6 +746,11 @@ func begin_enemy_phase() -> Array[Dictionary]:
 		if int(slot["hp"]) <= 0:
 			actions.append({})  # 死敵跳過
 			continue
+		if int(slot.get("stunned", 0)) > 0:
+			slot["stunned"] = int(slot["stunned"]) - 1  # 暈眩：消耗一層、跳過本回合出手
+			actions.append({})
+			add_log("%s 暈眩，無法行動！" % _enemy_display_name_for(i))
+			continue
 		var action: Dictionary = _action_for_enemy(i)
 		enemy_action_indices[i] = enemy_action_indices[i] + 1
 		actions.append(action)
@@ -837,6 +847,7 @@ func spawn_enemy(enemy_id: String) -> bool:
 		"poison": 0,
 		"weak": 0,
 		"vulnerable": 0,
+		"stunned": 0,
 		"loot_table": GameData.loot_table_for(clone.id),
 	}
 	(state["enemies"] as Array).append(slot)
