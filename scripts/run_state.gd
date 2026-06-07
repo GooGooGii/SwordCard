@@ -47,6 +47,9 @@ var next_battle_buffs: Array[Dictionary] = []
 var pending_event_return: Dictionary = {}
 
 const MAX_POTION_SLOTS: int = 3
+# 有效藥格 = 基礎 - Ascension A11 懲罰（至少 1）
+func effective_potion_slots() -> int:
+	return max(1, MAX_POTION_SLOTS - Ascension.potion_slot_penalty(ascension_level))
 const OBSERVE_TOKEN_START: int = 3
 const OBSERVE_TOKEN_BOSS_REWARD: int = 1
 

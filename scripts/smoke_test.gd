@@ -798,6 +798,11 @@ func _test_ascension_persistence_and_modifiers() -> void:
 	_check(Ascension.starting_hp_multiplier(6) == 0.9, "A6 起始 HP -10%")
 	_check(Ascension.starts_cursed(9) == false and Ascension.starts_cursed(10), "A10 起手詛咒")
 	_check(Ascension.potion_slot_penalty(11) == 1, "A11 藥格 -1")
+	var pot_rs: RunState = RunState.new()
+	pot_rs.ascension_level = 0
+	_check(pot_rs.effective_potion_slots() == 3, "A0 藥格 3")
+	pot_rs.ascension_level = 11
+	_check(pot_rs.effective_potion_slots() == 2, "A11 有效藥格 2")
 	_check(Ascension.boss_gold_multiplier(12) == 1.0 and Ascension.boss_gold_multiplier(13) == 0.75, "A13 boss 金 -25%")
 	_check(Ascension.max_hp_flat_penalty(14) == 5, "A14 最大 HP -5")
 	_check(abs(Ascension.shop_price_multiplier(16) - 1.1) < 0.001, "A16 商店漲價")

@@ -1016,7 +1016,7 @@ func _apply_stolen_item(item: Dictionary) -> void:
 			run_state.gold += amount
 			add_log("【飛龍探雲手】獲得 %s。" % item.get("display_name", "銅錢"))
 		"potion":
-			if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
+			if run_state.potions.size() < run_state.effective_potion_slots():
 				var potion_id: String = String(item.get("potion_id", ""))
 				var potion: Dictionary = PotionCatalog.by_id(potion_id)
 				if not potion.is_empty():

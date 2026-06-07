@@ -67,6 +67,9 @@ func setup(party_ids: Array, ascension: int = 0, run_seed: int = 0) -> void:
 			var new_max: int = max(1, int(round(float(run_state.character_max_hps[i]) * hp_mult)) - hp_flat)
 			run_state.character_max_hps[i] = new_max
 			run_state.character_hps[i] = new_max
+	# A10：開局帶 1 張詛咒（妖債）
+	if Ascension.starts_cursed(run_state.ascension_level) and not run_state.character_decks.is_empty():
+		(run_state.character_decks[0] as Array).append(CurseCatalog.make_card("yao_zhai"))
 	run_state.encounter_choices = _make_encounter_choices()
 	# 注意：不呼叫 randomize()。平衡測試要「同 seed 完全可重現」——保持 seeded RNG 串流貫穿
 	# 整個 run（抽牌 / 敵人行動皆確定性），policy A/B 比較才乾淨。（real game 在 main.gd 才
@@ -227,7 +230,7 @@ func _apply_boon(boon_id: String) -> void:
 				run_state.character_max_hps[i] += 12
 				run_state.character_hps[i] = min(run_state.character_max_hps[i], run_state.character_hps[i] + 12)
 		"starting_potion":
-			if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
+			if run_state.potions.size() < run_state.effective_potion_slots():
 				var h: Dictionary = PotionCatalog.by_id("huichun_dan")
 				if not h.is_empty():
 					run_state.potions.append(h.duplicate())
@@ -360,6 +363,9 @@ func _start_battle(enemies_in: Array) -> void:
 		if e_v is EnemyData and Ascension.is_boss_id((e_v as EnemyData).id):
 			is_boss = true
 			break
+	# A20：雙 Boss
+	if is_boss and Ascension.double_boss(run_state.ascension_level) and not enemies.is_empty():
+		enemies.append((enemies[0] as EnemyData).clone())
 	battle = BattleController.new()
 	var typed: Array[EnemyData] = []
 	for e_v: Variant in enemies:
@@ -586,7 +592,7 @@ func _try_random_relic_drop(chance: float) -> RelicData:
 func _maybe_potion_drop(chance: float) -> void:
 	if randf() >= chance:
 		return
-	if run_state.potions.size() >= RunState.MAX_POTION_SLOTS:
+	if run_state.potions.size() >= run_state.effective_potion_slots():
 		return
 	var all_p: Array[Dictionary] = PotionCatalog.all()
 	if all_p.is_empty():
@@ -919,7 +925,7 @@ func _apply_event_effects(effects: Array) -> String:
 					var pool: Array[Dictionary] = PotionCatalog.all()
 					if not pool.is_empty():
 						chosen = pool[randi() % pool.size()]
-				if not chosen.is_empty() and run_state.potions.size() < RunState.MAX_POTION_SLOTS:
+				if not chosen.is_empty() and run_state.potions.size() < run_state.effective_potion_slots():
 					run_state.potions.append(chosen.duplicate())
 					parts.append("potion %s" % String(chosen.get("display_name", "?")))
 			"upgrade_random":
@@ -1074,7 +1080,7 @@ func _view_shop() -> Dictionary:
 			continue
 		var pot: Dictionary = pitem.get("potion", pitem) as Dictionary
 		var pprice: int = _shop_discount(int(pitem.get("price", 0)))
-		var slot_free: bool = run_state.potions.size() < RunState.MAX_POTION_SLOTS
+		var slot_free: bool = run_state.potions.size() < run_state.effective_potion_slots()
 		goods.append({"slot": "potion %d" % i, "name": String(pot.get("display_name", "?")), "price": pprice,
 			"kind": "potion", "desc": String(pot.get("description", "")), "afford": run_state.gold >= pprice and slot_free})
 		if run_state.gold >= pprice and slot_free:
@@ -1133,7 +1139,7 @@ func _apply_shop_choice(choice: Variant) -> void:
 				var pitem: Dictionary = run_state.current_shop_potions[pi]
 				var pprice: int = _shop_discount(int(pitem.get("price", 0)))
 				var pot: Dictionary = pitem.get("potion", pitem) as Dictionary
-				if not bool(pitem.get("sold", false)) and run_state.gold >= pprice and run_state.potions.size() < RunState.MAX_POTION_SLOTS:
+				if not bool(pitem.get("sold", false)) and run_state.gold >= pprice and run_state.potions.size() < run_state.effective_potion_slots():
 					run_state.gold -= pprice
 					pitem["sold"] = true
 					run_state.potions.append(pot.duplicate())
@@ -1191,10 +1197,10 @@ func _advance_after_node() -> void:
 	_phase = "map" if _phase != "done" else "done"
 
 func _act_complete() -> void:
-	const ACT_HEAL: int = 20
+	var act_heal: int = int(round(20 * Ascension.boss_heal_multiplier(run_state.ascension_level)))  # A5：過幕回血變少
 	var completed: int = run_state.act
 	for i: int in range(run_state.characters.size()):
-		run_state.character_hps[i] = min(run_state.character_max_hps[i], run_state.character_hps[i] + ACT_HEAL)
+		run_state.character_hps[i] = min(run_state.character_max_hps[i], run_state.character_hps[i] + act_heal)
 	run_state.act = completed + 1
 	run_state.encounter_index = 0
 	run_state.current_shop_node_index = -1

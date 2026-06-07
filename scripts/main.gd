@@ -401,13 +401,13 @@ func _dbg_add_relic() -> void:
 func _dbg_add_potion() -> void:
 	if run_state == null:
 		return
-	if run_state.potions.size() >= RunState.MAX_POTION_SLOTS:
-		print("[DEBUG] potion slots full (%d/%d)" % [run_state.potions.size(), RunState.MAX_POTION_SLOTS])
+	if run_state.potions.size() >= run_state.effective_potion_slots():
+		print("[DEBUG] potion slots full (%d/%d)" % [run_state.potions.size(), run_state.effective_potion_slots()])
 		return
 	var all_potions: Array[Dictionary] = PotionCatalog.all()
 	var chosen: Dictionary = all_potions[randi() % all_potions.size()]
 	run_state.potions.append(chosen.duplicate())
-	print("[DEBUG] added potion: %s (slots %d/%d)" % [String(chosen.get("display_name", "")), run_state.potions.size(), RunState.MAX_POTION_SLOTS])
+	print("[DEBUG] added potion: %s (slots %d/%d)" % [String(chosen.get("display_name", "")), run_state.potions.size(), run_state.effective_potion_slots()])
 	_refresh_potion_overlay_buttons()
 
 func _dbg_jump_to_boss() -> void:
@@ -1271,6 +1271,9 @@ func start_run(party_or_char: Variant) -> void:
 			var new_max: int = max(1, int(round(float(run_state.character_max_hps[i]) * hp_mult)) - hp_flat)
 			run_state.character_max_hps[i] = new_max
 			run_state.character_hps[i] = new_max
+	# A10：開局帶 1 張詛咒（妖債）— 加到隊長牌組
+	if Ascension.starts_cursed(run_state.ascension_level) and not run_state.character_decks.is_empty():
+		(run_state.character_decks[0] as Array).append(CurseCatalog.make_card("yao_zhai"))
 	run_state.encounter_choices = _make_encounter_choices()
 	randomize()  # 地圖生成完，戰鬥/獎勵恢復隨機 RNG
 	pending_seed = 0  # 消費掉
@@ -1448,7 +1451,7 @@ func _apply_boon(boon_id: String) -> void:
 				"description": "全隊體魄增強，最大與當前 HP 同步提升。"
 			})
 		"starting_potion":
-			if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
+			if run_state.potions.size() < run_state.effective_potion_slots():
 				var huichun: Dictionary = PotionCatalog.by_id("huichun_dan")
 				if not huichun.is_empty():
 					var dup_potion: Dictionary = huichun.duplicate()
@@ -2234,6 +2237,12 @@ func start_next_battle(enemies: Variant) -> void:
 			if e is EnemyData and Ascension.is_boss_id((e as EnemyData).id):
 				is_boss = true
 				break
+	# A20：雙 Boss —— boss 戰再加一隻同名 boss（多敵引擎支援）
+	if is_boss and Ascension.double_boss(run_state.ascension_level):
+		var boss_list: Array = (enemies as Array).duplicate() if enemies is Array else [enemies]
+		if not boss_list.is_empty():
+			boss_list.append((boss_list[0] as EnemyData).clone())
+			enemies = boss_list
 	_play_bgm("battle_boss" if is_boss else "battle_normal")
 	battle = BattleController.new()
 	battle.setup(run_state, selected_character, enemies)
@@ -2860,7 +2869,7 @@ func _build_battle_potion_strip(parent: VBoxContainer) -> void:
 	parent.add_child(strip)
 	_battle_potion_strip = strip
 	_potion_buttons.clear()
-	for i: int in range(RunState.MAX_POTION_SLOTS):
+	for i: int in range(run_state.effective_potion_slots()):
 		var btn: Button = Button.new()
 		btn.custom_minimum_size = Vector2(slot_size, slot_size)
 		btn.add_theme_font_size_override("font_size", 9 if _battle_compact else 10)
@@ -3067,7 +3076,7 @@ func _build_potion_overlay() -> void:
 	_potion_overlay.visible = false
 	# 不在這裡 add_child；由 title bar 決定父節點
 	_potion_overlay_buttons.clear()
-	for i: int in range(RunState.MAX_POTION_SLOTS):
+	for i: int in range(run_state.effective_potion_slots()):
 		var btn: Button = Button.new()
 		btn.custom_minimum_size = Vector2(40, 40)
 		btn.add_theme_font_size_override("font_size", 10)
@@ -5270,7 +5279,7 @@ func _show_item_reveal(entry: Dictionary, on_continue: Callable) -> void:
 		btn_row.add_child(ok_btn)
 	else:
 		var potion: Dictionary = entry["potion"] as Dictionary
-		if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
+		if run_state.potions.size() < run_state.effective_potion_slots():
 			var ok_btn: Button = _button("收下")
 			ok_btn.pressed.connect(func() -> void:
 				run_state.potions.append(potion.duplicate())
@@ -5293,7 +5302,7 @@ func _show_item_reveal(entry: Dictionary, on_continue: Callable) -> void:
 			btn_row.add_child(disc_btn)
 
 func gain_potion_with_replace_dialog(potion: Dictionary, on_done: Callable) -> void:
-	if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
+	if run_state.potions.size() < run_state.effective_potion_slots():
 		run_state.potions.append(potion.duplicate())
 		_refresh_potion_overlay_buttons()
 		_refresh_title_bar()
@@ -5685,7 +5694,7 @@ func _refresh_shop_ui_states() -> void:
 				var item: Dictionary = ref["item"]
 				var price: int = ref["price"]
 				var is_sold: bool = bool(item.get("sold", false))
-				var full: bool = run_state.potions.size() >= RunState.MAX_POTION_SLOTS
+				var full: bool = run_state.potions.size() >= run_state.effective_potion_slots()
 				var can_buy: bool = run_state.gold >= price and not is_sold
 				var button: Button = ref["button"]
 				var panel: PanelContainer = ref["panel"]
@@ -5698,7 +5707,7 @@ func _refresh_shop_ui_states() -> void:
 						button.pressed.disconnect(ref["pressed_callable"])
 				else:
 					if full:
-						button.tooltip_text = "藥格已滿（%d/%d），購買後將替換已持有的藥品" % [run_state.potions.size(), RunState.MAX_POTION_SLOTS]
+						button.tooltip_text = "藥格已滿（%d/%d），購買後將替換已持有的藥品" % [run_state.potions.size(), run_state.effective_potion_slots()]
 					else:
 						button.tooltip_text = ""
 			"remove_service":
@@ -5836,7 +5845,7 @@ func _buy_shop_relic(relic: RelicData, price: int) -> void:
 func _shop_potion_view(item: Dictionary) -> Control:
 	var potion: Dictionary = item["potion"] as Dictionary
 	var price: int = _shop_apply_discount(int(item["price"]))
-	var full: bool = run_state.potions.size() >= RunState.MAX_POTION_SLOTS
+	var full: bool = run_state.potions.size() >= run_state.effective_potion_slots()
 	var is_sold: bool = bool(item.get("sold", false))
 	var can_buy: bool = run_state.gold >= price and not is_sold
 	var rarity_col: Color = PotionCatalog.rarity_color(potion)
@@ -5878,7 +5887,7 @@ func _shop_potion_view(item: Dictionary) -> Control:
 	var buy_button: Button = _button(button_text)
 	buy_button.disabled = not can_buy or is_sold
 	if full and not is_sold:
-		buy_button.tooltip_text = "藥格已滿（%d/%d），購買後將替換已持有的藥品" % [run_state.potions.size(), RunState.MAX_POTION_SLOTS]
+		buy_button.tooltip_text = "藥格已滿（%d/%d），購買後將替換已持有的藥品" % [run_state.potions.size(), run_state.effective_potion_slots()]
 	
 	var pressed_callable: Callable = func(): _show_shop_potion_confirm_overlay(potion, item, price)
 	if not is_sold:
@@ -5947,7 +5956,7 @@ func _buy_shop_potion(potion: Dictionary, item: Dictionary, price: int) -> void:
 		return
 	run_state.gold -= price
 	item["sold"] = true
-	if run_state.potions.size() < RunState.MAX_POTION_SLOTS:
+	if run_state.potions.size() < run_state.effective_potion_slots():
 		run_state.potions.append(potion.duplicate())
 		_refresh_shop_ui_states()
 	else:
@@ -6288,8 +6297,10 @@ func advance_non_battle_node() -> void:
 
 func show_act_complete() -> void:
 	var completed_act: int = run_state.act
+	# A5：Boss 戰後（過幕）回血變少
+	var act_heal: int = int(round(ACT_HEAL_AMOUNT * Ascension.boss_heal_multiplier(run_state.ascension_level)))
 	for i: int in range(run_state.characters.size()):
-		run_state.character_hps[i] = min(run_state.character_max_hps[i], run_state.character_hps[i] + ACT_HEAL_AMOUNT)
+		run_state.character_hps[i] = min(run_state.character_max_hps[i], run_state.character_hps[i] + act_heal)
 	run_state.act = completed_act + 1
 	run_state.encounter_index = 0
 	run_state.current_shop_node_index = -1  # encounter_index 重置，商店標記也要清，否則新幕同索引商店不重抽
@@ -9830,7 +9841,7 @@ func _show_stolen_item_popup(item: Dictionary) -> void:
 			desc = String(potion.get("description", ""))
 			name_color = PotionCatalog.rarity_color(potion)
 			icon.texture = UIFactory.load_texture("res://assets/art/potions/%s.png" % potion_id)
-			if run_state.potions.size() >= RunState.MAX_POTION_SLOTS:
+			if run_state.potions.size() >= run_state.effective_potion_slots():
 				desc += "\n(藥格已滿，請選擇替換或丟棄)"
 		else:
 			desc = "不知名的珍奇藥品。"
@@ -9861,7 +9872,7 @@ func _show_stolen_item_popup(item: Dictionary) -> void:
 	btn_row.add_theme_constant_override("separation", 12)
 	box.add_child(btn_row)
 	
-	if item_type == "potion" and run_state.potions.size() >= RunState.MAX_POTION_SLOTS:
+	if item_type == "potion" and run_state.potions.size() >= run_state.effective_potion_slots():
 		var potion_id: String = String(item.get("potion_id", ""))
 		var potion: Dictionary = PotionCatalog.by_id(potion_id)
 		
