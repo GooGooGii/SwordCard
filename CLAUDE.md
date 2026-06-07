@@ -91,7 +91,7 @@ scripts/
   card_format.gd         卡片/敵人 action 純格式化（顏色、名稱、intent badge、傷害預測）
   damage_popup.gd        戰鬥中浮動傷害/治療/格擋數字（Label，self-managed tween）
   bestiary.gd            跨 run 持久化的敵將擊敗紀錄（user://bestiary.cfg）
-  ascension.gd           難度層級 A0-A4，cumulative modifiers + 解鎖紀錄（user://progression.cfg）
+  ascension.gd           難度層級 A0-A20（對齊 StS），cumulative modifiers + 解鎖紀錄（user://progression.cfg）
   debug_menu.gd          F1 開的開發者選單（CanvasLayer，桌面限定）
   pause_menu.gd          暫停選單（CanvasLayer）
   hand_fan.gd            手牌扇形排列
@@ -233,14 +233,19 @@ smoke test 用 9 組 (block, vuln, weak, attack) 組合驗證兩者一致。改 
   未擊敗顯示黑色 silhouette + `???` + `尚未交手`；擊敗後顯示肖像、名字、HP、擊敗次數、所有 intent。
   資料寫在 `user://bestiary.cfg`（獨立於 savegame，abandon run 不會清掉）；`_complete_battle_victory` 呼叫 `Bestiary.mark_defeated(enemy.id)`
 - **難度層級 (Ascension)**：主選單「開始遊戲」按鈕下方有 `◀ 難度: A0 ▶` picker，描述當前層級會 buff/nerf 什麼。
-  5 級 cumulative（A0 標準 → A1 一般 HP +20% → A2 加 boss HP +20% → A3 加 起始 HP -15% → A4 加 銅錢 -25%）。
-  完成 A_N 的 run 後 `Ascension.mark_cleared(N)` 解鎖 A_(N+1)。Run 中的層級存在 `RunState.ascension_level`，
-  舊存檔自動 default 為 0（`from_dict` 用 `data.get("ascension_level", 0)`）。
-  Modifier 套用點：
-    - `start_run`：套 `Ascension.starting_hp_multiplier`
-    - `start_next_battle`：套 `Ascension.enemy_hp_multiplier` 到 battle.state（區分 boss / 一般）
-    - `_battle_gold_reward`：套 `Ascension.gold_multiplier`
-  改 modifier 數值記得更新 `Ascension.describe()`
+  **20 級 cumulative，對齊 Slay the Spire**（A1 精英更常出現 / A2-4 一般・精英・Boss 傷害+10% /
+  A5 Boss戰後回血少 / A6 起始HP-10% / A7-9 一般・精英・Boss HP+25% / A10 起手詛咒 / A11 藥格-1 /
+  A12 升級卡機率減半 / A13 Boss金-25% / A14 最大HP-5 / A15 奇遇更糟 / A16 商店漲價 / A17-19 一般・精英・Boss
+  招式更刁 / A20 雙Boss）。完成 A_N 的 run 後 `Ascension.mark_cleared(N)` 解鎖 A_(N+1)。
+  層級存 `RunState.ascension_level`，舊存檔 default 0。tier 字串 `normal/elite/boss`。
+  - 敵人 HP：`start_next_battle`/`_start_battle` 套 `enemy_hp_multiplier(lvl, is_boss, is_elite)`
+  - 敵人傷害：戰鬥 state `enemy_damage_mult`（EffectResolver from_enemy 路徑讀取）
+  - 精英：`MapGenerator._inject_elite`（A1 提頻）+ `GameData.elites_for_act` + 戰鬥 `is_elite` 旗標
+  - 其餘：起始HP/maxHP（start_run）、boss回血（show_act_complete）、詛咒（start_run 加 CurseCatalog）、
+    藥格（`RunState.effective_potion_slots`）、boss金（`boss_gold_multiplier`）、奇遇（`_ascension_event_amount`/
+    harness `_apply_event_effects`）、商店（`_shop_apply_discount`×price_mult）、升級卡（`reward_upgrade_chance`）、
+    招式（`_action_for_enemy` 改挑最高傷招）、雙boss（戰鬥 setup 加第二 boss）
+  改 modifier 數值記得更新 `Ascension.describe()`；**精英節點 icon `node_elite.png` 待補**（見 ART_TODO 第八節）。
 - **Boss phase**：`EnemyData.phase_2_actions` 是可選的第二招式組。`BattleController._check_phase_transition()`
   在 `play_card` 結算傷害後檢查，HP * 2 < max_hp 時 `phased = true`、`action_index` 歸零、log 提示。
   `next_enemy_action` 會在 phased 後改抽 phase_2_actions。3 個 boss 都已配對應的 phase 2 招式。
