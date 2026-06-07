@@ -349,7 +349,7 @@ static func _anu() -> CharacterData:
 		make_card("anu_youming_shigu", "幽冥蝕骨", "阿奴", 2, "skill", "幽冥之毒蝕骨，施加 7 層蠱毒並使敵人破綻 2 層。", [{"kind": "poison", "amount": 7}, {"kind": "vulnerable", "amount": 2}], "uncommon"),
 		make_card("anu_guihuo_liaoyuan", "鬼火燎原", "阿奴", 3, "attack", "鬼火燎原，對全體敵人造成 7 點傷害兩次並施加 2 層蠱毒。", [{"kind": "damage_all", "amount": 7, "hits": 2}, {"kind": "poison_all", "amount": 2}], "rare"),
 		# 蝶毒群控（呼應單體的「醉蝶迷魂」，補阿奴缺的 AOE 虛弱）：art 暫借醉蝶迷魂
-		make_card("anu_huadie_guimeng", "化蝶歸夢", "阿奴", 1, "skill", "化蝶入夢，使全體敵人虛弱 2 層並抽 1 張牌。", [{"kind": "weak_all", "amount": 2}, {"kind": "draw", "amount": 1}], "uncommon", "anu_mihun"),
+		make_card("anu_huadie_guimeng", "化蝶歸夢", "阿奴", 1, "skill", "化蝶入夢，使全體敵人虛弱 2 層並抽 1 張牌。", [{"kind": "weak_all", "amount": 2}, {"kind": "draw", "amount": 1}], "uncommon"),
 	]
 	# HP 66→82：阿奴是「長戰持續傷害」毒龜流，毒需要時間 ramp+tick，必須夠肉才撐得到
 	# 毒生效（pilot 實測：66 HP 對上 +15% 傷害的多敵戰撐不過 3 回合就被消耗死）。
