@@ -206,14 +206,14 @@ static func _zhao_linger() -> CharacterData:
 		make_card("zl_shuiling", "明鏡止水", "趙靈兒", 2, "skill", "回復 8 點生命並獲得 10 點護體。", [{"kind": "heal", "amount": 8}, {"kind": "block", "amount": 10}], "uncommon"),
 		make_card("zl_leiguang", "紫電連珠", "趙靈兒", 1, "attack", "雷光雙擊，造成 4 點傷害兩次，使敵人虛弱 1 層。", [{"kind": "damage", "amount": 4}, {"kind": "damage", "amount": 4}, {"kind": "weak", "amount": 1}]),
 		make_card("zl_lingxi", "靈息吐納", "趙靈兒", 1, "skill", "抽 2 張牌並回復 4 點生命。", [{"kind": "draw", "amount": 2}, {"kind": "heal", "amount": 4}], "uncommon"),
-		make_card("zl_shenlei", "神雷降世", "趙靈兒", 3, "attack", "天降神雷，造成 30 點傷害。", [{"kind": "damage", "amount": 30}], "rare"),
+		make_card("zl_shenlei", "神雷降世", "趙靈兒", 3, "attack", "天降神雷，造成 20 點傷害並使敵人暈眩（下回合無法行動）。", [{"kind": "damage", "amount": 20}, {"kind": "stun", "amount": 1}], "rare"),
 		# PAL1 初登場新增（art 暫借既有卡片）
 		make_card("zl_jingang", "金剛咒", "趙靈兒", 1, "skill", "獲得 10 點護體（道家護身咒術）。", [{"kind": "block", "amount": 10}], "basic"),
 		make_card("zl_bingzhou", "冰咒", "趙靈兒", 1, "attack", "初級冰系仙術，造成 6 點傷害並使敵人虛弱 1 層。", [{"kind": "damage", "amount": 6}, {"kind": "weak", "amount": 1}], "basic"),
 		make_card("zl_yanzhou", "炎咒", "趙靈兒", 1, "attack", "初級火系仙術，造成 8 點傷害並施加 1 層破綻。", [{"kind": "damage", "amount": 8}, {"kind": "vulnerable", "amount": 1}], "basic"),
 		make_card("zl_bingxin", "冰心訣", "趙靈兒", 1, "skill", "清除自身全部負面狀態，獲得 3 點護體。", [{"kind": "cure_debuff"}, {"kind": "block", "amount": 3}], "basic"),
 		# 杖流 payoff：對虛弱/破綻敵加傷（與冰咒/炎咒/玄冰咒/幻雨咒 synergy）
-		make_card("zl_shuiyin", "水靈封印", "趙靈兒", 1, "attack", "造成 5 點傷害；目標每層虛弱或破綻 +2 點傷害。", [{"kind": "damage_debuff_bonus", "amount": 5, "bonus_per_layer": 2}], "uncommon"),
+		make_card("zl_shuiyin", "水靈封印", "趙靈兒", 2, "attack", "造成 5 點傷害（目標每層虛弱或破綻 +2 點傷害）並封印其法術 1 回合（無法施法）。", [{"kind": "damage_debuff_bonus", "amount": 5, "bonus_per_layer": 2}, {"kind": "silence", "amount": 1}], "uncommon"),
 		# 治療+護體一體（杖流續戰：靈族慈悲化作護身）
 		make_card("zl_ganlin", "甘霖咒", "趙靈兒", 1, "skill", "回復 6 點生命並獲得 6 點護體。", [{"kind": "heal", "amount": 6}, {"kind": "block", "amount": 6}], "uncommon"),
 		make_card("zl_diliebeng", "地裂崩", "趙靈兒", 3, "attack", "大地崩裂，對全體敵人造成 15 點傷害。", [{"kind": "damage_all", "amount": 15}], "rare"),
@@ -276,7 +276,7 @@ static func _lin_yueru() -> CharacterData:
 		# 反擊流（鳳鳴刀／Thorns）：被攻擊時反彈傷害給攻擊者（不衰減，跨回合）
 		make_card("lyr_fenghuan", "鳳鳴反擊", "林月如", 1, "power", "本場戰鬥獲得 3 點荊棘（被攻擊時反彈傷害給攻擊者）。", [{"kind": "thorns", "amount": 3}], "uncommon"),
 		make_card("lyr_yuehua", "月華護體", "林月如", 1, "skill", "獲得 6 點護體與 1 點荊棘。", [{"kind": "block", "amount": 6}, {"kind": "thorns", "amount": 1}], "uncommon"),
-		make_card("lyr_lielong", "烈龍衝擊", "林月如", 2, "attack", "烈龍衝擊，造成 24 點傷害，施加 2 層破綻。", [{"kind": "damage", "amount": 24}, {"kind": "vulnerable", "amount": 2}], "rare"),
+		make_card("lyr_lielong", "烈龍衝擊", "林月如", 3, "attack", "烈龍衝撞，造成 24 點傷害並使敵人暈眩（下回合無法行動）。", [{"kind": "damage", "amount": 24}, {"kind": "stun", "amount": 1}], "rare"),
 		make_card("lyr_qijuejianqi", "七訣劍氣", "林月如", 1, "attack", "七訣劍氣縱橫，對全體敵人造成 9 點傷害並施加 1 層破綻，抽 1 張牌。", [{"kind": "damage_all", "amount": 9}, {"kind": "vulnerable_all", "amount": 1}, {"kind": "draw", "amount": 1}], "uncommon"),
 		make_card("lyr_tongqianbiao", "銅錢鏢", "林月如", 1, "attack", "擲出三枚銅錢鏢，造成 4 點傷害三次。", [{"kind": "damage", "amount": 4, "hits": 3}], "uncommon"),
 		make_card("lyr_wanlikuang", "萬里狂沙", "林月如", 2, "skill", "狂沙漫天，對全體敵人施加 3 層破綻，抽 1 張牌。", [{"kind": "vulnerable_all", "amount": 3}, {"kind": "draw", "amount": 1}], "rare"),
@@ -313,7 +313,7 @@ static func _anu() -> CharacterData:
 	var cards: Array[CardData] = [
 		make_card("anu_yufeng", "御蜂術", "阿奴", 1, "attack", "笛音引毒蜂群，對全體敵人造成 3 點傷害三次。", [{"kind": "damage_all", "amount": 3, "hits": 3}]),
 		make_card("anu_wanyi", "萬蟻蝕象", "阿奴", 1, "skill", "萬蟻齊出，對所有敵人施加 4 層蠱毒。", [{"kind": "poison_all", "amount": 4}], "uncommon"),
-		make_card("anu_mihun", "醉蝶迷魂", "阿奴", 1, "skill", "使敵人虛弱 3 層。", [{"kind": "weak", "amount": 3}]),
+		make_card("anu_mihun", "醉蝶迷魂", "阿奴", 1, "skill", "蝶粉惑敵，封印其法術 2 回合（無法施法）並使其虛弱 1 層。", [{"kind": "silence", "amount": 2}, {"kind": "weak", "amount": 1}]),
 		make_card("anu_baozhagu", "毒卵迸裂", "阿奴", 2, "attack", "引爆全部蠱毒，每層造成 3 點傷害。", [{"kind": "poison_burst", "amount": 3}], "uncommon"),
 		make_card("anu_lingxue", "靈血咒", "阿奴", 1, "skill", "苗疆靈血續命之術，回復 5 點生命並獲得 3 點護體。", [{"kind": "heal", "amount": 5}, {"kind": "block", "amount": 3}]),
 		make_card("anu_jiedu", "解毒咒", "阿奴", 1, "skill", "清除自身全部負面狀態，抽 1 張牌。", [{"kind": "cure_debuff"}, {"kind": "draw", "amount": 1}]),
@@ -323,11 +323,11 @@ static func _anu() -> CharacterData:
 		make_card("anu_guxue", "以血飼毒", "阿奴", 2, "power", "本場戰鬥傷害提升 1，施加 5 層蠱毒。", [{"kind": "power", "amount": 1}, {"kind": "poison", "amount": 5}], "rare"),
 		make_card("anu_baizu", "百足蠱", "阿奴", 2, "skill", "施加 8 層蠱毒。", [{"kind": "poison", "amount": 8}], "uncommon"),
 		make_card("anu_duzhen", "毒針連射", "阿奴", 1, "attack", "造成 5 點傷害，施加 2 層蠱毒。", [{"kind": "damage", "amount": 5}, {"kind": "poison", "amount": 2}], "uncommon"),
-		make_card("anu_guwang", "懾魂巫音", "阿奴", 0, "skill", "使敵人虛弱 2 層。", [{"kind": "weak", "amount": 2}], "uncommon"),
+		make_card("anu_guwang", "懾魂巫音", "阿奴", 1, "skill", "巫音懾魂，封印敵人法術 1 回合（無法施法）並使其虛弱 1 層。", [{"kind": "silence", "amount": 1}, {"kind": "weak", "amount": 1}], "uncommon"),
 		make_card("anu_sanmao", "斑蝥噬心", "阿奴", 2, "skill", "施加 5 層蠱毒，使敵人虛弱 2 層。", [{"kind": "poison", "amount": 5}, {"kind": "weak", "amount": 2}], "uncommon"),
 		make_card("anu_gushen", "蠱神附體", "阿奴", 3, "power", "本場戰鬥傷害提升 3，施加 4 層蠱毒。", [{"kind": "power", "amount": 3}, {"kind": "poison", "amount": 4}], "rare"),
 		# PAL1 初登場新增（art 暫借既有卡片）
-		make_card("anu_guijiang", "鬼降", "阿奴", 1, "skill", "苗疆咒術，使敵人陷入瘋魔狀態（虛弱 3 層）。", [{"kind": "weak", "amount": 3}], "basic"),
+		make_card("anu_guijiang", "鬼降", "阿奴", 1, "skill", "苗疆咒術，使敵人陷入瘋魔 1 回合（失控隨機攻擊，可能誤擊友軍）並虛弱 1 層。", [{"kind": "berserk", "amount": 1}, {"kind": "weak", "amount": 1}], "basic"),
 		# 刀流（巫月神刀）：力量 + 連擊軸。淬鋒疊力量，連斬牌每段各吃力量 → 越疊越痛。
 		# art 暫借既有阿奴卡（未來補正式插圖）
 		make_card("anu_cuifeng", "淬鋒蠱刃", "阿奴", 1, "power", "刀刃淬入蠱毒，本場戰鬥傷害提升 2。", [{"kind": "power", "amount": 2}], "uncommon"),
