@@ -182,6 +182,11 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"last_attacker_index": 0,  # 林月如反擊指向的敵人
 		"player_weak_immune": false,       # 凝神玉（STS Ginger）：免疫敵方施加的虛弱
 		"player_vulnerable_immune": false, # 金鐘罩（STS Turnip）：免疫敵方施加的破綻
+		# 玩家控制狀態與免疫（行為端待 main.gd；狀態層與免疫已生效）
+		"player_stunned": 0, "player_silenced": 0, "player_berserk": 0,
+		"player_stun_immune": false,       # 金剛座：免疫暈眩
+		"player_silence_immune": false,    # 通靈玉：免疫禁言
+		"player_berserk_immune": false,    # 定魂珠：免疫瘋魔
 		"steal_result": {}
 	}
 	# 若 active 死了（舊存檔載入後可能發生），自動跳到第一個活的
@@ -1110,6 +1115,15 @@ func _apply_trigger_effects(effects: Array, relic_name: String) -> void:
 			"immune_vulnerable":
 				state["player_vulnerable_immune"] = true
 				add_log("【%s】本場免疫破綻。" % relic_name)
+			"immune_stun":
+				state["player_stun_immune"] = true
+				add_log("【%s】本場免疫暈眩。" % relic_name)
+			"immune_silence":
+				state["player_silence_immune"] = true
+				add_log("【%s】本場免疫禁言。" % relic_name)
+			"immune_berserk":
+				state["player_berserk_immune"] = true
+				add_log("【%s】本場免疫瘋魔。" % relic_name)
 			"block_carry":
 				state["next_turn_block"] = int(state.get("next_turn_block", 0)) + amount
 				add_log("【%s】保留 %d 護體到下回合。" % [relic_name, amount])

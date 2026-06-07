@@ -210,18 +210,36 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				state["enemy_vulnerable"] = int(state["enemy_vulnerable"]) + amount
 				log_lines.append("敵人受到 %d 層破綻。" % amount)
 		"stun":
-			# 暈眩：敵人接下來 amount 個回合無法行動（玩家專用，不對玩家施放）
-			if not from_enemy:
+			# 暈眩：接下來 amount 個回合無法行動
+			if from_enemy:
+				if bool(state.get("player_stun_immune", false)):
+					log_lines.append("（金剛座）免疫暈眩。")
+				else:
+					state["player_stunned"] = int(state.get("player_stunned", 0)) + amount
+					log_lines.append("你陷入暈眩，%d 回合無法行動！" % amount)
+			else:
 				state["enemy_stunned"] = int(state.get("enemy_stunned", 0)) + amount
 				log_lines.append("敵人陷入暈眩，%d 回合無法行動！" % amount)
 		"silence":
-			# 禁言：敵人接下來 amount 個回合無法施放法術（無傷害的招式）（玩家專用）
-			if not from_enemy:
+			# 禁言：接下來 amount 個回合無法施放法術（無傷害的招式）
+			if from_enemy:
+				if bool(state.get("player_silence_immune", false)):
+					log_lines.append("（通靈玉）免疫禁言。")
+				else:
+					state["player_silenced"] = int(state.get("player_silenced", 0)) + amount
+					log_lines.append("你被禁言，%d 回合無法施法！" % amount)
+			else:
 				state["enemy_silenced"] = int(state.get("enemy_silenced", 0)) + amount
 				log_lines.append("敵人被禁言，%d 回合無法施法！" % amount)
 		"berserk":
-			# 瘋魔：敵人接下來 amount 個回合失控（隨機目標、可能呆立）（玩家專用）
-			if not from_enemy:
+			# 瘋魔：接下來 amount 個回合失控（隨機目標、可能呆立）
+			if from_enemy:
+				if bool(state.get("player_berserk_immune", false)):
+					log_lines.append("（定魂珠）免疫瘋魔。")
+				else:
+					state["player_berserk"] = int(state.get("player_berserk", 0)) + amount
+					log_lines.append("你陷入瘋魔，%d 回合無法控制！" % amount)
+			else:
 				state["enemy_berserk"] = int(state.get("enemy_berserk", 0)) + amount
 				log_lines.append("敵人陷入瘋魔，%d 回合無法控制！" % amount)
 		"draw":

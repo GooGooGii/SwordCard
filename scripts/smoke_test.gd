@@ -2077,6 +2077,22 @@ func _test_debuff_immunity(characters: Array[CharacterData], enemies: Array[Enem
 	bc.resolver.resolve_enemy_action({"effects": [{"kind": "vulnerable", "amount": 3}]}, bc.state)
 	_check(int(bc.state["player_weak"]) == 2, "weak immune: layers should not increase")
 	_check(int(bc.state["player_vulnerable"]) == 2, "vulnerable immune: layers should not increase")
+	# 控制狀態（暈眩/禁言/瘋魔）：敵方施加到玩家會設旗標；免疫後不再設
+	bc.resolver.resolve_enemy_action({"effects": [{"kind": "stun", "amount": 1}]}, bc.state)
+	bc.resolver.resolve_enemy_action({"effects": [{"kind": "silence", "amount": 1}]}, bc.state)
+	bc.resolver.resolve_enemy_action({"effects": [{"kind": "berserk", "amount": 1}]}, bc.state)
+	_check(int(bc.state["player_stunned"]) == 1, "enemy stun should land on player without immunity")
+	_check(int(bc.state["player_silenced"]) == 1, "enemy silence should land on player without immunity")
+	_check(int(bc.state["player_berserk"]) == 1, "enemy berserk should land on player without immunity")
+	bc.state["player_stun_immune"] = true
+	bc.state["player_silence_immune"] = true
+	bc.state["player_berserk_immune"] = true
+	bc.resolver.resolve_enemy_action({"effects": [{"kind": "stun", "amount": 2}]}, bc.state)
+	bc.resolver.resolve_enemy_action({"effects": [{"kind": "silence", "amount": 2}]}, bc.state)
+	bc.resolver.resolve_enemy_action({"effects": [{"kind": "berserk", "amount": 2}]}, bc.state)
+	_check(int(bc.state["player_stunned"]) == 1, "stun immune: should not increase")
+	_check(int(bc.state["player_silenced"]) == 1, "silence immune: should not increase")
+	_check(int(bc.state["player_berserk"]) == 1, "berserk immune: should not increase")
 
 func _test_silence(characters: Array[CharacterData]) -> void:
 	# 禁言：無傷害的法術招被跳過，攻擊招仍可施放

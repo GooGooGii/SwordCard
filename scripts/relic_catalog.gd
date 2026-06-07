@@ -78,6 +78,12 @@ static func _generals() -> Array[RelicData]:
 		[{"trigger": "battle_start", "effects": [{"kind": "immune_weak"}]}], Color("d4b86a")))
 	l.append(_make("jin_zhong_zhao", "金鐘罩", "本場戰鬥免疫破綻（敵人無法增加你的受傷）。", "uncommon",
 		[{"trigger": "battle_start", "effects": [{"kind": "immune_vulnerable"}]}], Color("c0c0c8")))
+	l.append(_make("jin_gang_zuo", "金剛座", "本場戰鬥免疫暈眩（敵人無法使你無法行動）。", "uncommon",
+		[{"trigger": "battle_start", "effects": [{"kind": "immune_stun"}]}], Color("c9a23a")))
+	l.append(_make("tong_ling_yu", "通靈玉", "本場戰鬥免疫禁言（敵人無法封印你的法術）。", "uncommon",
+		[{"trigger": "battle_start", "effects": [{"kind": "immune_silence"}]}], Color("7fd6c0")))
+	l.append(_make("ding_hun_zhu", "定魂珠", "本場戰鬥免疫瘋魔（敵人無法使你失控）。", "uncommon",
+		[{"trigger": "battle_start", "effects": [{"kind": "immune_berserk"}]}], Color("b08fd9")))
 	l.append(_make("ning_qi_dan", "凝氣丹", "戰鬥開始多 1 點靈力（僅第 1 回合）。", "uncommon",
 		[{"trigger": "battle_start", "effects": [{"kind": "self_energy", "amount": 1}]}], ThemeColors.BORDER_GOLD))
 	l.append(_make("feng_hun_yu", "風魂玉", "本場戰鬥傷害 +1。", "rare",
