@@ -32,6 +32,7 @@ var player_level_label: Label
 var player_block_badge: BlockBadge
 var player_portrait_wrap: Control
 var player_portrait_image: TextureRect  # 戰鬥中切換 active 時動態換肖像
+var _lecher_loot_shown: bool = false  # 本場淫賊贓物歸還彈窗是否已顯示過
 var bench_strip: Control  # 後排「站位」容器（手動定位，斜向交疊在隊長身後）
 var _switch_tween: Tween = null  # 切換角色的淡出/淡入動畫，防止重疊
 var enemy_hp_bar: ProgressBar
@@ -2279,6 +2280,7 @@ func start_next_battle(enemies: Variant, is_elite: bool = false) -> void:
 	_start_player_turn()
 
 func _build_battle_scene() -> void:
+	_lecher_loot_shown = false
 	_set_background(_battle_background_path())
 	_clear_root()
 	_show_title_bar()
@@ -2583,6 +2585,58 @@ func _spawn_phase_reveal_text(name: String) -> void:
 	t.tween_property(label, "global_position", start_pos + Vector2(0, -60), 1.4) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	t.tween_property(label, "modulate:a", 0.0, 0.55).set_delay(0.85)
+	t.finished.connect(label.queue_free)
+
+# 淫賊偷內衣演出：飛撲（飛龍探雲手式）+「啊，我的內衣！」彈窗。
+# 由 resolve_enemy_phase 後檢查 state["lecher_event"] 觸發。
+func _play_lecher_event_if_any() -> void:
+	if battle == null or int(battle.state.get("lecher_event", 0)) <= 0:
+		return
+	battle.state["lecher_event"] = 0
+	# 找淫賊的 widget；找不到就用 active 敵肖像
+	var wrap: Control = null
+	for i: int in range(battle.enemies.size()):
+		if battle.enemies[i].id == "lecher_thief" and i < enemy_widgets.size():
+			wrap = enemy_widgets[i].get("wrap")
+			break
+	if wrap == null:
+		wrap = enemy_portrait_wrap
+	_sfx("end_turn")
+	# 淫賊朝女主角（畫面左側）大幅撲飛再回位
+	if wrap != null and is_instance_valid(wrap):
+		UIFactory.dash_node(wrap, Vector2(-1.0, -0.12), 260.0, 0.5)
+	if player_portrait_wrap != null and is_instance_valid(player_portrait_wrap):
+		UIFactory.shake_node(player_portrait_wrap, 11.0, 0.4)
+		var garment: String = String(battle.state.get("lecher_last_garment", "衣物"))
+		_spawn_text_popup(player_portrait_wrap, "啊，我的%s！" % garment, Color("ff9ec4"))
+	await get_tree().create_timer(0.62).timeout
+
+# 在指定節點上方彈出一行浮動文字（淡入放大、上飄淡出）。
+func _spawn_text_popup(anchor: Control, text: String, color: Color = Color("c0ecff")) -> void:
+	if anchor == null or not is_instance_valid(anchor):
+		return
+	var label: Label = Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", 34)
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_color_override("font_outline_color", Color("2a0a18"))
+	label.add_theme_constant_override("outline_size", 9)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.z_index = 600
+	add_child(label)
+	var start_pos: Vector2 = anchor.global_position + Vector2(anchor.size.x * 0.5 - 120, -8)
+	label.global_position = start_pos
+	label.scale = Vector2(0.6, 0.6)
+	label.modulate.a = 0.0
+	var t: Tween = create_tween()
+	t.set_parallel(true)
+	t.tween_property(label, "modulate:a", 1.0, 0.18)
+	t.tween_property(label, "scale", Vector2(1.18, 1.18), 0.24) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(label, "scale", Vector2.ONE, 0.26).set_delay(0.24)
+	t.tween_property(label, "global_position", start_pos + Vector2(0, -55), 1.3) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(label, "modulate:a", 0.0, 0.5).set_delay(0.8)
 	t.finished.connect(label.queue_free)
 
 func _build_player_widget(parent: HBoxContainer) -> void:
@@ -3723,6 +3777,7 @@ func end_player_turn() -> void:
 	_process_battle_curses()
 	_show_state_feedback(result["before_enemy"])
 	_refresh_battle()
+	await _play_lecher_event_if_any()
 	if bool(result["ended"]) and await _finish_battle_after_delay():
 		return
 	await get_tree().create_timer(0.6).timeout
@@ -7249,6 +7304,60 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 	_refresh_potion_buttons()
 	if end_turn_button != null and is_instance_valid(end_turn_button):
 		end_turn_button.disabled = false
+	_check_lecher_defeat()
+
+# 淫賊被打倒後：把它偷走的衣物逐項作為戰利品歸還展示（含詳細說明）。本場只顯示一次。
+func _check_lecher_defeat() -> void:
+	if battle == null or _lecher_loot_shown:
+		return
+	var stolen: Array = battle.state.get("lecher_stolen", []) as Array
+	if stolen.is_empty():
+		return
+	# 仍有活著的淫賊就先不結算（死後會從 enemies 陣列移除）
+	for e: EnemyData in battle.enemies:
+		if e.id == "lecher_thief":
+			return
+	_lecher_loot_shown = true
+	_show_lecher_loot_popup(stolen)
+
+func _show_lecher_loot_popup(garments: Array) -> void:
+	var overlay: Control = Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.z_index = 1750
+	add_child(overlay)
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0, 0, 0, 0.8)
+	overlay.add_child(backdrop)
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+	var panel: PanelContainer = UIFactory.make_panel()
+	panel.custom_minimum_size = Vector2(560, 0)
+	center.add_child(panel)
+	var col: VBoxContainer = VBoxContainer.new()
+	col.add_theme_constant_override("separation", 12)
+	panel.add_child(col)
+	col.add_child(_title("奪回失物", 28))
+	col.add_child(UIFactory.card_label("打倒淫賊後，從他骯髒的包袱裡，一件件抖出了被偷走的衣物——", 14, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_CENTER))
+	for i: int in range(garments.size()):
+		var g: Dictionary = garments[i] as Dictionary
+		var item_panel: PanelContainer = PanelContainer.new()
+		item_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("1b1620", 0.95), Color("ff9ec4"), 1, 8))
+		col.add_child(item_panel)
+		var row: VBoxContainer = VBoxContainer.new()
+		row.add_theme_constant_override("separation", 2)
+		item_panel.add_child(row)
+		row.add_child(UIFactory.card_label("第 %d 件 · %s" % [i + 1, String(g.get("name", "衣物"))], 17, Color("ffd0e2"), HORIZONTAL_ALIGNMENT_LEFT))
+		var desc: Label = UIFactory.card_label(String(g.get("desc", "")), 13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_LEFT)
+		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		desc.custom_minimum_size = Vector2(500, 0)
+		row.add_child(desc)
+	var btn: Button = _button("收好，當作沒事發生")
+	btn.pressed.connect(func() -> void: overlay.queue_free())
+	col.add_child(btn)
 
 func _refresh_combatant_hp(bar: ProgressBar, value_label: Label, hp: int, max_hp: int) -> void:
 	if value_label != null and is_instance_valid(value_label):

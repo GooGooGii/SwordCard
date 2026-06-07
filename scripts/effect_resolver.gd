@@ -1,6 +1,18 @@
 class_name EffectResolver
 extends RefCounted
 
+# 淫賊偷竊的衣物清單（依序循環，確保每次偷到不同件）。擊敗後逐項作為戰利品歸還展示。
+const LECHER_GARMENTS: Array[Dictionary] = [
+	{"name": "繡花肚兜", "desc": "大紅軟緞所製、繡著並蒂蓮的貼身肚兜，邊角還縫著一只小香囊，餘香隱隱。"},
+	{"name": "鴛鴦羅帕", "desc": "一方杭羅手帕，雙面繡鴛鴦戲水，是閨中女兒貼身收於袖中的私物。"},
+	{"name": "藕色中衣", "desc": "藕荷色的細棉中衣，質地輕薄、領口滾著銀線，是襯在外袍之內的裡衣。"},
+	{"name": "月白綾褲", "desc": "月白色軟綾長褲，褲腳束以同色綢帶，行動時如水波微漾。"},
+	{"name": "雲紋裹胸", "desc": "繡有流雲暗紋的束胸抹胸，以四條細帶繫於背後，是女子最貼身的衣物之一。"},
+	{"name": "青絲髮帶", "desc": "一條沾著髮香的湖綠髮帶，原本束著女主角的烏黑長髮，此刻竟落入賊手。"},
+	{"name": "鮫綃輕紗", "desc": "傳說鮫人所織的輕紗披帛，薄如蟬翼、入水不濕，價值連城的貼身披紗。"},
+	{"name": "蜀錦腰封", "desc": "一條織金蜀錦的腰封，束於腰間勾勒身形，內側還暗藏一只繡荷包。"},
+]
+
 func resolve_card(card: CardData, state: Dictionary) -> Array[String]:
 	var log_lines: Array[String] = []
 	for effect in card.effects:
@@ -96,6 +108,30 @@ func tick_player_statuses(state: Dictionary) -> Array[String]:
 		log_lines.append("你受到 %d 點蠱毒傷害。" % int(state["player_poison"]))
 		state["player_poison"] = max(0, int(state["player_poison"]) - 1)
 	return log_lines
+
+# 敵方對玩家造成傷害的共用公式（含 ascension 倍率 / 虛弱 / 破綻 / 減傷 / 格擋；不含 thorns）。
+# 回傳實際扣血量。供 damage(from_enemy)、gamble_attack、lecher_steal 等共用。
+func _enemy_hit_player(state: Dictionary, raw: int) -> int:
+	var dmg_mult: float = float(state.get("enemy_damage_mult", 1.0))
+	if dmg_mult != 1.0:
+		raw = int(round(raw * dmg_mult))
+	var modified: int = max(0, raw - int(state["enemy_weak"]))
+	if int(state["player_vulnerable"]) > 0:
+		modified = int(ceil(modified * 1.5))
+	modified = max(0, modified - int(state.get("damage_taken_reduction", 0)))
+	var blocked: int = min(int(state["player_block"]), modified)
+	state["player_block"] = int(state["player_block"]) - blocked
+	var dealt: int = modified - blocked
+	state["player_hp"] = max(0, int(state["player_hp"]) - dealt)
+	return dealt
+
+# 當前 active 玩家是否為女性（淫賊判定用）。slot 的 is_female 由 BattleController.setup 寫入。
+func _active_player_is_female(state: Dictionary) -> bool:
+	var players: Array = state.get("players", []) as Array
+	var idx: int = int(state.get("active_player_index", 0))
+	if idx >= 0 and idx < players.size():
+		return bool((players[idx] as Dictionary).get("is_female", false))
+	return false
 
 func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = false) -> Array[String]:
 	var log_lines: Array[String] = []
@@ -220,6 +256,47 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			else:
 				state["enemy_stunned"] = int(state.get("enemy_stunned", 0)) + amount
 				log_lines.append("敵人陷入暈眩，%d 回合無法行動！" % amount)
+		"gamble_attack":
+			# 賭棍：擲骰比大小。莊家（敵）點數大 → 攻擊命中（amount 傷害）；否則願賭服輸給玩家 gold 銅錢。
+			var g_gold: int = int(effect.get("gold", 0))
+			var e_roll: int = randi() % 6 + 1
+			var p_roll: int = randi() % 6 + 1
+			log_lines.append("%s 擲骰比大小——莊家 %d 點、你 %d 點。" % [state["enemy_name"], e_roll, p_roll])
+			if e_roll > p_roll:
+				var gdealt: int = _enemy_hit_player(state, amount)
+				log_lines.append("莊家贏了！%s 出手造成 %d 點傷害。" % [state["enemy_name"], gdealt])
+			else:
+				state["pending_player_gold"] = int(state.get("pending_player_gold", 0)) + g_gold
+				log_lines.append("你贏了！%s 願賭服輸，丟下 %d 枚銅錢。" % [state["enemy_name"], g_gold])
+		"lecher_steal":
+			# 淫賊：先小傷，再對女性主角「偷衣物」→ 必中、每次偷不同的一件 + 虛弱 + 觸發演出。
+			var l_dmg: int = int(effect.get("damage", 0))
+			var l_weak: int = int(effect.get("weak", max(1, amount)))
+			if l_dmg > 0:
+				var ldealt: int = _enemy_hit_player(state, l_dmg)
+				log_lines.append("%s 偷襲，造成 %d 點傷害。" % [state["enemy_name"], ldealt])
+			if _active_player_is_female(state):
+				var stolen: Array = state.get("lecher_stolen", []) as Array
+				# 依已偷件數循環取下一件，確保每次不同
+				var garment: Dictionary = LECHER_GARMENTS[stolen.size() % LECHER_GARMENTS.size()]
+				stolen.append(garment.duplicate())
+				state["lecher_stolen"] = stolen
+				state["lecher_event"] = int(state.get("lecher_event", 0)) + 1
+				state["lecher_last_garment"] = String(garment.get("name", "衣物"))
+				if not bool(state.get("player_weak_immune", false)):
+					state["player_weak"] = int(state["player_weak"]) + l_weak
+				log_lines.append("%s 身形一閃飛掠而過，竟偷走了「%s」！羞憤之下受到 %d 層虛弱。" % [state["enemy_name"], String(garment.get("name", "衣物")), l_weak])
+			else:
+				log_lines.append("%s 賊手撲空，這位可不是好惹的。" % state["enemy_name"])
+		"stun_chance":
+			# 機率暈眩（惡霸悶棍）。
+			var s_chance: float = float(effect.get("chance", 0.3))
+			if randf() < s_chance:
+				if bool(state.get("player_stun_immune", false)):
+					log_lines.append("（金剛座）免疫暈眩。")
+				else:
+					state["player_stunned"] = int(state.get("player_stunned", 0)) + max(1, amount)
+					log_lines.append("一記悶棍正中要害，你被打暈，%d 回合無法行動！" % max(1, amount))
 		"silence":
 			# 禁言：接下來 amount 個回合無法施放法術（無傷害的招式）
 			if from_enemy:

@@ -13,6 +13,7 @@ extends Resource
 @export var portrait_tint: Color = Color.WHITE
 @export var portrait_scale: float = 1.0      # 肖像相對標準框的倍率（boss / 大型妖獸 > 1，小兵可 < 1）
 @export var phase_2_portrait_scale: float = 0.0  # phase 2 專用倍率；<= 0 = 沿用 portrait_scale
+@export var swarm_size: int = 0              # > 1：此怪以「群」出現，遭遇時整組換成 N 隻同類（capped by MAX_ENEMIES）
 @export var summon_pool: Array[String] = []  # boss 召喚物 id pool；空 = 不召喚
 @export var is_summoned: bool = false        # 由 spawn_enemy() 設為 true，勝利結算時不計入掉落
 @export var default_facing_left: bool = false # 原始圖檔是否已面向左邊（若是，則戰鬥中不需 flip_h）
@@ -31,6 +32,7 @@ func clone() -> EnemyData:
 	copy.portrait_tint = portrait_tint
 	copy.portrait_scale = portrait_scale
 	copy.phase_2_portrait_scale = phase_2_portrait_scale
+	copy.swarm_size = swarm_size
 	copy.summon_pool = summon_pool.duplicate()
 	copy.is_summoned = is_summoned
 	copy.default_facing_left = default_facing_left

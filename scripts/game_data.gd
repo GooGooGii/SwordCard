@@ -200,7 +200,7 @@ static func _gambler() -> EnemyData:
 	enemy.max_hp = 50
 	enemy.portrait_path = "res://assets/art/enemies/gambler.png"
 	enemy.actions = [
-		{"intent": "飛骰打 12", "effects": [{"kind": "damage", "amount": 12}]},
+		{"intent": "比大小（莊家贏→傷14 / 你贏→賞銅錢20）", "effects": [{"kind": "gamble_attack", "amount": 14, "gold": 20}]},
 		{"intent": "詐賭 11 + 破綻 1", "effects": [{"kind": "damage", "amount": 11}, {"kind": "vulnerable", "amount": 1}]},
 		{"intent": "油滑閃 10", "effects": [{"kind": "block", "amount": 10}]}
 	]
@@ -214,7 +214,7 @@ static func _lecher_thief() -> EnemyData:
 	enemy.portrait_path = "res://assets/art/enemies/lecher_thief.png"
 	enemy.actions = [
 		{"intent": "偷襲 13", "effects": [{"kind": "damage", "amount": 13}]},
-		{"intent": "輕薄擾 9 + 虛弱 1", "effects": [{"kind": "damage", "amount": 9}, {"kind": "weak", "amount": 1}]},
+		{"intent": "鹹豬手（女性：撲飛偷內衣→虛弱2）", "effects": [{"kind": "lecher_steal", "damage": 6, "weak": 2, "chance": 0.6}]},
 		{"intent": "溜牆 9", "effects": [{"kind": "block", "amount": 9}]}
 	]
 	return enemy
@@ -222,14 +222,15 @@ static func _lecher_thief() -> EnemyData:
 static func _rat_demon() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "rat_demon"
-	enemy.portrait_scale = 0.82  # 小型：鼠妖（借 beast 圖）
+	enemy.portrait_scale = 0.78  # 小型：鼠妖
+	enemy.swarm_size = 3  # 成群出沒：遭遇時整組換成 3 隻鼠妖（受 MAX_ENEMIES 上限）
 	enemy.display_name = "鼠妖"
-	enemy.max_hp = 44
+	enemy.max_hp = 24  # 單隻很弱，靠數量
 	enemy.portrait_path = "res://assets/art/enemies/rat_demon.png"
 	enemy.actions = [
-		{"intent": "啃咬 11 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 11}, {"kind": "poison", "amount": 2}]},
-		{"intent": "鼠群竄 13", "effects": [{"kind": "damage", "amount": 13}]},
-		{"intent": "鑽縫 8", "effects": [{"kind": "block", "amount": 8}]}
+		{"intent": "啃咬 6 + 蠱毒 1", "effects": [{"kind": "damage", "amount": 6}, {"kind": "poison", "amount": 1}]},
+		{"intent": "鼠群竄 8", "effects": [{"kind": "damage", "amount": 8}]},
+		{"intent": "鑽縫 6", "effects": [{"kind": "block", "amount": 6}]}
 	]
 	return enemy
 
@@ -240,7 +241,7 @@ static func _bully() -> EnemyData:
 	enemy.max_hp = 64
 	enemy.portrait_path = "res://assets/art/enemies/bully.png"
 	enemy.actions = [
-		{"intent": "橫行霸道 15", "effects": [{"kind": "damage", "amount": 15}]},
+		{"intent": "橫行霸道 15（35%暈眩）", "effects": [{"kind": "damage", "amount": 15}, {"kind": "stun_chance", "amount": 1, "chance": 0.35}]},
 		{"intent": "推搡 11 + 破綻 1", "effects": [{"kind": "damage", "amount": 11}, {"kind": "vulnerable", "amount": 1}]},
 		{"intent": "仗勢 14", "effects": [{"kind": "block", "amount": 14}]}
 	]

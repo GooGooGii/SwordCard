@@ -5,6 +5,7 @@ const HAND_SIZE: int = 5
 const BASE_TURN_ENERGY: int = 3
 const BENCH_HEAL_PER_TURN: int = 2
 const MAX_ENEMIES_PER_BATTLE: int = 3
+const FEMALE_CHARACTER_IDS: Array[String] = ["zhao_linger", "lin_yueru", "anu"]
 
 # Boss 進入 phase 2 時觸發，main.gd 接收後播放變身動畫
 # 參數：new_name = state["enemy_name"]（phase_2_display_name 或 fallback 原名）
@@ -111,6 +112,7 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 			"weak": 0,
 			"vulnerable": 0,
 			"power": run_state.character_power_bonus[i],
+			"is_female": c.id in FEMALE_CHARACTER_IDS,  # 淫賊偷內衣判定
 		})
 	# 多敵 slot 陣列
 	var enemy_slots: Array[Dictionary] = []
@@ -156,6 +158,10 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"enemy_loot_table": enemy_slots[active_idx]["loot_table"],
 		"energy": per_turn_energy,
 		"pending_draw": 0,
+		"pending_player_gold": 0,   # 賭棍輸了賞給玩家的銅錢，resolve_enemy_phase 後結算進 run_state
+		"lecher_event": 0,          # 淫賊偷內衣演出觸發計數，main.gd 讀取後播動畫/彈窗並清零
+		"lecher_stolen": [],        # 淫賊偷走的衣物清單（{name,desc}），擊敗後逐項歸還展示
+		"lecher_last_garment": "",  # 最近偷走的一件，演出彈窗用
 		"turn": 0,
 		"li_discount_used": false,
 		"lin_block_used": false,
@@ -870,6 +876,13 @@ func resolve_enemy_phase(actions: Variant) -> Dictionary:
 	_sync_state_to_active()
 	if not _is_active_alive() and not is_defeat():
 		_force_switch_to_first_alive(true)
+	# 賭棍輸掉賞給玩家的銅錢，結算進 run_state
+	var won_gold: int = int(state.get("pending_player_gold", 0))
+	if won_gold > 0:
+		state["pending_player_gold"] = 0
+		if run_state != null:
+			run_state.gold += won_gold
+		add_log("你從賭局贏得 %d 枚銅錢。" % won_gold)
 	return {"before_enemy": before_enemy, "ended": is_battle_over()}
 
 # 召喚機制：EffectResolver 的 "summon" effect 會把請求加進 state["pending_summons"]

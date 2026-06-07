@@ -72,6 +72,14 @@ static func choose_enemies_for_act(act: int, pool: Array[EnemyData]) -> Array[En
 	var result: Array[EnemyData] = []
 	for i: int in range(count):
 		result.append((shuffled[i] as EnemyData).clone())
+	# 群怪：若選中的怪有 swarm_size，整組換成 N 隻同類（如鼠妖成群），上限 3
+	for e: EnemyData in result:
+		if e.swarm_size > 1:
+			var n: int = min(e.swarm_size, 3)
+			var swarm: Array[EnemyData] = []
+			for _i: int in range(n):
+				swarm.append(e.clone())
+			return swarm
 	return result
 
 static func generate(normal_enemies: Array[EnemyData], bosses: Array[EnemyData], character_ids: Array[String] = [], act: int = 1, elite_enemies: Array[EnemyData] = [], ascension: int = 0) -> Array[Array]:
