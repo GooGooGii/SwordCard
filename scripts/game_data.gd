@@ -160,6 +160,8 @@ static func _li_xiaoyao() -> CharacterData:
 		make_card("lxy_linzhen", "臨陣磨劍", "李逍遙", 1, "skill", "臨陣磨礪，將手上所有牌升級（本場戰鬥）。", [{"kind": "upgrade_hand"}], "rare", "", true),
 		make_card("lxy_xiangcheng", "御劍相承", "李逍遙", 1, "skill", "御劍化形，複製手上一張攻擊牌。", [{"kind": "copy_attack"}], "uncommon", "lxy_jiulong", true),
 		make_card("lxy_jianqizonghen", "劍氣縱橫", "李逍遙", 1, "skill", "劍氣化形，生成 3 道「劍氣」置於抽牌堆頂。", [{"kind": "spawn_top_tokens", "amount": 3}], "uncommon", "lxy_jianqi"),
+		# 幽冥仙途語感（明心劍宗）：青煙竹影＝節節拔升多段劍。art 暫借八方劍陣
+		make_card("lxy_qingyan_zhuying", "青煙竹影", "李逍遙", 2, "attack", "劍勢如新筍出土節節拔升，造成 4 點傷害四次。", [{"kind": "damage", "amount": 4, "hits": 4}], "uncommon", "lxy_jianzhen"),
 	]
 	var character: CharacterData = _character("li_xiaoyao", "李逍遙", 74, "劍仙風流，禦劍、偷取與酒神系高風險高傷害。", cards)
 	# PAL1 對齊：9 basic + 3 uncommon + 0 rare
@@ -960,6 +962,7 @@ static func _witch_queen() -> EnemyData:
 		]}
 	]
 	enemy.phase_2_display_name = "火眼麒麟"
+	enemy.phase_2_portrait_path = "res://assets/art/enemies/witch_queen_phase2.png"
 	enemy.phase_2_actions = [
 		{"intent": "真火燎原 26 + 虛弱 1", "effects": [
 			{"kind": "damage", "amount": 26},
@@ -1078,6 +1081,7 @@ static func _red_eye_demon() -> EnemyData:
 		{"intent": "盤身絞殺 10+10", "effects": [{"kind": "damage", "amount": 10}, {"kind": "damage", "amount": 10}]}
 	]
 	enemy.phase_2_display_name = "狐妖女"
+	enemy.phase_2_portrait_path = "res://assets/art/enemies/red_eye_demon_phase2.png"
 	enemy.phase_2_actions = [
 		{"intent": "狐火魅襲 21 + 虛弱 1", "effects": [{"kind": "damage", "amount": 21}, {"kind": "weak", "amount": 1}]},
 		{"intent": "妖狐幻爪 26", "effects": [{"kind": "damage", "amount": 26}]},
