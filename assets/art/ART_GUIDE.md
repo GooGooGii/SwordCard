@@ -292,6 +292,12 @@ Target:
   - `anu_huguzhao` (護蠱罩) ← 借 `anu_guling` 蠱靈護身
   - `anu_lianduzhen` (連環毒針，減靈耗升級) ← 借 `anu_duzhen` 毒針連射
   - `anu_guzhang` (蠱瘴瀰漫，毒引擎) ← 借 `anu_baizu` 百足蠱
+- **阿奴（5，鬼／冥 主題·苗巫邪術）**
+  - `anu_guiling_zhuansheng` (鬼靈轉生，復活) ← 借 `anu_guijiang` 鬼降
+  - `anu_minghe_yindu` (冥河引渡，AOE 傷+毒) ← 借 `anu_wangushitian` 萬蠱噬天
+  - `anu_suoming_egui` (索命厲鬼，傷+虛弱) ← 借 `anu_duohun` 奪魂術
+  - `anu_youming_shigu` (幽冥蝕骨，毒+破綻) ← 借 `anu_sanshigu` 三屍蠱
+  - `anu_guihuo_liaoyuan` (鬼火燎原，AOE 傷×2+毒) ← 借 `anu_yanshazhou` 燃殺咒
 
 ### 🔴 借圖待補（10 張，共同牌 colorless 移植）
 

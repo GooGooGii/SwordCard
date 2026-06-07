@@ -174,8 +174,15 @@
   - `cl_yunchou` (運籌帷幄) - 🟢 已完成專屬水墨圖
   - `cl_huacaijianyi` (華彩劍意) - 🟢 已完成專屬水墨圖
 
-### 🔴 借圖待補（0 張）
-已全部完成。
+### 🔴 借圖待補（5 張，阿奴 鬼／冥 主題，2026-06-07 新增）
+苗巫邪術·厲鬼冥河系列，目前以 `art_id` 暫借既有阿奴卡圖。補圖時於 `assets/art/cards/<id>.png` 新增專屬水墨圖即可生效：
+- `anu_guiling_zhuansheng` (鬼靈轉生，復活) ← 借 `anu_guijiang` 鬼降 - 🔴 待補
+- `anu_minghe_yindu` (冥河引渡，AOE 傷+毒) ← 借 `anu_wangushitian` 萬蠱噬天 - 🔴 待補
+- `anu_suoming_egui` (索命厲鬼，傷+虛弱) ← 借 `anu_duohun` 奪魂術 - 🔴 待補
+- `anu_youming_shigu` (幽冥蝕骨，毒+破綻) ← 借 `anu_sanshigu` 三屍蠱 - 🔴 待補
+- `anu_guihuo_liaoyuan` (鬼火燎原，AOE 傷×2+毒) ← 借 `anu_yanshazhou` 燃殺咒 - 🔴 待補
+
+建議風格：青幽鬼火、冥河亡魂、厲鬼索命等暗黑苗巫氛圍，與既有蠱毒系水墨一致。
 
 ---
 
