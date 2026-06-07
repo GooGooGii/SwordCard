@@ -72,6 +72,8 @@ func _draw() -> void:
 			_draw_coin(c, s, Color("e4c66a"))
 		"black_shop":
 			_draw_coin(c, s, Color("c19a55"))
+		"elite":
+			_draw_skull(c, s)  # 精英：骷髏（boss 在最終列、可由位置區分）
 		"boss":
 			_draw_skull(c, s)
 

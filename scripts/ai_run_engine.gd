@@ -96,7 +96,7 @@ func _make_encounter_choices() -> Array[Array]:
 	var char_ids: Array[String] = []
 	for c: CharacterData in run_state.characters:
 		char_ids.append(c.id)
-	return MapGenerator.generate(act_enemies, act_boss, char_ids, run_state.act)
+	return MapGenerator.generate(act_enemies, act_boss, char_ids, run_state.act, GameData.elites_for_act(run_state.act), run_state.ascension_level)
 
 # ──────────────────────────────────────────────────────────────────────────
 # 主驅動 API
@@ -335,6 +335,8 @@ func _enter_node(node: Dictionary) -> void:
 	match t:
 		"battle":
 			_start_battle(node.get("enemies", []) as Array)
+		"elite":
+			_start_battle(node.get("enemies", []) as Array, true)
 		"boss":
 			_start_battle([node.get("enemy")])
 		"rest":
@@ -353,7 +355,7 @@ func _enter_node(node: Dictionary) -> void:
 # ──────────────────────────────────────────────────────────────────────────
 # BATTLE（真實 BattleController）
 # ──────────────────────────────────────────────────────────────────────────
-func _start_battle(enemies_in: Array) -> void:
+func _start_battle(enemies_in: Array, is_elite: bool = false) -> void:
 	var enemies: Array = enemies_in.duplicate()
 	# miao_chieftain 特例：兩側加苗兵（鏡像 start_next_battle）
 	if enemies.size() == 1 and enemies[0] is EnemyData and (enemies[0] as EnemyData).id == "miao_chieftain":
@@ -372,7 +374,8 @@ func _start_battle(enemies_in: Array) -> void:
 		if e_v is EnemyData:
 			typed.append(e_v as EnemyData)
 	battle.setup(run_state, _selected_character, typed)
-	var mult: float = Ascension.enemy_hp_multiplier(run_state.ascension_level, is_boss)
+	var enemy_tier: String = "boss" if is_boss else ("elite" if is_elite else "normal")
+	var mult: float = Ascension.enemy_hp_multiplier(run_state.ascension_level, is_boss, is_elite)
 	if mult != 1.0:
 		for slot_v: Variant in (battle.state.get("enemies", []) as Array):
 			var slot: Dictionary = slot_v as Dictionary
@@ -380,8 +383,8 @@ func _start_battle(enemies_in: Array) -> void:
 			slot["max_hp"] = sm
 			slot["hp"] = sm
 		battle._sync_active_enemy_to_state()
-	battle.state["enemy_damage_mult"] = Ascension.enemy_damage_multiplier(run_state.ascension_level, "boss" if is_boss else "normal")
-	_ctx = {"is_boss": is_boss, "turn": 0}
+	battle.state["enemy_damage_mult"] = Ascension.enemy_damage_multiplier(run_state.ascension_level, enemy_tier)
+	_ctx = {"is_boss": is_boss, "is_elite": is_elite, "turn": 0}
 	battle.start_turn()
 	_phase = "battle"
 	_log("battle_start", {"enemies": _enemy_names(), "is_boss": is_boss})
@@ -572,6 +575,8 @@ func _battle_gold_reward(enemy: EnemyData) -> int:
 			4: base = 200
 			5: base = 250
 			_: base = 80 + run_state.act * 40
+	elif bool(_ctx.get("is_elite", false)):
+		base = int(round((18 + run_state.act * 8 + run_state.encounter_index * 3) * 1.6))  # 精英較多銅錢
 	else:
 		base = 18 + run_state.act * 8 + run_state.encounter_index * 3
 	var gold_mult: float = Ascension.boss_gold_multiplier(run_state.ascension_level) if is_boss else 1.0

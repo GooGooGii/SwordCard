@@ -5,6 +5,7 @@ const EVENT_VARIANTS: Array[String] = ["shrine", "spring", "talisman_cache", "tr
 	# PAL1 名場面（角色情感深度）
 	"jianling_whisper", "aqi_reunion", "tangyu_sparring", "jiang_waner_grief", "caiyi_butterfly",
 	"bijian_zhaoqin"]
+const ELITE_BASE_CHANCE: float = 0.30  # 中段每列出現精英的基礎機率（A1 起每級 +0.25）
 const FEMALE_ONLY_VARIANTS: Array[String] = ["flower_thief"]
 const MALE_ONLY_VARIANTS: Array[String] = ["flower_spirit"]
 const FEMALE_CHARACTER_IDS: Array[String] = ["zhao_linger", "lin_yueru", "anu"]
@@ -73,19 +74,22 @@ static func choose_enemies_for_act(act: int, pool: Array[EnemyData]) -> Array[En
 		result.append((shuffled[i] as EnemyData).clone())
 	return result
 
-static func generate(normal_enemies: Array[EnemyData], bosses: Array[EnemyData], character_ids: Array[String] = [], act: int = 1) -> Array[Array]:
+static func generate(normal_enemies: Array[EnemyData], bosses: Array[EnemyData], character_ids: Array[String] = [], act: int = 1, elite_enemies: Array[EnemyData] = [], ascension: int = 0) -> Array[Array]:
 	var has_female: bool = _has_female_character(character_ids)
 	var has_male: bool = _has_male_character(character_ids)
 	var event_pool: Array[String] = _build_event_pool(has_female, has_male)
 	var choices: Array[Array] = []
 	var normal_row_count: int = randi_range(MIN_NORMAL_ROW_COUNT, MAX_NORMAL_ROW_COUNT)
+	var allow_elite: bool = not elite_enemies.is_empty()
 	for row_index: int in range(normal_row_count):
 		var row: Array[Dictionary] = []
 		var row_size: int = randi_range(MIN_ROW_OPTIONS, MAX_ROW_OPTIONS)
 		var node_types: Array[String] = _build_row_types(row_index, normal_row_count, row_size)
+		if allow_elite:
+			_inject_elite(node_types, row_index, normal_row_count, ascension)
 		for node_index: int in range(row_size):
 			var node_type: String = String(node_types[node_index])
-			row.append(_make_map_node(node_type, node_index, normal_enemies, event_pool, act))
+			row.append(_make_map_node(node_type, node_index, normal_enemies, event_pool, act, elite_enemies))
 		choices.append(row)
 	if not bosses.is_empty():
 		var chosen_boss: EnemyData = bosses[randi() % bosses.size()]
@@ -133,7 +137,22 @@ static func _build_row_types(row_index: int, total_rows: int, row_size: int) -> 
 	node_types.shuffle()
 	return node_types
 
-static func _make_map_node(node_type: String, node_index: int, normal_enemies: Array[EnemyData], event_pool: Array[String] = EVENT_VARIANTS, act: int = 1) -> Dictionary:
+# 中段列把一個 battle slot 換成 elite（A1 起機率提升）。第一列與 boss 前一列不放。
+static func _inject_elite(node_types: Array[String], row_index: int, total_rows: int, ascension: int) -> void:
+	if row_index < 1 or row_index >= total_rows - 1:
+		return
+	var chance: float = ELITE_BASE_CHANCE + 0.25 * float(Ascension.elite_frequency_bonus(ascension))
+	if randf() >= chance:
+		return
+	var battle_slots: Array[int] = []
+	for i: int in range(node_types.size()):
+		if node_types[i] == "battle":
+			battle_slots.append(i)
+	if battle_slots.is_empty():
+		return
+	node_types[battle_slots[randi() % battle_slots.size()]] = "elite"
+
+static func _make_map_node(node_type: String, node_index: int, normal_enemies: Array[EnemyData], event_pool: Array[String] = EVENT_VARIANTS, act: int = 1, elite_enemies: Array[EnemyData] = []) -> Dictionary:
 	var node_data: Dictionary = {
 		"type": node_type,
 		"index": node_index,
@@ -141,6 +160,14 @@ static func _make_map_node(node_type: String, node_index: int, normal_enemies: A
 	}
 	if node_type == "battle":
 		node_data["enemies"] = choose_enemies_for_act(act, normal_enemies)
+	elif node_type == "elite":
+		# 精英 = 1 隻該幕高血敵人（強化由 Ascension elite tier 倍率在開戰時套用）
+		var src: Array[EnemyData] = elite_enemies if not elite_enemies.is_empty() else normal_enemies
+		var elite_node: Array[EnemyData] = []
+		if not src.is_empty():
+			elite_node.append((src[randi() % src.size()] as EnemyData).clone())
+		node_data["enemies"] = elite_node
+		node_data["is_elite"] = true
 	elif node_type == "event":
 		node_data["event_variant"] = event_pool[randi_range(0, event_pool.size() - 1)]
 	elif node_type == "shop":

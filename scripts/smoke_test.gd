@@ -121,6 +121,7 @@ func _initialize() -> void:
 	_test_event_variety()
 	_test_revive_event(characters)
 	_test_map_seed_determinism(enemies, bosses)
+	_test_elite_generation(enemies, bosses)
 	_test_balance_regression(characters, enemies)
 	_test_balance_regression_mid(characters, bosses)
 	_test_balance_regression_upgraded(characters, enemies, bosses)
@@ -901,6 +902,33 @@ func _test_revive_event(characters: Array[CharacterData]) -> void:
 			revived2 = true
 			break
 	_check(not revived2, "no downed characters means no revive should occur")
+
+func _test_elite_generation(enemies: Array[EnemyData], bosses: Array[EnemyData]) -> void:
+	# A1+ 精英節點：高難度下應生成精英節點，且帶 enemies + is_elite
+	var elites: Array[EnemyData] = GameData.elites_for_act(2)
+	_check(not elites.is_empty(), "elites_for_act 應回傳精英候選")
+	var found_elite: bool = false
+	for attempt: int in range(20):
+		seed(9000 + attempt)
+		var grid: Array = MapGenerator.generate(enemies, bosses, ["li_xiaoyao"], 2, elites, 5)
+		for row_v: Variant in grid:
+			for node_v: Variant in (row_v as Array):
+				var node: Dictionary = node_v as Dictionary
+				if String(node.get("type", "")) == "elite":
+					found_elite = true
+					_check(bool(node.get("is_elite", false)), "精英節點應帶 is_elite")
+					_check(not (node.get("enemies", []) as Array).is_empty(), "精英節點應有 enemies")
+	_check(found_elite, "A5 難度下 20 次生成應至少出現一個精英節點")
+	# 無精英候選（A0 也傳空）→ 不生成精英
+	seed(1)
+	var grid0: Array = MapGenerator.generate(enemies, bosses, ["li_xiaoyao"], 2, [], 0)
+	var any_elite0: bool = false
+	for row_v: Variant in grid0:
+		for node_v: Variant in (row_v as Array):
+			if String((node_v as Dictionary).get("type", "")) == "elite":
+				any_elite0 = true
+	_check(not any_elite0, "無精英候選時不應生成精英節點")
+	seed(0)
 
 func _test_map_seed_determinism(enemies: Array[EnemyData], bosses: Array[EnemyData]) -> void:
 	# 相同 seed 兩次跑 generate，產出的節點結構一致
@@ -1831,7 +1859,7 @@ func _test_turn_engines(character: CharacterData, enemy: EnemyData) -> void:
 	_check(int((bc.state["enemies"][0] as Dictionary)["hp"]) == 94, "end_turn_damage 6 (100->94), got %d" % int((bc.state["enemies"][0] as Dictionary)["hp"]))
 
 func _test_deck_manipulation(character: CharacterData, enemy: EnemyData) -> void:
-	# 臨陣磨劍（升級全手牌）/ 御劍相承（複製攻擊）/ 劍氣縱橫（生成 token 置頂）
+	# 臨陣磨槍（升級全手牌）/ 御劍相承（複製攻擊）/ 劍氣縱橫（生成 token 置頂）
 	var bc: BattleController = BattleController.new()
 	var rs: RunState = RunState.new()
 	rs.init_for(character)

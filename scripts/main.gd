@@ -13,6 +13,7 @@ var bosses: Array[EnemyData] = []
 var selected_character: CharacterData
 var run_state: RunState = RunState.new()
 var battle: BattleController
+var _battle_is_elite: bool = false  # 當前戰鬥是否為精英（影響掉落 + ascension elite tier）
 var root: MarginContainer
 var background_rect: TextureRect
 var hand_row: HandFan
@@ -1291,7 +1292,7 @@ func _make_encounter_choices() -> Array[Array]:
 	var char_ids: Array[String] = []
 	for c: CharacterData in run_state.characters:
 		char_ids.append(c.id)
-	return MapGenerator.generate(act_enemies, act_boss, char_ids, run_state.act)
+	return MapGenerator.generate(act_enemies, act_boss, char_ids, run_state.act, GameData.elites_for_act(run_state.act), run_state.ascension_level)
 
 # ──────────────────────────────────────────────────────────────────────
 # 起始加護（Run Start Boons）
@@ -1850,6 +1851,7 @@ func _clear_map_legend() -> void:
 func _build_map_legend(compact: bool = false) -> Control:
 	var entries: Array = [
 		{"type": "battle",     "color": Color("e2c486"), "label": "戰鬥"},
+		{"type": "elite",      "color": Color("e2728c"), "label": "精英"},
 		{"type": "boss",       "color": Color("f8d29c"), "label": "Boss"},
 		{"type": "rest",       "color": Color("f4a13a"), "label": "休息"},
 		{"type": "event",      "color": Color("e2cdff"), "label": "奇遇"},
@@ -2138,6 +2140,8 @@ func _map_node_badge(node_data: Dictionary) -> String:
 		return "黑" if bool(node_data.get("black_market", false)) else "店"
 	if node_type == "boss":
 		return "王"
+	if node_type == "elite":
+		return "精"
 	return "戰"
 
 func _map_node_title(node_data: Dictionary) -> String:
@@ -2153,6 +2157,11 @@ func _map_node_title(node_data: Dictionary) -> String:
 		if boss_enemy == null:
 			return "Boss"
 		return "Boss\n%s" % boss_enemy.display_name
+	if node_type == "elite":
+		var elite_arr: Array = node_data.get("enemies", []) as Array
+		if not elite_arr.is_empty() and elite_arr[0] is EnemyData:
+			return "精英\n%s" % (elite_arr[0] as EnemyData).display_name
+		return "精英"
 	var enemies_arr: Array = node_data.get("enemies", []) as Array
 	if enemies_arr.is_empty():
 		return "戰鬥"
@@ -2219,11 +2228,15 @@ func choose_route_node(node_data: Dictionary, target_row: int = -1) -> void:
 	elif node_type == "boss":
 		assert(node_data.has("enemy"), "Boss 節點缺少 enemy 資料：%s" % node_data)
 		start_next_battle(node_data["enemy"] as EnemyData)
+	elif node_type == "elite":
+		assert(node_data.has("enemies"), "精英節點缺少 enemies 資料：%s" % node_data)
+		start_next_battle(node_data["enemies"] as Array, true)
 	else:
 		assert(node_data.has("enemies"), "戰鬥節點缺少 enemies 資料：%s" % node_data)
 		start_next_battle(node_data["enemies"] as Array)
 
-func start_next_battle(enemies: Variant) -> void:
+func start_next_battle(enemies: Variant, is_elite: bool = false) -> void:
+	_battle_is_elite = is_elite
 	# enemies 可為單一 EnemyData 或 Array（地圖多敵節點）
 	if enemies is EnemyData and (enemies as EnemyData).id == "miao_chieftain":
 		var left_soldier: EnemyData = GameData.enemy_by_id("miao_soldier")
@@ -2248,7 +2261,8 @@ func start_next_battle(enemies: Variant) -> void:
 	battle.setup(run_state, selected_character, enemies)
 	# Boss phase 2 變身動畫（如拜月教主 → 水魔獸）
 	battle.phase_transitioned.connect(_on_phase_transitioned)
-	var mult: float = Ascension.enemy_hp_multiplier(run_state.ascension_level, is_boss)
+	var enemy_tier: String = "boss" if is_boss else ("elite" if is_elite else "normal")
+	var mult: float = Ascension.enemy_hp_multiplier(run_state.ascension_level, is_boss, is_elite)
 	if mult != 1.0:
 		var enemy_slots: Array = battle.state.get("enemies", []) as Array
 		for slot_v: Variant in enemy_slots:
@@ -2257,8 +2271,8 @@ func start_next_battle(enemies: Variant) -> void:
 			slot["max_hp"] = scaled_max
 			slot["hp"] = scaled_max
 		battle._sync_active_enemy_to_state()
-	# Ascension A2-4：敵人傷害倍率（精英尚未實作 → boss/一般兩級）
-	battle.state["enemy_damage_mult"] = Ascension.enemy_damage_multiplier(run_state.ascension_level, "boss" if is_boss else "normal")
+	# Ascension A2-4：敵人傷害倍率（一般/精英/boss）
+	battle.state["enemy_damage_mult"] = Ascension.enemy_damage_multiplier(run_state.ascension_level, enemy_tier)
 	battle_end_pending = false
 	_build_battle_scene()
 	_start_player_turn()
@@ -4076,6 +4090,8 @@ func _battle_gold_reward(enemy: EnemyData) -> int:
 			4: base = 200
 			5: base = 250
 			_: base = 80 + run_state.act * 40
+	elif _battle_is_elite:
+		base = int(round((18 + run_state.act * 8 + run_state.encounter_index * 3) * 1.6))  # 精英掉落較多銅錢
 	else:
 		base = 18 + run_state.act * 8 + run_state.encounter_index * 3
 	var gold_mult: float = Ascension.boss_gold_multiplier(run_state.ascension_level) if is_boss else 1.0

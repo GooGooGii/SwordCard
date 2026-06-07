@@ -102,6 +102,15 @@ static func enemies_for_act(act: int) -> Array[EnemyData]:
 		8: return [_moon_worshipper(), _baiyue_guard(), _ancient_evil_spirit(), _puppet_girl(), _man_eater_beast(), _two_headed_snake()] # 拜月決戰
 	return [_bandit(), _beast()]
 
+# 精英敵人候選：取該幕一般敵中 max_hp 最高的前 3 名（精英 = 強化版一般戰，不另造敵人）。
+static func elites_for_act(act: int) -> Array[EnemyData]:
+	var pool: Array[EnemyData] = enemies_for_act(act)
+	pool.sort_custom(func(a: EnemyData, b: EnemyData) -> bool: return a.max_hp > b.max_hp)
+	var out: Array[EnemyData] = []
+	for i: int in range(min(3, pool.size())):
+		out.append(pool[i])
+	return out
+
 static func boss_for_act(act: int) -> EnemyData:
 	match act:
 		1: return _red_eye_demon()      # 餘杭山間：蛇妖男（以隱龍窟正史 boss 代替原創山魈）
@@ -156,7 +165,7 @@ static func _li_xiaoyao() -> CharacterData:
 		make_card("lxy_xujian", "蓄劍式", "李逍遙", 1, "skill", "蓄勢御劍，下一張攻擊牌傷害變為 2 倍。", [{"kind": "next_attack_mult", "amount": 2}], "uncommon", "", true),
 		make_card("lxy_jianyi", "劍意滋長", "李逍遙", 2, "power", "劍意與日俱增，每回合開始攻擊力 +1。", [{"kind": "power_per_turn", "amount": 1}], "rare", "", true),
 		# 牌庫操作（StS Armaments+ / Dual Wield / Shiv）
-		make_card("lxy_linzhen", "臨陣磨劍", "李逍遙", 1, "skill", "臨陣磨礪，將手上所有牌升級（本場戰鬥）。", [{"kind": "upgrade_hand"}], "rare", "", true),
+		make_card("lxy_linzhen", "臨陣磨槍", "李逍遙", 1, "skill", "臨陣磨礪，將手上所有牌升級（本場戰鬥）。", [{"kind": "upgrade_hand"}], "rare", "", true),
 		make_card("lxy_xiangcheng", "御劍相承", "李逍遙", 1, "skill", "御劍化形，複製手上一張攻擊牌。", [{"kind": "copy_attack"}], "uncommon", "lxy_jiulong", true),
 		make_card("lxy_jianqizonghen", "劍氣縱橫", "李逍遙", 1, "skill", "劍氣化形，生成 3 道「劍氣」置於抽牌堆頂。", [{"kind": "spawn_top_tokens", "amount": 3}], "uncommon", "lxy_jianqi"),
 		# 幽冥仙途語感（明心劍宗）：青煙竹影＝節節拔升多段劍。art 暫借八方劍陣
