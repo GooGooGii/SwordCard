@@ -113,6 +113,7 @@ func _initialize() -> void:
 	_test_map_generator_reachability(enemies, bosses)
 	_test_map_encounter_groups(enemies, bosses)
 	_test_predict_enemy_damage_matches_resolver()
+	_test_intent_display()
 	_test_requires_enemy_target()
 	_test_bestiary_persistence()
 	_test_artifact_boss_coverage()
@@ -734,6 +735,27 @@ func _test_map_generator_reachability(enemies: Array[EnemyData], bosses: Array[E
 							_check(int(j1_v) <= int(j2_v),
 								"trial %d row %d: edges cross — i=%d→j=%d vs i=%d→j=%d" %
 								[trial, row_index2, i1, int(j1_v), i2, int(j2_v)])
+
+func _test_intent_display() -> void:
+	# intent_badge 新分類涵蓋 damage_all / 控制 / 召喚 / 治療
+	var b_aoe: String = CardFormat.intent_badge({"effects": [{"kind": "damage_all", "amount": 5}]})
+	_check(b_aoe.find("[攻擊]") >= 0, "damage_all should show [攻擊], got %s" % b_aoe)
+	var b_ctrl: String = CardFormat.intent_badge({"effects": [{"kind": "stun", "amount": 1}]})
+	_check(b_ctrl.find("[控制]") >= 0, "stun should show [控制], got %s" % b_ctrl)
+	var b_sum: String = CardFormat.intent_badge({"effects": [{"kind": "summon", "count": 1}]})
+	_check(b_sum.find("[召喚]") >= 0, "summon should show [召喚], got %s" % b_sum)
+	var b_heal: String = CardFormat.intent_badge({"effects": [{"kind": "heal", "amount": 5}]})
+	_check(b_heal.find("[治療]") >= 0, "heal should show [治療], got %s" % b_heal)
+	# action_has_damage 認得 damage_all
+	_check(CardFormat.action_has_damage({"effects": [{"kind": "damage_all", "amount": 8}]}),
+		"action_has_damage should recognise damage_all")
+	# 多段攻擊（重複 damage effect）→ hits 段數 + per_hit 一致
+	var multi: Dictionary = {"effects": [{"kind": "damage", "amount": 10}, {"kind": "damage", "amount": 10}, {"kind": "damage", "amount": 10}]}
+	var st: Dictionary = _make_state()
+	var pred: Dictionary = CardFormat.predict_enemy_damage(multi, st)
+	_check(int(pred["hits"]) == 3, "multi-hit should report hits=3, got %d" % int(pred["hits"]))
+	_check(int(pred["per_hit"]) == 10, "uniform multi-hit per_hit should be 10, got %d" % int(pred["per_hit"]))
+	_check(int(pred["dealt"]) == 30, "multi-hit total should be 30, got %d" % int(pred["dealt"]))
 
 func _test_predict_enemy_damage_matches_resolver() -> void:
 	# 對多組 (block, vuln, weak, attack_amount) 組合，驗證 CardFormat.predict_enemy_damage 跟

@@ -47,22 +47,43 @@ static func intent_badge(action: Dictionary) -> String:
 	var effects: Array = action.get("effects", []) as Array
 	var has_damage: bool = false
 	var has_block: bool = false
-	var has_status: bool = false
+	var has_status: bool = false   # 對玩家施加的負面狀態（毒/弱/破綻）
+	var has_control: bool = false  # 控制（暈眩/禁言/瘋魔）
+	var has_buff: bool = false     # 敵人自身強化（力量）
+	var has_heal: bool = false     # 敵人自我治療
+	var has_summon: bool = false   # 召喚
 	for effect: Dictionary in effects:
 		var kind: String = String(effect.get("kind", ""))
-		if kind == "damage":
-			has_damage = true
-		elif kind == "block":
-			has_block = true
-		elif kind == "poison" or kind == "weak" or kind == "vulnerable":
-			has_status = true
+		match kind:
+			"damage", "damage_all":
+				has_damage = true
+			"block":
+				has_block = true
+			"poison", "weak", "vulnerable", "poison_all", "weak_all", "vulnerable_all":
+				has_status = true
+			"stun", "silence", "berserk":
+				has_control = true
+			"power":
+				has_buff = true
+			"heal", "heal_party":
+				has_heal = true
+			"summon":
+				has_summon = true
 	var badges: Array[String] = []
 	if has_damage:
 		badges.append("[攻擊]")
 	if has_block:
 		badges.append("[防守]")
+	if has_control:
+		badges.append("[控制]")
 	if has_status:
 		badges.append("[異常]")
+	if has_buff:
+		badges.append("[強化]")
+	if has_heal:
+		badges.append("[治療]")
+	if has_summon:
+		badges.append("[召喚]")
 	if badges.is_empty():
 		badges.append("[行動]")
 	return " ".join(badges)
@@ -95,7 +116,8 @@ static func enemy_action_effect_summary(action: Dictionary) -> String:
 
 static func action_has_damage(action: Dictionary) -> bool:
 	for effect: Dictionary in (action.get("effects", []) as Array):
-		if String(effect.get("kind", "")) == "damage":
+		var k: String = String(effect.get("kind", ""))
+		if k == "damage" or k == "damage_all":
 			return true
 	return false
 
@@ -116,7 +138,9 @@ static func requires_enemy_target(card: CardData) -> bool:
 
 # 預測敵人 action 結算後玩家會受到的實際傷害。
 # 與 EffectResolver._resolve_effect 的「from_enemy=true、damage」分支保持同步。
-# 回傳: {raw, blocked, dealt} 三個 int。
+# 回傳: {raw, blocked, dealt, hits, per_hit}。hits = 傷害段數（敵人多段攻擊以重複
+# damage effect 表示）；per_hit = 各段「實際入手前」傷害（套 weak/vuln/減傷後），
+# 各段不一致時為 -1。
 # 注意：begin_enemy_phase 會在敵人攻擊前先把 player_weak / player_vulnerable -1，
 # 所以這裡使用 max(0, value-1) 模擬。state 中的 enemy_weak 維持原值不變。
 static func predict_enemy_damage(action: Dictionary, state: Dictionary) -> Dictionary:
@@ -127,20 +151,30 @@ static func predict_enemy_damage(action: Dictionary, state: Dictionary) -> Dicti
 	var raw: int = 0
 	var blocked: int = 0
 	var dealt: int = 0
+	var hits: int = 0
+	var per_hit: int = -2  # -2 = 未設；-1 = 各段不一致
 	for effect: Dictionary in (action.get("effects", []) as Array):
-		if String(effect.get("kind", "")) != "damage":
+		var k: String = String(effect.get("kind", ""))
+		if k != "damage" and k != "damage_all":
 			continue
 		var amount: int = int(effect.get("amount", 0))
 		var modified: int = max(0, amount - enemy_weak)
 		if player_vuln_at_hit > 0:
 			modified = int(ceil(modified * 1.5))
 		modified = max(0, modified - damage_reduction)
+		if per_hit == -2:
+			per_hit = modified
+		elif per_hit != modified:
+			per_hit = -1
 		var b: int = min(remaining_block, modified)
 		remaining_block -= b
 		raw += amount
 		blocked += b
 		dealt += modified - b
-	return {"raw": raw, "blocked": blocked, "dealt": dealt}
+		hits += 1
+	if per_hit == -2:
+		per_hit = 0
+	return {"raw": raw, "blocked": blocked, "dealt": dealt, "hits": hits, "per_hit": per_hit}
 
 # 戰鬥手牌即時數值：把玩家卡片 effects 依當前 state（power / weak / vulnerable / 各種
 # relic+potion bonus）算成「實際打出」的數字。與 EffectResolver._resolve_effect 的

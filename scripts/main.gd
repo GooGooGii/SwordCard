@@ -2814,7 +2814,14 @@ func _refresh_enemy_widgets() -> void:
 					var pred: Dictionary = CardFormat.predict_enemy_damage(action, temp_state)
 					var dealt: int = int(pred["dealt"])
 					var blocked: int = int(pred["blocked"])
-					if blocked > 0:
+					var hits: int = int(pred.get("hits", 1))
+					var per_hit: int = int(pred.get("per_hit", 0))
+					if hits > 1 and per_hit >= 0:
+						# 多段攻擊：顯示 每段×段數（仿 STS 5×3），有擋再附淨傷
+						damage_text = " %d×%d" % [per_hit, hits]
+						if blocked > 0:
+							damage_text += "(實受%d)" % dealt
+					elif blocked > 0:
 						damage_text = " 實受%d(擋%d)" % [dealt, blocked]
 					elif dealt < int(pred["raw"]):
 						damage_text = " 實受%d" % dealt
