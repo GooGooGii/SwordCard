@@ -287,14 +287,14 @@
 
 ---
 
-## 八、UI / 地圖節點圖示（🟡 待補）
+## 八、UI / 地圖節點圖示（🟢 已全部完成）
 
 地圖節點圖示由 `scripts/map_node_icon.gd` 繪製：優先載入 `res://assets/ui/node_<type>.png`，
-找不到才用程式繪製的 fallback。下列為**目前用 fallback、待補專屬 icon** 的需求：
+找不到才用程式繪製的 fallback。下列圖示已全部完成：
 
 | 檔名 | 用途 | 目前狀態 | 風格建議 |
 |---|---|---|---|
-| `assets/ui/node_elite.png` | 精英節點（A1/A3/A8 難度新增）| 🟡 暫用 boss 同款骷髏繪製 | 比一般戰鬥兇、比 boss 小一級的精英標誌（如染血刀劍 / 妖將面具 / 紅骷髏），與既有節點 icon 風格一致，需與 boss（骷髏）有辨識區別 |
+| `assets/ui/node_elite.png` | 精英節點（A1/A3/A8 難度新增）| 🟢 已完成（專屬美術） | 染血雙劍與妖將面具結合，與既有節點 icon 風格一致，與 boss 骷髏頭區分開來 |
 
 > 補圖後執行 `godot --headless --path . --import` 重匯入即生效；`map_node_icon._load_node_texture()`
 > 會自動優先採用。legend 顏色已設為 `Color("e2728c")`（暗紅）、節點標記為「精」。
