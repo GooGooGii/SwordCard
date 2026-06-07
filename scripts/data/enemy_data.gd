@@ -11,6 +11,8 @@ extends Resource
 @export var phase_2_portrait_path: String = ""  # 進入 phase 2 時換的肖像；空 = 沿用 portrait_path
 @export var phase_2_portrait_tint: Color = Color.WHITE  # phase 2 額外色調（Color.WHITE = 不變色）
 @export var portrait_tint: Color = Color.WHITE
+@export var portrait_scale: float = 1.0      # 肖像相對標準框的倍率（boss / 大型妖獸 > 1，小兵可 < 1）
+@export var phase_2_portrait_scale: float = 0.0  # phase 2 專用倍率；<= 0 = 沿用 portrait_scale
 @export var summon_pool: Array[String] = []  # boss 召喚物 id pool；空 = 不召喚
 @export var is_summoned: bool = false        # 由 spawn_enemy() 設為 true，勝利結算時不計入掉落
 @export var default_facing_left: bool = false # 原始圖檔是否已面向左邊（若是，則戰鬥中不需 flip_h）
@@ -27,6 +29,8 @@ func clone() -> EnemyData:
 	copy.phase_2_portrait_path = phase_2_portrait_path
 	copy.phase_2_portrait_tint = phase_2_portrait_tint
 	copy.portrait_tint = portrait_tint
+	copy.portrait_scale = portrait_scale
+	copy.phase_2_portrait_scale = phase_2_portrait_scale
 	copy.summon_pool = summon_pool.duplicate()
 	copy.is_summoned = is_summoned
 	copy.default_facing_left = default_facing_left
@@ -44,6 +48,8 @@ func to_dict() -> Dictionary:
 		"phase_2_portrait_path": phase_2_portrait_path,
 		"phase_2_portrait_tint": [phase_2_portrait_tint.r, phase_2_portrait_tint.g, phase_2_portrait_tint.b, phase_2_portrait_tint.a],
 		"portrait_tint": [portrait_tint.r, portrait_tint.g, portrait_tint.b, portrait_tint.a],
+		"portrait_scale": portrait_scale,
+		"phase_2_portrait_scale": phase_2_portrait_scale,
 		"default_facing_left": default_facing_left
 	}
 
@@ -83,5 +89,7 @@ static func from_dict(data: Dictionary) -> EnemyData:
 			float(tint_data[2]),
 			float(tint_data[3]) if tint_data.size() >= 4 else 1.0
 		)
+	enemy.portrait_scale = float(data.get("portrait_scale", 1.0))
+	enemy.phase_2_portrait_scale = float(data.get("phase_2_portrait_scale", 0.0))
 	enemy.default_facing_left = bool(data.get("default_facing_left", false))
 	return enemy

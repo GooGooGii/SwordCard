@@ -2517,6 +2517,14 @@ func _swap_to_phase_2_portrait() -> void:
 		var tex: Texture2D = UIFactory.load_texture(phase_2_path)
 		if tex != null:
 			enemy_portrait_image.texture = tex
+			# 變身後若有設 phase_2 倍率（水魔獸應比主角還大），重算 box 放大整個 wrap
+			var p2_scale: float = battle.enemy.phase_2_portrait_scale
+			if p2_scale > 0.0:
+				var total: int = (battle.state["enemies"] as Array).size()
+				var new_box: Vector2 = _enemy_portrait_size_for(total) * p2_scale
+				if enemy_portrait_wrap != null and is_instance_valid(enemy_portrait_wrap):
+					enemy_portrait_wrap.custom_minimum_size = new_box
+				enemy_portrait_image.set_meta("ground_box", new_box)
 			UIFactory.ground_portrait(enemy_portrait_image)  # 變身後重新貼地
 	var phase_2_tint: Color = battle.enemy.phase_2_portrait_tint
 	if phase_2_tint != Color.WHITE:
@@ -2634,7 +2642,17 @@ func _enemy_portrait_size_for(total: int) -> Vector2:
 func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	var slot: Dictionary = battle.state["enemies"][idx] as Dictionary
 	var enemy_data: EnemyData = battle.enemies[idx]
-	var portrait_size: Vector2 = _enemy_portrait_size_for(total)
+	# 已進入 phase 2 的敵人（如水魔獸）用 phase 2 的圖 / 色調 / 倍率（召喚後重建 row 時也要保持）
+	var phased: bool = idx < battle.enemy_phased.size() and battle.enemy_phased[idx]
+	var use_phase_2: bool = phased and not enemy_data.phase_2_portrait_path.is_empty()
+	var portrait_path: String = enemy_data.phase_2_portrait_path if use_phase_2 else enemy_data.portrait_path
+	var portrait_tint_col: Color = enemy_data.portrait_tint
+	if phased and enemy_data.phase_2_portrait_tint != Color.WHITE:
+		portrait_tint_col = enemy_data.phase_2_portrait_tint
+	var scale_mult: float = enemy_data.portrait_scale
+	if phased and enemy_data.phase_2_portrait_scale > 0.0:
+		scale_mult = enemy_data.phase_2_portrait_scale
+	var portrait_size: Vector2 = _enemy_portrait_size_for(total) * scale_mult
 	var col: VBoxContainer = VBoxContainer.new()
 	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.alignment = BoxContainer.ALIGNMENT_END
@@ -2651,10 +2669,10 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	var wrap: Control = Control.new()
 	wrap.custom_minimum_size = portrait_size
 	wrap.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	var portrait: TextureRect = UIFactory.portrait_rect(enemy_data.portrait_path, portrait_size, true)
+	var portrait: TextureRect = UIFactory.portrait_rect(portrait_path, portrait_size, true)
 	portrait.set_meta("ground_box", portrait_size)
 	UIFactory.ground_portrait(portrait)  # 底部對齊地面線
-	portrait.modulate = enemy_data.portrait_tint
+	portrait.modulate = portrait_tint_col
 	portrait.flip_h = not enemy_data.default_facing_left
 	wrap.add_child(portrait)
 	var badge: BlockBadge = BlockBadge.new()

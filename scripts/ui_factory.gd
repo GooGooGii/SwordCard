@@ -143,19 +143,26 @@ static func ground_portrait(rect: TextureRect) -> void:
 		return
 	var tw: float = float(tex.get_width())
 	var th: float = float(tex.get_height())
-	var s: float = min(box.x / tw, box.y / th)
-	var dw: float = tw * s
-	var dh: float = th * s
-	rect.size = Vector2(dw, dh)
-	# 內容底部對齊：抓不透明像素的下緣（去除腳下透明留白），讓不同原圖的人物「實體」
-	# 站在同一條地面線。get_image() 在壓縮貼圖上可能取不到 → fallback 用整張圖下緣。
-	var content_bottom: float = th  # 預設 = 圖片下緣
+	# 依「內容外框」(去除四周透明留白) 而非整張畫布來縮放，讓不同留白比例 / 正方畫布的
+	# 人物都能填滿 box（解決「正方圖被寬邊鉗死、用不到框高 → 顯得特別小」的問題）。
+	# get_image() 在壓縮貼圖上可能取不到 → fallback 用整張圖。
+	var content_left: float = 0.0
+	var content_w: float = tw
+	var content_h: float = th
+	var content_bottom: float = th
 	var src_img: Image = tex.get_image()
 	if src_img != null:
 		var used: Rect2i = src_img.get_used_rect()
-		if used.size.y > 0:
+		if used.size.x > 0 and used.size.y > 0:
+			content_left = float(used.position.x)
+			content_w = float(used.size.x)
+			content_h = float(used.size.y)
 			content_bottom = float(used.position.y + used.size.y)
-	rect.position = Vector2((box.x - dw) * 0.5, box.y - content_bottom * s)  # 水平置中、內容底部對齊
+	var s: float = min(box.x / content_w, box.y / content_h)
+	rect.size = Vector2(tw * s, th * s)  # 整張貼圖縮放後尺寸（透明邊會超出 box，無妨）
+	# 內容水平置中 + 內容底部對齊地面線
+	var content_center_x: float = content_left + content_w * 0.5
+	rect.position = Vector2(box.x * 0.5 - content_center_x * s, box.y - content_bottom * s)
 
 static var _texture_cache: Dictionary = {}
 
