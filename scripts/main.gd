@@ -2687,11 +2687,12 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	# 浮動 feedback label（傷害數字、狀態提示）
 	var feedback_label: Label = UIFactory.feedback_label()
 	col.add_child(_wrap_feedback_label(feedback_label))
-	# 意圖列（顯示於頭頂上）：icon(s) + 文字。icon 圖未補時自動 fallback 純文字徽章。
+	# 意圖（顯示於頭頂上）：icon 列在上、文字在下。icon 圖未補時自動 fallback 純文字徽章。
+	# 文字 label 直接掛在 col（取得全寬），避免被 HBox 擠到逐字直書。
 	var intent_size: int = 10 if (_battle_compact or total >= 2) else 12
-	var intent_row: HBoxContainer = HBoxContainer.new()
-	intent_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	intent_row.add_theme_constant_override("separation", 2)
+	var intent_icon_row: HBoxContainer = HBoxContainer.new()
+	intent_icon_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	intent_icon_row.add_theme_constant_override("separation", 2)
 	var intent_icons: Array = []
 	var icon_px: float = 16.0 if (_battle_compact or total >= 2) else 22.0
 	for _ii: int in range(3):
@@ -2701,12 +2702,12 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 		ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		ic.visible = false
 		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		intent_row.add_child(ic)
+		intent_icon_row.add_child(ic)
 		intent_icons.append(ic)
+	col.add_child(intent_icon_row)
 	var intent_label: Label = UIFactory.card_label("",
 		intent_size, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-	intent_row.add_child(intent_label)
-	col.add_child(intent_row)
+	col.add_child(intent_label)
 	# portrait wrap（含 block badge）
 	var wrap: Control = Control.new()
 	wrap.custom_minimum_size = portrait_size
