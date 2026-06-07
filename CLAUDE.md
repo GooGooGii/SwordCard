@@ -518,7 +518,7 @@ match version:
 | 同格疊放 | **不允許**（每格只能放 1 瓶） |
 | Save | `RunState.potions: Array[Dictionary]`，存 id + 暫無其他欄位 |
 
-### 藥品清單（共 31 種；single source = `scripts/potion_catalog.gd`）
+### 藥品清單（共 34 種；single source = `scripts/potion_catalog.gd`）
 
 下表須與 `PotionCatalog.all()` 同步；新增 / 改藥時兩邊一起改。
 
@@ -555,10 +555,13 @@ match version:
 | 女媧玉露 | 回復 30 HP ＋ 本場攻擊力 +3 | rare |
 | 金蠶王 | 當前角色等級 +1，立即習得該等級招式 | rare |
 | 焚天珠 | 對所有敵人各造成 18 傷害 ＋ 2 蠱毒（攻擊型 AOE） | rare |
+| 定身符 | 對敵造成 6 傷害 ＋ 暈眩 1 回合（攻擊型・控制） | uncommon |
+| 封靈符 | 封印敵人法術 2 回合（禁言・控制） | uncommon |
+| 迷魂蠱 | 使敵人瘋魔 1 回合（失控隨機攻擊・控制） | rare |
 
 對應 effect kind：`damage` / `damage_all` / `heal` / `heal_party` / `energy` / `block` /
 `power` / `draw` / `cure_poison` / `cure_debuff` / `vulnerable` / `weak` / `weak_all` /
-`poison_all` / `revive` / `level_up`。戰鬥外可用性由 `PotionCatalog.usable_outside_battle()` 判定
+`poison_all` / `revive` / `level_up` / `stun` / `silence` / `berserk`。戰鬥外可用性由 `PotionCatalog.usable_outside_battle()` 判定
 （含 `heal` / `heal_party` / `max_hp` / `level_up` 等戰鬥外仍有價值的 kind）。
 
 ### 資料模型

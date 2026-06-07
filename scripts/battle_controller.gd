@@ -1090,6 +1090,18 @@ func _apply_trigger_effects(effects: Array, relic_name: String) -> void:
 			"enemy_vulnerable":
 				state["enemy_vulnerable"] = int(state["enemy_vulnerable"]) + amount
 				add_log("【%s】敵人 +%d 破綻。" % [relic_name, amount])
+			"enemy_stun":
+				state["enemy_stunned"] = int(state.get("enemy_stunned", 0)) + amount
+				_sync_state_to_active_enemy()
+				add_log("【%s】敵人暈眩 %d 回合。" % [relic_name, amount])
+			"enemy_silence":
+				state["enemy_silenced"] = int(state.get("enemy_silenced", 0)) + amount
+				_sync_state_to_active_enemy()
+				add_log("【%s】敵人被禁言 %d 回合。" % [relic_name, amount])
+			"enemy_berserk":
+				state["enemy_berserk"] = int(state.get("enemy_berserk", 0)) + amount
+				_sync_state_to_active_enemy()
+				add_log("【%s】敵人陷入瘋魔 %d 回合。" % [relic_name, amount])
 			"block_carry":
 				state["next_turn_block"] = int(state.get("next_turn_block", 0)) + amount
 				add_log("【%s】保留 %d 護體到下回合。" % [relic_name, amount])

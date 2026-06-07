@@ -226,6 +226,30 @@ static func all() -> Array[Dictionary]:
 			"description": "使當前角色等級 +1，並立即習得該等級解鎖的全部招式（若有）。",
 			"effects": [{"kind": "level_up"}]
 		},
+		{
+			# 符咒定身：重擊加暈眩控場。
+			"id": "dingshen_fu",
+			"display_name": "定身符",
+			"rarity": "uncommon",
+			"description": "對敵人造成 6 點傷害並使其暈眩（下回合無法行動）。",
+			"effects": [{"kind": "damage", "amount": 6}, {"kind": "stun", "amount": 1}]
+		},
+		{
+			# 封印法術：剋施法系敵人 / boss。
+			"id": "fengling_fu",
+			"display_name": "封靈符",
+			"rarity": "uncommon",
+			"description": "封印敵人法術 2 回合（無法施法）。",
+			"effects": [{"kind": "silence", "amount": 2}]
+		},
+		{
+			# 苗蠱迷魂：使敵人失控，多敵時可能誤擊友軍。
+			"id": "mihun_gu",
+			"display_name": "迷魂蠱",
+			"rarity": "rare",
+			"description": "使敵人陷入瘋魔 1 回合（失控隨機攻擊，可能誤擊友軍）。",
+			"effects": [{"kind": "berserk", "amount": 1}]
+		},
 	]
 
 static func by_id(id: String) -> Dictionary:
