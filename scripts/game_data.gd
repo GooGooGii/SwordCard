@@ -317,9 +317,9 @@ static func _anu() -> CharacterData:
 		make_card("anu_lianduzhen", "連環毒針", "阿奴", 1, "attack", "造成 3 點傷害兩次，施加 1 層蠱毒。", [{"kind": "damage", "amount": 3, "hits": 2}, {"kind": "poison", "amount": 1}], "uncommon", "", true),
 		# 毒流 combo 三張（StS Catalyst / Noxious / Sporic 對齊，art 暫借既有蠱術卡）：
 		# 蠱毒催化＝翻倍毒層、蠱刃淬煉＝攻擊無格擋敵人疊毒、蠱蟲寄屍＝死敵殘毒轉移（多敵 combo）。
-		make_card("anu_cuihua", "蠱毒催化", "阿奴", 1, "skill", "使目標敵人的蠱毒層數變為 2 倍。", [{"kind": "poison_multiply", "amount": 2}], "rare", "anu_sanmao"),
-		make_card("anu_gudaocui", "蠱刃淬煉", "阿奴", 1, "power", "攻擊無格擋的敵人時，每次攻擊施加 1 層蠱毒（多段攻擊每段各 1 層）。", [{"kind": "poison_on_attack", "amount": 1}], "uncommon", "anu_wuyuezhan", true),
-		make_card("anu_jishigu", "蠱蟲寄屍", "阿奴", 1, "power", "中毒的敵人死亡時，將其殘餘蠱毒隨機轉移給另一個敵人。", [{"kind": "corpse_poison"}], "uncommon", "anu_sanshigu", true),
+		make_card("anu_cuihua", "蠱毒催化", "阿奴", 1, "skill", "使目標敵人的蠱毒層數變為 2 倍。", [{"kind": "poison_multiply", "amount": 2}], "rare"),
+		make_card("anu_gudaocui", "蠱刃淬煉", "阿奴", 1, "power", "攻擊無格擋的敵人時，每次攻擊施加 1 層蠱毒（多段攻擊每段各 1 層）。", [{"kind": "poison_on_attack", "amount": 1}], "uncommon", "", true),
+		make_card("anu_jishigu", "蠱蟲寄屍", "阿奴", 1, "power", "中毒的敵人死亡時，將其殘餘蠱毒隨機轉移給另一個敵人。", [{"kind": "corpse_poison"}], "uncommon", "", true),
 	]
 	# HP 66→82：阿奴是「長戰持續傷害」毒龜流，毒需要時間 ramp+tick，必須夠肉才撐得到
 	# 毒生效（pilot 實測：66 HP 對上 +15% 傷害的多敵戰撐不過 3 回合就被消耗死）。
@@ -1085,6 +1085,7 @@ static func _baiyue_lord() -> EnemyData:
 	]
 	# Phase 2：召出水魔獸（PAL1 原作終局妖獸）
 	enemy.phase_2_display_name = "水魔獸"
+	enemy.phase_2_portrait_path = "res://assets/art/enemies/baiyue_lord_phase2.png"
 	enemy.phase_2_actions = [
 		{"intent": "海嘯襲擊 31 + 虛弱 2", "effects": [{"kind": "damage", "amount": 31}, {"kind": "weak", "amount": 2}]},
 		{"intent": "水妖蝕魂 蠱毒 9 + 破綻 2", "effects": [{"kind": "poison", "amount": 9}, {"kind": "vulnerable", "amount": 2}]},
