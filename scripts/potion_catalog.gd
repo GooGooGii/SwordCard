@@ -103,11 +103,44 @@ static func all() -> Array[Dictionary]:
 			"effects": [{"kind": "heal", "amount": 8}, {"kind": "block", "amount": 5}]
 		},
 		{
+			# PAL1：天師符法為李逍遙習得的符咒攻擊系法術。
 			"id": "tianshi_fu",
 			"display_name": "天師符",
 			"rarity": "common",
-			"description": "施加敵人 1 層破綻與 1 層虛弱。",
-			"effects": [{"kind": "vulnerable", "amount": 1}, {"kind": "weak", "amount": 1}]
+			"description": "對敵人造成 10 點傷害，並施加 1 層破綻與 1 層虛弱。",
+			"effects": [{"kind": "damage", "amount": 10}, {"kind": "vulnerable", "amount": 1}, {"kind": "weak", "amount": 1}]
+		},
+		{
+			# 投擲暗器，雷火炸裂。
+			"id": "pili_zi",
+			"display_name": "霹靂子",
+			"rarity": "common",
+			"description": "對敵人造成 12 點傷害。",
+			"effects": [{"kind": "damage", "amount": 12}]
+		},
+		{
+			# PAL1 靈珠系統：火靈珠可施火系法術。
+			"id": "huoling_zhu",
+			"display_name": "火靈珠",
+			"rarity": "uncommon",
+			"description": "對敵人造成 20 點火傷。",
+			"effects": [{"kind": "damage", "amount": 20}]
+		},
+		{
+			# PAL1 靈珠系統：雷靈珠可施雷系群攻法術。
+			"id": "leiling_zhu",
+			"display_name": "雷靈珠",
+			"rarity": "uncommon",
+			"description": "對所有敵人各造成 11 點雷傷。",
+			"effects": [{"kind": "damage_all", "amount": 11}]
+		},
+		{
+			# 玄火焚天，群攻並引燃蠱毒。
+			"id": "fentian_zhu",
+			"display_name": "焚天珠",
+			"rarity": "rare",
+			"description": "對所有敵人各造成 18 點傷害，並施加 2 層蠱毒。",
+			"effects": [{"kind": "damage_all", "amount": 18}, {"kind": "poison_all", "amount": 2}]
 		},
 		{
 			"id": "jiedu_cao",

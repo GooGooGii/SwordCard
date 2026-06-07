@@ -511,7 +511,9 @@ match version:
 | 同格疊放 | **不允許**（每格只能放 1 瓶） |
 | Save | `RunState.potions: Array[Dictionary]`，存 id + 暫無其他欄位 |
 
-### PAL1 藥品參考
+### 藥品清單（共 31 種；single source = `scripts/potion_catalog.gd`）
+
+下表須與 `PotionCatalog.all()` 同步；新增 / 改藥時兩邊一起改。
 
 | 藥品名 | 效果 | 稀有度 |
 |---|---|---|
@@ -519,12 +521,38 @@ match version:
 | 靈力丹 | 本回合靈力 +2 | common |
 | 護體符 | 獲得 10 護體 | common |
 | 解毒散 | 清除所有蠱毒 | common |
+| 麝香丸 | 清除所有負面狀態 | common |
+| 雄膽酒 | 攻擊力 +2，但受 1 層虛弱 | common |
+| 血海丹 | 回復 8 HP ＋ 5 護體 | common |
+| 天師符 | 對敵造成 10 傷害 ＋ 1 破綻 ＋ 1 虛弱（攻擊型） | common |
+| 霹靂子 | 對單一敵人造成 12 傷害（攻擊型） | common |
+| 解毒草 | 清除所有蠱毒 ＋ 回復 3 HP | common |
 | 靈蛇膽 | 施加敵人 3 層破綻 | uncommon |
 | 虎骨酒 | 本場戰鬥攻擊力 +3（power） | uncommon |
 | 金瘡藥 | 回復 30 HP | uncommon |
+| 仙茶散 | 抽 2 張牌 | uncommon |
+| 靈芝丹 | 本回合靈力 +1 ＋ 抽 1 張牌 | uncommon |
+| 伏魔香 | 所有敵人 2 層虛弱（AOE） | uncommon |
+| 山花蜜酒 | 全隊回復 10 HP | uncommon |
+| 毒活丸 | 所有敵人 3 層蠱毒（AOE） | uncommon |
+| 火靈珠 | 對單一敵人造成 20 火傷（攻擊型） | uncommon |
+| 雷靈珠 | 對所有敵人各造成 11 雷傷（攻擊型 AOE） | uncommon |
 | 天靈丹 | 回復 50 HP | rare |
-| 仙人遺血 | 回復 40 HP＋本場攻擊力 +2 | rare |
-| 月魂草 | 抽 3 張牌＋本回合靈力 +1 | rare |
+| 仙人遺血 | 回復 40 HP ＋ 本場攻擊力 +2 | rare |
+| 月魂草 | 抽 3 張牌 ＋ 本回合靈力 +1 | rare |
+| 百花仙釀 | 回復 25 HP ＋ 清除所有蠱毒 | rare |
+| 九節菖蒲 | 救回第一個倒下後排（回 15 HP）；無人倒下則自回 15 HP | rare |
+| 龍涎石 | 獲得 25 護體 | rare |
+| 神仙茶 | 本回合靈力 +3 | rare |
+| 紫金丹 | 全隊回復 20 HP ＋ 清除所有負面狀態 | rare |
+| 女媧玉露 | 回復 30 HP ＋ 本場攻擊力 +3 | rare |
+| 金蠶王 | 當前角色等級 +1，立即習得該等級招式 | rare |
+| 焚天珠 | 對所有敵人各造成 18 傷害 ＋ 2 蠱毒（攻擊型 AOE） | rare |
+
+對應 effect kind：`damage` / `damage_all` / `heal` / `heal_party` / `energy` / `block` /
+`power` / `draw` / `cure_poison` / `cure_debuff` / `vulnerable` / `weak` / `weak_all` /
+`poison_all` / `revive` / `level_up`。戰鬥外可用性由 `PotionCatalog.usable_outside_battle()` 判定
+（含 `heal` / `heal_party` / `max_hp` / `level_up` 等戰鬥外仍有價值的 kind）。
 
 ### 資料模型
 
@@ -632,7 +660,7 @@ func resolve_effects_list(effects: Array, state: Dictionary) -> Array[String]:
 
 | Phase | 內容 | 狀態 |
 |---|---|---|
-| 1. 資料層 | `potion_catalog.gd`（11 種藥）＋ `RunState.potions` + to/from_dict | ✅ 完成 |
+| 1. 資料層 | `potion_catalog.gd`（31 種藥）＋ `RunState.potions` + to/from_dict | ✅ 完成 |
 | 2. EffectResolver | `resolve_effects_list()` helper + `cure_poison` kind | ✅ 完成 |
 | 3. 戰鬥 UI | left_dock 藥格列 + `_use_potion()` + 確認 overlay + 戰鬥外 `_potion_overlay` | ✅ 完成 |
 | 4. 商店整合 | `ShopInventory.build_potions()` + 商店藥品列 + 購買確認 + 丟棄功能 | ✅ 完成 |
@@ -641,7 +669,7 @@ func resolve_effects_list(effects: Array, state: Dictionary) -> Array[String]:
 
 ### Smoke test 覆蓋
 
-- `_test_potion_catalog` — 11 種藥都有 id / display_name / effects，PotionCatalog.by_id 能找到
+- `_test_potion_catalog` — 31 種藥都有 id / display_name / effects，PotionCatalog.by_id 能找到
 - `_test_potion_save_roundtrip` — RunState 放 2 瓶藥 → to_dict → from_dict → 藥品保留
 - `_test_potion_use_heal` — 戰鬥 state 接 resolve_effects_list(heal 15) → player_hp 正確增加
 - `_test_potion_cure_poison` — 有 3 層蠱毒 → 使用解毒散 → player_poison = 0

@@ -3770,6 +3770,11 @@ func _complete_battle_victory() -> void:
 			boss_id_for_drop = defeated_e.id
 			break
 	if was_boss:
+		# 最終 boss（第八幕拜月教主）擊敗 = 直接通關，不再給任何戰利品（遺物/藥品/稀有卡）
+		if run_state.act >= 8:
+			run_state.encounter_index = run_state.encounter_index + 1
+			show_result(true)
+			return
 		# Event Branching P5：boss 勝利補 1 個 observe token
 		run_state.grant_observe_tokens(RunState.OBSERVE_TOKEN_BOSS_REWARD)
 		var choices: Array[RelicData] = _make_boss_relic_choices(boss_id_for_drop)
