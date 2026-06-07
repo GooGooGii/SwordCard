@@ -104,13 +104,13 @@ static func enemies_for_act(act: int) -> Array[EnemyData]:
 
 static func boss_for_act(act: int) -> EnemyData:
 	match act:
-		1: return _red_eye_demon()      # 餘杭山間：赤眼山魈
+		1: return _red_eye_demon()      # 餘杭山間：蛇妖男（以隱龍窟正史 boss 代替原創山魈）
 		2: return _miao_chieftain()     # 仙靈島：黑苗頭領（正史·血洗仙靈島擄靈兒）
-		3: return _zombie_general()     # 蘇州城：殭屍大帥
-		4: return _tomb_general()       # 將軍塚：塚中亡將
-		5: return _witch_queen()        # 試煉窟：山靈巫后
+		3: return _zombie_general()     # 蘇州城：殭屍王
+		4: return _tomb_general()       # 將軍塚：赤鬼王
+		5: return _witch_queen()        # 試煉窟：火麒麟
 		6: return _zhenyu_mingwang()    # 鎖妖塔：鎮獄明王（正史）
-		7: return _centipede_lord()     # 苗疆蠱土：蜈蚣大王
+		7: return _centipede_lord()     # 苗疆蠱土：石長老
 		8: return _baiyue_lord()        # 拜月決戰：拜月教主 → 水魔獸（phase 2）
 	return _red_eye_demon()
 
@@ -902,78 +902,77 @@ static func _moon_worshipper() -> EnemyData:
 static func _centipede_lord() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "centipede_lord"
-	enemy.portrait_scale = 1.45  # boss：巨型蠱蟲
-	enemy.display_name = "蜈蚣大王"
+	enemy.portrait_scale = 1.25  # boss：石長老（暫沿用舊圖，後續補正專屬立繪）
+	enemy.display_name = "石長老"
 	enemy.max_hp = 108
 	enemy.portrait_path = "res://assets/art/enemies/centipede_lord.png"
 	enemy.default_facing_left = true
 	enemy.actions = [
-		{"intent": "多足踏擊 7x4", "effects": [
-			{"kind": "damage", "amount": 7},
-			{"kind": "damage", "amount": 7},
-			{"kind": "damage", "amount": 7},
-			{"kind": "damage", "amount": 7}
-		]},
-		{"intent": "毒尾掃 16 + 蠱毒 4", "effects": [
-			{"kind": "damage", "amount": 16},
-			{"kind": "poison", "amount": 4}
-		]},
-		{"intent": "蜷甲防禦 18", "effects": [{"kind": "block", "amount": 18}]},
-		{"intent": "蝕骨蝕魂 24 + 虛弱 1", "effects": [
-			{"kind": "damage", "amount": 24},
-			{"kind": "weak", "amount": 1}
-		]}
-	]
-	enemy.phase_2_actions = [
-		{"intent": "怒爪掃 9x4", "effects": [
-			{"kind": "damage", "amount": 9},
+		{"intent": "苗刀連斬 9x3", "effects": [
 			{"kind": "damage", "amount": 9},
 			{"kind": "damage", "amount": 9},
 			{"kind": "damage", "amount": 9}
 		]},
-		{"intent": "噬魂咒 29", "effects": [{"kind": "damage", "amount": 29}]},
-		{"intent": "毒霧 蠱毒 6 + 破綻 2", "effects": [
+		{"intent": "毒砂掌 17 + 蠱毒 4", "effects": [
+			{"kind": "damage", "amount": 17},
+			{"kind": "poison", "amount": 4}
+		]},
+		{"intent": "黑苗軍陣 18", "effects": [{"kind": "block", "amount": 18}]},
+		{"intent": "攝魂咒 24 + 虛弱 1", "effects": [
+			{"kind": "damage", "amount": 24},
+			{"kind": "weak", "amount": 1}
+		]}
+	]
+	enemy.phase_2_display_name = "赤血毒焰"
+	enemy.phase_2_actions = [
+		{"intent": "赤血烈掌 10x3", "effects": [
+			{"kind": "damage", "amount": 10},
+			{"kind": "damage", "amount": 10},
+			{"kind": "damage", "amount": 10}
+		]},
+		{"intent": "虯龍拳 29", "effects": [{"kind": "damage", "amount": 29}]},
+		{"intent": "毒焰爆散 蠱毒 6 + 破綻 2", "effects": [
 			{"kind": "poison", "amount": 6},
 			{"kind": "vulnerable", "amount": 2}
 		]},
-		{"intent": "召喚蜈蚣幼蟲", "effects": [{"kind": "summon", "count": 1}]}
+		{"intent": "召喚苗槍卒", "effects": [{"kind": "summon", "count": 1}]}
 	]
-	enemy.summon_pool = ["centipede_brood"]
+	enemy.summon_pool = ["miao_soldier"]
 	return enemy
 
 static func _witch_queen() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "witch_queen"
-	enemy.portrait_scale = 1.3  # boss：山靈巫后
-	enemy.display_name = "山靈巫后"
+	enemy.portrait_scale = 1.3  # boss：火麒麟（暫沿用舊圖，後續補正專屬立繪）
+	enemy.display_name = "火麒麟"
 	enemy.max_hp = 92
 	enemy.portrait_path = "res://assets/art/enemies/witch_queen.png"
 	enemy.default_facing_left = true
 	enemy.actions = [
-		{"intent": "蠱咒 蠱毒 6", "effects": [{"kind": "poison", "amount": 6}]},
-		{"intent": "詛咒 虛弱 3", "effects": [{"kind": "weak", "amount": 3}]},
-		{"intent": "邪結界 16", "effects": [{"kind": "block", "amount": 16}]},
-		{"intent": "魂噬 20 + 蠱毒 3", "effects": [
+		{"intent": "麒麟火 18", "effects": [{"kind": "damage", "amount": 18}]},
+		{"intent": "炎息 虛弱 2", "effects": [{"kind": "damage", "amount": 12}, {"kind": "weak", "amount": 2}]},
+		{"intent": "火靈護體 16", "effects": [{"kind": "block", "amount": 16}]},
+		{"intent": "烈焰撲殺 20 + 破綻 1", "effects": [
 			{"kind": "damage", "amount": 20},
-			{"kind": "poison", "amount": 3}
+			{"kind": "vulnerable", "amount": 1}
 		]}
 	]
+	enemy.phase_2_display_name = "火眼麒麟"
 	enemy.phase_2_actions = [
-		{"intent": "山靈怒火 26 + 虛弱 1", "effects": [
+		{"intent": "真火燎原 26 + 虛弱 1", "effects": [
 			{"kind": "damage", "amount": 26},
 			{"kind": "weak", "amount": 1}
 		]},
-		{"intent": "蠱噬 蠱毒 7 + 破綻 2", "effects": [
-			{"kind": "poison", "amount": 7},
+		{"intent": "爆炎奔襲 21 + 破綻 2", "effects": [
+			{"kind": "damage", "amount": 21},
 			{"kind": "vulnerable", "amount": 2}
 		]},
-		{"intent": "邪音咒 16 + 破綻 3", "effects": [
+		{"intent": "焚天怒吼 16 + 破綻 3", "effects": [
 			{"kind": "damage", "amount": 16},
 			{"kind": "vulnerable", "amount": 3}
 		]},
-		{"intent": "召喚鎖妖塔殘魂", "effects": [{"kind": "summon", "count": 1}]}
+		{"intent": "地火護身 22", "effects": [{"kind": "block", "amount": 22}]}
 	]
-	enemy.summon_pool = ["tower_wisp"]
 	return enemy
 
 static func _zombie_soldier() -> EnemyData:
@@ -1065,31 +1064,31 @@ static func _ancient_evil_spirit() -> EnemyData:
 static func _red_eye_demon() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "red_eye_demon"
-	enemy.portrait_scale = 1.3  # boss：赤眼山魈
-	enemy.display_name = "赤眼山魈"
+	enemy.portrait_scale = 1.3  # boss：蛇妖男（phase 2 對位狐妖女）
+	enemy.display_name = "蛇妖男"
 	enemy.max_hp = 95
 	enemy.portrait_path = "res://assets/art/enemies/red_eye_demon.png"
 	enemy.default_facing_left = true
 	enemy.actions = [
-		{"intent": "爪擊 14", "effects": [{"kind": "damage", "amount": 14}]},
-		{"intent": "怒吼 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]},
-		{"intent": "血眼撲擊 17 + 破綻 1", "effects": [{"kind": "damage", "amount": 17}, {"kind": "vulnerable", "amount": 1}]},
-		{"intent": "山魈跳踏 10+10", "effects": [{"kind": "damage", "amount": 10}, {"kind": "damage", "amount": 10}]}
+		{"intent": "妖蛇噬咬 14 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 14}, {"kind": "poison", "amount": 2}]},
+		{"intent": "蛇息纏身 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]},
+		{"intent": "尾掃 17 + 破綻 1", "effects": [{"kind": "damage", "amount": 17}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "盤身絞殺 10+10", "effects": [{"kind": "damage", "amount": 10}, {"kind": "damage", "amount": 10}]}
 	]
+	enemy.phase_2_display_name = "狐妖女"
 	enemy.phase_2_actions = [
-		{"intent": "赤眼怒火 21 + 虛弱 1", "effects": [{"kind": "damage", "amount": 21}, {"kind": "weak", "amount": 1}]},
-		{"intent": "血月衝擊 26", "effects": [{"kind": "damage", "amount": 26}]},
-		{"intent": "群怪呼嘯 18 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 18}, {"kind": "poison", "amount": 2}]},
-		{"intent": "召喚赤眼幼魈", "effects": [{"kind": "summon", "count": 1}]}
+		{"intent": "狐火魅襲 21 + 虛弱 1", "effects": [{"kind": "damage", "amount": 21}, {"kind": "weak", "amount": 1}]},
+		{"intent": "妖狐幻爪 26", "effects": [{"kind": "damage", "amount": 26}]},
+		{"intent": "魅香 蠱毒 4 + 破綻 2", "effects": [{"kind": "poison", "amount": 4}, {"kind": "vulnerable", "amount": 2}]},
+		{"intent": "妖霧護身 18", "effects": [{"kind": "block", "amount": 18}]}
 	]
-	enemy.summon_pool = ["red_eye_imp"]
 	return enemy
 
 static func _zombie_general() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "zombie_general"
-	enemy.portrait_scale = 1.35  # boss：殭屍大帥
-	enemy.display_name = "殭屍大帥"
+	enemy.portrait_scale = 1.35  # boss：殭屍王
+	enemy.display_name = "殭屍王"
 	enemy.max_hp = 106
 	enemy.portrait_path = "res://assets/art/enemies/zombie_general.png"
 	enemy.default_facing_left = true
@@ -1175,28 +1174,27 @@ static func _miao_soldier() -> EnemyData:
 	]
 	return enemy
 
-# 將軍塚 boss（第四幕）：塚中沉睡的亡將魂魄，呼應 PAL1 將軍塚試煉。
+# 將軍塚 boss（第四幕）：PAL1 正史赤鬼王，盤據血池、以妖血邪法吞魂。
 static func _tomb_general() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "tomb_general"
-	enemy.portrait_scale = 1.4  # boss：塚中亡將
-	enemy.display_name = "塚中亡將"
+	enemy.portrait_scale = 1.4  # boss：赤鬼王（暫沿用舊圖，後續補正專屬立繪）
+	enemy.display_name = "赤鬼王"
 	enemy.max_hp = 110
 	enemy.portrait_path = "res://assets/art/enemies/tomb_general.png"
 	enemy.default_facing_left = true
 	enemy.actions = [
-		{"intent": "亡將揮戈 18", "effects": [{"kind": "damage", "amount": 18}]},
-		{"intent": "怨魂哀嚎 虛弱 2 + 破綻 1", "effects": [{"kind": "weak", "amount": 2}, {"kind": "vulnerable", "amount": 1}]},
-		{"intent": "塚甲不朽 20", "effects": [{"kind": "block", "amount": 20}]},
-		{"intent": "陰兵突陣 14 + 14", "effects": [{"kind": "damage", "amount": 14}, {"kind": "damage", "amount": 14}]}
+		{"intent": "血爪 18", "effects": [{"kind": "damage", "amount": 18}]},
+		{"intent": "奪魂咒 虛弱 2 + 破綻 1", "effects": [{"kind": "weak", "amount": 2}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "血池妖氣 20", "effects": [{"kind": "block", "amount": 20}]},
+		{"intent": "飛岩術 14 + 14", "effects": [{"kind": "damage", "amount": 14}, {"kind": "damage", "amount": 14}]}
 	]
 	enemy.phase_2_actions = [
-		{"intent": "戰魂暴怒 28 + 虛弱 1", "effects": [{"kind": "damage", "amount": 28}, {"kind": "weak", "amount": 1}]},
-		{"intent": "黃泉索命 22 + 破綻 2", "effects": [{"kind": "damage", "amount": 22}, {"kind": "vulnerable", "amount": 2}]},
-		{"intent": "召喚殭屍奴", "effects": [{"kind": "summon", "count": 1}]},
-		{"intent": "塚域崩裂 34", "effects": [{"kind": "damage", "amount": 34}]}
+		{"intent": "血魔神功 28 + 虛弱 1", "effects": [{"kind": "damage", "amount": 28}, {"kind": "weak", "amount": 1}]},
+		{"intent": "炎咒 22 + 破綻 2", "effects": [{"kind": "damage", "amount": 22}, {"kind": "vulnerable", "amount": 2}]},
+		{"intent": "血池翻湧 蠱毒 6", "effects": [{"kind": "poison", "amount": 6}]},
+		{"intent": "妖血崩裂 34", "effects": [{"kind": "damage", "amount": 34}]}
 	]
-	enemy.summon_pool = ["zombie_thrall"]
 	return enemy
 
 # 鎖妖塔 boss（第六幕）：PAL1 正史鎮獄明王，鎮守鎖妖塔、揭露靈兒人蛇身世之地。
