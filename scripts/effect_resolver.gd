@@ -98,6 +98,10 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 	match kind:
 		"damage":
 			if from_enemy:
+				# Ascension A2-4：敵人傷害倍率（一般/精英/boss），在 weak/vuln 前先放大基礎傷
+				var dmg_mult: float = float(state.get("enemy_damage_mult", 1.0))
+				if dmg_mult != 1.0:
+					amount = int(round(amount * dmg_mult))
 				var modified: int = max(0, amount - int(state["enemy_weak"]))
 				if int(state["player_vulnerable"]) > 0:
 					modified = int(ceil(modified * 1.5))

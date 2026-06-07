@@ -2247,6 +2247,8 @@ func start_next_battle(enemies: Variant) -> void:
 			slot["max_hp"] = scaled_max
 			slot["hp"] = scaled_max
 		battle._sync_active_enemy_to_state()
+	# Ascension A2-4：敵人傷害倍率（精英尚未實作 → boss/一般兩級）
+	battle.state["enemy_damage_mult"] = Ascension.enemy_damage_multiplier(run_state.ascension_level, "boss" if is_boss else "normal")
 	battle_end_pending = false
 	_build_battle_scene()
 	_start_player_turn()

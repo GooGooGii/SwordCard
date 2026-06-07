@@ -170,6 +170,7 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"block_bonus": 0,
 		"heal_bonus": 0,
 		"poison_bonus": 0,
+		"enemy_damage_mult": 1.0,  # Ascension A2-4：敵人攻擊傷害倍率
 		"draw_next_turn_bonus": 0,
 		"card_played_counts": {},
 		"last_attacker_index": 0,  # 林月如反擊指向的敵人

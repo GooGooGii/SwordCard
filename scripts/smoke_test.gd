@@ -802,6 +802,17 @@ func _test_ascension_persistence_and_modifiers() -> void:
 	_check(Ascension.max_hp_flat_penalty(14) == 5, "A14 最大 HP -5")
 	_check(abs(Ascension.shop_price_multiplier(16) - 1.1) < 0.001, "A16 商店漲價")
 	_check(Ascension.double_boss(19) == false and Ascension.double_boss(20), "A20 雙 boss")
+	# enemy_damage_mult 實際在 from_enemy 傷害路徑生效
+	var dmg_rs: RunState = RunState.new()
+	dmg_rs.init_for(GameData.characters()[0])
+	var dmg_bc: BattleController = BattleController.new()
+	dmg_bc.setup(dmg_rs, GameData.characters()[0], GameData.enemies()[0].clone())
+	dmg_bc.start_turn()
+	dmg_bc.state["player_block"] = 0
+	dmg_bc.state["player_hp"] = 100
+	dmg_bc.state["enemy_damage_mult"] = 1.5
+	dmg_bc.resolver._resolve_effect({"kind": "damage", "amount": 10}, dmg_bc.state, true)
+	_check(int(dmg_bc.state["player_hp"]) == 85, "enemy_damage_mult 1.5: 10 dmg ->15 (100->85), got %d" % int(dmg_bc.state["player_hp"]))
 
 func _test_boss_phase_transition(bosses: Array[EnemyData]) -> void:
 	# 三個 boss 都該有 phase_2_actions 設定；damage 跌破 50% 後 phased 變 true

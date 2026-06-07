@@ -373,6 +373,7 @@ func _start_battle(enemies_in: Array) -> void:
 			slot["max_hp"] = sm
 			slot["hp"] = sm
 		battle._sync_active_enemy_to_state()
+	battle.state["enemy_damage_mult"] = Ascension.enemy_damage_multiplier(run_state.ascension_level, "boss" if is_boss else "normal")
 	_ctx = {"is_boss": is_boss, "turn": 0}
 	battle.start_turn()
 	_phase = "battle"
