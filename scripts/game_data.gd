@@ -66,7 +66,8 @@ static func enemies() -> Array[EnemyData]:
 		_jumping_frog(), _fire_kirin_whelp(), _ice_beast(), _man_eater_beast(), _two_headed_snake(),
 		_bee_cocoon(), _leaf_sprite(), _grass_sprite(), _thug(), _miao_maiden(),
 		_octopus_imp(), _clam_spirit(), _conch_maiden(), _turtle_demon(),
-		_gambler(), _lecher_thief(), _rat_demon(), _bully()]
+		_gambler(), _lecher_thief(), _rat_demon(), _bully(),
+		_earth_imp(), _blood_worm(), _venom_spider(), _fire_toad()]
 
 # === PAL1 對齊補充小怪（借用既有肖像，專屬美術見 ART_TODO） ===
 static func _bee_cocoon() -> EnemyData:
@@ -245,6 +246,62 @@ static func _bully() -> EnemyData:
 	]
 	return enemy
 
+# === 將軍塚 / 試煉窟補充小怪（PAL1 正史怪；借用既有肖像，專屬美術見 ART_TODO） ===
+static func _earth_imp() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "earth_imp"
+	enemy.portrait_scale = 0.82  # 小型：小土鬼（借 rock_guardian 圖）
+	enemy.display_name = "小土鬼"
+	enemy.max_hp = 46
+	enemy.portrait_path = "res://assets/art/enemies/earth_imp.png"
+	enemy.actions = [
+		{"intent": "泥拳 12", "effects": [{"kind": "damage", "amount": 12}]},
+		{"intent": "擲石 10 + 破綻 1", "effects": [{"kind": "damage", "amount": 10}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "遁土 10", "effects": [{"kind": "block", "amount": 10}]}
+	]
+	return enemy
+
+static func _blood_worm() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "blood_worm"
+	enemy.portrait_scale = 0.85  # 小型：血口蟲（借 toxic_centipede 圖）
+	enemy.display_name = "血口蟲"
+	enemy.max_hp = 52
+	enemy.portrait_path = "res://assets/art/enemies/blood_worm.png"
+	enemy.actions = [
+		{"intent": "吸血咬 13", "effects": [{"kind": "damage", "amount": 13}]},
+		{"intent": "血口噴 11 + 蠱毒 3", "effects": [{"kind": "damage", "amount": 11}, {"kind": "poison", "amount": 3}]},
+		{"intent": "蠕伏 9", "effects": [{"kind": "block", "amount": 9}]}
+	]
+	return enemy
+
+static func _venom_spider() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "venom_spider"
+	enemy.portrait_scale = 0.9  # 試煉窟：五毒蜘蛛（借 grass_spider 圖）
+	enemy.display_name = "五毒蜘蛛"
+	enemy.max_hp = 58
+	enemy.portrait_path = "res://assets/art/enemies/venom_spider.png"
+	enemy.actions = [
+		{"intent": "毒絲咬 12 + 蠱毒 3", "effects": [{"kind": "damage", "amount": 12}, {"kind": "poison", "amount": 3}]},
+		{"intent": "蛛網纏 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]},
+		{"intent": "疾爬 10", "effects": [{"kind": "block", "amount": 10}]}
+	]
+	return enemy
+
+static func _fire_toad() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "fire_toad"
+	enemy.display_name = "食火蟾"
+	enemy.max_hp = 64
+	enemy.portrait_path = "res://assets/art/enemies/fire_toad.png"
+	enemy.actions = [
+		{"intent": "噴火舌 16", "effects": [{"kind": "damage", "amount": 16}]},
+		{"intent": "灼毒 11 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 11}, {"kind": "poison", "amount": 2}]},
+		{"intent": "鼓腹 12", "effects": [{"kind": "block", "amount": 12}]}
+	]
+	return enemy
+
 static func bosses() -> Array[EnemyData]:
 	return [_moon_worshipper(), _centipede_lord(), _witch_queen(),
 		_red_eye_demon(), _zombie_general(), _baiyue_lord(),
@@ -275,8 +332,8 @@ static func enemies_for_act(act: int) -> Array[EnemyData]:
 		1: return [_bandit(), _beast(), _wild_bee(), _bee_cocoon(), _leaf_sprite(), _thief(), _viper(), _green_snake(), _grass_spider(), _lantern_ghost()] # 餘杭山間
 		2: return [_serpent_demon(), _fox_spirit(), _sword_spirit(), _cave_bat(), _water_imp(), _grass_sprite(), _miao_soldier(), _miao_maiden(), _viper(), _man_eating_flower(), _baby_toad()] # 仙靈島（黑苗血洗仙靈島，苗兵/苗女登場；樹妖移至第 7 幕）
 		3: return [_bandit(), _thug(), _thief(), _female_thief(), _cleaver_granny(), _gambler(), _lecher_thief(), _bully(), _rat_demon()] # 蘇州城（市井人類為主 + 城中鼠妖）
-		4: return [_zombie_soldier(), _ancient_evil_spirit(), _skeleton_soldier(), _grave_fire(), _cleaver_granny(), _flying_skull(), _vampire_giant()] # 將軍塚
-		5: return [_rock_guardian(), _trial_swordshade(), _jumping_frog(), _gourd_sage(), _scorpion(), _fire_kirin_whelp(), _ice_beast()] # 試煉窟（跳跳蛙為正史招牌怪；塔妖/刑天/無常只在鎖妖塔）
+		4: return [_zombie_soldier(), _ancient_evil_spirit(), _skeleton_soldier(), _grave_fire(), _earth_imp(), _blood_worm(), _cleaver_granny(), _flying_skull(), _vampire_giant()] # 將軍塚
+		5: return [_rock_guardian(), _trial_swordshade(), _jumping_frog(), _venom_spider(), _fire_toad(), _gourd_sage(), _scorpion(), _fire_kirin_whelp(), _ice_beast()] # 試煉窟（跳跳蛙/五毒蜘蛛/食火蟾為正史怪；塔妖/刑天/無常只在鎖妖塔）
 		6: return [_tower_demon(), _tower_ghost_soldier(), _ancient_evil_spirit(), _xing_tian(), _black_impermanence(), _white_impermanence(), _flying_skull(), _gourd_sage(), _five_eyed_demon(), _unicorn_demon(), _pincer_demon(), _jumping_frog()] # 鎖妖塔
 		7: return [_gu_cultist(), _miao_soldier(), _miao_maiden(), _serpent_demon(), _toxic_centipede(), _tree_demon(), _man_eating_flower(), _puppet_girl(), _birdman(), _demihuman_villager()] # 苗疆蠱土
 		8: return [_moon_worshipper(), _baiyue_guard(), _miao_soldier(), _miao_maiden(), _octopus_imp(), _clam_spirit(), _conch_maiden(), _turtle_demon(), _ancient_evil_spirit(), _puppet_girl()] # 拜月決戰（水底迷宮水族 + 拜月/黑苗）
