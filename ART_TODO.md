@@ -222,9 +222,9 @@
 |---|---|---|---|
 | `red_eye_demon` | 赤眼山魈 | 蛇妖男（phase 2：狐妖女） | 🟢 一階 + 二階新圖已補，`phase_2_portrait_path` 已接入 |
 | `zombie_general` | 殭屍大帥 | 殭屍王 | 🟡 名稱已校正，後續可再補更貼原作的新圖 |
-| `tomb_general` | 塚中亡將 | 赤鬼王 | 🟢 一階新圖已補；phase 2 仍可再補專屬圖 |
+| `tomb_general` | 塚中亡將 | 赤鬼王 | 🟡 一階新圖已補；phase 2 專屬圖待落檔到 `assets/art/enemies/tomb_general_phase2.png` |
 | `witch_queen` | 山靈巫后 | 火麒麟（phase 2：火眼麒麟） | 🟢 一階 + 二階新圖已補，`phase_2_portrait_path` 已接入 |
-| `centipede_lord` | 蜈蚣大王 | 石長老 | 🟢 一階新圖已補；phase 2 仍可再補專屬圖 |
+| `centipede_lord` | 蜈蚣大王 | 石長老 | 🟡 一階新圖已補；phase 2 專屬圖待落檔到 `assets/art/enemies/centipede_lord_phase2.png` |
 
 相關程式位置：
 - `scripts/game_data.gd`：boss 對位名稱、招式文案、phase 2 顯示名與換圖路徑
@@ -287,7 +287,21 @@
 
 ---
 
+## 八、UI / 地圖節點圖示（🟡 待補）
+
+地圖節點圖示由 `scripts/map_node_icon.gd` 繪製：優先載入 `res://assets/ui/node_<type>.png`，
+找不到才用程式繪製的 fallback。下列為**目前用 fallback、待補專屬 icon** 的需求：
+
+| 檔名 | 用途 | 目前狀態 | 風格建議 |
+|---|---|---|---|
+| `assets/ui/node_elite.png` | 精英節點（A1/A3/A8 難度新增）| 🟡 暫用 boss 同款骷髏繪製 | 比一般戰鬥兇、比 boss 小一級的精英標誌（如染血刀劍 / 妖將面具 / 紅骷髏），與既有節點 icon 風格一致，需與 boss（骷髏）有辨識區別 |
+
+> 補圖後執行 `godot --headless --path . --import` 重匯入即生效；`map_node_icon._load_node_texture()`
+> 會自動優先採用。legend 顏色已設為 `Color("e2728c")`（暗紅）、節點標記為「精」。
+
+---
+
 ## 補圖規格
 
-- 格式：PNG，存於 `assets/art/cards/<id>.png`（卡圖）或 `assets/art/<檔名>.png`（背景）
+- 格式：PNG，存於 `assets/art/cards/<id>.png`（卡圖）或 `assets/art/<檔名>.png`（背景）；UI 圖示存 `assets/ui/<檔名>.png`
 - 完成後補 `.import` 配置（`godot --headless --path . --import`）
