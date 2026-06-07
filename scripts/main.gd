@@ -2273,6 +2273,7 @@ func start_next_battle(enemies: Variant, is_elite: bool = false) -> void:
 		battle._sync_active_enemy_to_state()
 	# Ascension A2-4：敵人傷害倍率（一般/精英/boss）
 	battle.state["enemy_damage_mult"] = Ascension.enemy_damage_multiplier(run_state.ascension_level, enemy_tier)
+	battle.state["battle_is_elite"] = is_elite  # 供 A18 招式判斷 tier
 	battle_end_pending = false
 	_build_battle_scene()
 	_start_player_turn()
@@ -4045,6 +4046,14 @@ func _make_reward_choices() -> Array[CardData]:
 		var cl_pool: Array[CardData] = GameData.colorless_cards()
 		if not cl_pool.is_empty():
 			rewards[randi() % rewards.size()] = (cl_pool[randi() % cl_pool.size()] as CardData).clone()
+	# 獎勵卡有機率以「升級版」出現（act 越後越常見）；Ascension A12 把此機率減半。
+	var up_base: float = (0.0 if run_state.act <= 1 else (0.15 if run_state.act <= 3 else 0.25))
+	var up_chance: float = Ascension.reward_upgrade_chance(run_state.ascension_level, up_base)
+	if up_chance > 0.0:
+		for i: int in range(rewards.size()):
+			var rc: CardData = rewards[i]
+			if not rc.upgraded and rc.card_type != "curse" and randf() < up_chance:
+				rewards[i] = rc.upgraded_copy()
 	return rewards
 
 func choose_reward_card(card: CardData) -> void:
@@ -4567,6 +4576,19 @@ func _event_show_observe(event_data: Dictionary, _sub_stage: String) -> void:
 #   gold            — ±銅錢
 #   max_hp          — 永久 max_hp +/-（增加時當前 HP 同步增加；減少時 clamp）
 #   power           — 永久 power_bonus +/-（影響本 run 後續所有戰鬥）
+# Ascension A15：奇遇結果更糟——增益(heal/gold+/power+/max_hp+) ×0.75、傷害/扣損 ×1.25
+func _ascension_event_amount(kind: String, amount: int) -> int:
+	if run_state == null:
+		return amount
+	var asc: int = run_state.ascension_level
+	if kind == "damage":
+		return int(ceil(amount * Ascension.event_penalty_multiplier(asc)))
+	if kind == "heal" or kind == "heal_party" or ((kind == "gold" or kind == "power" or kind == "permanent_power" or kind == "max_hp") and amount > 0):
+		return int(floor(amount * Ascension.event_reward_multiplier(asc)))
+	if kind == "gold" and amount < 0:
+		return int(floor(amount * Ascension.event_penalty_multiplier(asc)))
+	return amount
+
 func _resolve_observe_effects(effects: Array) -> String:
 	_pending_card_confirmations.clear()
 	_pending_item_reveals.clear()
@@ -4579,6 +4601,7 @@ func _resolve_observe_effects(effects: Array) -> String:
 		var effect: Dictionary = entry as Dictionary
 		var kind: String = String(effect.get("kind", ""))
 		var amount: int = int(effect.get("amount", 0))
+		amount = _ascension_event_amount(kind, amount)  # A15：奇遇增益↓ / 扣損↑
 		match kind:
 			"heal":
 				if amount > 0:

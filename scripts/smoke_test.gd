@@ -164,6 +164,8 @@ func _initialize() -> void:
 	_test_summon_unknown_id(characters, enemies)
 	_test_summon_from_boss_pool(characters)
 	_test_stun(characters, enemies)
+	_test_silence(characters)
+	_test_berserk(characters)
 	# 連擊 multi-hit（阿奴刀流 / 引擎地基）
 	_test_multi_hit_damage(characters, enemies)
 	_test_anu_blade_cards(characters)
@@ -806,6 +808,33 @@ func _test_ascension_persistence_and_modifiers() -> void:
 	pot_rs.ascension_level = 11
 	_check(pot_rs.effective_potion_slots() == 2, "A11 有效藥格 2")
 	_check(Ascension.boss_gold_multiplier(12) == 1.0 and Ascension.boss_gold_multiplier(13) == 0.75, "A13 boss 金 -25%")
+	# A12 升級卡機率減半 / A15 奇遇增減益 / A17-19 招式更刁
+	_check(abs(Ascension.reward_upgrade_chance(11, 0.2) - 0.2) < 0.001, "A11 不影響升級卡機率")
+	_check(abs(Ascension.reward_upgrade_chance(12, 0.2) - 0.1) < 0.001, "A12 升級卡機率減半")
+	_check(abs(Ascension.event_reward_multiplier(15) - 0.75) < 0.001 and abs(Ascension.event_penalty_multiplier(15) - 1.25) < 0.001, "A15 奇遇增減益")
+	_check(Ascension.harder_movesets(16, "normal") == false and Ascension.harder_movesets(17, "normal"), "A17 一般敵招式")
+	_check(Ascension.harder_movesets(17, "elite") == false and Ascension.harder_movesets(18, "elite"), "A18 精英招式")
+	_check(Ascension.harder_movesets(18, "boss") == false and Ascension.harder_movesets(19, "boss"), "A19 boss 招式")
+	# A17 功能性：高難度下 _action_for_enemy 改挑最高傷害招式
+	var mv_rs: RunState = RunState.new()
+	mv_rs.init_for(GameData.characters()[0])
+	mv_rs.ascension_level = 17
+	var mv_enemy: EnemyData = EnemyData.new()
+	mv_enemy.id = "t_mv"
+	mv_enemy.display_name = "測試敵"
+	mv_enemy.max_hp = 50
+	mv_enemy.actions = [
+		{"intent": "defend", "effects": [{"kind": "block", "amount": 5}]},
+		{"intent": "attack", "effects": [{"kind": "damage", "amount": 99}]},
+	]
+	var mv_bc: BattleController = BattleController.new()
+	mv_bc.setup(mv_rs, GameData.characters()[0], mv_enemy)
+	var picked_mv: Dictionary = mv_bc._action_for_enemy(0)
+	var picked_dmg: int = 0
+	for ef: Dictionary in (picked_mv.get("effects", []) as Array):
+		if String(ef.get("kind", "")) == "damage":
+			picked_dmg = int(ef.get("amount", 0))
+	_check(picked_dmg == 99, "A17 招式更刁：應挑 99 傷招式（非照表第一招），got %d" % picked_dmg)
 	_check(Ascension.max_hp_flat_penalty(14) == 5, "A14 最大 HP -5")
 	_check(abs(Ascension.shop_price_multiplier(16) - 1.1) < 0.001, "A16 商店漲價")
 	_check(Ascension.double_boss(19) == false and Ascension.double_boss(20), "A20 雙 boss")
@@ -2030,6 +2059,64 @@ func _test_stun(characters: Array[CharacterData], enemies: Array[EnemyData]) -> 
 	bc.resolve_enemy_phase(actions)
 	_check(int((bc.state["enemies"][0] as Dictionary).get("stunned", 0)) == 0, "stun should decrement to 0 after the skipped turn")
 	_check(int(bc.state["player_hp"]) == hp_before, "player should take no damage from a stunned enemy")
+
+func _test_silence(characters: Array[CharacterData]) -> void:
+	# 禁言：無傷害的法術招被跳過，攻擊招仍可施放
+	var dummy: EnemyData = EnemyData.new()
+	dummy.id = "silence_dummy"
+	dummy.display_name = "木樁"
+	dummy.max_hp = 60
+	dummy.actions = [
+		{"intent": "施法", "effects": [{"kind": "block", "amount": 5}]},   # 非攻擊
+		{"intent": "揮擊", "effects": [{"kind": "damage", "amount": 6}]},  # 攻擊
+	]
+	var bc: BattleController = _make_multi_battle(characters[0], [dummy])
+	bc.start_turn()
+	bc.resolver.resolve_effects_list([{"kind": "silence", "amount": 2}], bc.state)
+	bc._sync_state_to_active_enemy()
+	_check(int((bc.state["enemies"][0] as Dictionary).get("silenced", 0)) == 2, "silence should set silenced = 2")
+	# 第 1 招（block，非攻擊）→ 被禁言跳過
+	var actions1: Array[Dictionary] = bc.begin_enemy_phase()
+	_check(actions1.size() >= 1 and actions1[0].is_empty(), "silenced enemy should skip a non-attack (spell) action")
+	# 第 2 招（damage，攻擊）→ 禁言仍 1 層但攻擊招可施放
+	var actions2: Array[Dictionary] = bc.begin_enemy_phase()
+	_check(actions2.size() >= 1 and not actions2[0].is_empty(), "silenced enemy can still use an attack action")
+	_check(CardFormat.action_has_damage(actions2[0]), "allowed action under silence should be the attack")
+
+func _test_berserk(characters: Array[CharacterData]) -> void:
+	# 瘋魔：失控攻擊者隨機目標（玩家 / 友軍敵人）或 25% 呆立。120 次取樣應三種結果都出現。
+	var atk: EnemyData = EnemyData.new()
+	atk.id = "berserk_attacker"
+	atk.display_name = "狂徒"
+	atk.max_hp = 40
+	atk.actions = [{"intent": "猛擊", "effects": [{"kind": "damage", "amount": 8}]}]
+	var ally: EnemyData = EnemyData.new()
+	ally.id = "berserk_ally"
+	ally.display_name = "同夥"
+	ally.max_hp = 300
+	ally.actions = [{"intent": "戒備", "effects": [{"kind": "block", "amount": 1}]}]
+	var saw_nothing: bool = false
+	var saw_hit_ally: bool = false
+	var saw_hit_player: bool = false
+	for _n: int in range(120):
+		var bc: BattleController = _make_multi_battle(characters[0], [atk, ally])
+		bc.start_turn()
+		bc.resolver.resolve_effects_list([{"kind": "berserk", "amount": 1}], bc.state)
+		bc._sync_state_to_active_enemy()
+		var ally_before: int = int((bc.state["enemies"][1] as Dictionary)["hp"])
+		var player_before: int = int(bc.state["player_hp"])
+		bc.resolve_enemy_phase(bc.begin_enemy_phase())
+		var ally_after: int = int((bc.state["enemies"][1] as Dictionary)["hp"])
+		var player_after: int = int(bc.state["player_hp"])
+		if ally_after < ally_before:
+			saw_hit_ally = true
+		elif player_after < player_before:
+			saw_hit_player = true
+		else:
+			saw_nothing = true
+	_check(saw_hit_ally, "berserk enemy should sometimes hit an ally enemy (friendly fire)")
+	_check(saw_hit_player, "berserk enemy should sometimes hit the player")
+	_check(saw_nothing, "berserk enemy should sometimes do nothing (~25%)")
 
 func _test_summon_basic(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
 	# spawn_enemy("water_tentacle") → enemies +1，state["enemies"] +1

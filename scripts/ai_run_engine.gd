@@ -384,6 +384,7 @@ func _start_battle(enemies_in: Array, is_elite: bool = false) -> void:
 			slot["hp"] = sm
 		battle._sync_active_enemy_to_state()
 	battle.state["enemy_damage_mult"] = Ascension.enemy_damage_multiplier(run_state.ascension_level, enemy_tier)
+	battle.state["battle_is_elite"] = is_elite  # 供 A18 招式判斷 tier
 	_ctx = {"is_boss": is_boss, "is_elite": is_elite, "turn": 0}
 	battle.start_turn()
 	_phase = "battle"
@@ -687,6 +688,14 @@ func _make_reward_choices(boss_card: bool) -> Array:
 		var cl: Array[CardData] = GameData.colorless_cards()
 		if not cl.is_empty():
 			rewards[randi() % rewards.size()] = (cl[randi() % cl.size()] as CardData).clone()
+	# 獎勵卡有機率以「升級版」出現（act 越後越常見）；Ascension A12 把此機率減半。
+	var up_base: float = (0.0 if run_state.act <= 1 else (0.15 if run_state.act <= 3 else 0.25))
+	var up_chance: float = Ascension.reward_upgrade_chance(run_state.ascension_level, up_base)
+	if up_chance > 0.0:
+		for i: int in range(rewards.size()):
+			var rc: CardData = rewards[i] as CardData
+			if not rc.upgraded and rc.card_type != "curse" and randf() < up_chance:
+				rewards[i] = rc.upgraded_copy()
 	return rewards
 
 func _view_reward() -> Dictionary:
@@ -900,6 +909,14 @@ func _apply_event_effects(effects: Array) -> String:
 		var e: Dictionary = entry as Dictionary
 		var kind: String = String(e.get("kind", ""))
 		var amount: int = int(e.get("amount", 0))
+		# Ascension A15：奇遇結果更糟——增益 ×0.75、傷害/扣損 ×1.25
+		var asc15: int = run_state.ascension_level
+		if kind == "damage":
+			amount = int(ceil(amount * Ascension.event_penalty_multiplier(asc15)))
+		elif kind == "heal" or kind == "heal_party" or ((kind == "gold" or kind == "power" or kind == "permanent_power" or kind == "max_hp") and amount > 0):
+			amount = int(floor(amount * Ascension.event_reward_multiplier(asc15)))
+		elif kind == "gold" and amount < 0:
+			amount = int(floor(amount * Ascension.event_penalty_multiplier(asc15)))
 		match kind:
 			"heal":
 				run_state.hp = min(run_state.max_hp, run_state.hp + amount); parts.append("heal %d" % amount)

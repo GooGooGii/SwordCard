@@ -125,6 +125,8 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 			"weak": 0,
 			"vulnerable": 0,
 			"stunned": 0,
+			"silenced": 0,
+			"berserk": 0,
 			"loot_table": GameData.loot_table_for(e.id),
 		})
 	var active_idx: int = 0
@@ -149,6 +151,8 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"enemy_weak": 0,
 		"enemy_vulnerable": 0,
 		"enemy_stunned": 0,
+		"enemy_silenced": 0,
+		"enemy_berserk": 0,
 		"enemy_loot_table": enemy_slots[active_idx]["loot_table"],
 		"energy": per_turn_energy,
 		"pending_draw": 0,
@@ -164,7 +168,7 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"end_turn_damage": 0,  # 五雷轟頂（Combust）：回合結束對全體敵人造成 N 傷害
 		"next_attack_mult": 1,  # 蓄劍式（Vigor）：下一張攻擊傷害倍率（damage 路徑消耗）
 		"block_per_attack": 0,  # 劍舞架式：每出一張攻擊牌獲得 N 護體（play_card 讀取）
-		"upgrade_hand_pending": false,  # 臨陣磨劍：升級全手牌（play_card 執行）
+		"upgrade_hand_pending": false,  # 臨陣磨槍：升級全手牌（play_card 執行）
 		"copy_attack_pending": false,   # 御劍相承：複製手上攻擊牌（play_card 執行）
 		"spawn_top_tokens": 0,          # 劍氣縱橫：生成劍氣 token 置於抽牌堆頂（play_card 執行）
 		"damage_taken_reduction": 0,
@@ -219,6 +223,8 @@ func _sync_active_enemy_to_state() -> void:
 	state["enemy_weak"] = slot["weak"]
 	state["enemy_vulnerable"] = slot["vulnerable"]
 	state["enemy_stunned"] = slot.get("stunned", 0)
+	state["enemy_silenced"] = slot.get("silenced", 0)
+	state["enemy_berserk"] = slot.get("berserk", 0)
 	state["enemy_loot_table"] = slot["loot_table"]
 
 # 把 state["enemy_*"] 寫回 enemies[active_enemy_index] slot
@@ -235,6 +241,8 @@ func _sync_state_to_active_enemy() -> void:
 	slot["weak"] = int(state.get("enemy_weak", slot["weak"]))
 	slot["vulnerable"] = int(state.get("enemy_vulnerable", slot["vulnerable"]))
 	slot["stunned"] = int(state.get("enemy_stunned", slot.get("stunned", 0)))
+	slot["silenced"] = int(state.get("enemy_silenced", slot.get("silenced", 0)))
+	slot["berserk"] = int(state.get("enemy_berserk", slot.get("berserk", 0)))
 	# name / max_hp / loot_table 不變
 
 # 玩家主動切換 active enemy（drag-to-play / click portrait 觸發）
@@ -347,6 +355,8 @@ func snapshot_state() -> Dictionary:
 			"weak": int(s.get("weak", 0)),
 			"vulnerable": int(s.get("vulnerable", 0)),
 			"stunned": int(s.get("stunned", 0)),
+			"silenced": int(s.get("silenced", 0)),
+			"berserk": int(s.get("berserk", 0)),
 		})
 	return {
 		"player_hp": int(state["player_hp"]),
@@ -405,7 +415,29 @@ func _action_for_enemy(idx: int) -> Dictionary:
 	var active_actions: Array[Dictionary] = e.phase_2_actions if (enemy_phased[idx] and not e.phase_2_actions.is_empty()) else e.actions
 	if active_actions.is_empty():
 		return {}
+	# Ascension A17-19：招式更刁——改挑「傷害最高」的招式（而非照表輪替）
+	var asc: int = run_state.ascension_level if run_state != null else 0
+	var tier: String = "boss" if Ascension.is_boss_id(e.id) else ("elite" if bool(state.get("battle_is_elite", false)) else "normal")
+	if Ascension.harder_movesets(asc, tier):
+		var hardest: Dictionary = _highest_damage_action(active_actions)
+		if not hardest.is_empty():
+			return hardest
 	return active_actions[enemy_action_indices[idx] % active_actions.size()]
+
+# 回傳招式組中「總傷害最高」的一招；若全無傷害招式回傳空（呼叫端退回輪替）。
+func _highest_damage_action(actions: Array[Dictionary]) -> Dictionary:
+	var best: Dictionary = {}
+	var best_dmg: int = 0
+	for a: Dictionary in actions:
+		var dmg: int = 0
+		for eff: Dictionary in (a.get("effects", []) as Array):
+			var k: String = String(eff.get("kind", ""))
+			if k == "damage" or k == "damage_all":
+				dmg += int(eff.get("amount", 0)) * max(1, int(eff.get("hits", 1)))
+		if dmg > best_dmg:
+			best_dmg = dmg
+			best = a
+	return best
 
 func _enemy_display_name() -> String:
 	return _enemy_display_name_for(_active_enemy_index())
@@ -637,7 +669,7 @@ func _process_corpse_poison() -> void:
 func _process_deck_manipulation() -> void:
 	if deck == null:
 		return
-	# 臨陣磨劍：升級手上所有未升級的非詛咒牌（本場）
+	# 臨陣磨槍：升級手上所有未升級的非詛咒牌（本場）
 	if bool(state.get("upgrade_hand_pending", false)):
 		state["upgrade_hand_pending"] = false
 		var upgraded_n: int = 0
@@ -647,7 +679,7 @@ func _process_deck_manipulation() -> void:
 				deck.hand[i] = c.upgraded_copy()
 				upgraded_n += 1
 		if upgraded_n > 0:
-			add_log("臨陣磨劍：手牌 %d 張全數升級！" % upgraded_n)
+			add_log("臨陣磨槍：手牌 %d 張全數升級！" % upgraded_n)
 	# 御劍相承：複製手上第一張攻擊牌，加入手牌
 	if bool(state.get("copy_attack_pending", false)):
 		state["copy_attack_pending"] = false
@@ -752,6 +784,14 @@ func begin_enemy_phase() -> Array[Dictionary]:
 			add_log("%s 暈眩，無法行動！" % _enemy_display_name_for(i))
 			continue
 		var action: Dictionary = _action_for_enemy(i)
+		# 禁言：無傷害的法術招無法施放（攻擊招仍可），消耗一層、該招 fizzle 換下一招
+		if int(slot.get("silenced", 0)) > 0:
+			slot["silenced"] = int(slot["silenced"]) - 1
+			if not CardFormat.action_has_damage(action):
+				enemy_action_indices[i] = enemy_action_indices[i] + 1
+				actions.append({})
+				add_log("%s 被禁言，法術無法施放！" % _enemy_display_name_for(i))
+				continue
 		enemy_action_indices[i] = enemy_action_indices[i] + 1
 		actions.append(action)
 		add_log("%s 準備施放：%s。" % [_enemy_display_name_for(i), String(action.get("intent", ""))])
@@ -781,6 +821,25 @@ func resolve_enemy_phase(actions: Variant) -> Dictionary:
 			_sync_state_to_active_enemy()
 			state["active_enemy_index"] = i
 			_sync_active_enemy_to_state()
+		# 瘋魔：失控。25% 呆立不動；否則攻擊招隨機選目標（可能誤擊友軍敵人）
+		if int(slot.get("berserk", 0)) > 0:
+			slot["berserk"] = int(slot["berserk"]) - 1
+			if randf() < 0.25:
+				add_log("%s 瘋魔發作，呆立不動！" % _enemy_display_name_for(i))
+				continue
+			if CardFormat.action_has_damage(action):
+				var candidates: Array[int] = [-1]  # -1 = 玩家
+				for j: int in range(state["enemies"].size()):
+					if j != i and int((state["enemies"][j] as Dictionary)["hp"]) > 0:
+						candidates.append(j)
+				var pick: int = candidates[randi() % candidates.size()]
+				if pick >= 0:
+					_berserk_strike_enemy(action, i, pick)
+					_process_pending_summons(i)
+					if is_defeat():
+						break
+					continue  # 誤擊友軍 → 不再打玩家
+				# pick == -1 → 照常攻擊玩家（往下走正常流程）
 		add_log("%s：%s。" % [_enemy_display_name_for(i), String(action.get("intent", ""))])
 		add_logs(resolver.resolve_enemy_action(action, state))
 		_sync_state_to_active_enemy()
@@ -808,6 +867,27 @@ func resolve_enemy_phase(actions: Variant) -> Dictionary:
 
 # 召喚機制：EffectResolver 的 "summon" effect 會把請求加進 state["pending_summons"]
 # 在每隻敵人的 action 結算完後呼叫此函式處理
+## 瘋魔誤擊：把 action 的傷害（damage / damage_all 總和）施加到指定友軍敵人 slot
+func _berserk_strike_enemy(action: Dictionary, attacker_idx: int, target_idx: int) -> void:
+	var enemy_slots: Array = state.get("enemies", []) as Array
+	if target_idx < 0 or target_idx >= enemy_slots.size():
+		return
+	var tgt: Dictionary = enemy_slots[target_idx] as Dictionary
+	var total: int = 0
+	for ef_v: Variant in (action.get("effects", []) as Array):
+		var ef: Dictionary = ef_v as Dictionary
+		var k: String = String(ef.get("kind", ""))
+		if k == "damage" or k == "damage_all":
+			total += int(ef.get("amount", 0)) * max(1, int(ef.get("hits", 1)))
+	if total <= 0:
+		return
+	var blocked: int = min(int(tgt.get("block", 0)), total)
+	tgt["block"] = int(tgt.get("block", 0)) - blocked
+	tgt["hp"] = max(0, int(tgt["hp"]) - (total - blocked))
+	add_log("瘋魔！%s 失控攻擊了 %s，造成 %d 點傷害！" % [_enemy_display_name_for(attacker_idx), _enemy_display_name_for(target_idx), total - blocked])
+	_sync_active_enemy_to_state()
+	_check_active_enemy_death()
+
 func _process_pending_summons(caster_idx: int) -> void:
 	var pending: Array = state.get("pending_summons", []) as Array
 	if pending.is_empty():
@@ -848,6 +928,8 @@ func spawn_enemy(enemy_id: String) -> bool:
 		"weak": 0,
 		"vulnerable": 0,
 		"stunned": 0,
+		"silenced": 0,
+		"berserk": 0,
 		"loot_table": GameData.loot_table_for(clone.id),
 	}
 	(state["enemies"] as Array).append(slot)
