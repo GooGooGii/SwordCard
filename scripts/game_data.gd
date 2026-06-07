@@ -93,10 +93,10 @@ static func enemy_by_id(id: String) -> EnemyData:
 static func enemies_for_act(act: int) -> Array[EnemyData]:
 	match act:
 		1: return [_bandit(), _beast(), _wild_bee(), _thief(), _viper(), _green_snake(), _grass_spider(), _lantern_ghost()]                          # 餘杭山間
-		2: return [_serpent_demon(), _fox_spirit(), _sword_spirit(), _cave_bat(), _water_imp(), _tree_demon(), _viper(), _man_eating_flower(), _baby_toad()] # 仙靈島
+		2: return [_serpent_demon(), _fox_spirit(), _sword_spirit(), _cave_bat(), _water_imp(), _viper(), _man_eating_flower(), _baby_toad()] # 仙靈島（樹妖依正史屬苗疆假扮巫王線，移至第 7 幕）
 		3: return [_sword_spirit(), _fox_spirit(), _zombie_soldier(), _thief(), _cleaver_granny(), _hydra_snake(), _flying_snake(), _poison_toad(), _female_thief()]         # 蘇州城
-		4: return [_zombie_soldier(), _ancient_evil_spirit(), _skeleton_soldier(), _grave_fire(), _black_impermanence(), _white_impermanence(), _cleaver_granny(), _flying_skull(), _vampire_giant()] # 將軍塚
-		5: return [_tower_demon(), _tower_ghost_soldier(), _rock_guardian(), _trial_swordshade(), _xing_tian(), _gourd_sage(), _scorpion(), _fire_kirin_whelp(), _ice_beast()] # 試煉窟
+		4: return [_zombie_soldier(), _ancient_evil_spirit(), _skeleton_soldier(), _grave_fire(), _cleaver_granny(), _flying_skull(), _vampire_giant()] # 將軍塚
+		5: return [_rock_guardian(), _trial_swordshade(), _gourd_sage(), _scorpion(), _fire_kirin_whelp(), _ice_beast()] # 試煉窟（塔妖/塔鬼兵/刑天/無常依正史只在鎖妖塔）
 		6: return [_tower_demon(), _tower_ghost_soldier(), _ancient_evil_spirit(), _xing_tian(), _black_impermanence(), _white_impermanence(), _flying_skull(), _gourd_sage(), _five_eyed_demon(), _unicorn_demon(), _pincer_demon(), _jumping_frog()] # 鎖妖塔
 		7: return [_gu_cultist(), _serpent_demon(), _toxic_centipede(), _tree_demon(), _man_eating_flower(), _puppet_girl(), _birdman(), _demihuman_villager()]       # 苗疆蠱土
 		8: return [_moon_worshipper(), _baiyue_guard(), _ancient_evil_spirit(), _puppet_girl(), _man_eater_beast(), _two_headed_snake()] # 拜月決戰
