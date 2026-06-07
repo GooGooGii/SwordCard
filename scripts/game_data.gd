@@ -25,10 +25,10 @@ static func colorless_cards() -> Array[CardData]:
 	var list: Array[CardData] = [
 		make_card("cl_xunjiezhan", "迅捷斬", "無門", 0, "attack", "造成 7 點傷害。", [{"kind": "damage", "amount": 7}], "uncommon"),
 		make_card("cl_hanfengjue", "寒鋒訣", "無門", 0, "attack", "造成 3 點傷害，抽 1 張牌。", [{"kind": "damage", "amount": 3}, {"kind": "draw", "amount": 1}], "uncommon"),
-		make_card("cl_hushenjue", "護身訣", "無門", 0, "skill", "獲得 6 點護體。", [{"kind": "block", "amount": 6}], "uncommon"),
-		make_card("cl_qiaojin", "巧勁", "無門", 0, "skill", "獲得 2 點護體，抽 1 張牌。", [{"kind": "block", "amount": 2}, {"kind": "draw", "amount": 1}], "uncommon"),
+		make_card("cl_hushenjue", "金鐘護體", "無門", 0, "skill", "獲得 6 點護體。", [{"kind": "block", "amount": 6}], "uncommon"),
+		make_card("cl_qiaojin", "借力卸勁", "無門", 0, "skill", "獲得 2 點護體，抽 1 張牌。", [{"kind": "block", "amount": 2}, {"kind": "draw", "amount": 1}], "uncommon"),
 		make_card("cl_zhimingfu", "致盲符", "無門", 0, "skill", "使敵人虛弱 2 層。", [{"kind": "weak", "amount": 2}], "uncommon"),
-		make_card("cl_poshi", "破式", "無門", 0, "skill", "施加 2 層破綻。", [{"kind": "vulnerable", "amount": 2}], "uncommon"),
+		make_card("cl_poshi", "覷破空門", "無門", 0, "skill", "施加 2 層破綻。", [{"kind": "vulnerable", "amount": 2}], "uncommon"),
 		make_card("cl_jinchuangtie", "金創藥帖", "無門", 0, "skill", "回復 5 點生命。打出後消耗。", [{"kind": "heal", "amount": 5}], "uncommon"),
 		make_card("cl_qimendunjia", "奇門遁甲", "無門", 0, "attack", "對全體敵人造成 8 點傷害。", [{"kind": "damage_all", "amount": 8}], "uncommon"),
 		make_card("cl_yunchou", "運籌帷幄", "無門", 0, "skill", "抽 3 張牌。打出後消耗。", [{"kind": "draw", "amount": 3}], "rare"),
@@ -138,7 +138,7 @@ static func _li_xiaoyao() -> CharacterData:
 		make_card("lxy_tiangangqi", "天罡氣", "李逍遙", 1, "skill", "凝聚天罡護身之氣，獲得 14 點護體，抽 1 張牌。", [{"kind": "block", "amount": 14}, {"kind": "draw", "amount": 1}], "uncommon"),
 		make_card("lxy_tianjian", "天劍出鞘", "李逍遙", 2, "attack", "天劍出鞘，對全體敵人造成 20 點傷害。", [{"kind": "damage_all", "amount": 20}], "rare"),
 		make_card("lxy_xiaoyao_shenjian", "逍遙神劍", "李逍遙", 3, "attack", "御出逍遙神劍，造成 10 點傷害兩次，抽 2 張牌。", [{"kind": "damage", "amount": 10, "hits": 2}, {"kind": "draw", "amount": 2}], "rare"),
-		make_card("lxy_yuanlinggui", "元靈歸心術", "李逍遙", 2, "skill", "靈龜護佑，回復 10 點生命並獲得 14 點護體。", [{"kind": "heal", "amount": 10}, {"kind": "block", "amount": 14}], "uncommon"),
+		make_card("lxy_yuanlinggui", "元靈歸心術", "李逍遙", 2, "skill", "元靈歸心，回復 10 點生命並獲得 14 點護體。", [{"kind": "heal", "amount": 10}, {"kind": "block", "amount": 14}], "uncommon", "lyr_yuanlinggui"),
 		make_card("lxy_zhenyuan", "真元凝聚", "李逍遙", 1, "skill", "凝聚真元之氣，抽 2 張牌並回復 4 點生命。", [{"kind": "draw", "amount": 2}, {"kind": "heal", "amount": 4}], "uncommon"),
 		make_card("lxy_jinchan_ls", "金蟬脫殼", "李逍遙", 1, "skill", "金蟬脫殼，獲得 12 點護體，抽 2 張牌，回復 6 點生命。", [{"kind": "block", "amount": 12}, {"kind": "draw", "amount": 2}, {"kind": "heal", "amount": 6}], "rare"),
 		make_card("lxy_ningyuan_ls", "凝元化神", "李逍遙", 2, "power", "凝聚本源化為神氣，本場戰鬥傷害提升 3，回復 8 點生命。", [{"kind": "power", "amount": 3}, {"kind": "heal", "amount": 8}], "rare"),
@@ -260,7 +260,7 @@ static func _lin_yueru() -> CharacterData:
 		make_card("lyr_qijuejianqi", "七訣劍氣", "林月如", 1, "attack", "七訣劍氣縱橫，對全體敵人造成 9 點傷害並施加 1 層破綻，抽 1 張牌。", [{"kind": "damage_all", "amount": 9}, {"kind": "vulnerable_all", "amount": 1}, {"kind": "draw", "amount": 1}], "uncommon"),
 		make_card("lyr_tongqianbiao", "銅錢鏢", "林月如", 1, "attack", "擲出三枚銅錢鏢，造成 4 點傷害三次。", [{"kind": "damage", "amount": 4, "hits": 3}], "uncommon"),
 		make_card("lyr_wanlikuang", "萬里狂沙", "林月如", 2, "skill", "狂沙漫天，對全體敵人施加 3 層破綻，抽 1 張牌。", [{"kind": "vulnerable_all", "amount": 3}, {"kind": "draw", "amount": 1}], "rare"),
-		make_card("lyr_yuanlinggui", "元靈歸心術", "林月如", 2, "skill", "靈龜護體，回復 8 點生命並獲得 16 點護體。", [{"kind": "heal", "amount": 8}, {"kind": "block", "amount": 16}], "uncommon"),
+		make_card("lyr_yuanlinggui", "元靈歸心術", "林月如", 2, "skill", "元靈歸心，回復 8 點生命並獲得 16 點護體。", [{"kind": "heal", "amount": 8}, {"kind": "block", "amount": 16}], "uncommon"),
 		# 連打牌組（0 費 / 減靈耗升級）：鞭劍連擊軸，art 暫借既有劍系卡
 		make_card("lyr_jici", "驚鴻一點", "林月如", 0, "attack", "造成 4 點傷害。", [{"kind": "damage", "amount": 4}]),
 		make_card("lyr_huaci", "拈花一劍", "林月如", 0, "attack", "造成 3 點傷害，抽 1 張牌。", [{"kind": "damage", "amount": 3}, {"kind": "draw", "amount": 1}], "uncommon"),
@@ -879,6 +879,7 @@ static func _moon_worshipper() -> EnemyData:
 static func _centipede_lord() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "centipede_lord"
+	enemy.portrait_scale = 1.45  # boss：巨型蠱蟲
 	enemy.display_name = "蜈蚣大王"
 	enemy.max_hp = 108
 	enemy.portrait_path = "res://assets/art/enemies/centipede_lord.png"
@@ -920,6 +921,7 @@ static func _centipede_lord() -> EnemyData:
 static func _witch_queen() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "witch_queen"
+	enemy.portrait_scale = 1.3  # boss：山靈巫后
 	enemy.display_name = "山靈巫后"
 	enemy.max_hp = 92
 	enemy.portrait_path = "res://assets/art/enemies/witch_queen.png"
@@ -1037,6 +1039,7 @@ static func _ancient_evil_spirit() -> EnemyData:
 static func _red_eye_demon() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "red_eye_demon"
+	enemy.portrait_scale = 1.3  # boss：赤眼山魈
 	enemy.display_name = "赤眼山魈"
 	enemy.max_hp = 95
 	enemy.portrait_path = "res://assets/art/enemies/red_eye_demon.png"
@@ -1059,6 +1062,7 @@ static func _red_eye_demon() -> EnemyData:
 static func _zombie_general() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "zombie_general"
+	enemy.portrait_scale = 1.35  # boss：殭屍大帥
 	enemy.display_name = "殭屍大帥"
 	enemy.max_hp = 106
 	enemy.portrait_path = "res://assets/art/enemies/zombie_general.png"
@@ -1082,6 +1086,8 @@ static func _baiyue_lord() -> EnemyData:
 	# PAL1 最終 boss：拜月教主 HP 過半召出水魔獸現世（phase 2 變身）
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "baiyue_lord"
+	enemy.portrait_scale = 1.25      # phase 1：拜月教主（人形）
+	enemy.phase_2_portrait_scale = 2.0  # phase 2：水魔獸現世，遠比主角巨大
 	enemy.display_name = "拜月教主"
 	enemy.max_hp = 136
 	enemy.portrait_path = "res://assets/art/enemies/baiyue_lord.png"
@@ -1109,6 +1115,7 @@ static func _baiyue_lord() -> EnemyData:
 static func _miao_chieftain() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "miao_chieftain"
+	enemy.portrait_scale = 1.35  # boss：黑苗頭領
 	enemy.display_name = "黑苗頭領"
 	enemy.max_hp = 96
 	enemy.portrait_path = "res://assets/art/enemies/miao_chieftain.png"
@@ -1146,6 +1153,7 @@ static func _miao_soldier() -> EnemyData:
 static func _tomb_general() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "tomb_general"
+	enemy.portrait_scale = 1.4  # boss：塚中亡將
 	enemy.display_name = "塚中亡將"
 	enemy.max_hp = 110
 	enemy.portrait_path = "res://assets/art/enemies/tomb_general.png"
@@ -1169,6 +1177,7 @@ static func _tomb_general() -> EnemyData:
 static func _zhenyu_mingwang() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "zhenyu_mingwang"
+	enemy.portrait_scale = 1.5  # boss：鎮獄明王（巨型）
 	enemy.display_name = "鎮獄明王"
 	enemy.max_hp = 124
 	enemy.portrait_path = "res://assets/art/enemies/zhenyu_mingwang.png"
@@ -1274,6 +1283,7 @@ static func _thief() -> EnemyData:
 static func _tree_demon() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "tree_demon"
+	enemy.portrait_scale = 1.3  # 大型妖獸：樹妖
 	enemy.display_name = "樹妖"
 	enemy.max_hp = 76
 	enemy.portrait_path = "res://assets/art/enemies/tree_demon.png"
@@ -1665,6 +1675,7 @@ static func _ice_beast() -> EnemyData:
 static func _man_eater_beast() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "man_eater_beast"
+	enemy.portrait_scale = 1.2  # 大型妖獸：食人獸
 	enemy.display_name = "食人獸"
 	enemy.max_hp = 100
 	enemy.portrait_path = "res://assets/art/enemies/beast.png"
@@ -1679,6 +1690,7 @@ static func _man_eater_beast() -> EnemyData:
 static func _two_headed_snake() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "two_headed_snake"
+	enemy.portrait_scale = 1.25  # 大型妖獸：雙頭蛇
 	enemy.display_name = "雙頭蛇"
 	enemy.max_hp = 96
 	enemy.portrait_path = "res://assets/art/enemies/serpent_demon.png"
