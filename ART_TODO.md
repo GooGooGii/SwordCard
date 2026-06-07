@@ -305,6 +305,10 @@
 | `clam_spirit` | 蚌殼精 | 8 | `water_imp.png` | 巨蚌開合、內含珍珠光，高防水族 |
 | `conch_maiden` | 海螺女 | 8 | `fox_spirit.png` | 海螺殼下的女妖，音波攻擊、鱗甲 |
 | `turtle_demon` | 傻仔龜 | 8 | `rock_guardian.png` | 憨態大龜怪，厚殼縮防、噴水 |
+| `gambler` | 賭棍 | 3 | 🟢 已完成（專屬美術） | 蘇州賭坊潑皮，骰盅、油滑市井裝 |
+| `lecher_thief` | 淫賊 | 3 | 🟢 已完成（專屬美術） | 鼠目猥瑣的登徒子小賊，夜行衣 |
+| `rat_demon` | 鼠妖 | 3 | 🟢 已完成（專屬美術） | 城中下水道鼠妖，灰毛尖牙、群聚 |
+| `bully` | 惡霸 | 3 | 🟢 已完成（專屬美術） | 蘇州市井惡霸頭目，膀大腰圓、仗勢欺人 |
 
 > 補圖步驟：把 `assets/art/enemies/<id>.png` 放入 → 將 `game_data.gd` 對應 builder 的
 > `portrait_path` 由暫借檔改回 `res://assets/art/enemies/<id>.png` → `--import`。
