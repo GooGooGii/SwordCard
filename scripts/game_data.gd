@@ -161,9 +161,9 @@ static func _li_xiaoyao() -> CharacterData:
 		make_card("lxy_jianjue", "信手一劍", "李逍遙", 0, "attack", "造成 4 點傷害。", [{"kind": "damage", "amount": 4}], "basic"),
 		make_card("lxy_huijian", "乘風引氣", "李逍遙", 0, "attack", "造成 3 點傷害，抽 1 張牌。", [{"kind": "damage", "amount": 3}, {"kind": "draw", "amount": 1}], "uncommon"),
 		make_card("lxy_yufengbu", "御風步", "李逍遙", 0, "skill", "獲得 4 點護體。", [{"kind": "block", "amount": 4}], "basic"),
-		# 御劍 setup / 滋長（StS Setup/Vigor + Demon Form）
+		# 御劍 setup / 靈犀（StS Setup/Vigor + Demon Form）
 		make_card("lxy_xujian", "蓄劍式", "李逍遙", 1, "skill", "蓄勢御劍，下一張攻擊牌傷害變為 2 倍。", [{"kind": "next_attack_mult", "amount": 2}], "uncommon", "", true),
-		make_card("lxy_jianyi", "劍意滋長", "李逍遙", 2, "power", "劍意與日俱增，每回合開始攻擊力 +1。", [{"kind": "power_per_turn", "amount": 1}], "rare", "", true),
+		make_card("lxy_jianyi", "靈犀訣", "李逍遙", 2, "power", "靈犀漸明，每回合開始攻擊力 +1。", [{"kind": "power_per_turn", "amount": 1}], "rare", "", true),
 		# 牌庫操作（StS Armaments+ / Dual Wield / Shiv）
 		make_card("lxy_linzhen", "臨陣磨槍", "李逍遙", 1, "skill", "臨陣磨礪，將手上所有牌升級（本場戰鬥）。", [{"kind": "upgrade_hand"}], "rare", "", true),
 		make_card("lxy_xiangcheng", "御劍相承", "李逍遙", 1, "skill", "御劍化形，複製手上一張攻擊牌。", [{"kind": "copy_attack"}], "uncommon", "lxy_jiulong", true),

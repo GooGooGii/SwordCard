@@ -34,6 +34,8 @@ func _sync_active_slot_from_alias(state: Dictionary) -> void:
 	slot["weak"] = int(state.get("enemy_weak", slot["weak"]))
 	slot["vulnerable"] = int(state.get("enemy_vulnerable", slot["vulnerable"]))
 	slot["stunned"] = int(state.get("enemy_stunned", slot.get("stunned", 0)))
+	slot["silenced"] = int(state.get("enemy_silenced", slot.get("silenced", 0)))
+	slot["berserk"] = int(state.get("enemy_berserk", slot.get("berserk", 0)))
 
 # Multi-Enemy alias 同步：把 enemies[active_enemy_index] slot 寫到 state["enemy_*"] alias
 # 多體效果結算後呼叫，讓後續單體 effect 看到正確 active 值
@@ -49,6 +51,8 @@ func _sync_alias_from_active_slot(state: Dictionary) -> void:
 	state["enemy_weak"] = int(slot["weak"])
 	state["enemy_vulnerable"] = int(slot["vulnerable"])
 	state["enemy_stunned"] = int(slot.get("stunned", 0))
+	state["enemy_silenced"] = int(slot.get("silenced", 0))
+	state["enemy_berserk"] = int(slot.get("berserk", 0))
 
 # 向後相容：tick 敵 + 玩家 poison（smoke 單元測試與舊呼叫點用）。
 # 遊戲實際流程改用分離時機：tick_enemy_statuses 在敵人階段開始、
@@ -204,6 +208,16 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			if not from_enemy:
 				state["enemy_stunned"] = int(state.get("enemy_stunned", 0)) + amount
 				log_lines.append("敵人陷入暈眩，%d 回合無法行動！" % amount)
+		"silence":
+			# 禁言：敵人接下來 amount 個回合無法施放法術（無傷害的招式）（玩家專用）
+			if not from_enemy:
+				state["enemy_silenced"] = int(state.get("enemy_silenced", 0)) + amount
+				log_lines.append("敵人被禁言，%d 回合無法施法！" % amount)
+		"berserk":
+			# 瘋魔：敵人接下來 amount 個回合失控（隨機目標、可能呆立）（玩家專用）
+			if not from_enemy:
+				state["enemy_berserk"] = int(state.get("enemy_berserk", 0)) + amount
+				log_lines.append("敵人陷入瘋魔，%d 回合無法控制！" % amount)
 		"draw":
 			state["pending_draw"] = int(state["pending_draw"]) + amount
 			log_lines.append("抽 %d 張牌。" % amount)
@@ -248,10 +262,10 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			else:
 				log_lines.append("聚靈：目前無護體，無效。")
 		"power_per_turn":
-			# 劍意滋長（StS Demon Form 式）：持久能力，每回合開始 +amount 力量。
+			# 靈犀訣（StS Demon Form 式）：持久能力，每回合開始 +amount 力量。
 			# 實際每回合加力由 BattleController.start_turn 讀 state["power_per_turn"] 執行。
 			state["power_per_turn"] = int(state.get("power_per_turn", 0)) + amount
-			log_lines.append("劍意滋長：每回合開始攻擊力 +%d。" % amount)
+			log_lines.append("靈犀訣：每回合開始攻擊力 +%d。" % amount)
 		"block_per_turn":
 			# 靈光普照（StS Metallicize 式）：持久能力，每回合開始得 amount 護體。
 			state["block_per_turn"] = int(state.get("block_per_turn", 0)) + amount
@@ -275,9 +289,9 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			state["block_bonus"] = int(state.get("block_bonus", 0)) + amount
 			log_lines.append("鐵骨樁：每次獲得護體額外 +%d。" % amount)
 		"upgrade_hand":
-			# 臨陣磨劍（StS Armaments+ 式）：升級手上所有牌（本場）。由 BattleController 執行。
+			# 臨陣磨槍（StS Armaments+ 式）：升級手上所有牌（本場）。由 BattleController 執行。
 			state["upgrade_hand_pending"] = true
-			log_lines.append("臨陣磨劍：手上所有牌升級。")
+			log_lines.append("臨陣磨槍：手上所有牌升級。")
 		"copy_attack":
 			# 御劍相承（StS Dual Wield 式）：複製手上一張攻擊牌。由 BattleController 執行。
 			state["copy_attack_pending"] = true

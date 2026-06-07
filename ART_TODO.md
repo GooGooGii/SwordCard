@@ -191,10 +191,13 @@
 
 ---
 
-## 六、八幕擴充美術（2026-06，🟢 已全部完成）
+## 六、八幕擴充美術（2026-06，🟡 Boss phase 2 尚未全數補齊）
 
 五幕擴充為八幕（依 PAL1 正史順序：餘杭 → 仙靈島 → 蘇州 → 將軍塚 → 試煉窟 → 鎖妖塔 → 苗疆 → 拜月）。
-所有 8 張背景及所有 Boss 肖像已全部補齊專屬美術。
+目前狀態：
+- 8 張戰鬥背景已補齊。
+- 一階 boss 肖像已大致補齊，並已開始依 PAL1 正史進行對位校正。
+- boss 的 phase 2 專屬圖仍有少數未落檔 / 未接入程式。
 
 ### A. 戰鬥背景（3 張）🟢 已全部完成
 | 檔名 | 場景 | 風格建議 | 狀態 |
@@ -215,24 +218,23 @@
 | `tomb_general` | 塚中亡將（將軍塚 boss）| 🟢 已完成（專屬美術） | 殘甲執戈的亡將魂魄，陰森戰魂氣息 |
 | `zhenyu_mingwang` | 鎮獄明王（鎖妖塔 boss・正史）| 🟢 已完成（專屬美術） | 金剛怒目的鎮獄明王法相，鎖鏈降魔杵，莊嚴而威壓 |
 
-### D. PAL1 Boss 正史校正（2026-06-07）
+### C. PAL1 Boss 正史校正（2026-06-07）
 將先前偏原創或非 PAL1 正式 boss 的對位，調整為更貼近原作正史的版本；先保留既有 `enemy.id` 以避免存檔、掉落與難度索引全面改動。
 
-| 既有 ID | 舊顯示名 | 新顯示名 / 對位 | 圖資狀態 |
-|---|---|---|---|
-| `red_eye_demon` | 赤眼山魈 | 蛇妖男（phase 2：狐妖女） | 🟢 一階 + 二階新圖已補，`phase_2_portrait_path` 已接入 |
-| `zombie_general` | 殭屍大帥 | 殭屍王 | 🟡 名稱已校正，後續可再補更貼原作的新圖 |
-| `tomb_general` | 塚中亡將 | 赤鬼王 | 🟡 一階新圖已補；phase 2 專屬圖待落檔到 `assets/art/enemies/tomb_general_phase2.png` |
-| `witch_queen` | 山靈巫后 | 火麒麟（phase 2：火眼麒麟） | 🟢 一階 + 二階新圖已補，`phase_2_portrait_path` 已接入 |
-| `centipede_lord` | 蜈蚣大王 | 石長老 | 🟡 一階新圖已補；phase 2 專屬圖待落檔到 `assets/art/enemies/centipede_lord_phase2.png` |
+| 既有 ID | 舊顯示名 | 新顯示名 / 對位 | 一階圖 | 二階圖 | 程式接入 |
+|---|---|---|---|---|---|
+| `red_eye_demon` | 赤眼山魈 | 蛇妖男（phase 2：狐妖女） | 🟢 已補 | 🟢 已補 | 🟢 `phase_2_portrait_path` 已接入 |
+| `zombie_general` | 殭屍大帥 | 殭屍王 | 🟡 名稱已校正，圖可再重製 | ⬜ 尚未規劃 | ⬜ 尚未接入 |
+| `tomb_general` | 塚中亡將 | 赤鬼王 | 🟢 已補 | 🟡 已生成概念圖，待落檔 `assets/art/enemies/tomb_general_phase2.png` | ⬜ 尚未接入 |
+| `witch_queen` | 山靈巫后 | 火麒麟（phase 2：火眼麒麟） | 🟢 已補 | 🟢 已補 | 🟢 `phase_2_portrait_path` 已接入 |
+| `centipede_lord` | 蜈蚣大王 | 石長老 | 🟢 已補 | 🟡 已生成概念圖，待落檔 `assets/art/enemies/centipede_lord_phase2.png` | ⬜ 尚未接入 |
 
 相關程式位置：
 - `scripts/game_data.gd`：boss 對位名稱、招式文案、phase 2 顯示名與換圖路徑
 - `scripts/relic_catalog.gd`：對應 boss 專屬遺物名稱與描述同步校正
 - `docs/PAL1_CANON.md`：八幕 boss 對照更新為 PAL1 正史版本
 
-
-### C. 新增 PAL1 小怪肖像（7 個）🟢 已全部完成
+### D. 新增 PAL1 小怪肖像（7 個）🟢 已全部完成
 八幕擴充為各幕補充的 PAL1 風格小怪，已全部補齊獨立的專屬水墨肖像（`assets/art/enemies/<id>.png`）：
 
 | 敵人 ID | 顯示名 | 出沒幕 | 狀態 | PAL1 出處 / 說明 |
@@ -299,9 +301,15 @@
 > 補圖後執行 `godot --headless --path . --import` 重匯入即生效；`map_node_icon._load_node_texture()`
 > 會自動優先採用。legend 顏色已設為 `Color("e2728c")`（暗紅）、節點標記為「精」。
 
+## 九、道具／藥品圖示優化（🟢 已全部完成）
+
+| 檔名 | 用途 | 目前狀態 | 備註 |
+|---|---|---|---|
+| `assets/art/potions/fentian_zhu.png` | 藥品「焚天珠」 | 🟢 已重製（專屬美術） | 升級為精緻 3D 立體水墨火球風格，帶有毒氣與火花特效 |
+
 ---
 
 ## 補圖規格
 
-- 格式：PNG，存於 `assets/art/cards/<id>.png`（卡圖）或 `assets/art/<檔名>.png`（背景）；UI 圖示存 `assets/ui/<檔名>.png`
+- 格式：PNG，存於 `assets/art/cards/<id>.png`（卡圖）或 `assets/art/<檔名>.png`（背景）；UI 圖示存 `assets/ui/<檔名>.png`，藥品圖示存 `assets/art/potions/<檔名>.png`
 - 完成後補 `.import` 配置（`godot --headless --path . --import`）

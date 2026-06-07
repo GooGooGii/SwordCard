@@ -2,10 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://yid0watmr0sx"
+path="res://.godot/imported/node_elite.png-1b7d4268afb557864b1063191e7800d5.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/ui/node_elite.png"
+dest_files=["res://.godot/imported/node_elite.png-1b7d4268afb557864b1063191e7800d5.ctex"]
 
 [params]
 

@@ -2,10 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://dst2s2yt5xumb"
+path="res://.godot/imported/lxy_qingyan_zhuying.png-8450c3f0a217fc83397a4f0041aa9c70.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/lxy_qingyan_zhuying.png"
+dest_files=["res://.godot/imported/lxy_qingyan_zhuying.png-8450c3f0a217fc83397a4f0041aa9c70.ctex"]
 
 [params]
 

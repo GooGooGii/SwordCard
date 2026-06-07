@@ -163,7 +163,7 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"poison_per_turn": 0,  # 毒引擎（StS Noxious Fumes 式）：每回合開始對全體敵人施毒
 		"poison_on_attack": 0,  # 蠱刃：攻擊無格擋敵人時每段施毒（damage / damage_all 讀取）
 		"corpse_poison": false,  # 屍蠱：中毒敵人死亡時殘餘蠱毒隨機轉移給其他敵人
-		"power_per_turn": 0,  # 劍意滋長（Demon Form）：每回合開始 +N 力量
+		"power_per_turn": 0,  # 靈犀訣（Demon Form）：每回合開始 +N 力量
 		"block_per_turn": 0,  # 靈光普照（Metallicize）：每回合開始 +N 護體
 		"end_turn_damage": 0,  # 五雷轟頂（Combust）：回合結束對全體敵人造成 N 傷害
 		"next_attack_mult": 1,  # 蓄劍式（Vigor）：下一張攻擊傷害倍率（damage 路徑消耗）
@@ -491,10 +491,10 @@ func start_turn() -> Dictionary:
 	# Block carry-over (玄武魂) — 套到 active player
 	state["player_block"] = int(state.get("next_turn_block", 0))
 	state["next_turn_block"] = 0
-	# 持久能力引擎：每回合開始 +力量（劍意滋長）/ +護體（靈光普照）
+	# 持久能力引擎：每回合開始 +力量（靈犀訣）/ +護體（靈光普照）
 	if int(state.get("power_per_turn", 0)) > 0:
 		state["player_power"] = int(state["player_power"]) + int(state["power_per_turn"])
-		add_log("劍意滋長：攻擊力 +%d。" % int(state["power_per_turn"]))
+		add_log("靈犀訣：攻擊力 +%d。" % int(state["power_per_turn"]))
 	if int(state.get("block_per_turn", 0)) > 0:
 		state["player_block"] = int(state["player_block"]) + int(state["block_per_turn"])
 		add_log("靈光普照：獲得 %d 護體。" % int(state["block_per_turn"]))

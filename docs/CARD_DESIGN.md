@@ -268,7 +268,7 @@
 
 ### 角色技能主題（PAL1 × 家族）
 
-- **李逍遙**（御劍 setup + 酒神 + 偷）：蓄劍式(下張攻擊翻倍)、劍意滋長(每回合+力量)、醉飲狂歌(棄牌得力量)、御劍相承(複製攻擊)
+- **李逍遙**（御劍 setup + 酒神 + 偷）：蓄劍式(下張攻擊翻倍)、靈犀訣(每回合+力量)、醉飲狂歌(棄牌得力量)、御劍相承(複製攻擊)
 - **趙靈兒**（靈族神術 + 元素印記）：聚靈訣(護體翻倍)、靈光普照(每回合得護體)、五雷轟頂(回合結束AOE)、雷靈印(被擊反雷)
 - **林月如**（反擊 + 連武架式）：劍舞架式(每出攻擊得護體)、霜刃反擊(大量荊棘)、鐵骨樁(獲護體額外+2)
 - **阿奴**（蠱毒，已豐富）：催化/蠱刃/寄屍已實作
@@ -278,10 +278,10 @@
 | 層 | 新 effect kind | 卡 | 狀態 |
 |---|---|---|---|
 | 1 | `block_multiply`（仿 poison_multiply）| 趙靈兒 聚靈訣 | ✅ 完成 |
-| 2 | `power_per_turn` / `block_per_turn` / `end_turn_damage_all`（仿 poison_per_turn「每回合讀旗標」pattern）| 李 劍意滋長(power_per_turn)、趙 靈光普照(block_per_turn)、趙 五雷轟頂(end_turn_damage_all)；林 霜刃反擊(複用 thorns)| ✅ 完成 |
+| 2 | `power_per_turn` / `block_per_turn` / `end_turn_damage_all`（仿 poison_per_turn「每回合讀旗標」pattern）| 李 靈犀訣(power_per_turn)、趙 靈光普照(block_per_turn)、趙 五雷轟頂(end_turn_damage_all)；林 霜刃反擊(複用 thorns)| ✅ 完成 |
 | 3 | `next_attack_mult`（state 旗標 + damage 路徑消耗）| 李 蓄劍式 | ✅ 完成 |
 | 2b | `block_per_attack`（出攻擊牌得護體）/ `self_block_bonus`（獲護體額外+N）| 林 劍舞架式、鐵骨樁 | ✅ 完成 |
-| 4 | 牌庫操作（複製/置頂/戰鬥內升級）| 李 臨陣磨劍(升級全手牌)、御劍相承(複製攻擊)、劍氣縱橫(生成劍氣置頂)| ✅ 完成 |
+| 4 | 牌庫操作（複製/置頂/戰鬥內升級）| 李 臨陣磨槍(升級全手牌)、御劍相承(複製攻擊)、劍氣縱橫(生成劍氣置頂)| ✅ 完成 |
 
 > Layer 4（2026-06）：3 個新 effect kind 全採「全自動目標」（不需戰鬥內選牌 UI，真實遊戲與
 > 平衡 harness 皆可跑）。`upgrade_hand`/`copy_attack`/`spawn_top_tokens` 由 resolver 設 pending 旗標、
@@ -290,7 +290,7 @@
 > 至此技能/能力多樣化全 4 層完成。
 
 > 已落地（2026-06）：5 個新 effect kind（`block_multiply` / `power_per_turn` / `block_per_turn` /
-> `end_turn_damage_all` / `next_attack_mult`）＋ 6 張新技能/能力卡（李 蓄劍式・劍意滋長、
+> `end_turn_damage_all` / `next_attack_mult`）＋ 6 張新技能/能力卡（李 蓄劍式・靈犀訣、
 > 趙 聚靈訣・靈光普照・五雷轟頂、林 霜刃反擊）。`next_attack_mult` 由 damage / damage_all 路徑消耗；
 > `power_per_turn` / `block_per_turn` 在 start_turn 套用；`end_turn_damage_all` 在 begin_enemy_phase
 > 以「固定傷害」結算（不吃力量、不觸發蠱刃/蓄劍）。升級：block_per_turn / end_turn_damage_all 走數值升級，
