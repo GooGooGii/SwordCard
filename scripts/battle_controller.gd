@@ -162,6 +162,9 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"end_turn_damage": 0,  # 五雷轟頂（Combust）：回合結束對全體敵人造成 N 傷害
 		"next_attack_mult": 1,  # 蓄劍式（Vigor）：下一張攻擊傷害倍率（damage 路徑消耗）
 		"block_per_attack": 0,  # 劍舞架式：每出一張攻擊牌獲得 N 護體（play_card 讀取）
+		"upgrade_hand_pending": false,  # 臨陣磨劍：升級全手牌（play_card 執行）
+		"copy_attack_pending": false,   # 御劍相承：複製手上攻擊牌（play_card 執行）
+		"spawn_top_tokens": 0,          # 劍氣縱橫：生成劍氣 token 置於抽牌堆頂（play_card 執行）
 		"damage_taken_reduction": 0,
 		"damage_out_bonus": 0,
 		"block_bonus": 0,
@@ -584,6 +587,7 @@ func play_card(card: CardData) -> Dictionary:
 			deck.exhaust_card(card)
 		else:
 			deck.discard_card(card)
+	_process_deck_manipulation()  # 牌庫操作：升級全手牌 / 複製攻擊 / 生成劍氣置頂（此時打出的卡已離手）
 	if int(state["pending_draw"]) > 0:
 		if deck != null:
 			deck.draw(int(state["pending_draw"]))
@@ -622,6 +626,37 @@ func _process_corpse_poison() -> void:
 			moved = true
 	if moved:
 		_sync_active_enemy_to_state()
+
+# 牌庫操作（Layer 4）：全自動目標（不需戰鬥內選牌 UI），打出的卡已離手後執行。
+func _process_deck_manipulation() -> void:
+	if deck == null:
+		return
+	# 臨陣磨劍：升級手上所有未升級的非詛咒牌（本場）
+	if bool(state.get("upgrade_hand_pending", false)):
+		state["upgrade_hand_pending"] = false
+		var upgraded_n: int = 0
+		for i: int in range(deck.hand.size()):
+			var c: CardData = deck.hand[i]
+			if not c.upgraded and c.card_type != "curse":
+				deck.hand[i] = c.upgraded_copy()
+				upgraded_n += 1
+		if upgraded_n > 0:
+			add_log("臨陣磨劍：手牌 %d 張全數升級！" % upgraded_n)
+	# 御劍相承：複製手上第一張攻擊牌，加入手牌
+	if bool(state.get("copy_attack_pending", false)):
+		state["copy_attack_pending"] = false
+		for c: CardData in deck.hand:
+			if c.card_type == "attack":
+				deck.hand.append(c.clone())
+				add_log("御劍相承：複製【%s】。" % c.display_name)
+				break
+	# 劍氣縱橫：生成 N 道劍氣 token 置於抽牌堆頂（draw() 從尾端 pop，故 append = 置頂）
+	var ntok: int = int(state.get("spawn_top_tokens", 0))
+	if ntok > 0:
+		state["spawn_top_tokens"] = 0
+		for _i: int in range(ntok):
+			deck.draw_pile.append(GameData.jianqi_token())
+		add_log("劍氣縱橫：%d 道劍氣納入抽牌堆頂。" % ntok)
 
 func _check_active_enemy_death() -> void:
 	var enemy_slots: Array = state.get("enemies", []) as Array

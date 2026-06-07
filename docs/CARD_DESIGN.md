@@ -281,7 +281,13 @@
 | 2 | `power_per_turn` / `block_per_turn` / `end_turn_damage_all`（仿 poison_per_turn「每回合讀旗標」pattern）| 李 劍意滋長(power_per_turn)、趙 靈光普照(block_per_turn)、趙 五雷轟頂(end_turn_damage_all)；林 霜刃反擊(複用 thorns)| ✅ 完成 |
 | 3 | `next_attack_mult`（state 旗標 + damage 路徑消耗）| 李 蓄劍式 | ✅ 完成 |
 | 2b | `block_per_attack`（出攻擊牌得護體）/ `self_block_bonus`（獲護體額外+N）| 林 劍舞架式、鐵骨樁 | ✅ 完成 |
-| 4 | 牌庫操作（複製/置頂/戰鬥內升級，動 DeckManager）| 御劍相承、醉飲狂歌 等 | 未排程 |
+| 4 | 牌庫操作（複製/置頂/戰鬥內升級）| 李 臨陣磨劍(升級全手牌)、御劍相承(複製攻擊)、劍氣縱橫(生成劍氣置頂)| ✅ 完成 |
+
+> Layer 4（2026-06）：3 個新 effect kind 全採「全自動目標」（不需戰鬥內選牌 UI，真實遊戲與
+> 平衡 harness 皆可跑）。`upgrade_hand`/`copy_attack`/`spawn_top_tokens` 由 resolver 設 pending 旗標、
+> BattleController `_process_deck_manipulation()`（play_card 內、打出的卡離手後）執行。
+> 新增劍氣 token（`GameData.jianqi_token()`，0費攻擊、打出消耗，Shiv 式）。smoke test +1 覆蓋三者。
+> 至此技能/能力多樣化全 4 層完成。
 
 > 已落地（2026-06）：5 個新 effect kind（`block_multiply` / `power_per_turn` / `block_per_turn` /
 > `end_turn_damage_all` / `next_attack_mult`）＋ 6 張新技能/能力卡（李 蓄劍式・劍意滋長、

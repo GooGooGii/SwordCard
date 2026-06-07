@@ -19,6 +19,12 @@ static func make_card(id: String, display_name: String, owner: String, cost: int
 static func characters() -> Array[CharacterData]:
 	return [_li_xiaoyao(), _zhao_linger(), _lin_yueru(), _anu()]
 
+# 劍氣 token（StS Shiv 式）：劍氣縱橫生成的 0 費臨時攻擊，打出後消耗。art 借御劍卡。
+static func jianqi_token() -> CardData:
+	var c: CardData = make_card("token_jianqi", "劍氣", "李逍遙", 0, "attack", "造成 4 點傷害，打出後消耗。", [{"kind": "damage", "amount": 4}], "basic", "lxy_jianqi")
+	c.exhaust = true
+	return c
+
 # 共同牌（STS colorless 移植）：owner = "無門"，任何角色都能在 獎勵/商店/事件 取得。
 # art 暫借既有同類卡（記入 ART_GUIDE「借圖待補」）。
 static func colorless_cards() -> Array[CardData]:
@@ -150,6 +156,10 @@ static func _li_xiaoyao() -> CharacterData:
 		# 御劍 setup / 滋長（StS Setup/Vigor + Demon Form，art 暫借既有劍卡）
 		make_card("lxy_xujian", "蓄劍式", "李逍遙", 1, "skill", "蓄勢御劍，下一張攻擊牌傷害變為 2 倍。", [{"kind": "next_attack_mult", "amount": 2}], "uncommon", "lxy_jianqi", true),
 		make_card("lxy_jianyi", "劍意滋長", "李逍遙", 2, "power", "劍意與日俱增，每回合開始攻擊力 +1。", [{"kind": "power_per_turn", "amount": 1}], "rare", "lxy_zuimeng", true),
+		# 牌庫操作（StS Armaments+ / Dual Wield / Shiv，art 暫借既有劍卡）
+		make_card("lxy_linzhen", "臨陣磨劍", "李逍遙", 1, "skill", "臨陣磨礪，將手上所有牌升級（本場戰鬥）。", [{"kind": "upgrade_hand"}], "rare", "lxy_jianzhen", true),
+		make_card("lxy_xiangcheng", "御劍相承", "李逍遙", 1, "skill", "御劍化形，複製手上一張攻擊牌。", [{"kind": "copy_attack"}], "uncommon", "lxy_jiulong", true),
+		make_card("lxy_jianqizonghen", "劍氣縱橫", "李逍遙", 1, "skill", "劍氣化形，生成 3 道「劍氣」置於抽牌堆頂。", [{"kind": "spawn_top_tokens", "amount": 3}], "uncommon", "lxy_jianqi"),
 	]
 	var character: CharacterData = _character("li_xiaoyao", "李逍遙", 74, "劍仙風流，禦劍、偷取與酒神系高風險高傷害。", cards)
 	# PAL1 對齊：9 basic + 3 uncommon + 0 rare
@@ -332,12 +342,12 @@ static func _anu() -> CharacterData:
 		make_card("anu_cuihua", "毒入膏肓", "阿奴", 1, "skill", "使目標敵人的蠱毒層數變為 2 倍。", [{"kind": "poison_multiply", "amount": 2}], "rare"),
 		make_card("anu_gudaocui", "五毒淬刃", "阿奴", 1, "power", "攻擊無格擋的敵人時，每次攻擊施加 1 層蠱毒（多段攻擊每段各 1 層）。", [{"kind": "poison_on_attack", "amount": 1}], "uncommon", "", true),
 		make_card("anu_jishigu", "借屍還蠱", "阿奴", 1, "power", "中毒的敵人死亡時，將其殘餘蠱毒隨機轉移給另一個敵人。", [{"kind": "corpse_poison"}], "uncommon", "", true),
-		# 鬼／冥 系（苗巫邪術·厲鬼冥河）：art 暫借既有阿奴卡，未來補正式插圖
-		make_card("anu_guiling_zhuansheng", "鬼靈轉生", "阿奴", 2, "skill", "驅鬼靈轉生，救回 1 名倒下的同伴（25 HP 上場）；若無人倒下，改為自己回復 25 生命。", [{"kind": "revive", "amount": 25}], "rare", "anu_guijiang"),
-		make_card("anu_minghe_yindu", "冥河引渡", "阿奴", 2, "attack", "冥河引渡亡魂，對全體敵人造成 8 點傷害並施加 3 層蠱毒。", [{"kind": "damage_all", "amount": 8}, {"kind": "poison_all", "amount": 3}], "rare", "anu_wangushitian"),
-		make_card("anu_suoming_egui", "索命厲鬼", "阿奴", 1, "attack", "索命厲鬼撲身，造成 9 點傷害並使敵人虛弱 2 層。", [{"kind": "damage", "amount": 9}, {"kind": "weak", "amount": 2}], "uncommon", "anu_duohun"),
-		make_card("anu_youming_shigu", "幽冥蝕骨", "阿奴", 2, "skill", "幽冥之毒蝕骨，施加 7 層蠱毒並使敵人破綻 2 層。", [{"kind": "poison", "amount": 7}, {"kind": "vulnerable", "amount": 2}], "uncommon", "anu_sanshigu"),
-		make_card("anu_guihuo_liaoyuan", "鬼火燎原", "阿奴", 3, "attack", "鬼火燎原，對全體敵人造成 7 點傷害兩次並施加 2 層蠱毒。", [{"kind": "damage_all", "amount": 7, "hits": 2}, {"kind": "poison_all", "amount": 2}], "rare", "anu_yanshazhou"),
+		# 鬼／冥 系（苗巫邪術·厲鬼冥河）：已補正式插圖
+		make_card("anu_guiling_zhuansheng", "鬼靈轉生", "阿奴", 2, "skill", "驅鬼靈轉生，救回 1 名倒下的同伴（25 HP 上場）；若無人倒下，改為自己回復 25 生命。", [{"kind": "revive", "amount": 25}], "rare"),
+		make_card("anu_minghe_yindu", "冥河引渡", "阿奴", 2, "attack", "冥河引渡亡魂，對全體敵人造成 8 點傷害並施加 3 層蠱毒。", [{"kind": "damage_all", "amount": 8}, {"kind": "poison_all", "amount": 3}], "rare"),
+		make_card("anu_suoming_egui", "索命厲鬼", "阿奴", 1, "attack", "索命厲鬼撲身，造成 9 點傷害並使敵人虛弱 2 層。", [{"kind": "damage", "amount": 9}, {"kind": "weak", "amount": 2}], "uncommon"),
+		make_card("anu_youming_shigu", "幽冥蝕骨", "阿奴", 2, "skill", "幽冥之毒蝕骨，施加 7 層蠱毒並使敵人破綻 2 層。", [{"kind": "poison", "amount": 7}, {"kind": "vulnerable", "amount": 2}], "uncommon"),
+		make_card("anu_guihuo_liaoyuan", "鬼火燎原", "阿奴", 3, "attack", "鬼火燎原，對全體敵人造成 7 點傷害兩次並施加 2 層蠱毒。", [{"kind": "damage_all", "amount": 7, "hits": 2}, {"kind": "poison_all", "amount": 2}], "rare"),
 	]
 	# HP 66→82：阿奴是「長戰持續傷害」毒龜流，毒需要時間 ramp+tick，必須夠肉才撐得到
 	# 毒生效（pilot 實測：66 HP 對上 +15% 傷害的多敵戰撐不過 3 回合就被消耗死）。
@@ -672,6 +682,7 @@ static func _bandit() -> EnemyData:
 static func _beast() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "beast"
+	enemy.portrait_scale = 1.1  # 偏大：野獸
 	enemy.display_name = "山林妖獸"
 	enemy.max_hp = 80
 	enemy.portrait_path = "res://assets/art/enemies/beast.png"
@@ -765,6 +776,7 @@ static func _grave_fire() -> EnemyData:
 static func _rock_guardian() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "rock_guardian"
+	enemy.portrait_scale = 1.2  # 大型：石守衛
 	enemy.display_name = "試煉石靈"
 	enemy.max_hp = 100
 	enemy.portrait_path = "res://assets/art/enemies/rock_guardian.png"  # 專屬石靈美術
@@ -981,6 +993,7 @@ static func _zombie_soldier() -> EnemyData:
 static func _toxic_centipede() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "toxic_centipede"
+	enemy.portrait_scale = 0.88  # 小型：毒蜈蚣
 	enemy.display_name = "毒蜈蚣"
 	enemy.max_hp = 69
 	enemy.portrait_path = "res://assets/art/enemies/toxic_centipede.png"
@@ -994,6 +1007,7 @@ static func _toxic_centipede() -> EnemyData:
 static func _tower_demon() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "tower_demon"
+	enemy.portrait_scale = 1.15  # 偏大：鎖妖塔妖
 	enemy.display_name = "塔中封魔"
 	enemy.max_hp = 90
 	enemy.portrait_path = "res://assets/art/enemies/tower_demon.png"
@@ -1036,6 +1050,7 @@ static func _baiyue_guard() -> EnemyData:
 static func _ancient_evil_spirit() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "ancient_evil_spirit"
+	enemy.portrait_scale = 1.15  # 偏大：上古邪靈
 	enemy.display_name = "上古惡靈"
 	enemy.max_hp = 85
 	enemy.portrait_path = "res://assets/art/enemies/ancient_evil_spirit.png"
@@ -1270,6 +1285,7 @@ static func _centipede_brood() -> EnemyData:
 static func _tower_wisp() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "tower_wisp"
+	enemy.portrait_scale = 0.85  # 召喚物：鎖妖塔殘魂（小）
 	enemy.display_name = "鎖妖塔殘魂"
 	enemy.max_hp = 16
 	enemy.portrait_path = "res://assets/art/enemies/tower_wisp.png"
@@ -1312,6 +1328,7 @@ static func _tree_demon() -> EnemyData:
 static func _xing_tian() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "xing_tian"
+	enemy.portrait_scale = 1.25  # 大型：刑天
 	enemy.display_name = "刑天"
 	enemy.max_hp = 98
 	enemy.portrait_path = "res://assets/art/enemies/xing_tian.png"
@@ -1354,6 +1371,7 @@ static func _white_impermanence() -> EnemyData:
 static func _viper() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "viper"
+	enemy.portrait_scale = 0.85  # 小型：蝮蛇
 	enemy.display_name = "毒蛇"
 	enemy.max_hp = 42
 	enemy.portrait_path = "res://assets/art/enemies/serpent_demon.png"
@@ -1367,6 +1385,7 @@ static func _viper() -> EnemyData:
 static func _flying_skull() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "flying_skull"
+	enemy.portrait_scale = 0.8  # 小型：飛骷髏
 	enemy.display_name = "飛頭蠻"
 	enemy.max_hp = 72
 	enemy.portrait_path = "res://assets/art/enemies/grave_fire.png"
@@ -1395,6 +1414,7 @@ static func _cleaver_granny() -> EnemyData:
 static func _man_eating_flower() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "man_eating_flower"
+	enemy.portrait_scale = 1.15  # 偏大：食人花
 	enemy.display_name = "狂暴食人花"
 	enemy.max_hp = 92
 	enemy.portrait_path = "res://assets/art/enemies/beast.png"
@@ -1438,6 +1458,7 @@ static func _puppet_girl() -> EnemyData:
 static func _green_snake() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "green_snake"
+	enemy.portrait_scale = 0.85  # 小型：青蛇
 	enemy.display_name = "綠松蛇"
 	enemy.max_hp = 44
 	enemy.portrait_path = "res://assets/art/enemies/serpent_demon.png"
@@ -1451,6 +1472,7 @@ static func _green_snake() -> EnemyData:
 static func _grass_spider() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "grass_spider"
+	enemy.portrait_scale = 0.82  # 小型：草蜘蛛
 	enemy.display_name = "草蛛"
 	enemy.max_hp = 38
 	enemy.portrait_path = "res://assets/art/enemies/wild_bee.png"
@@ -1464,6 +1486,7 @@ static func _grass_spider() -> EnemyData:
 static func _lantern_ghost() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "lantern_ghost"
+	enemy.portrait_scale = 0.85  # 小型：燈籠鬼
 	enemy.display_name = "燈籠怪"
 	enemy.max_hp = 40
 	enemy.portrait_path = "res://assets/art/enemies/grave_fire.png"
@@ -1478,6 +1501,7 @@ static func _lantern_ghost() -> EnemyData:
 static func _hydra_snake() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "hydra_snake"
+	enemy.portrait_scale = 1.25  # 大型：多頭蛇
 	enemy.display_name = "九頭蛇"
 	enemy.max_hp = 72
 	enemy.portrait_path = "res://assets/art/enemies/serpent_demon.png"
@@ -1492,6 +1516,7 @@ static func _hydra_snake() -> EnemyData:
 static func _flying_snake() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "flying_snake"
+	enemy.portrait_scale = 0.82  # 小型：飛蛇
 	enemy.display_name = "飛蛇"
 	enemy.max_hp = 60
 	enemy.portrait_path = "res://assets/art/enemies/serpent_demon.png"
@@ -1506,6 +1531,7 @@ static func _flying_snake() -> EnemyData:
 static func _baby_toad() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "baby_toad"
+	enemy.portrait_scale = 0.72  # 小型：幼蟾
 	enemy.display_name = "小蛤蟆"
 	enemy.max_hp = 50
 	enemy.portrait_path = "res://assets/art/enemies/water_imp.png"
@@ -1520,6 +1546,7 @@ static func _baby_toad() -> EnemyData:
 static func _poison_toad() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "poison_toad"
+	enemy.portrait_scale = 0.85  # 小型：毒蟾
 	enemy.display_name = "毒蟾蜍"
 	enemy.max_hp = 78
 	enemy.portrait_path = "res://assets/art/enemies/toxic_centipede.png"
@@ -1534,6 +1561,7 @@ static func _poison_toad() -> EnemyData:
 static func _vampire_giant() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "vampire_giant"
+	enemy.portrait_scale = 1.3  # 大型：吸血巨人
 	enemy.display_name = "吸血巨人"
 	enemy.max_hp = 92
 	enemy.portrait_path = "res://assets/art/enemies/zombie_soldier.png"
@@ -1548,6 +1576,7 @@ static func _vampire_giant() -> EnemyData:
 static func _scorpion() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "scorpion"
+	enemy.portrait_scale = 0.82  # 小型：蠍
 	enemy.display_name = "毒蠍子"
 	enemy.max_hp = 68
 	enemy.portrait_path = "res://assets/art/enemies/toxic_centipede.png"
@@ -1576,6 +1605,7 @@ static func _female_thief() -> EnemyData:
 static func _birdman() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "birdman"
+	enemy.portrait_scale = 1.1  # 偏大：鳥人
 	enemy.display_name = "鳥人"
 	enemy.max_hp = 84
 	enemy.portrait_path = "res://assets/art/enemies/fox_spirit.png"
@@ -1604,6 +1634,7 @@ static func _demihuman_villager() -> EnemyData:
 static func _five_eyed_demon() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "five_eyed_demon"
+	enemy.portrait_scale = 1.15  # 偏大：五眼魔
 	enemy.display_name = "五眼魔"
 	enemy.max_hp = 88
 	enemy.portrait_path = "res://assets/art/enemies/ancient_evil_spirit.png"
@@ -1618,6 +1649,7 @@ static func _five_eyed_demon() -> EnemyData:
 static func _unicorn_demon() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "unicorn_demon"
+	enemy.portrait_scale = 1.2  # 大型：獨角魔
 	enemy.display_name = "獨角獸"
 	enemy.max_hp = 90
 	enemy.portrait_path = "res://assets/art/enemies/beast.png"
@@ -1632,6 +1664,7 @@ static func _unicorn_demon() -> EnemyData:
 static func _pincer_demon() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "pincer_demon"
+	enemy.portrait_scale = 1.15  # 偏大：螯魔
 	enemy.display_name = "夾子怪"
 	enemy.max_hp = 94
 	enemy.portrait_path = "res://assets/art/enemies/rock_guardian.png"
@@ -1646,6 +1679,7 @@ static func _pincer_demon() -> EnemyData:
 static func _jumping_frog() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "jumping_frog"
+	enemy.portrait_scale = 0.8  # 小型：跳蛙
 	enemy.display_name = "跳跳蛙"
 	enemy.max_hp = 70
 	enemy.portrait_path = "res://assets/art/enemies/water_imp.png"
@@ -1660,6 +1694,7 @@ static func _jumping_frog() -> EnemyData:
 static func _fire_kirin_whelp() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "fire_kirin_whelp"
+	enemy.portrait_scale = 0.85  # 小型：火麒麟幼體
 	enemy.display_name = "火麒麟幼獸"
 	enemy.max_hp = 86
 	enemy.portrait_path = "res://assets/art/enemies/beast.png"
@@ -1674,6 +1709,7 @@ static func _fire_kirin_whelp() -> EnemyData:
 static func _ice_beast() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "ice_beast"
+	enemy.portrait_scale = 1.2  # 大型：冰獸
 	enemy.display_name = "冰青獸"
 	enemy.max_hp = 86
 	enemy.portrait_path = "res://assets/art/enemies/beast.png"

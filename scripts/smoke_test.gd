@@ -144,6 +144,7 @@ func _initialize() -> void:
 	_test_turn_engines(characters[0], enemies[0])
 	_test_block_per_attack(characters[2], enemies[0])
 	_test_self_block_bonus(characters[2], enemies[0])
+	_test_deck_manipulation(characters[0], enemies[0])
 	_test_level_system(characters)
 	_test_level_unlock_cards()
 	_test_ai_run_engine_smoke()
@@ -1795,6 +1796,32 @@ func _test_turn_engines(character: CharacterData, enemy: EnemyData) -> void:
 	bc._sync_active_enemy_to_state()
 	bc.begin_enemy_phase()
 	_check(int((bc.state["enemies"][0] as Dictionary)["hp"]) == 94, "end_turn_damage 6 (100->94), got %d" % int((bc.state["enemies"][0] as Dictionary)["hp"]))
+
+func _test_deck_manipulation(character: CharacterData, enemy: EnemyData) -> void:
+	# 臨陣磨劍（升級全手牌）/ 御劍相承（複製攻擊）/ 劍氣縱橫（生成 token 置頂）
+	var bc: BattleController = BattleController.new()
+	var rs: RunState = RunState.new()
+	rs.init_for(character)
+	bc.setup(rs, character, enemy.clone())
+	bc.start_turn()
+	# upgrade_hand：手牌全升級
+	bc.deck.hand.clear()
+	bc.deck.hand.append(GameData.make_card("t_up", "測試牌", character.id, 1, "attack", "造成 5 點傷害。", [{"kind": "damage", "amount": 5}]))
+	bc.state["upgrade_hand_pending"] = true
+	bc._process_deck_manipulation()
+	_check(bc.deck.hand[0].upgraded, "upgrade_hand: hand card upgraded")
+	# copy_attack：複製攻擊牌 → 手牌 +1
+	bc.deck.hand.clear()
+	bc.deck.hand.append(GameData.make_card("t_atk2", "測試攻擊", character.id, 1, "attack", "造成 5 點傷害。", [{"kind": "damage", "amount": 5}]))
+	bc.state["copy_attack_pending"] = true
+	bc._process_deck_manipulation()
+	_check(bc.deck.hand.size() == 2, "copy_attack: hand size 1->2, got %d" % bc.deck.hand.size())
+	# spawn_top_tokens：抽牌堆頂 +3 劍氣
+	var dp_before: int = bc.deck.draw_pile.size()
+	bc.state["spawn_top_tokens"] = 3
+	bc._process_deck_manipulation()
+	_check(bc.deck.draw_pile.size() == dp_before + 3, "spawn_top_tokens: +3 to draw pile, got +%d" % (bc.deck.draw_pile.size() - dp_before))
+	_check((bc.deck.draw_pile[bc.deck.draw_pile.size() - 1] as CardData).id == "token_jianqi", "spawn_top_tokens: 劍氣 on top of draw pile")
 
 func _test_block_per_attack(character: CharacterData, enemy: EnemyData) -> void:
 	# 劍舞架式：每出一張攻擊牌得護體；技能牌不觸發

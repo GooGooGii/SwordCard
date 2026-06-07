@@ -263,6 +263,18 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			# 鐵骨樁（StS Dexterity 式）：本場每次獲得護體額外 +amount（block 效果讀 block_bonus）。
 			state["block_bonus"] = int(state.get("block_bonus", 0)) + amount
 			log_lines.append("鐵骨樁：每次獲得護體額外 +%d。" % amount)
+		"upgrade_hand":
+			# 臨陣磨劍（StS Armaments+ 式）：升級手上所有牌（本場）。由 BattleController 執行。
+			state["upgrade_hand_pending"] = true
+			log_lines.append("臨陣磨劍：手上所有牌升級。")
+		"copy_attack":
+			# 御劍相承（StS Dual Wield 式）：複製手上一張攻擊牌。由 BattleController 執行。
+			state["copy_attack_pending"] = true
+			log_lines.append("御劍相承：複製手上一張攻擊牌。")
+		"spawn_top_tokens":
+			# 劍氣縱橫（StS Shiv/置頂 式）：生成 amount 道「劍氣」置於抽牌堆頂。由 BattleController 執行。
+			state["spawn_top_tokens"] = int(state.get("spawn_top_tokens", 0)) + amount
+			log_lines.append("劍氣縱橫：%d 道劍氣納入抽牌堆頂。" % amount)
 		"combo_strike":
 			# 連打引擎（StS Panache 式）：持久能力，本回合每出 threshold 張牌對全體敵人造成傷害。
 			# 實際計數與結算由 BattleController.play_card 讀 state["combo_strike_*"] 執行。
