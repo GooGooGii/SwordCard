@@ -2,10 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://rxh3jxaqq8qp"
+path="res://.godot/imported/lecher_thief.png-09a805ba823599599a1123a8ee4362ca.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/enemies/lecher_thief.png"
+dest_files=["res://.godot/imported/lecher_thief.png-09a805ba823599599a1123a8ee4362ca.ctex"]
 
 [params]
 

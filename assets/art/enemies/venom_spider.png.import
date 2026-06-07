@@ -2,10 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://dvutad3cb0hn5"
+path="res://.godot/imported/venom_spider.png-4149c37415b939f57a6c58c980a2b257.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/enemies/venom_spider.png"
+dest_files=["res://.godot/imported/venom_spider.png-4149c37415b939f57a6c58c980a2b257.ctex"]
 
 [params]
 

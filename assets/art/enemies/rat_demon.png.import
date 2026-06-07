@@ -2,10 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://djodq8wrud5ge"
+path="res://.godot/imported/rat_demon.png-b116dacf5bdf053dec7be7466e445e91.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/enemies/rat_demon.png"
+dest_files=["res://.godot/imported/rat_demon.png-b116dacf5bdf053dec7be7466e445e91.ctex"]
 
 [params]
 

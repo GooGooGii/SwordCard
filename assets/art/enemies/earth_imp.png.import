@@ -2,10 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://bff14eggab4wl"
+path="res://.godot/imported/earth_imp.png-03897829f4521fbc40de006973eacf1b.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/enemies/earth_imp.png"
+dest_files=["res://.godot/imported/earth_imp.png-03897829f4521fbc40de006973eacf1b.ctex"]
 
 [params]
 

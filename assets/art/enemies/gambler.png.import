@@ -2,10 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://puc3hsd0men4"
+path="res://.godot/imported/gambler.png-72e2f47c8a06d9279048356487487e67.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/enemies/gambler.png"
+dest_files=["res://.godot/imported/gambler.png-72e2f47c8a06d9279048356487487e67.ctex"]
 
 [params]
 
