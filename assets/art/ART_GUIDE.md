@@ -1,5 +1,8 @@
 # SwordCard Art Guide
 
+> ⚠️ **工具分工（重要）**：Claude Code **無法自行繪製美術圖**（PNG 插畫／肖像／背景），只能負責程式碼、資料、`.import` 設定與借圖（`art_id`）安排。
+> **實際繪圖只有 codex 與 gemini 能做**。需要新美術時，請交由 codex／gemini 產圖，Claude Code 再負責接入（路徑、import、smoke 驗證）。
+
 ## Current Art Direction
 
 - Style: 2D painted xianxia fantasy, ink-wash atmosphere with readable game UI contrast.
