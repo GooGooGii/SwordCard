@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d06vhg1ltgnso"
-valid=false
+uid="uid://dkuytsticp1o3"
+path="res://.godot/imported/zl_yinlingfu.png-b58f28a92fd6be9fa80e222825e12424.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/zl_yinlingfu.png"
+dest_files=["res://.godot/imported/zl_yinlingfu.png-b58f28a92fd6be9fa80e222825e12424.ctex"]
 
 [params]
 

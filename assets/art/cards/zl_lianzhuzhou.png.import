@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cd5ofo4xv8imc"
-valid=false
+uid="uid://c3so1vm67ssmq"
+path="res://.godot/imported/zl_lianzhuzhou.png-c668af09753a5fe338c44fbdc01bee90.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/zl_lianzhuzhou.png"
+dest_files=["res://.godot/imported/zl_lianzhuzhou.png-c668af09753a5fe338c44fbdc01bee90.ctex"]
 
 [params]
 
