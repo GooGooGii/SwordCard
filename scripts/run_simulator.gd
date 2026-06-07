@@ -481,7 +481,8 @@ func _gold_for(rs: RunState, enemy: EnemyData, is_boss: bool) -> int:
 			_: base = 250
 	else:
 		base = 18 + rs.act * 8 + rs.encounter_index * 3
-	return max(0, int(round(float(base) * Ascension.gold_multiplier(rs.ascension_level))))
+	var gold_mult: float = Ascension.boss_gold_multiplier(rs.ascension_level) if is_boss else 1.0
+	return max(0, int(round(float(base) * gold_mult)))
 
 func _grant_exp(rs: RunState, is_boss: bool) -> void:
 	var exp_gain: int = LevelSystem.battle_exp(is_boss, rs.encounter_index)

@@ -778,16 +778,30 @@ func _test_ascension_persistence_and_modifiers() -> void:
 	Ascension.mark_cleared(1)  # 倒退式 mark 不該降級
 	_check(Ascension.get_unlocked_max() == 3, "lower mark should not regress unlock")
 	Ascension.clear_all()
-	# Modifier 計算
+	# Modifier 計算（對齊 StS A1-A20 新階梯）
+	# 敵人 HP：一般 A7 / 精英 A8 / Boss A9 各 ×1.25
 	_check(Ascension.enemy_hp_multiplier(0, false) == 1.0)
-	_check(Ascension.enemy_hp_multiplier(1, false) == 1.2, "A1 buff 一般敵人")
-	_check(Ascension.enemy_hp_multiplier(1, true) == 1.0, "A1 不影響 boss")
-	_check(abs(Ascension.enemy_hp_multiplier(2, true) - 1.2) < 0.001, "A2 buff boss")
-	_check(abs(Ascension.enemy_hp_multiplier(2, false) - 1.2) < 0.001, "A2 仍 buff 一般")
-	_check(Ascension.starting_hp_multiplier(2) == 1.0)
-	_check(Ascension.starting_hp_multiplier(3) == 0.85)
-	_check(Ascension.gold_multiplier(3) == 1.0)
-	_check(Ascension.gold_multiplier(4) == 0.75)
+	_check(Ascension.enemy_hp_multiplier(6, false) == 1.0, "A6 尚未加一般敵 HP")
+	_check(abs(Ascension.enemy_hp_multiplier(7, false) - 1.25) < 0.001, "A7 一般敵 HP +25%")
+	_check(Ascension.enemy_hp_multiplier(7, true) == 1.0, "A7 不影響 boss")
+	_check(abs(Ascension.enemy_hp_multiplier_tier(8, "elite") - 1.25) < 0.001, "A8 精英 HP +25%")
+	_check(abs(Ascension.enemy_hp_multiplier(9, true) - 1.25) < 0.001, "A9 boss HP +25%")
+	# 敵人傷害：一般 A2 / 精英 A3 / Boss A4 各 ×1.1
+	_check(Ascension.enemy_damage_multiplier(1, "normal") == 1.0)
+	_check(abs(Ascension.enemy_damage_multiplier(2, "normal") - 1.1) < 0.001, "A2 一般敵傷害 +10%")
+	_check(abs(Ascension.enemy_damage_multiplier(3, "elite") - 1.1) < 0.001, "A3 精英傷害 +10%")
+	_check(abs(Ascension.enemy_damage_multiplier(4, "boss") - 1.1) < 0.001, "A4 boss 傷害 +10%")
+	# 經濟 / 資源
+	_check(Ascension.boss_heal_multiplier(4) == 1.0)
+	_check(Ascension.boss_heal_multiplier(5) == 0.75, "A5 boss 戰後回血變少")
+	_check(Ascension.starting_hp_multiplier(5) == 1.0)
+	_check(Ascension.starting_hp_multiplier(6) == 0.9, "A6 起始 HP -10%")
+	_check(Ascension.starts_cursed(9) == false and Ascension.starts_cursed(10), "A10 起手詛咒")
+	_check(Ascension.potion_slot_penalty(11) == 1, "A11 藥格 -1")
+	_check(Ascension.boss_gold_multiplier(12) == 1.0 and Ascension.boss_gold_multiplier(13) == 0.75, "A13 boss 金 -25%")
+	_check(Ascension.max_hp_flat_penalty(14) == 5, "A14 最大 HP -5")
+	_check(abs(Ascension.shop_price_multiplier(16) - 1.1) < 0.001, "A16 商店漲價")
+	_check(Ascension.double_boss(19) == false and Ascension.double_boss(20), "A20 雙 boss")
 
 func _test_boss_phase_transition(bosses: Array[EnemyData]) -> void:
 	# 三個 boss 都該有 phase_2_actions 設定；damage 跌破 50% 後 phased 變 true

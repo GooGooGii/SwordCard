@@ -566,7 +566,8 @@ func _battle_gold_reward(enemy: EnemyData) -> int:
 			_: base = 80 + run_state.act * 40
 	else:
 		base = 18 + run_state.act * 8 + run_state.encounter_index * 3
-	return max(0, int(round(float(base) * Ascension.gold_multiplier(run_state.ascension_level))))
+	var gold_mult: float = Ascension.boss_gold_multiplier(run_state.ascension_level) if is_boss else 1.0
+	return max(0, int(round(float(base) * gold_mult)))
 
 func _try_random_relic_drop(chance: float) -> RelicData:
 	if randf() >= chance:
