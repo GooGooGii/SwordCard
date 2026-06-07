@@ -336,7 +336,7 @@ root: 「幽甜花香撲鼻，霧中走出溫柔笑意的女子。」
 │    └─ ③b 一劍超渡 [battle・弱化]
 │         enemy: 花妖本體・哀（HP×0.7，不還手）
 │         victory: power +3, max_hp +3
-├─ ④ 林月如專屬：以靈劍山莊正派劍法封她 [requires: lin_yueru] [battle・智取]
+├─ ④ 林月如專屬：以林家堡正派劍法封她 [requires: lin_yueru] [battle・智取]
 │    enemy: 花妖（HP×0.6）
 │    victory: gain_card_pool=character「靈劍封魔」, heal +5
 │    defeat:  damage 8
@@ -489,7 +489,7 @@ root: 「石壁間浮現微光，前人留下的靈痕，無戰意只有純粹�
 │    │    permanent_power +2, max_hp +3
 │    └─ ④b 不領這份情，繞行而過 [reward]
 │         next_battle_buff: [{kind:"block", amount:8}]
-├─ ⑤ 林月如專屬：以靈劍山莊禮數行劍致敬 [requires: lin_yueru] [reward]
+├─ ⑤ 林月如專屬：以林家堡禮數行劍致敬 [requires: lin_yueru] [reward]
 │    gain_card_pool=character（山莊內傳承劍意）, heal +4
 │    log: 月如的劍意與壁上殘光共鳴，前輩似乎滿意地點了點頭。
 └─ ⑥ 離去 [neutral]
@@ -531,7 +531,7 @@ root: 「古老祭壇上一具尚未化盡的骨殖，靈氣濃郁。蜷縮坐�
 │    │    gain_card_pool=rare, permanent_power +2
 │    └─ ③b 婉拒，只取走那三朵乾花作念想 [reward]
 │         gain_relic_pool=common, heal +8, max_hp +2
-├─ ④ 林月如專屬：以靈劍山莊弟子禮認師 [requires: lin_yueru] [reward]
+├─ ④ 林月如專屬：以林家堡弟子禮認師 [requires: lin_yueru] [reward]
 │    gain_card_pool=character（前輩劍意一招）, permanent_power +1
 │    log: 月如跪下時聽見了一個從未見過的聲音輕喚她的名字，那是父親也未曾提起的師伯。
 └─ ⑤ 不打擾，繞行 [neutral]
@@ -664,7 +664,7 @@ root: 「乾涸血土上插著無數殘旌，風過時像有人低鳴。」
 │    │    gain_card_pool=rare, max_hp +3
 │    └─ ③b 為他補插一柱香 [reward]
 │         gain_relic_pool=uncommon, heal +8
-├─ ④ 林月如專屬：辨認旌旗為靈劍山莊歷代遺名 [requires: lin_yueru] [reward]
+├─ ④ 林月如專屬：辨認旌旗為林家堡歷代遺名 [requires: lin_yueru] [reward]
 │    gain_card_pool=character（山莊古劍意）, permanent_power +2
 │    log: 月如在父親提過的那柄劍前跪下，雙手取劍——一道前輩劍意流入她心中。
 ├─ ⑤ 與遺地之鬼對搏奪魂 [battle]
