@@ -2,10 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://cxwjuq6j3hdj5"
+path="res://.godot/imported/summon.png-ce99785b04b5efe1b0eddef62a445e9a.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/ui/intent/summon.png"
+dest_files=["res://.godot/imported/summon.png-ce99785b04b5efe1b0eddef62a445e9a.ctex"]
 
 [params]
 

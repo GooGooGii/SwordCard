@@ -2,10 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://bap6doxcbhhwl"
+path="res://.godot/imported/attack.png-f1ca1c1b1371f1b4efa27e3360a17614.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/ui/intent/attack.png"
+dest_files=["res://.godot/imported/attack.png-f1ca1c1b1371f1b4efa27e3360a17614.ctex"]
 
 [params]
 

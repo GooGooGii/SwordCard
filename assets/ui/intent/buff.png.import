@@ -2,10 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://dvqae71imr2r2"
+path="res://.godot/imported/buff.png-de2a6c2a0188fa010a88a267c4f1d339.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/ui/intent/buff.png"
+dest_files=["res://.godot/imported/buff.png-de2a6c2a0188fa010a88a267c4f1d339.ctex"]
 
 [params]
 

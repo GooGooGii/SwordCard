@@ -2,10 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://bje86lq1ogylh"
+path="res://.godot/imported/defend.png-fcc07f19145571cc9afc5babc4c5b728.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/ui/intent/defend.png"
+dest_files=["res://.godot/imported/defend.png-fcc07f19145571cc9afc5babc4c5b728.ctex"]
 
 [params]
 

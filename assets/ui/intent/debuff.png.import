@@ -2,10 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://5h66ap6u370f"
+path="res://.godot/imported/debuff.png-f71b590a90a163f9fcf09a1d2191438e.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/ui/intent/debuff.png"
+dest_files=["res://.godot/imported/debuff.png-f71b590a90a163f9fcf09a1d2191438e.ctex"]
 
 [params]
 
