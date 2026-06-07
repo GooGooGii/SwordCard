@@ -205,22 +205,22 @@ static func _artifacts() -> Array[RelicData]:
 		"moon_worshipper",
 		[{"trigger": "battle_start", "effects": [{"kind": "enemy_weak", "amount": 3}, {"kind": "enemy_vulnerable", "amount": 3}]},
 		{"trigger": "turn_end", "effects": [{"kind": "enemy_vulnerable", "amount": 1}]}], Color("d9c2ff"), "xie_yin"))
-	l.append(_make_artifact("wugong_jia", "蜈蚣甲",
+	l.append(_make_artifact("wugong_jia", "黑苗戰鎧",
 		"受到的傷害 -3（最低 0）。每回合開始獲得 4 護體。【附帶詛咒：殘蠱】",
 		"centipede_lord",
 		[{"trigger": "passive_modifier", "effects": [{"kind": "damage_taken_reduction", "amount": 3}]},
 		{"trigger": "turn_start", "effects": [{"kind": "self_block", "amount": 4}]}], Color("76c46a"), "gu_du"))
-	l.append(_make_artifact("shiling_gu", "噬靈骨",
-		"敵人受到的蠱毒 +2。每回合結束對敵人造成的蠱毒翻倍引爆 50%。",
+	l.append(_make_artifact("shiling_gu", "麒麟火膽",
+		"戰鬥開始本局傷害 +2。每回合結束對敵人造成 4 點直接傷害。",
 		"witch_queen",
-		[{"trigger": "passive_modifier", "effects": [{"kind": "poison_bonus", "amount": 2}]},
-		{"trigger": "turn_end", "effects": [{"kind": "poison_resonance", "amount": 50}]}], Color("e2a8ff")))
-	l.append(_make_artifact("chiyan_fuyin", "赤眼符印",
+		[{"trigger": "battle_start", "effects": [{"kind": "self_power", "amount": 2}]},
+		{"trigger": "turn_end", "effects": [{"kind": "enemy_damage", "amount": 4}]}], Color("e2a8ff")))
+	l.append(_make_artifact("chiyan_fuyin", "妖蛇鱗印",
 		"戰鬥開始本局傷害 +3。每回合結束對敵人造成 3 點直接傷害。",
 		"red_eye_demon",
 		[{"trigger": "battle_start", "effects": [{"kind": "self_power", "amount": 3}]},
 		{"trigger": "turn_end", "effects": [{"kind": "enemy_damage", "amount": 3}]}], Color("ff6644")))
-	l.append(_make_artifact("guijiang_lingpai", "鬼將令牌",
+	l.append(_make_artifact("guijiang_lingpai", "屍王符令",
 		"每回合結束對敵人施加 2 層蠱毒並回復 4 生命。",
 		"zombie_general",
 		[{"trigger": "turn_end", "effects": [{"kind": "enemy_poison", "amount": 2}, {"kind": "self_heal", "amount": 4}]}], Color("90c878")))

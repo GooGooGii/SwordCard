@@ -21,7 +21,7 @@ static func characters() -> Array[CharacterData]:
 
 # 劍氣 token（StS Shiv 式）：劍氣縱橫生成的 0 費臨時攻擊，打出後消耗。art 借御劍卡。
 static func jianqi_token() -> CardData:
-	var c: CardData = make_card("token_jianqi", "劍氣", "李逍遙", 0, "attack", "造成 4 點傷害，打出後消耗。", [{"kind": "damage", "amount": 4}], "basic", "lxy_jianqi")
+	var c: CardData = make_card("token_jianqi", "劍氣", "李逍遙", 0, "attack", "造成 4 點傷害，打出後消耗。", [{"kind": "damage", "amount": 4}], "basic")
 	c.exhaust = true
 	return c
 
@@ -153,11 +153,11 @@ static func _li_xiaoyao() -> CharacterData:
 		make_card("lxy_huijian", "乘風引氣", "李逍遙", 0, "attack", "造成 3 點傷害，抽 1 張牌。", [{"kind": "damage", "amount": 3}, {"kind": "draw", "amount": 1}], "uncommon"),
 		make_card("lxy_yufengbu", "御風步", "李逍遙", 0, "skill", "獲得 4 點護體。", [{"kind": "block", "amount": 4}], "basic"),
 		make_card("lxy_lianhuanjian", "劍走連環", "李逍遙", 1, "attack", "造成 5 點傷害兩次。", [{"kind": "damage", "amount": 5, "hits": 2}], "uncommon", "", true),
-		# 御劍 setup / 滋長（StS Setup/Vigor + Demon Form，art 暫借既有劍卡）
-		make_card("lxy_xujian", "蓄劍式", "李逍遙", 1, "skill", "蓄勢御劍，下一張攻擊牌傷害變為 2 倍。", [{"kind": "next_attack_mult", "amount": 2}], "uncommon", "lxy_jianqi", true),
-		make_card("lxy_jianyi", "劍意滋長", "李逍遙", 2, "power", "劍意與日俱增，每回合開始攻擊力 +1。", [{"kind": "power_per_turn", "amount": 1}], "rare", "lxy_zuimeng", true),
-		# 牌庫操作（StS Armaments+ / Dual Wield / Shiv，art 暫借既有劍卡）
-		make_card("lxy_linzhen", "臨陣磨劍", "李逍遙", 1, "skill", "臨陣磨礪，將手上所有牌升級（本場戰鬥）。", [{"kind": "upgrade_hand"}], "rare", "lxy_jianzhen", true),
+		# 御劍 setup / 滋長（StS Setup/Vigor + Demon Form）
+		make_card("lxy_xujian", "蓄劍式", "李逍遙", 1, "skill", "蓄勢御劍，下一張攻擊牌傷害變為 2 倍。", [{"kind": "next_attack_mult", "amount": 2}], "uncommon", "", true),
+		make_card("lxy_jianyi", "劍意滋長", "李逍遙", 2, "power", "劍意與日俱增，每回合開始攻擊力 +1。", [{"kind": "power_per_turn", "amount": 1}], "rare", "", true),
+		# 牌庫操作（StS Armaments+ / Dual Wield / Shiv）
+		make_card("lxy_linzhen", "臨陣磨劍", "李逍遙", 1, "skill", "臨陣磨礪，將手上所有牌升級（本場戰鬥）。", [{"kind": "upgrade_hand"}], "rare", "", true),
 		make_card("lxy_xiangcheng", "御劍相承", "李逍遙", 1, "skill", "御劍化形，複製手上一張攻擊牌。", [{"kind": "copy_attack"}], "uncommon", "lxy_jiulong", true),
 		make_card("lxy_jianqizonghen", "劍氣縱橫", "李逍遙", 1, "skill", "劍氣化形，生成 3 道「劍氣」置於抽牌堆頂。", [{"kind": "spawn_top_tokens", "amount": 3}], "uncommon", "lxy_jianqi"),
 	]
@@ -222,7 +222,7 @@ static func _zhao_linger() -> CharacterData:
 		# 靈族神術引擎（StS Entrench / Metallicize / Combust，art 暫借既有仙術卡）
 		make_card("zl_juling", "聚靈訣", "趙靈兒", 1, "skill", "聚斂靈氣，當前護體翻倍。", [{"kind": "block_multiply", "amount": 2}], "uncommon", "zl_lingguang", true),
 		make_card("zl_lingguangpuzhao", "靈光普照", "趙靈兒", 1, "power", "靈光普照，每回合開始獲得 5 點護體。", [{"kind": "block_per_turn", "amount": 5}], "uncommon", "zl_nvwa"),
-		make_card("zl_wuleihongding", "五雷轟頂", "趙靈兒", 2, "power", "凝聚天雷，每回合結束對所有敵人降下 6 點雷傷。", [{"kind": "end_turn_damage_all", "amount": 6}], "rare", "zl_wuleizhou"),
+		make_card("zl_wuleihongding", "五雷轟頂", "趙靈兒", 2, "power", "凝聚天雷，每回合結束對所有敵人降下 6 點雷傷。", [{"kind": "end_turn_damage_all", "amount": 6}], "rare"),
 	]
 	var character: CharacterData = _character("zhao_linger", "趙靈兒", 68, "五靈仙術、治療、護盾、解狀態與長戰持續。", cards)
 	# PAL1 對齊：9 basic + 3 uncommon + 0 rare
@@ -277,9 +277,9 @@ static func _lin_yueru() -> CharacterData:
 		make_card("lyr_qiebushan", "凌波微步", "林月如", 0, "skill", "獲得 4 點護體。", [{"kind": "block", "amount": 4}]),
 		make_card("lyr_shuangjianci", "鴛鴦雙劍", "林月如", 1, "attack", "造成 5 點傷害兩次。", [{"kind": "damage", "amount": 5, "hits": 2}], "uncommon", "", true),
 		# 反擊軸（thorns 複用，做成 payoff）：荊棘流錨點
-		make_card("lyr_shuangren", "霜刃反擊", "林月如", 1, "skill", "凝霜於刃，獲得 8 點荊棘（被攻擊時反彈傷害給攻擊者）。", [{"kind": "thorns", "amount": 8}], "uncommon", "lyr_fanji"),
-		# 連武架式 / 鐵骨（StS Demon Form 護體版 / Dexterity，art 暫借既有卡）
-		make_card("lyr_jianwu", "劍舞架式", "林月如", 1, "power", "舞劍成勢，本場戰鬥每出一張攻擊牌獲得 3 點護體。", [{"kind": "block_per_attack", "amount": 3}], "uncommon", "lyr_shenfa"),
+		make_card("lyr_shuangren", "霜刃反擊", "林月如", 1, "skill", "凝霜於刃，獲得 8 點荊棘（被攻擊時反彈傷害給攻擊者）。", [{"kind": "thorns", "amount": 8}], "uncommon"),
+		# 連武架式 / 鐵骨（StS Demon Form 護體版 / Dexterity）
+		make_card("lyr_jianwu", "劍舞架式", "林月如", 1, "power", "舞劍成勢，本場戰鬥每出一張攻擊牌獲得 3 點護體。", [{"kind": "block_per_attack", "amount": 3}], "uncommon"),
 		make_card("lyr_tiegu", "鐵骨樁", "林月如", 1, "power", "紮穩鐵骨樁步，本場戰鬥每次獲得護體額外 +2。", [{"kind": "self_block_bonus", "amount": 2}], "uncommon", "lyr_tieyi"),
 	]
 	var character: CharacterData = _character("lin_yueru", "林月如", 72, "鞭劍武學、連擊、反擊與內勁治療。", cards)
