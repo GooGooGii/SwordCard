@@ -151,6 +151,20 @@ static func enemy_action_effect_summary(action: Dictionary) -> String:
 		return ""
 	return " / ".join(parts)
 
+# 去掉招式名尾端的傷害數字（含 + / x / × 連寫，如「劈砍 15」「觸手鞭打 10x3」「飛岩術 14 + 14」）。
+# 攻擊意圖已改由預測的淨傷數字呈現，名稱尾數重複且不精準，顯示時去掉。
+static func strip_trailing_number(text: String) -> String:
+	var i: int = text.length()
+	while i > 0:
+		var c: String = text[i - 1]
+		if c == " " or c == "+" or c == "x" or c == "X" or c == "×" or (c >= "0" and c <= "9"):
+			i -= 1
+		else:
+			break
+	var stripped: String = text.substr(0, i).strip_edges()
+	# 全是數字（無招式名）時保留原字串，避免變空白
+	return stripped if not stripped.is_empty() else text
+
 static func action_has_damage(action: Dictionary) -> bool:
 	for effect: Dictionary in (action.get("effects", []) as Array):
 		var k: String = String(effect.get("kind", ""))

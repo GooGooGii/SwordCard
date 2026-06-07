@@ -749,6 +749,11 @@ func _test_intent_display() -> void:
 	# action_has_damage 認得 damage_all
 	_check(CardFormat.action_has_damage({"effects": [{"kind": "damage_all", "amount": 8}]}),
 		"action_has_damage should recognise damage_all")
+	# strip_trailing_number：去名稱尾端傷害數（含 + / x 連寫），無招式名時保留原字串
+	_check(CardFormat.strip_trailing_number("劈砍 15") == "劈砍", "strip '劈砍 15' → '劈砍'")
+	_check(CardFormat.strip_trailing_number("觸手鞭打 10x3") == "觸手鞭打", "strip '觸手鞭打 10x3' → '觸手鞭打'")
+	_check(CardFormat.strip_trailing_number("飛岩術 14 + 14") == "飛岩術", "strip '飛岩術 14 + 14' → '飛岩術'")
+	_check(CardFormat.strip_trailing_number("毒霧") == "毒霧", "no trailing number unchanged")
 	# 多段攻擊（重複 damage effect）→ hits 段數 + per_hit 一致
 	var multi: Dictionary = {"effects": [{"kind": "damage", "amount": 10}, {"kind": "damage", "amount": 10}, {"kind": "damage", "amount": 10}]}
 	var st: Dictionary = _make_state()

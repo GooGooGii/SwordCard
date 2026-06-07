@@ -2843,6 +2843,7 @@ func _refresh_enemy_widgets() -> void:
 				var intent_name: String = String(action.get("intent", ""))
 				var damage_text: String = ""
 				if CardFormat.action_has_damage(action):
+					intent_name = CardFormat.strip_trailing_number(intent_name)  # 去名稱尾數，改用淨傷
 					var temp_state: Dictionary = battle.state.duplicate()
 					temp_state["enemy_weak"] = int(slot.get("weak", 0))
 					var pred: Dictionary = CardFormat.predict_enemy_damage(action, temp_state)
