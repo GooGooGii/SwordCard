@@ -1675,47 +1675,6 @@ func show_progress_screen() -> void:
 	var viewport_size: Vector2 = get_viewport_rect().size
 	var compact_map: bool = viewport_size.y <= 760.0
 	_build_streamlined_progress_screen(compact_map)
-	return
-	var panel: PanelContainer = UIFactory.make_panel()
-	root.add_child(panel)
-	var box: VBoxContainer = VBoxContainer.new()
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	box.add_theme_constant_override("separation", 8 if compact_map else 14)
-	panel.add_child(box)
-	box.add_child(_title("第%s幕・%d/%d 層" % [_act_numeral(run_state.act), run_state.encounter_index + 1, run_state.encounter_choices.size()], 28 if compact_map else 34))
-	var act_location: Label = UIFactory.card_label(_act_title(run_state.act), 16 if compact_map else 20, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-	box.add_child(act_location)
-	var map_summary: Label = UIFactory.paragraph("%s  HP %d/%d  銅錢 %d  牌組 %d 張  本輪增傷 +%d" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold, run_state.deck.size(), run_state.power_bonus])
-	map_summary.add_theme_font_size_override("font_size", 14 if compact_map else 17)
-	box.add_child(map_summary)
-	if run_state.map_seed != 0:
-		var seed_label: Label = UIFactory.card_label("種子 %d  ·  難度 A%d" % [run_state.map_seed, run_state.ascension_level], 12, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
-		box.add_child(seed_label)
-	if not compact_map:
-		box.add_child(UIFactory.paragraph("選擇亮起的節點前進；灰色節點代表目前路線無法抵達。"))
-	var passive_label: Label = UIFactory.paragraph(_passive_text())
-	passive_label.add_theme_font_size_override("font_size", 14 if compact_map else 17)
-	box.add_child(passive_label)
-	if not run_state.relics.is_empty():
-		var relic_names: Array[String] = []
-		for r: RelicData in run_state.relics:
-			relic_names.append(r.display_name)
-		var relic_label: Label = UIFactory.paragraph("裝備：%s" % "、".join(relic_names))
-		relic_label.add_theme_font_size_override("font_size", 14 if compact_map else 17)
-		box.add_child(relic_label)
-	box.add_child(_map_view())
-	var button_row: HBoxContainer = HBoxContainer.new()
-	button_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	button_row.add_theme_constant_override("separation", 16)
-	button_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	box.add_child(button_row)
-	button_row.add_child(_event_choice_button("路線", "總覽全部層數", false, _show_map_overview_popup))
-	button_row.add_child(_event_choice_button("翻閱", "查看當前手札", false, show_deck_view))
-	button_row.add_child(_event_choice_button("放棄", "返回主選單", false, show_main_menu))
-
-func _map_view() -> Control:
-	return _map_view_sts()
 
 func _build_streamlined_progress_screen(compact_map: bool) -> void:
 	root.add_theme_constant_override("margin_left", 14 if compact_map else 18)
@@ -7284,6 +7243,10 @@ func _retry_current_battle() -> void:
 	start_next_battle(enemies_to_retry)
 
 func _refresh_battle(animate_draw: bool = false) -> void:
+	# 防呆：延遲回呼（pose timer / switch tween）可能在戰鬥結束、battle 已換掉後才觸發，
+	# 此時 battle 可能為 null 或指向上一場 → 直接 return，避免 battle.deck 解參考崩潰。
+	if battle == null:
+		return
 	_refresh_title_bar()
 	var top_parts: Array[String] = ["第%s幕 %d/%d 層" % [_act_numeral(run_state.act), run_state.encounter_index + 1, run_state.encounter_choices.size()]]
 	top_parts.append("抽 %d / 棄 %d" % [battle.deck.draw_pile.size(), battle.deck.discard_pile.size()])
