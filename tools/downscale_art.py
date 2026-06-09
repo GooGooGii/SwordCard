@@ -6,9 +6,15 @@ import glob
 import os
 from PIL import Image
 
+# 目標最長邊（依各類別遊戲內實際顯示尺寸定，皆遠大於顯示、肉眼無損）：
+#   卡牌 顯示 ~140-360 / 敵人 ~290 / 特效 render ~130-390(+縮放) / 藥水 ~48 / 遺物 icon
+# 不動：背景(全螢幕)、肖像(選角全身)、事件插圖(全螢幕背景 1280×720)
 TARGETS = [
     ("assets/art/cards", 512),
     ("assets/art/enemies", 768),
+    ("assets/art/effects", 768),
+    ("assets/art/potions", 256),
+    ("assets/art/relics", 256),
 ]
 
 def main() -> None:
