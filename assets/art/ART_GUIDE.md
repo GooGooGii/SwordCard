@@ -22,6 +22,89 @@
     5. `low_hp` (命危): 半蹲、捂傷口喘息。
     6. `downed` (倒地): 閉眼昏迷倒下。
 
+## Prompt Pattern（2026-06 Enemy Batch）
+
+> 2026-06-09 補 `bee_cocoon` / `miao_maiden` / `conch_maiden` / `turtle_demon` 等 10 張敵圖時，
+> 效果最穩定的一組 prompt 寫法。之後續畫敵圖、人物型妖怪、水族怪、草木精怪，優先沿用這套。
+
+### 核心寫法
+
+- 先把用途講清楚：
+  `transparent-background enemy portrait asset for a Godot card-battle game`
+- 直接鎖死輸出型態：
+  `768x768 PNG`, `no text`, `no watermark`, `no frame`, `no background scene`
+- 直接鎖死遊戲需求：
+  `readable at small UI size`, `clean silhouette`, `centered composition with safe margins`
+- 明講戰鬥站位：
+  `enemy should face left`
+- 風格不要只寫「國風水墨」，要補可執行描述：
+  `2D painted xianxia fantasy`, `ink-wash atmosphere`, `stylized for game readability`
+
+### 這批圖成功的共通特徵
+
+- **單體明確**：畫面只保留一個主體，不塞背景敘事，讓縮小後第一眼就認得出輪廓。
+- **安全留白足夠**：主體不貼邊，武器、尾巴、殼、藤蔓可延伸，但不能撞到四角。
+- **材質有層次，但不過度寫實**：例如龜殼、水紋、海螺殼、花瓣、繭絲都能看出材質，
+  但仍保持插畫化，而不是照片感或概念設計稿感。
+- **顏色克制**：用墨藍、灰綠、青藍、米白、淡紫、枯粉這類低飽和主色，亮點只留在靈氣、眼神、
+  毒性、水紋、珠光等局部。
+- **妖氣靠輪廓與氣質，不靠噴特效**：怪物的「邪」主要來自姿態、眼神、部件設計，而不是滿畫面光效。
+- **PAL1 氣質優先，不走泛二遊仙俠**：不要過度華麗、不要滿身金屬件、不要現代 cosplay、不要韓系立繪味。
+
+### 題材分組寫法
+
+- **人型敵人 / 女妖 / 苗疆角色**
+  - 先寫身份與勢力：例如 `Black Miao female fighter`, `aquatic female demon`
+  - 再寫服飾語言：銀飾、披肩、鱗甲、海螺殼、苗銀、毒鏢、長鞭
+  - 再補一句限制：`not over-sexualized`, `not cosplay`, `not a Western mermaid`
+- **草木精怪**
+  - 先寫「由什麼凝成」：leaf, vine, wet grass, petals, scented mist
+  - 再寫所屬場景氣質：十里坡、仙靈島、山野木靈
+  - 限制要避開西式精靈 / 德魯伊 / 花仙子
+- **蟲形 / 蠱系 / 繭類**
+  - 強調 `stylized`, `elegant`, `not gross`, `not realistic insect photography`
+  - 可寫「半透明、可見內部輪廓」，但不要往血腥黏液方向跑
+- **水族怪**
+  - 用 `cold pearl glow`, `muted cyan`, `deep blue`, `water-worn shell`, `aquatic qi`
+  - 避免可愛海洋生物、迪士尼人魚、科幻海怪感
+
+### Prompt 結構建議
+
+建議固定四段，穩定度最高：
+
+1. **Asset instruction**
+   說透明背景、用途、尺寸感、可讀性、朝向、不要文字水印背景。
+2. **Subject identity**
+   說是什麼怪、來自哪種 PAL1 場景氣質、等級或戰鬥定位。
+3. **Visual design**
+   說身體結構、材質、服飾、武器、顏色、表情、姿態。
+4. **Negative control**
+   明寫不要什麼：Western fantasy, cute mascot, photography, heavy background, sci-fi, cosplay.
+
+### 可直接複用的英文關鍵詞
+
+- `transparent-background`
+- `isolated subject`
+- `clean silhouette`
+- `readable at small game UI size`
+- `centered composition with safe margins`
+- `2D painted xianxia fantasy`
+- `ink-wash atmosphere`
+- `stylized for game readability`
+- `PAL1-inspired Chinese fantasy`
+- `not realistic photography`
+- `not cute mascot`
+- `not Western fantasy armor`
+- `no text, no watermark, no frame, no background scene`
+
+### 這批圖帶來的風格校準
+
+- `miao_maiden` 是之後 **苗疆人型敵人** 的基準：黑藍布料、銀飾密度高、冷冽俐落。
+- `bee_cocoon` 是之後 **小型蟲妖 / 繭類怪** 的基準：可怕但不噁心，簡化寫意。
+- `turtle_demon` 是之後 **厚重防守型水族怪** 的基準：大塊量感、低飽和、殼面紋理清楚。
+- `flower_spirit` / `conch_maiden` 是 **妖魅型女妖** 的上限參考：
+  可以妖異、優雅、帶人形美感，但要避免過度寫真、過度性感或偶像立繪感。
+
 ## Background Assets
 
 Current generated backgrounds:
@@ -326,4 +409,3 @@ Card UI should follow a fixed rendering stack so art replacements do not require
 4. Text as the topmost layer
 
 Decorative overlays include the mana badge, rarity badge, name plaque, and rules-panel ornaments. When replacing the three card frames with ink-wash versions, keep those elements as separate overlays unless they must be baked into the frame for a specific visual effect.
-
