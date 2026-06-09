@@ -140,6 +140,10 @@ func _initialize() -> void:
 	_test_poison_multiply(characters[3], enemies[0])
 	_test_poison_on_attack(characters[3], enemies[0])
 	_test_corpse_poison(characters[3], enemies)
+	# 阿奴毒龜流 2026-06 重做：毒引擎 / AoE 毒爆 / 敵毒出手前 tick
+	_test_poison_engine(characters[3], enemies)
+	_test_poison_burst_aoe(characters[3], enemies)
+	_test_enemy_poison_ticks_before_acting(characters[3], enemies[0])
 	# 技能/能力多樣化：翻倍 / 蓄勢 / 每回合引擎 / 回合結束 AOE
 	_test_block_multiply(characters[1], enemies[0])
 	_test_next_attack_mult(characters[0], enemies[0])
@@ -1859,6 +1863,51 @@ func _test_corpse_poison(character: CharacterData, enemies: Array[EnemyData]) ->
 	bc._process_corpse_poison()
 	_check(int(e1["poison"]) == 5, "corpse_poison: 5 poison transferred to living enemy, got %d" % int(e1["poison"]))
 	_check(int(e0["poison"]) == 0, "corpse_poison: dead enemy poison cleared, got %d" % int(e0["poison"]))
+
+func _test_poison_engine(character: CharacterData, enemies: Array[EnemyData]) -> void:
+	# 蠱瘴瀰漫毒引擎：poison_engine 設 poison_per_turn；begin_enemy_phase 對「全體」敵人施毒
+	var bc: BattleController = _make_multi_battle(character, [enemies[0], enemies[1]])
+	bc.start_turn()
+	bc.resolver._resolve_effect({"kind": "poison_engine", "amount": 3}, bc.state)
+	_check(int(bc.state.get("poison_per_turn", 0)) == 3, "poison_engine should set poison_per_turn=3")
+	var e0: Dictionary = bc.state["enemies"][0] as Dictionary
+	var e1: Dictionary = bc.state["enemies"][1] as Dictionary
+	# 清掉阿奴開場 passive 施的毒，讓引擎施毒量可確定性驗證
+	# （begin_enemy_phase 先 tick 既有毒、再套引擎 → 從 0 起算淨 +3）
+	e0["poison"] = 0
+	e1["poison"] = 0
+	bc._sync_active_enemy_to_state()
+	bc.begin_enemy_phase()  # 引擎在此對全體施毒
+	_check(int(e0["poison"]) == 3, "engine should poison enemy0 +3, got %d" % int(e0["poison"]))
+	_check(int(e1["poison"]) == 3, "engine should poison enemy1 +3 (AOE), got %d" % int(e1["poison"]))
+
+func _test_poison_burst_aoe(character: CharacterData, enemies: Array[EnemyData]) -> void:
+	# 爆炸蠱（poison_burst）多敵：引爆「每隻」敵人各自的毒層（符合卡面「引爆全部蠱毒」）
+	var bc: BattleController = _make_multi_battle(character, [enemies[0], enemies[1]])
+	bc.start_turn()
+	var e0: Dictionary = bc.state["enemies"][0] as Dictionary
+	var e1: Dictionary = bc.state["enemies"][1] as Dictionary
+	e0["hp"] = 100; e0["poison"] = 5; e0["block"] = 0
+	e1["hp"] = 100; e1["poison"] = 4; e1["block"] = 0
+	bc._sync_active_enemy_to_state()
+	bc.resolver._resolve_effect({"kind": "poison_burst", "amount": 3}, bc.state)
+	_check(int(e0["hp"]) == 100 - 5 * 3, "burst enemy0: 100-15=85, got %d" % int(e0["hp"]))
+	_check(int(e1["hp"]) == 100 - 4 * 3, "burst enemy1: 100-12=88, got %d" % int(e1["hp"]))
+	_check(int(e0["poison"]) == 0 and int(e1["poison"]) == 0, "burst clears all enemies' poison")
+
+func _test_enemy_poison_ticks_before_acting(character: CharacterData, enemy: EnemyData) -> void:
+	# StS 時機：敵人毒在 begin_enemy_phase（出手前）tick；致命毒應在它攻擊前殺死它
+	var bc: BattleController = _make_multi_battle(character, [enemy])
+	bc.start_turn()
+	var slot: Dictionary = bc.state["enemies"][0] as Dictionary
+	slot["hp"] = 4
+	slot["poison"] = 6  # 6 >= 4 → 致命
+	bc._sync_active_enemy_to_state()
+	var player_hp_before: int = int(bc.state["player_hp"])
+	bc.begin_enemy_phase()  # 應先 tick 毒 → 敵人死 → 不出手
+	_check(int(slot["hp"]) == 0, "lethal poison should kill enemy at enemy-phase start, got hp %d" % int(slot["hp"]))
+	_check(bc.is_victory(), "all enemies poisoned to death → victory")
+	_check(int(bc.state["player_hp"]) == player_hp_before, "dead enemy must not deal its attack (player hp unchanged)")
 
 func _test_block_multiply(character: CharacterData, enemy: EnemyData) -> void:
 	# 聚靈訣：護體翻倍；無護體時無效
