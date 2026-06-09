@@ -240,6 +240,14 @@ func _initialize() -> void:
 	_test_batch_b_observe_gating()
 	_test_batch_b_battle_leaves_valid()
 	_test_stealing_system()
+	# Event Redesign：全事件轉樹 + 新 requires 檢定 + event_flags + 新 effect kinds + 稀有層級
+	_test_event_redesign_all_have_tree()
+	_test_event_redesign_tree_well_formed()
+	_test_event_redesign_new_requires()
+	_test_event_flags_roundtrip(characters)
+	_test_event_flags_old_save_compat(characters)
+	_test_deck_archetype_detection(characters)
+	_test_rare_event_rarity_and_weight()
 	if _smoke_failures > 0:
 		push_error("[smoke] %d 個 _check() 失敗。以 quit(1) 結束。" % _smoke_failures)
 		print("SwordCard smoke test FAILED (%d check failures)." % _smoke_failures)
@@ -3565,3 +3573,144 @@ func _test_stealing_system() -> void:
 	}
 	test_resolver._resolve_effect({"kind": "steal"}, empty_state, false)
 	_check(empty_state["steal_result"].is_empty(), "Stealing from empty loot table should return empty result")
+
+# ──────────────────────────────────────────────────────────────────────
+# Event Redesign 測試
+# ──────────────────────────────────────────────────────────────────────
+
+func _test_event_redesign_all_have_tree() -> void:
+	# Phase 0：所有事件 variant 都應已轉成 tree schema（不再有扁平 fallback）
+	var flat: Array[String] = []
+	for variant: String in MapGenerator.EVENT_VARIANTS:
+		var ed: Dictionary = EventData.for_variant(variant)
+		if not EventRunner.has_tree(ed):
+			flat.append(variant)
+	_check(flat.is_empty(), "all event variants should have tree schema; still flat: %s" % str(flat))
+
+func _test_event_redesign_tree_well_formed() -> void:
+	# 每個 tree：root 至少 2 個選項；每個 choice 必須有 next 或 outcome；
+	# 每個 next 指向的 node 必須存在。
+	var ctx_all: Dictionary = EventRunner.build_context("", 999, 99, 99, [], 99, "", 1.0, 99, 9, {})
+	for variant: String in MapGenerator.EVENT_VARIANTS:
+		var ed: Dictionary = EventData.for_variant(variant)
+		if not EventRunner.has_tree(ed):
+			continue
+		var root: Dictionary = EventRunner.get_node(ed, EventRunner.ROOT_ID)
+		var root_choices: Array = root.get("choices", []) as Array
+		_check(root_choices.size() >= 2, "%s root should have >=2 choices, got %d" % [variant, root_choices.size()])
+		# 走遍 root + 所有 nodes 的每個 choice
+		var all_nodes: Array = [root]
+		for node_v: Variant in (ed["tree"].get("nodes", {}) as Dictionary).values():
+			all_nodes.append(node_v as Dictionary)
+		for node_d: Variant in all_nodes:
+			for choice_v: Variant in ((node_d as Dictionary).get("choices", []) as Array):
+				var choice: Dictionary = choice_v as Dictionary
+				var has_next: bool = choice.has("next")
+				var has_outcome: bool = choice.has("outcome")
+				_check(has_next or has_outcome,
+					"%s choice '%s' must have next or outcome" % [variant, String(choice.get("id", "?"))])
+				if has_next:
+					var target: Dictionary = EventRunner.get_node(ed, String(choice["next"]))
+					_check(not target.is_empty(),
+						"%s choice '%s' -> missing node '%s'" % [variant, String(choice.get("id", "?")), String(choice["next"])])
+
+func _test_event_redesign_new_requires() -> void:
+	# 新 requires 檢定種類正確評估
+	var base: Dictionary = EventRunner.build_context("anu", 50, 2, 3, ["longquan"], 10, "poison", 0.3, 4, 1, {"fox_spared": true})
+	# deck_archetype
+	_check(EventRunner.eval_requires({"deck_archetype": ["poison"]}, base))
+	_check(not EventRunner.eval_requires({"deck_archetype": ["block"]}, base))
+	# hp_below / hp_above（hp_frac = 0.3）
+	_check(EventRunner.eval_requires({"hp_below": 0.5}, base))
+	_check(not EventRunner.eval_requires({"hp_below": 0.2}, base))
+	_check(EventRunner.eval_requires({"hp_above": 0.2}, base))
+	_check(not EventRunner.eval_requires({"hp_above": 0.5}, base))
+	# min_act / max_act（act = 4）
+	_check(EventRunner.eval_requires({"min_act": 3}, base))
+	_check(not EventRunner.eval_requires({"min_act": 5}, base))
+	_check(EventRunner.eval_requires({"max_act": 4}, base))
+	_check(not EventRunner.eval_requires({"max_act": 3}, base))
+	# has_potion_slot（free=1）
+	_check(EventRunner.eval_requires({"has_potion_slot": true}, base))
+	var no_slot: Dictionary = EventRunner.build_context("anu", 50, 2, 3, [], 10, "", 1.0, 1, 0, {})
+	_check(not EventRunner.eval_requires({"has_potion_slot": true}, no_slot))
+	# event_flag / not_event_flag
+	_check(EventRunner.eval_requires({"event_flag": "fox_spared"}, base))
+	_check(not EventRunner.eval_requires({"event_flag": "fox_slain"}, base))
+	_check(EventRunner.eval_requires({"not_event_flag": "fox_slain"}, base))
+	_check(not EventRunner.eval_requires({"not_event_flag": "fox_spared"}, base))
+	# 多條件 AND
+	_check(EventRunner.eval_requires({"deck_archetype": ["poison"], "min_act": 3, "not_event_flag": "fox_slain"}, base))
+
+func _test_event_flags_roundtrip(characters: Array[CharacterData]) -> void:
+	var state: RunState = RunState.new()
+	state.init_for(characters[0])
+	_check(not state.has_event_flag("fox_spared"), "fresh run should have no flags")
+	state.set_event_flag("fox_spared")
+	state.set_event_flag("owe_count", 2)
+	_check(state.has_event_flag("fox_spared"))
+	var data: Dictionary = state.to_dict()
+	_check(data.has("event_flags"))
+	var restored: RunState = RunState.new()
+	_check(restored.from_dict(data, characters))
+	_check(restored.has_event_flag("fox_spared"), "round-trip should preserve event_flags")
+	_check(int(restored.event_flags.get("owe_count", 0)) == 2, "round-trip should preserve flag values")
+
+func _test_event_flags_old_save_compat(characters: Array[CharacterData]) -> void:
+	var state: RunState = RunState.new()
+	state.init_for(characters[0])
+	var data: Dictionary = state.to_dict()
+	data.erase("event_flags")
+	var restored: RunState = RunState.new()
+	_check(restored.from_dict(data, characters), "old save without event_flags should load")
+	_check(restored.event_flags.is_empty(), "missing event_flags should fallback to empty dict")
+
+func _test_deck_archetype_detection(characters: Array[CharacterData]) -> void:
+	var state: RunState = RunState.new()
+	state.init_for(characters[0])
+	# 灌一副明確的毒牌組到 active deck
+	var poison_deck: Array[CardData] = []
+	for i: int in range(6):
+		var c: CardData = CardData.new()
+		c.id = "test_poison_%d" % i
+		c.effects = [{"kind": "poison", "amount": 3}]
+		poison_deck.append(c)
+	state.character_decks[state.active_character_index] = poison_deck
+	_check(state.deck_archetype() == "poison", "6 poison cards should yield poison archetype, got '%s'" % state.deck_archetype())
+	# 攻擊牌組
+	var atk_deck: Array[CardData] = []
+	for i: int in range(6):
+		var c2: CardData = CardData.new()
+		c2.id = "test_atk_%d" % i
+		c2.effects = [{"kind": "damage", "amount": 8}]
+		atk_deck.append(c2)
+	state.character_decks[state.active_character_index] = atk_deck
+	_check(state.deck_archetype() == "attack", "6 damage cards should yield attack archetype, got '%s'" % state.deck_archetype())
+	# 混雜無主導 → ""
+	var mixed_deck: Array[CardData] = []
+	var kinds: Array[String] = ["damage", "block", "poison", "power"]
+	for i: int in range(4):
+		var c3: CardData = CardData.new()
+		c3.id = "test_mix_%d" % i
+		c3.effects = [{"kind": kinds[i], "amount": 3}]
+		mixed_deck.append(c3)
+	state.character_decks[state.active_character_index] = mixed_deck
+	_check(state.deck_archetype() == "", "balanced deck should yield no dominant archetype, got '%s'" % state.deck_archetype())
+
+func _test_rare_event_rarity_and_weight() -> void:
+	# 稀有事件標記正確、權重低於 common
+	_check(EventData.rarity_of("shushan_vault") == "rare", "shushan_vault should be rare")
+	_check(EventData.rarity_of("spring") == "common", "spring should default to common")
+	_check(MapGenerator.event_pick_weight("shushan_vault") < MapGenerator.event_pick_weight("spring"),
+		"rare event should have lower pick weight than common")
+	_check(MapGenerator.EVENT_VARIANTS.has("shushan_vault"), "rare event should be in the map pool")
+	# 加權挑選 1000 次：稀有事件出現比例應顯著低於均勻分布
+	seed(12345)
+	var pool: Array[String] = ["spring", "shushan_vault"]
+	var rare_hits: int = 0
+	for i: int in range(1000):
+		if MapGenerator._pick_event_variant(pool) == "shushan_vault":
+			rare_hits += 1
+	randomize()
+	# weight 1 vs 5 → 期望 ~1/6 ≈ 167；給寬鬆界線確保確實被降權（< 均勻的 500）
+	_check(rare_hits < 350, "rare event should be down-weighted; got %d/1000 hits" % rare_hits)

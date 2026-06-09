@@ -2,8 +2,24 @@
 
 > 目標：解決「奇遇玩起來無聊」的問題。診斷見本文件 §1，改造分階段見 §3。
 > 核心發現：**runtime 已支援好玩的 `tree` schema（`main.gd:4492 _show_event_tree_node`），
-> 但 33 個事件裡只有 ~8 個用上；其餘 ~25 個跑扁平 schema = 每個事件同一組
+> 但原本 33 個事件裡有 10 個仍跑扁平 schema = 每個事件同一組
 > `heal/gain_card/power/observe/leave` 六顆按鈕、一鍵、結果固定、零風險、零後果。**
+
+## 實作狀態（2026-06-09）✅ 已完成
+
+| Phase | 內容 | 狀態 |
+|---|---|---|
+| 0 | 10 個扁平事件全數轉 `tree`（33/33 皆有樹）；`EventRunner` 擴充 deck_archetype / hp_below / hp_above / min_act / max_act / has_potion_slot / event_flag / not_event_flag 檢定；`hide_badge` 神秘選項；7 個新 smoke test | ✅ |
+| 1 | 取捨化：10 個改寫事件每個都含「標價的好處」＋至少一個 `gamble`；部分 `leave`/失敗帶長尾旗標後果 | ✅ |
+| 2 | 讀 build：改寫事件含 deck_archetype（毒/劍流）、hp 門檻、角色限定分歧 | ✅ |
+| 3 | `RunState.event_flags`（純加欄位，不升存檔版本）＋ `set_flag` effect kind；多事件埋旗標（fox_spared/fox_slain、miao_kin、anu_family_reunion、sword_spirit_bond、nuwa_jade、lin_tomb_heir…）；**回訪 payoff 已接通一條**：隱龍窟放走狐女 → 酒館舊識她回來報恩 | ✅（infra＋示範閉環；更多人物回訪線屬持續內容擴編） |
+| 4 | 稀有奇遇層級：`EventData.rarity_of` ＋ `MapGenerator.event_pick_weight` 加權降權；新增 run-defining 稀有事件「蜀山秘府」（`upgrade_all` 整副升階等大機緣） | ✅ |
+
+> 驗證：`scripts/smoke_test.gd` 全綠（含 7 個新測試）；`render_event.gd` 實機截圖確認蜀山秘府與隱龍窟分支樹正確渲染、角色限定選項正確隱藏。
+> 待補美術：稀有事件「蜀山秘府」事件插畫（見 `ART_TODO.md` §〇）。其餘改寫事件沿用原插畫。
+
+---
+> 以下為原始設計藍圖，保留供日後擴編人物回訪線時參考。
 
 ---
 

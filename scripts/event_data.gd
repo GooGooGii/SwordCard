@@ -2408,6 +2408,21 @@ const VARIANTS: Dictionary = {
 						},
 					},
 					{
+						"id": "fox_repays",
+						"label": "角落那個眼熟的少女向你走來",
+						"kind_hint": "reward",
+						"requires": {"event_flag": "fox_spared", "not_event_flag": "fox_repaid"},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "heal_party", "amount": 10},
+								{"kind": "gain_potion"},
+								{"kind": "set_flag", "flag": "fox_repaid"},
+							],
+							"log": "一個眼熟的少女在你桌邊坐下——金色的瞳孔，是隱龍窟裡你放走的那隻狐。「我說過會還這份情。」她推來一壺溫好的酒和一包妖丹，又悄悄沒入人群。江湖很大，善意卻記得回來。",
+						},
+					},
+					{
 						"id": "read_room",
 						"label": "細看掌櫃擦杯的手法",
 						"kind_hint": "reward",
@@ -3924,7 +3939,101 @@ const VARIANTS: Dictionary = {
 		"outcomes": {
 			"power": "劍中紅光化作一道細細的光圈，繞著你的右手轉了一圈，留下一道劍意的印記。離去前，她沒有說再見，只是又閃了一下——像是告訴你，她還會在。",
 			"upgrade": "那道劍靈靜靜地在劍中為你梳理一道招式的紋路。你不太明白她為什麼願意幫一個陌生人，但你接住了那份善意，把它收進你的劍中，好好地用。"
-		}
+		},
+		"tree": {
+			"root": {
+				"prompt": "腰間劍鞘微微震動，劍面一抹紅光一閃即逝——像個害羞又驕傲的影子。劍中那道靈，似乎在等一個人，卻願意先對你開口。",
+				"choices": [
+					{
+						"id": "listen",
+						"label": "靜靜聆聽劍靈的話",
+						"kind_hint": "reward",
+						"outcome": {
+							"kind": "reward",
+							"effects": [{"kind": "permanent_power", "amount": 2}],
+							"log": "紅光化作細圈繞著你的右手轉了一圈，留下一道劍意印記。她沒說再見，只又閃了一下——像是告訴你，她還會在。",
+						},
+					},
+					{
+						"id": "sword_dialogue",
+						"label": "以滿身劍意與她對話",
+						"kind_hint": "reward",
+						"requires": {"deck_archetype": ["attack"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "gain_card_pool", "pool": "character"},
+								{"kind": "heal", "amount": 4},
+							],
+							"log": "你不發一語，只是緩緩運起一身劍意。紅光雀躍地應和——同道相逢，她把一式從未外傳的劍法，痛快地教給了你。",
+						},
+					},
+					{
+						"id": "lxy_apology",
+						"label": "（李逍遙）認出她，向她致歉",
+						"kind_hint": "reward",
+						"requires": {"character": ["li_xiaoyao"], "not_event_flag": "sword_spirit_bond"},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "permanent_power", "amount": 2},
+								{"kind": "upgrade_random"},
+								{"kind": "heal", "amount": 10},
+								{"kind": "set_flag", "flag": "sword_spirit_bond"},
+							],
+							"log": "「敢把我留在劍裡這麼多天不理人？」逍遙喉頭一緊，低聲說了句「抱歉」。紅光顫了顫，憋出一句「哼，知錯就好」——熟悉到讓人鼻酸的劍意，重新湧入了丹田。原來她從來都在。",
+						},
+					},
+					{
+						"id": "sense_her",
+						"label": "細細感受那縷紅光的氣息",
+						"kind_hint": "reward",
+						"requires": {"observe_token": true},
+						"next": "node_waiting",
+					},
+					{
+						"id": "leave",
+						"label": "不打擾，把劍收好",
+						"kind_hint": "neutral",
+						"outcome": {"kind": "neutral", "effects": [], "log": "你把劍輕輕推回鞘中。紅光黯了下去，像是鬆了口氣，又像是有點失落。"},
+					},
+				],
+			},
+			"nodes": {
+				"node_waiting": {
+					"prompt": "她有人類女子的執拗與委屈，也有劍靈的飄逸與孤獨。她在劍中等了不知多久——等的人，或許並不是你。",
+					"choices": [
+						{
+							"id": "wait_with_her",
+							"label": "陪她在原地多等一會兒",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "max_hp", "amount": 3},
+									{"kind": "permanent_power", "amount": 1},
+								],
+								"log": "你什麼都沒做，只是坐下來，陪那縷紅光一起等。她沒等到她的人，卻把一身本事，靜靜分了一些給願意陪她的你。",
+							},
+						},
+						{
+							"id": "drain_her",
+							"label": "趁她出神，索取她的劍意",
+							"kind_hint": "punish",
+							"hide_badge": true,
+							"outcome": {
+								"kind": "punish",
+								"effects": [
+									{"kind": "permanent_power", "amount": 3},
+									{"kind": "gain_curse", "curse_id": "xie_yin"},
+								],
+								"log": "你強行抽走她的劍意。紅光劇烈閃爍，像被人背叛的哭——力量是你的了，那股冷意，也從此住進了你的劍裡。",
+							},
+						},
+					],
+				},
+			},
+		},
 	},
 	# 自創內容（非 PAL1 正史）：阿七為阿奴胞弟，PAL1 無此角色。
 	# 依 CLAUDE.md「PAL1 素材不足才自創」原則：阿奴在 PAL1 缺少家族向支線，
@@ -3954,7 +4063,84 @@ const VARIANTS: Dictionary = {
 		"outcomes": {
 			"heal": "少年遞給你一帖南疆的療傷藥草，氣味陌生卻有效。「我姐姐讓我給的，」他說，「她說會路過這裡的人，多半是值得幫的。」你不知道他姐姐是誰，但你向他道了謝。",
 			"gain_card": "少年從懷裡取出一卷殘破的紙頁。「我姐讓我帶著的，說會用到。」你接過殘頁，發現上面是一套你從未見過的南疆心法。少年沒有再說什麼，只是吹了一段笛，繼續等他的人。"
-		}
+		},
+		"tree": {
+			"root": {
+				"prompt": "山道彼端傳來悠遠的苗笛聲。穿著同族紋路的少年坐在岩石上吹笛，見你走來，把笛子放下，微微笑了——他在等人，等了很久。",
+				"choices": [
+					{
+						"id": "ask",
+						"label": "上前打聽他在等誰",
+						"kind_hint": "reward",
+						"outcome": {
+							"kind": "reward",
+							"effects": [{"kind": "heal", "amount": 12}],
+							"log": "少年遞來一帖南疆療傷草藥。「我姐姐讓我給的，」他說，「她說會路過這裡的人，多半值得幫。」你向他道了謝，卻不知他姐姐是誰。",
+						},
+					},
+					{
+						"id": "anu_reunion",
+						"label": "（阿奴）認出弟弟阿七",
+						"kind_hint": "reward",
+						"requires": {"character": ["anu"], "not_event_flag": "anu_family_reunion"},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "heal_party", "amount": 12},
+								{"kind": "gain_card_pool", "pool": "character"},
+								{"kind": "set_flag", "flag": "anu_family_reunion"},
+							],
+							"log": "那是族裡的『歸笛』——只在喚回遠行者時吹響。「阿七。」阿奴的聲音輕得像怕驚醒一個夢。弟弟把祖母託付的『歸蠱訣』交給她，她蹲下來，從小到大第一次當著別人的面慢慢哭了。哭完站起來，她已把家裝進了自己的劍裡。",
+						},
+					},
+					{
+						"id": "listen_flute",
+						"label": "靜靜聽他把這段笛吹完",
+						"kind_hint": "reward",
+						"requires": {"observe_token": true},
+						"next": "node_flute",
+					},
+					{
+						"id": "leave",
+						"label": "不打擾，讓他繼續等",
+						"kind_hint": "neutral",
+						"outcome": {"kind": "neutral", "effects": [], "log": "你向少年點了個頭，沒有多問。笛聲在身後悠悠響起，像在替誰守著一個約定。"},
+					},
+				],
+			},
+			"nodes": {
+				"node_flute": {
+					"prompt": "笛子是苗疆深山才有的玉竹，竹節刻著小小的「七」字。他坐姿端正，雙手粗糙而乾淨——等的時間夠久，腳邊的草都被坐扁了一圈。",
+					"choices": [
+						{
+							"id": "share_road",
+							"label": "與他分享一段路上的見聞",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "heal_party", "amount": 6},
+									{"kind": "permanent_power", "amount": 1},
+								],
+								"log": "你陪他坐了一會兒，說了些路上的事。少年聽得認真，臨別塞給你一小包南疆藥粉：「給會路過的人。」那份不設防的善意，比藥更暖。",
+							},
+						},
+						{
+							"id": "buy_flute_song",
+							"label": "請他教你這段『歸笛』的調子",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "gain_card_pool", "pool": "colorless"},
+								],
+								"log": "少年一句一句教你那段調子。「會吹的人，走到哪都記得回家的路。」你把這段旋律記進了心裡，也記進了你的招式。",
+							},
+						},
+					],
+				},
+			},
+		},
 	},
 	"tangyu_sparring": {
 		"title": "石壁前的少年",
@@ -4579,6 +4765,132 @@ const VARIANTS: Dictionary = {
 									{"kind": "lose_card", "mode": "random"},
 								],
 								"log": "你在她身旁點火。血書一頁一頁燒成灰，胸中某道你一直擺脫不掉的雜念，也跟著一同化去。",
+							},
+						},
+					],
+				},
+			},
+		},
+	},
+	# ── Event Redesign（Phase 4）：稀有奇遇——能重塑整場 run 的大機緣 ──
+	# rarity "rare"：MapGenerator 對其降權（event_pick_weight=1，common 為 5），
+	# 遇到一次能改寫整場走向，給玩家「這趟撞上了不得了的東西」的記憶點。
+	"shushan_vault": {
+		"title": "蜀山秘府",
+		"rarity": "rare",
+		"flavor": "山壁裂開一道僅容一人的縫，縫後別有洞天——蜀山前輩封存的秘府。蟠桃醞的酒香、鎮府法寶的靈光、一方刻滿劍訣的石壁，靜靜等了不知多少年。",
+		"character_flavors": {
+			"li_xiaoyao": "逍遙鑽進石縫，倒抽一口氣。這氣派，這劍訣，這滿室不散的酒香——他幾乎立刻想起了師父那只朱漆酒葫蘆。「蜀山……」他喃喃。師父說過蜀山有秘府，藏著走遠了的前輩留下的東西。原來不是吹牛。",
+			"zhao_linger": "靈兒踏入秘府，靈氣純淨得讓她心安。她認得這種氣息——是真正修道之人窮盡一生淬鍊出來的東西，不帶半分妖邪。她在石壁前輕輕行禮，低聲說：「晚輩叨擾了。」",
+			"lin_yueru": "月如環視秘府，呼吸都放輕了。石壁上的劍訣層次分明、氣象萬千，是她從未見過的高度。她握緊劍柄，心跳得有些快——這是一個劍者畢生難遇的機緣，她不能錯過，也不敢輕慢。",
+			"anu": "阿奴在秘府門口猶豫了一下才走進去。中原修道之人的地方，本與她無關；但那滿室的靈光裡，有一種跨越族別的厚重，讓她肅然。她沒有貿然伸手，先繞著秘府走了一圈，確認這份機緣不是陷阱。",
+		},
+		"heal": 0, "gain_cost": 0, "power": 0, "power_label": "悟道",
+		"observe_text": "你細看秘府全貌。蟠桃醞的酒缸封著紅泥，喝下能令一身招式脫胎換骨，卻也要折損幾分元氣；鎮府處供著一件靈光內斂的法寶；石壁劍訣的盡頭刻著一行字：『以命驗道者，得失皆己。』這是一座只渡有緣、不渡貪心的秘府。",
+		"observe_effects": [{"kind": "heal", "amount": 10}, {"kind": "max_hp", "amount": 3}],
+		"choices": ["observe", "leave"],
+		"outcomes": {},
+		"tree": {
+			"root": {
+				"prompt": "秘府之中三樣機緣並陳：一缸脫胎換骨的蟠桃醞、一件鎮府法寶、一壁通天劍訣。前輩留話：只渡有緣，不渡貪心。你只能動其中一樣。",
+				"choices": [
+					{
+						"id": "drink_peach_wine",
+						"label": "飲下蟠桃醞，全副招式脫胎換骨",
+						"kind_hint": "mixed",
+						"outcome": {
+							"kind": "mixed",
+							"effects": [
+								{"kind": "upgrade_all"},
+								{"kind": "max_hp", "amount": -5},
+							],
+							"log": "你揭開紅泥一飲而盡。烈酒化作靈流走遍經脈，胸中每一道招式都被它擦得透亮——代價是元氣折損了幾分，但這一缸酒，值。",
+						},
+					},
+					{
+						"id": "take_treasure",
+						"label": "請走鎮府法寶",
+						"kind_hint": "reward",
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "gain_relic_pool", "pool": "rare"},
+								{"kind": "permanent_power", "amount": 1},
+							],
+							"log": "你向供台一禮，捧起那件靈光內斂的法寶。它在你掌心微微一暖，像是認了新的主人。",
+						},
+					},
+					{
+						"id": "stake_life",
+						"label": "以命驗道：在劍訣下打坐三日",
+						"kind_hint": "gamble",
+						"hide_badge": true,
+						"outcome": {
+							"kind": "gamble",
+							"gamble": {
+								"win_chance": 0.5,
+								"win_effects": [
+									{"kind": "permanent_power", "amount": 5},
+									{"kind": "max_hp", "amount": 10},
+								],
+								"lose_effects": [
+									{"kind": "damage", "amount": 14},
+									{"kind": "gain_curse", "curse_id": "xie_yin"},
+								],
+							},
+							"log": "你盤膝坐在通天劍訣之下，引那滔天劍意入體。三日之內，是脫胎成蝶，還是走火成魔——全看你這條命，配不配。",
+						},
+					},
+					{
+						"id": "study_wall",
+						"label": "細讀石壁劍訣的盡頭",
+						"kind_hint": "reward",
+						"requires": {"observe_token": true},
+						"next": "node_wall",
+					},
+					{
+						"id": "leave",
+						"label": "不取分毫，恭敬退出",
+						"kind_hint": "reward",
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "permanent_power", "amount": 1},
+								{"kind": "heal", "amount": 8},
+							],
+							"log": "你向秘府深深三拜，一樣都沒拿便退了出去。前輩的劍意似乎欣慰，臨別在你眉心輕輕點了一下——不貪者，自有所得。",
+						},
+					},
+				],
+			},
+			"nodes": {
+				"node_wall": {
+					"prompt": "劍訣盡頭刻著兩種收尾：一是『傳』——將畢生所學託付有緣；二是『藏』——留一手保命的後著。你讀懂了，可擇其一。",
+					"choices": [
+						{
+							"id": "inherit_all",
+							"label": "承「傳」字訣，盡得真傳",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "gain_card_pool", "pool": "rare"},
+									{"kind": "permanent_power", "amount": 2},
+								],
+								"log": "你循著「傳」字訣運氣一周天，前輩的劍意如江河灌頂。你接住了這份託付，胸中多了一道從未有過的殺招。",
+							},
+						},
+						{
+							"id": "learn_guard",
+							"label": "習「藏」字訣，留一手保命後著",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "max_hp", "amount": 8},
+									{"kind": "next_battle_buff", "effects": [{"kind": "block", "amount": 10}]},
+								],
+								"log": "你記下那一手「藏」字後著。它不華麗，卻能在最險的關頭護你一命——前輩走過的險路，替你先鋪了一塊踏腳石。",
 							},
 						},
 					],

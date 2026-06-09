@@ -4760,6 +4760,19 @@ func _resolve_observe_effects(effects: Array) -> String:
 						var orig: CardData = d[pick] as CardData
 						d[pick] = orig.upgraded_copy()
 						parts.append("領悟「%s」更精妙的招式" % orig.display_name)
+			"upgrade_all":
+				# Event Redesign（Phase 4）：升級 active 牌組所有未升級卡——run-defining 級獎勵
+				var active_idx_a: int = run_state.active_character_index
+				if active_idx_a < run_state.character_decks.size():
+					var da: Array = run_state.character_decks[active_idx_a] as Array
+					var upgraded_n: int = 0
+					for i: int in range(da.size()):
+						var ca: CardData = da[i] as CardData
+						if ca != null and not ca.upgraded:
+							da[i] = ca.upgraded_copy()
+							upgraded_n += 1
+					if upgraded_n > 0:
+						parts.append("全副招式精進（%d 張升階）" % upgraded_n)
 			# ── Event Branching：新 effect kinds（P6 範疇，P2 為了讓 tree 能跑先補基本實作）──
 			"permanent_power":
 				run_state.power_bonus += amount
