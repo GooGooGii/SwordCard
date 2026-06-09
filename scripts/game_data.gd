@@ -1738,7 +1738,7 @@ static func _grass_spider() -> EnemyData:
 	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "吐絲 5 + 虛弱 1", "effects": [{"kind": "damage", "amount": 5}, {"kind": "weak", "amount": 1}]},
-		{"intent": "草網 5", "effects": [{"kind": "block", "amount": 5}]}
+		{"intent": "棘網 防 5 + 反甲 3", "effects": [{"kind": "block", "amount": 5}, {"kind": "enemy_thorns", "amount": 3}]}
 	]
 	return enemy
 
@@ -1931,7 +1931,7 @@ static func _pincer_demon() -> EnemyData:
 	enemy.actions = [
 		{"intent": "巨鉗剪切 18", "effects": [{"kind": "damage", "amount": 18}]},
 		{"intent": "夾子撞擊 14 + 破綻 1", "effects": [{"kind": "damage", "amount": 14}, {"kind": "vulnerable", "amount": 1}]},
-		{"intent": "鐵甲防護 20", "effects": [{"kind": "block", "amount": 20}]}
+		{"intent": "尖甲豎刺 防 20 + 反甲 4", "effects": [{"kind": "block", "amount": 20}, {"kind": "enemy_thorns", "amount": 4}]}
 	]
 	return enemy
 

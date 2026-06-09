@@ -196,6 +196,12 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 					log_lines.append("造成 %d 點傷害。" % total_dealt)
 				if atk_poison_added > 0:
 					log_lines.append("蠱刃淬煉：施加 %d 層蠱毒。" % atk_poison_added)
+				# 反甲（enemy_thorns）：玩家近身攻擊 → 受反傷（每次攻擊一次、直接扣 HP）。
+				# AOE damage_all 不觸發 → 遠程/毒流對反甲是天然剋制（build 取捨）。
+				var e_thorns: int = int(state.get("enemy_thorns", 0))
+				if e_thorns > 0:
+					state["player_hp"] = max(0, int(state["player_hp"]) - e_thorns)
+					log_lines.append("%s 的反甲尖刺反彈 %d 點傷害。" % [state["enemy_name"], e_thorns])
 		"block":
 			if from_enemy:
 				state["enemy_block"] = int(state["enemy_block"]) + amount
@@ -616,6 +622,10 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			# 漸怒：敵人累積攻擊力，往後每次出手傷害 +N（_enemy_hit_player / damage from_enemy 讀取）
 			state["enemy_strength"] = int(state.get("enemy_strength", 0)) + amount
 			log_lines.append("%s 怒氣高漲，攻擊力 +%d！" % [state.get("enemy_name", "敵人"), amount])
+		"enemy_thorns":
+			# 反甲：敵人豎起尖刺，玩家近身攻擊它時受 N 反傷（單體 damage 路徑讀取）。跨回合保留。
+			state["enemy_thorns"] = int(state.get("enemy_thorns", 0)) + amount
+			log_lines.append("%s 豎起反甲尖刺（反傷 %d）。" % [state.get("enemy_name", "敵人"), amount])
 		"summon":
 			# 由 enemy action 觸發：將召喚請求加進 pending list，
 			# BattleController.resolve_enemy_phase 結算完該敵 action 後處理。

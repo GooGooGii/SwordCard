@@ -130,6 +130,7 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 			"silenced": 0,
 			"berserk": 0,
 			"strength": 0,
+			"thorns": 0,
 			"loot_table": GameData.loot_table_for(e.id),
 		})
 	var active_idx: int = 0
@@ -242,6 +243,7 @@ func _sync_active_enemy_to_state() -> void:
 	state["enemy_silenced"] = slot.get("silenced", 0)
 	state["enemy_berserk"] = slot.get("berserk", 0)
 	state["enemy_strength"] = slot.get("strength", 0)
+	state["enemy_thorns"] = slot.get("thorns", 0)
 	state["enemy_loot_table"] = slot["loot_table"]
 
 # 把 state["enemy_*"] 寫回 enemies[active_enemy_index] slot
@@ -261,6 +263,7 @@ func _sync_state_to_active_enemy() -> void:
 	slot["silenced"] = int(state.get("enemy_silenced", slot.get("silenced", 0)))
 	slot["berserk"] = int(state.get("enemy_berserk", slot.get("berserk", 0)))
 	slot["strength"] = int(state.get("enemy_strength", slot.get("strength", 0)))
+	slot["thorns"] = int(state.get("enemy_thorns", slot.get("thorns", 0)))
 	# name / max_hp / loot_table 不變
 
 # 玩家主動切換 active enemy（drag-to-play / click portrait 觸發）
@@ -955,6 +958,7 @@ func spawn_enemy(enemy_id: String) -> bool:
 		"silenced": 0,
 		"berserk": 0,
 		"strength": 0,
+		"thorns": 0,
 		"loot_table": GameData.loot_table_for(clone.id),
 	}
 	(state["enemies"] as Array).append(slot)

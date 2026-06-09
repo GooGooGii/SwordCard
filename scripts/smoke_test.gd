@@ -151,6 +151,7 @@ func _initialize() -> void:
 	# 敵人機制 2026-06：自療(enemy_heal) / 漸怒(enemy_strength 累積攻擊力) / 穿甲(pierce 無視護體)
 	_test_enemy_heal_and_strength(characters[0], enemies[0])
 	_test_enemy_pierce(characters[0], enemies[0])
+	_test_enemy_thorns(characters[0], enemies[0])
 	# 技能/能力多樣化：翻倍 / 蓄勢 / 每回合引擎 / 回合結束 AOE
 	_test_block_multiply(characters[1], enemies[0])
 	_test_next_attack_mult(characters[0], enemies[0])
@@ -1984,6 +1985,26 @@ func _test_enemy_heal_and_strength(character: CharacterData, enemy: EnemyData) -
 	_check(int(bc.state["enemy_strength"]) == 5, "enemy_strength should accumulate to 5")
 	bc.resolver._resolve_effect({"kind": "damage", "amount": 10}, bc.state, true)
 	_check(int(bc.state["player_hp"]) == 85, "enemy_strength: 10+5=15 dmg, 100-15=85, got %d" % int(bc.state["player_hp"]))
+
+func _test_enemy_thorns(character: CharacterData, enemy: EnemyData) -> void:
+	# 反甲：玩家「單體攻擊」它時受反傷（每次攻擊一次，直接扣 HP）；AoE 不觸發
+	var bc: BattleController = _make_multi_battle(character, [enemy])
+	bc.start_turn()
+	bc.state["enemy_thorns"] = 4
+	bc.state["enemy_hp"] = 100
+	bc.state["enemy_block"] = 0
+	bc.state["enemy_vulnerable"] = 0
+	bc.state["player_power"] = 0
+	bc.state["player_weak"] = 0
+	bc.state["player_hp"] = 100
+	# 單體攻擊 10：敵 -10，玩家受 4 反傷
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 10}, bc.state)
+	_check(int(bc.state["enemy_hp"]) == 90, "thorns: 單體攻擊敵 100-10=90, got %d" % int(bc.state["enemy_hp"]))
+	_check(int(bc.state["player_hp"]) == 96, "thorns: 玩家受 4 反傷 100-4=96, got %d" % int(bc.state["player_hp"]))
+	# 多段攻擊只反一次（每次 damage effect 一次，不逐段）
+	bc.state["player_hp"] = 100
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 3, "hits": 3}, bc.state)
+	_check(int(bc.state["player_hp"]) == 96, "thorns: 多段攻擊只反 1 次 4 傷, got %d" % int(bc.state["player_hp"]))
 
 func _test_enemy_pierce(character: CharacterData, enemy: EnemyData) -> void:
 	# 穿甲：pierce 攻擊無視玩家護體直接打 HP
