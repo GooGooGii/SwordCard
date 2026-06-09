@@ -76,7 +76,7 @@ static func _bee_cocoon() -> EnemyData:
 	enemy.portrait_scale = 0.72  # 小型：蜂蛹（借 wild_bee 圖）
 	enemy.display_name = "蜂蛹"
 	enemy.max_hp = 30
-	enemy.portrait_path = "res://assets/art/enemies/wild_bee.png"
+	enemy.portrait_path = "res://assets/art/enemies/bee_cocoon.png"
 	enemy.actions = [
 		{"intent": "蠕動撞 6", "effects": [{"kind": "damage", "amount": 6}]},
 		{"intent": "結繭 12", "effects": [{"kind": "block", "amount": 12}]},
@@ -90,7 +90,7 @@ static func _leaf_sprite() -> EnemyData:
 	enemy.portrait_scale = 0.78  # 小型：綠葉小妖（借 tree_demon 圖）
 	enemy.display_name = "綠葉小妖"
 	enemy.max_hp = 26
-	enemy.portrait_path = "res://assets/art/enemies/tree_demon.png"
+	enemy.portrait_path = "res://assets/art/enemies/leaf_sprite.png"
 	enemy.actions = [
 		{"intent": "葉刃 8", "effects": [{"kind": "damage", "amount": 8}]},
 		{"intent": "孢子 蠱毒 2", "effects": [{"kind": "poison", "amount": 2}]},
@@ -104,7 +104,7 @@ static func _grass_sprite() -> EnemyData:
 	enemy.portrait_scale = 0.8  # 小型：草精（借 tree_demon 圖）
 	enemy.display_name = "草精"
 	enemy.max_hp = 34
-	enemy.portrait_path = "res://assets/art/enemies/tree_demon.png"
+	enemy.portrait_path = "res://assets/art/enemies/grass_sprite.png"
 	enemy.actions = [
 		{"intent": "藤鞭抽 10", "effects": [{"kind": "damage", "amount": 10}]},
 		{"intent": "纏繞 虛弱 1", "effects": [{"kind": "weak", "amount": 1}]},
@@ -117,7 +117,7 @@ static func _thug() -> EnemyData:
 	enemy.id = "thug"
 	enemy.display_name = "打手"
 	enemy.max_hp = 58
-	enemy.portrait_path = "res://assets/art/enemies/bandit.png"
+	enemy.portrait_path = "res://assets/art/enemies/thug.png"
 	enemy.actions = [
 		{"intent": "拳打 13", "effects": [{"kind": "damage", "amount": 13}]},
 		{"intent": "悶棍 11 + 破綻 1", "effects": [{"kind": "damage", "amount": 11}, {"kind": "vulnerable", "amount": 1}]},
@@ -130,7 +130,7 @@ static func _miao_maiden() -> EnemyData:
 	enemy.id = "miao_maiden"
 	enemy.display_name = "長鞭苗女"
 	enemy.max_hp = 62
-	enemy.portrait_path = "res://assets/art/enemies/miao_soldier.png"
+	enemy.portrait_path = "res://assets/art/enemies/miao_maiden.png"
 	enemy.actions = [
 		{"intent": "長鞭抽 13 + 破綻 1", "effects": [{"kind": "damage", "amount": 13}, {"kind": "vulnerable", "amount": 1}]},
 		{"intent": "苗女毒鏢 11 + 蠱毒 3", "effects": [{"kind": "damage", "amount": 11}, {"kind": "poison", "amount": 3}]},
@@ -144,7 +144,7 @@ static func _octopus_imp() -> EnemyData:
 	enemy.portrait_scale = 0.9  # 水族：短腿章魚（借 water_tentacle 圖）
 	enemy.display_name = "短腿章魚"
 	enemy.max_hp = 58
-	enemy.portrait_path = "res://assets/art/enemies/water_tentacle.png"
+	enemy.portrait_path = "res://assets/art/enemies/octopus_imp.png"
 	enemy.actions = [
 		{"intent": "觸腕纏 14", "effects": [{"kind": "damage", "amount": 14}]},
 		{"intent": "墨噴 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]},
@@ -157,7 +157,7 @@ static func _clam_spirit() -> EnemyData:
 	enemy.id = "clam_spirit"
 	enemy.display_name = "蚌殼精"
 	enemy.max_hp = 72
-	enemy.portrait_path = "res://assets/art/enemies/water_imp.png"
+	enemy.portrait_path = "res://assets/art/enemies/clam_spirit.png"
 	enemy.actions = [
 		{"intent": "蚌夾 15", "effects": [{"kind": "damage", "amount": 15}]},
 		{"intent": "閉殼 22", "effects": [{"kind": "block", "amount": 22}]},
@@ -170,7 +170,7 @@ static func _conch_maiden() -> EnemyData:
 	enemy.id = "conch_maiden"
 	enemy.display_name = "海螺女"
 	enemy.max_hp = 64
-	enemy.portrait_path = "res://assets/art/enemies/fox_spirit.png"
+	enemy.portrait_path = "res://assets/art/enemies/conch_maiden.png"
 	enemy.actions = [
 		{"intent": "海螺音波 13 + 虛弱 1", "effects": [{"kind": "damage", "amount": 13}, {"kind": "weak", "amount": 1}]},
 		{"intent": "纏絲 16", "effects": [{"kind": "damage", "amount": 16}]},
@@ -184,7 +184,7 @@ static func _turtle_demon() -> EnemyData:
 	enemy.portrait_scale = 1.1  # 水族：傻仔龜（借 rock_guardian 圖）
 	enemy.display_name = "傻仔龜"
 	enemy.max_hp = 84
-	enemy.portrait_path = "res://assets/art/enemies/rock_guardian.png"
+	enemy.portrait_path = "res://assets/art/enemies/turtle_demon.png"
 	enemy.actions = [
 		{"intent": "龜殼撞 15", "effects": [{"kind": "damage", "amount": 15}]},
 		{"intent": "縮殼 24", "effects": [{"kind": "block", "amount": 24}]},
@@ -1107,7 +1107,7 @@ static func _flower_spirit_enemy() -> EnemyData:
 	enemy.id = "flower_spirit"
 	enemy.display_name = "花妖"
 	enemy.max_hp = 46
-	enemy.portrait_path = "res://assets/art/enemies/fox_spirit.png"
+	enemy.portrait_path = "res://assets/art/enemies/flower_spirit.png"
 	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "迷香 2", "effects": [{"kind": "weak", "amount": 2}]},
