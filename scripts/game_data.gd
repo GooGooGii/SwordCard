@@ -1128,7 +1128,8 @@ static func _serpent_demon() -> EnemyData:
 	enemy.actions = [
 		{"intent": "毒牙 14", "effects": [{"kind": "damage", "amount": 14}, {"kind": "poison", "amount": 3}]},
 		{"intent": "盤身 14", "effects": [{"kind": "block", "amount": 14}]},
-		{"intent": "蛇吻 22", "effects": [{"kind": "damage", "amount": 22}]}
+		{"intent": "蛇吻 22", "effects": [{"kind": "damage", "amount": 22}]},
+		{"intent": "蛇蛻回春 回14 + 防8", "effects": [{"kind": "enemy_heal", "amount": 14}, {"kind": "block", "amount": 8}]}
 	]
 	return enemy
 
@@ -1271,7 +1272,8 @@ static func _tower_demon() -> EnemyData:
 	enemy.actions = [
 		{"intent": "邪焰 15 + 破綻 1", "effects": [{"kind": "damage", "amount": 15}, {"kind": "vulnerable", "amount": 1}]},
 		{"intent": "衝擊 22", "effects": [{"kind": "damage", "amount": 22}]},
-		{"intent": "封魔護 14", "effects": [{"kind": "block", "amount": 14}]}
+		{"intent": "封魔護 14", "effects": [{"kind": "block", "amount": 14}]},
+		{"intent": "封魔蓄力 攻擊力+5", "effects": [{"kind": "enemy_strength", "amount": 5}]}
 	]
 	return enemy
 
@@ -1338,7 +1340,7 @@ static func _red_eye_demon() -> EnemyData:
 		{"intent": "狐火魅襲 21 + 虛弱 1", "effects": [{"kind": "damage", "amount": 21}, {"kind": "weak", "amount": 1}]},
 		{"intent": "妖狐幻爪 26", "effects": [{"kind": "damage", "amount": 26}]},
 		{"intent": "魅香 蠱毒 4 + 破綻 2", "effects": [{"kind": "poison", "amount": 4}, {"kind": "vulnerable", "amount": 2}]},
-		{"intent": "妖霧護身 18", "effects": [{"kind": "block", "amount": 18}]}
+		{"intent": "血怒漸盛 攻擊力+4", "effects": [{"kind": "enemy_strength", "amount": 4}]}
 	]
 	return enemy
 

@@ -148,6 +148,8 @@ func _initialize() -> void:
 	_test_draw_on_attack(characters[0], enemies[0])
 	_test_draw_on_skill(characters[1], enemies[0])
 	_test_damage_debuff_bonus_all(characters[1], enemies)
+	# 敵人機制 2026-06：自療(enemy_heal) / 漸怒(enemy_strength 累積攻擊力)
+	_test_enemy_heal_and_strength(characters[0], enemies[0])
 	# 技能/能力多樣化：翻倍 / 蓄勢 / 每回合引擎 / 回合結束 AOE
 	_test_block_multiply(characters[1], enemies[0])
 	_test_next_attack_mult(characters[0], enemies[0])
@@ -1959,6 +1961,28 @@ func _test_damage_debuff_bonus_all(character: CharacterData, enemies: Array[Enem
 	_check(int(e0["hp"]) == 88, "ddba_all e0 (2 weak): 100-12=88, got %d" % int(e0["hp"]))
 	# e1：0 debuff → 6 → 100-6=94
 	_check(int(e1["hp"]) == 94, "ddba_all e1 (no debuff): 100-6=94, got %d" % int(e1["hp"]))
+
+func _test_enemy_heal_and_strength(character: CharacterData, enemy: EnemyData) -> void:
+	var bc: BattleController = _make_multi_battle(character, [enemy])
+	bc.start_turn()
+	# enemy_heal：回血、封頂 max_hp
+	bc.state["enemy_max_hp"] = 100
+	bc.state["enemy_hp"] = 20
+	bc.resolver._resolve_effect({"kind": "enemy_heal", "amount": 15}, bc.state, true)
+	_check(int(bc.state["enemy_hp"]) == 35, "enemy_heal 20+15=35, got %d" % int(bc.state["enemy_hp"]))
+	bc.state["enemy_hp"] = 95
+	bc.resolver._resolve_effect({"kind": "enemy_heal", "amount": 15}, bc.state, true)
+	_check(int(bc.state["enemy_hp"]) == 100, "enemy_heal caps at max_hp, got %d" % int(bc.state["enemy_hp"]))
+	# enemy_strength：累積攻擊力，往後敵人傷害 +N
+	bc.state["player_hp"] = 100
+	bc.state["player_block"] = 0
+	bc.state["player_vulnerable"] = 0
+	bc.state["enemy_weak"] = 0
+	bc.state["enemy_strength"] = 0
+	bc.resolver._resolve_effect({"kind": "enemy_strength", "amount": 5}, bc.state, true)
+	_check(int(bc.state["enemy_strength"]) == 5, "enemy_strength should accumulate to 5")
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 10}, bc.state, true)
+	_check(int(bc.state["player_hp"]) == 85, "enemy_strength: 10+5=15 dmg, 100-15=85, got %d" % int(bc.state["player_hp"]))
 
 func _test_block_multiply(character: CharacterData, enemy: EnemyData) -> void:
 	# 聚靈訣：護體翻倍；無護體時無效
