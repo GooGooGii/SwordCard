@@ -11,12 +11,13 @@
 |---|---|---|
 | 0 | 10 個扁平事件全數轉 `tree`（33/33 皆有樹）；`EventRunner` 擴充 deck_archetype / hp_below / hp_above / min_act / max_act / has_potion_slot / event_flag / not_event_flag 檢定；`hide_badge` 神秘選項；7 個新 smoke test | ✅ |
 | 1 | 取捨化：10 個改寫事件每個都含「標價的好處」＋至少一個 `gamble`；部分 `leave`/失敗帶長尾旗標後果 | ✅ |
-| 2 | 讀 build：改寫事件含 deck_archetype（毒/劍流）、hp 門檻、角色限定分歧 | ✅ |
-| 3 | `RunState.event_flags`（純加欄位，不升存檔版本）＋ `set_flag` effect kind；多事件埋旗標（fox_spared/fox_slain、miao_kin、anu_family_reunion、sword_spirit_bond、nuwa_jade、lin_tomb_heir…）；**回訪 payoff 已接通一條**：隱龍窟放走狐女 → 酒館舊識她回來報恩 | ✅（infra＋示範閉環；更多人物回訪線屬持續內容擴編） |
-| 4 | 稀有奇遇層級：`EventData.rarity_of` ＋ `MapGenerator.event_pick_weight` 加權降權；新增 run-defining 稀有事件「蜀山秘府」（`upgrade_all` 整副升階等大機緣） | ✅ |
+| 2 | 讀 build：**角色限定分歧覆蓋 34/34 事件**；deck_archetype（毒/劍/疊攻流）或 hp 門檻 build 分歧覆蓋 15+ 戰鬥/探索事件（其餘以 min_gold / min_deck_size / has_potion_slot 等狀態分歧讀局面）。安靜冥想型與情感人物設場（彩依/婉兒/比武招親）刻意維持戰鬥-build-neutral 以保語氣 | ✅ |
+| 3 | `RunState.event_flags`（純加欄位，不升存檔版本）＋ `set_flag` effect kind；多事件埋旗標（fox_spared/fox_slain、miao_kin、anu_family_reunion、sword_spirit_bond、nuwa_jade、lin_tomb_heir、marked_by_bandits、healer_grudge、yamen_grudge…）；**長尾回訪閉環已接通兩條**：①隱龍窟放走狐女 → 鬼林迷霧她回來引路報恩（正向）②酒館打聽消息被盯上 → 清泉邊遭尾隨者埋伏，戰勝清旗標（負向） | ✅（infra＋雙向示範閉環；更多 PAL1 人物回訪線列為持續內容擴編，非阻塞） |
+| 4 | 稀有奇遇層級：`EventData.rarity_of` ＋ `MapGenerator.event_pick_weight` 加權降權；新增 run-defining 稀有事件「蜀山秘府」（`upgrade_all` 整副升階等大機緣，含李逍遙蜀山師承專屬分歧） | ✅ |
 
-> 驗證：`scripts/smoke_test.gd` 全綠（含 7 個新測試）；`render_event.gd` 實機截圖確認蜀山秘府與隱龍窟分支樹正確渲染、角色限定選項正確隱藏。
-> 待補美術：稀有事件「蜀山秘府」事件插畫（見 `ART_TODO.md` §〇）。其餘改寫事件沿用原插畫。
+> 驗證：`scripts/smoke_test.gd` 全綠（含 redesign 系列新測試：全事件有樹／結構良構／新 requires 檢定／event_flags round-trip＋舊存檔相容／deck_archetype 偵測）；`render_event.gd` 實機截圖確認分支樹渲染、低血 hp_below 分歧與 event_flag 回訪選項正確顯示、角色限定選項正確隱藏、密集 root（6+ 選項）版面不溢出。
+> 待補美術：稀有事件「蜀山秘府」事件插畫（見 `ART_TODO.md`）。其餘事件沿用原插畫。
+> 持續擴編（非阻塞）：更多 PAL1 人物回訪線、安靜冥想事件的選擇性 build 反應，依需要再加。
 
 ---
 > 以下為原始設計藍圖，保留供日後擴編人物回訪線時參考。
