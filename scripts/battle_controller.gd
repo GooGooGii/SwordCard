@@ -433,6 +433,11 @@ func _action_for_enemy(idx: int) -> Dictionary:
 	var active_actions: Array[Dictionary] = e.phase_2_actions if (enemy_phased[idx] and not e.phase_2_actions.is_empty()) else e.actions
 	if active_actions.is_empty():
 		return {}
+	# 大招：每 ultimate_every 個自身回合放一次（enemy_action_indices 為已出手次數，
+	# +1 = 即將進行的這回合；命中倍數 → 改放大招，凌駕一般輪替）
+	if e.ultimate_every > 0 and not e.ultimate_action.is_empty():
+		if (enemy_action_indices[idx] + 1) % e.ultimate_every == 0:
+			return e.ultimate_action
 	# Ascension A17-19：招式更刁——改挑「傷害最高」的招式（而非照表輪替）
 	var asc: int = run_state.ascension_level if run_state != null else 0
 	var tier: String = "boss" if Ascension.is_boss_id(e.id) else ("elite" if bool(state.get("battle_is_elite", false)) else "normal")
@@ -494,6 +499,26 @@ func _check_phase_transition() -> void:
 				add_log("%s 怒色暴漲，招式變換！" % e.display_name)
 				emit_name = e.display_name
 			phase_transitioned.emit(emit_name)
+
+# 分裂：HP 過半（首次）且戰場未滿時，召出 split_into 指定的分身（每隻只分裂一次）。
+# 在 play_card 傷害後與 phase 檢查一起跑，所以斬到半血的瞬間就分裂。
+func _check_split() -> void:
+	_sync_state_to_active_enemy()
+	for i: int in range(enemies.size()):
+		var e: EnemyData = enemies[i]
+		if e.split_into.is_empty():
+			continue
+		var slot: Dictionary = state["enemies"][i] as Dictionary
+		if bool(slot.get("split_done", false)) or int(slot["hp"]) <= 0:
+			continue
+		if int(slot["hp"]) * 2 >= int(slot["max_hp"]):
+			continue  # 還沒過半
+		slot["split_done"] = true
+		add_log("%s 一分為二！" % _enemy_display_name_for(i))
+		for _n: int in range(max(1, e.split_count)):
+			if enemies.size() >= MAX_ENEMIES_PER_BATTLE:
+				break
+			spawn_enemy(e.split_into)
 
 func effective_card_cost(card: CardData) -> int:
 	if character == null:
@@ -620,6 +645,7 @@ func play_card(card: CardData) -> Dictionary:
 		state["steal_result"] = {}
 		_apply_stolen_item(steal)
 	_check_phase_transition()
+	_check_split()
 	_apply_card_play_passive(card)
 	_fire_relic_triggers("card_played", {
 		"card_type": card.card_type,

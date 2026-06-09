@@ -153,6 +153,7 @@ func _initialize() -> void:
 	_test_enemy_pierce(characters[0], enemies[0])
 	_test_enemy_thorns(characters[0], enemies[0])
 	_test_enemy_strip_and_artifact(characters[3], enemies[0])
+	_test_enemy_split_and_ultimate(characters[0])
 	# 技能/能力多樣化：翻倍 / 蓄勢 / 每回合引擎 / 回合結束 AOE
 	_test_block_multiply(characters[1], enemies[0])
 	_test_next_attack_mult(characters[0], enemies[0])
@@ -1986,6 +1987,33 @@ func _test_enemy_heal_and_strength(character: CharacterData, enemy: EnemyData) -
 	_check(int(bc.state["enemy_strength"]) == 5, "enemy_strength should accumulate to 5")
 	bc.resolver._resolve_effect({"kind": "damage", "amount": 10}, bc.state, true)
 	_check(int(bc.state["player_hp"]) == 85, "enemy_strength: 10+5=15 dmg, 100-15=85, got %d" % int(bc.state["player_hp"]))
+
+func _test_enemy_split_and_ultimate(character: CharacterData) -> void:
+	# 分裂：HP 過半 → 召出 split_into 分身（一次性）
+	var hydra: EnemyData = GameData.enemy_by_id("hydra_snake")
+	_check(hydra != null and hydra.split_into == "green_snake", "hydra_snake should split into green_snake")
+	var bc: BattleController = _make_multi_battle(character, [hydra])
+	bc.start_turn()
+	var slot: Dictionary = bc.state["enemies"][0] as Dictionary
+	slot["hp"] = int(slot["max_hp"]) / 2 - 1  # 過半
+	bc._sync_active_enemy_to_state()
+	var n_before: int = bc.enemies.size()
+	bc._check_split()
+	_check(bc.enemies.size() == n_before + 1, "split should spawn 1 add, got %d->%d" % [n_before, bc.enemies.size()])
+	_check(bool((bc.state["enemies"][0] as Dictionary).get("split_done", false)), "split_done flagged")
+	bc._check_split()  # 不重複分裂
+	_check(bc.enemies.size() == n_before + 1, "split only once")
+	# 大招每 N 回合：unicorn_demon 每 3 回合放獨角貫穿
+	var uni: EnemyData = GameData.enemy_by_id("unicorn_demon")
+	_check(uni != null and uni.ultimate_every == 3, "unicorn ultimate_every=3")
+	var bc2: BattleController = _make_multi_battle(character, [uni])
+	# action_index 0,1 → 一般招；index 2（第3回合）→ 大招
+	bc2.enemy_action_indices[0] = 2
+	var act: Dictionary = bc2._action_for_enemy(0)
+	_check(String(act.get("intent", "")).begins_with("獨角貫穿"), "3rd-turn action should be ultimate, got %s" % String(act.get("intent", "")))
+	bc2.enemy_action_indices[0] = 0
+	var act0: Dictionary = bc2._action_for_enemy(0)
+	_check(not String(act0.get("intent", "")).begins_with("獨角貫穿"), "1st-turn action should NOT be ultimate")
 
 func _test_enemy_strip_and_artifact(character: CharacterData, enemy: EnemyData) -> void:
 	var bc: BattleController = _make_multi_battle(character, [enemy])

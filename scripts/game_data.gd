@@ -1770,6 +1770,8 @@ static func _hydra_snake() -> EnemyData:
 		{"intent": "蛇尾掃 14", "effects": [{"kind": "damage", "amount": 14}]},
 		{"intent": "盤鱗 12", "effects": [{"kind": "block", "amount": 12}]}
 	]
+	# 分裂：被斬到半血時頭顱再生，分出一條小青蛇
+	enemy.split_into = "green_snake"
 	return enemy
 
 static func _flying_snake() -> EnemyData:
@@ -1918,6 +1920,9 @@ static func _unicorn_demon() -> EnemyData:
 		{"intent": "雷角電擊 15 + 虛弱 1", "effects": [{"kind": "damage", "amount": 15}, {"kind": "weak", "amount": 1}]},
 		{"intent": "聖獸屏障 15", "effects": [{"kind": "block", "amount": 15}]}
 	]
+	# 大招：每 3 個自身回合改放「獨角貫穿」（穿甲 28），意圖預警可見 → 玩家要在大招前布防
+	enemy.ultimate_every = 3
+	enemy.ultimate_action = {"intent": "獨角貫穿 28（穿甲）", "effects": [{"kind": "damage", "amount": 28, "pierce": true}]}
 	return enemy
 
 static func _pincer_demon() -> EnemyData:
