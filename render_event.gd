@@ -12,7 +12,10 @@ extends SceneTree
 
 const WINDOW := Vector2i(1280, 720)
 # 要截圖的事件 variant（root 節點畫面）
-const VARIANTS := ["yinlong_cave"]
+const VARIANTS := ["ancient_battlefield", "ghost_forest"]
+# 驗證條件分支：低血（觸發 hp_below）＋ 設旗標（觸發 event_flag 回訪選項）
+const LOW_HP := true
+const SET_FLAGS := ["fox_spared", "marked_by_bandits"]
 
 var main: Node
 
@@ -29,6 +32,10 @@ func _run() -> void:
 	await process_frame
 	main.start_run(GameData.characters()[0])
 	await process_frame
+	if LOW_HP:
+		main.run_state.character_hps[0] = max(1, int(main.run_state.character_max_hps[0] * 0.3))
+	for f in SET_FLAGS:
+		main.run_state.set_event_flag(f)
 	for v in VARIANTS:
 		main.run_state.current_event_variant = v
 		main.show_event_node()

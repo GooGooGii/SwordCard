@@ -89,6 +89,27 @@ const VARIANTS: Dictionary = {
 						},
 					},
 					{
+						"id": "bandit_ambush",
+						"label": "察覺上次盯上你的人摸到了泉邊",
+						"kind_hint": "battle",
+						"requires": {"event_flag": "marked_by_bandits"},
+						"outcome": {
+							"kind": "battle",
+							"battle": {
+								"enemy_id": "thug",
+								"enemy_hp_mult": 1.0,
+								"victory_effects": [
+									{"kind": "gold", "amount": 25},
+									{"kind": "set_flag", "flag": "marked_by_bandits", "value": false},
+								],
+								"defeat_effects": [
+									{"kind": "gold", "amount": -20},
+								],
+							},
+							"log": "泉水的倒影裡多了個人影——是你在酒館打聽消息時，悄悄轉過頭來的那隻耳朵。他循著風聲找了上來，刀已出鞘。看來這筆帳，得在這眼清泉邊算清。",
+						},
+					},
+					{
 						"id": "leave",
 						"label": "離去",
 						"kind_hint": "neutral",
@@ -1183,6 +1204,42 @@ const VARIANTS: Dictionary = {
 						},
 					},
 					{
+						"id": "power_overwhelm",
+						"label": "以一身殺意壓她，逼出更好的條件",
+						"kind_hint": "reward",
+						"requires": {"deck_archetype": ["power"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "permanent_power", "amount": 2},
+								{"kind": "gold", "amount": 12},
+							],
+							"log": "你沒接她的話，只是把滿身殺意緩緩壓了過去。她臉上的笑僵了一瞬——立契講的是誰更不怕誰。她識相地把條件抬高了一截，主動退讓。",
+						},
+					},
+					{
+						"id": "lowhp_desperate_pact",
+						"label": "重傷垂危，乾脆把命押上立契",
+						"kind_hint": "gamble",
+						"hide_badge": true,
+						"requires": {"hp_below": 0.35},
+						"outcome": {
+							"kind": "gamble",
+							"gamble": {
+								"win_chance": 0.6,
+								"win_effects": [
+									{"kind": "heal", "amount": 18},
+									{"kind": "permanent_power", "amount": 2},
+								],
+								"lose_effects": [
+									{"kind": "max_hp", "amount": -4},
+									{"kind": "gain_curse", "curse_id": "xie_yin"},
+								],
+							},
+							"log": "反正快撐不住了。你伸手按上她遞來的黑霧：「就賭這一把。」妖契認垂死之人的孤注，吃下去是重生，還是反噬，全在一念。",
+						},
+					},
+					{
 						"id": "leave",
 						"label": "拱手婉拒",
 						"kind_hint": "neutral",
@@ -1388,6 +1445,27 @@ const VARIANTS: Dictionary = {
 						},
 					},
 					{
+						"id": "lowhp_old_remedy",
+						"label": "重傷垂危，急服香灰下那帖無名古方",
+						"kind_hint": "gamble",
+						"hide_badge": true,
+						"requires": {"hp_below": 0.4},
+						"outcome": {
+							"kind": "gamble",
+							"gamble": {
+								"win_chance": 0.65,
+								"win_effects": [
+									{"kind": "heal", "amount": 20},
+								],
+								"lose_effects": [
+									{"kind": "damage", "amount": 4},
+									{"kind": "next_battle_buff", "effects": [{"kind": "weak", "amount": 1}]},
+								],
+							},
+							"log": "你撐不住了，也顧不得那古方是治傷還是禁忌，抓起就嚥。藥性在垂死的身子裡橫衝直撞——是救命，還是催命，賭一把。",
+						},
+					},
+					{
 						"id": "leave",
 						"label": "離去",
 						"kind_hint": "neutral",
@@ -1505,6 +1583,41 @@ const VARIANTS: Dictionary = {
 								{"kind": "permanent_power", "amount": 2},
 							],
 							"log": "月如在父親提過的那柄劍前跪下，雙手取劍——一道前輩劍意流入她心中。",
+						},
+					},
+					{
+						"id": "blade_communion",
+						"label": "以滿身劍意與千年戰魂共鳴",
+						"kind_hint": "reward",
+						"requires": {"deck_archetype": ["attack"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "permanent_power", "amount": 2},
+								{"kind": "gain_card_pool", "pool": "character"},
+							],
+							"log": "你拔劍一引，滿地殘旌與斷戟轟然共鳴。千年前的殺伐意志認出了同道，把一式失傳的軍陣劍法，痛快地交到了你手裡。",
+						},
+					},
+					{
+						"id": "lowhp_last_stand",
+						"label": "重傷之下，效古人作最後死戰之姿",
+						"kind_hint": "gamble",
+						"hide_badge": true,
+						"requires": {"hp_below": 0.4},
+						"outcome": {
+							"kind": "gamble",
+							"gamble": {
+								"win_chance": 0.6,
+								"win_effects": [
+									{"kind": "permanent_power", "amount": 3},
+									{"kind": "next_battle_buff", "effects": [{"kind": "block", "amount": 8}]},
+								],
+								"lose_effects": [
+									{"kind": "damage", "amount": 5},
+								],
+							},
+							"log": "你拖著傷軀立於古戰場中央，擺出與滿地英靈相同的死戰之姿。鐵血在絕境裡反而燒得更旺——能不能燒成戰意，看你撐不撐得住。",
 						},
 					},
 					{
@@ -1820,6 +1933,55 @@ const VARIANTS: Dictionary = {
 						},
 					},
 					{
+						"id": "poison_commune",
+						"label": "放出蠱蟲與霧林毒瘴相認",
+						"kind_hint": "reward",
+						"requires": {"deck_archetype": ["poison"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "gain_card_pool", "pool": "character"},
+								{"kind": "heal", "amount": 6},
+							],
+							"log": "你放出隨身的蠱蟲。牠們沒入毒瘴，竟與林中的妖氣一拍即合——霧林像是認了同類，替你讓開一條路，還回贈了一道馴毒的手法。",
+						},
+					},
+					{
+						"id": "lowhp_feign_corpse",
+						"label": "重傷難行，索性裝死誘那雙眼睛靠近",
+						"kind_hint": "gamble",
+						"hide_badge": true,
+						"requires": {"hp_below": 0.4},
+						"outcome": {
+							"kind": "gamble",
+							"gamble": {
+								"win_chance": 0.55,
+								"win_effects": [
+									{"kind": "gain_relic_pool", "pool": "uncommon"},
+									{"kind": "heal", "amount": 6},
+								],
+								"lose_effects": [
+									{"kind": "damage", "amount": 5},
+								],
+							},
+							"log": "你撐不住了，乾脆伏倒裝死，屏息等那雙金瞳湊近——拿傷勢當餌，賭牠先鬆懈，還是你先撐不住。",
+						},
+					},
+					{
+						"id": "fox_repays",
+						"label": "向霧中那雙熟悉的金瞳輕聲問候",
+						"kind_hint": "reward",
+						"requires": {"event_flag": "fox_spared"},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "heal_party", "amount": 10},
+								{"kind": "gain_potion"},
+							],
+							"log": "霧中那雙金瞳一亮——是你先前在隱龍窟放走的狐女。她認得你。她沒有現出全身，只把一條最安全的小徑照亮，又留下一枚療傷妖丹：「這次換我引你。」恩，是會回來的。",
+						},
+					},
+					{
 						"id": "leave",
 						"label": "退回原路",
 						"kind_hint": "neutral",
@@ -1956,6 +2118,19 @@ const VARIANTS: Dictionary = {
 								{"kind": "max_hp", "amount": 3},
 							],
 							"log": "符紋認出他的血脈，把一道精煉版的招式直接刻進他的識海。",
+						},
+					},
+					{
+						"id": "power_resonance",
+						"label": "以一身凝練的殺伐之意與古仙共振",
+						"kind_hint": "reward",
+						"requires": {"deck_archetype": ["power"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "permanent_power", "amount": 3},
+							],
+							"log": "你不跪不求，只把一身淬鍊到極處的殺意緩緩放出。符紋劇烈震顫，像是被喚醒的舊識——古仙的入定意念與你的鋒芒對撞、相認，臨去前替你的劍意又添了一層厚度。",
 						},
 					},
 					{
@@ -2209,6 +2384,42 @@ const VARIANTS: Dictionary = {
 								{"kind": "gain_card_pool", "pool": "character"},
 							],
 							"log": "靈兒以靈族指訣連點符紋。整座祭壇的邪氣在她血脈中柔柔散去——這不是覆滅，是替它畫上一個遲到了百年的句點。",
+						},
+					},
+					{
+						"id": "gu_devour_evil",
+						"label": "放蠱蟲噬食祭壇上的邪力",
+						"kind_hint": "mixed",
+						"requires": {"deck_archetype": ["poison"]},
+						"outcome": {
+							"kind": "mixed",
+							"effects": [
+								{"kind": "gain_card_pool", "pool": "character"},
+								{"kind": "damage", "amount": 4},
+							],
+							"log": "你放出毒蠱去噬食那團邪力。蠱蟲吞下扭曲的妖氣，撐脹得發亮，回頭時竟帶回了一道把邪力煉為己用的法門——只是有一隻反咬了你一口。",
+						},
+					},
+					{
+						"id": "lowhp_channel_evil",
+						"label": "重傷將死，索性強引邪力續命",
+						"kind_hint": "gamble",
+						"hide_badge": true,
+						"requires": {"hp_below": 0.35},
+						"outcome": {
+							"kind": "gamble",
+							"gamble": {
+								"win_chance": 0.55,
+								"win_effects": [
+									{"kind": "heal", "amount": 22},
+									{"kind": "permanent_power", "amount": 2},
+								],
+								"lose_effects": [
+									{"kind": "max_hp", "amount": -5},
+									{"kind": "gain_curse", "curse_id": "xie_yin"},
+								],
+							},
+							"log": "你已沒有退路，乾脆把掌心按上血環，任那股邪力倒灌進殘破的身子——拿命博一線生機，反噬與重生，只在一瞬。",
 						},
 					},
 					{
@@ -2980,6 +3191,20 @@ const VARIANTS: Dictionary = {
 						},
 					},
 					{
+						"id": "sword_offer",
+						"label": "默運一身劍意，請老劍仙點評",
+						"kind_hint": "reward",
+						"requires": {"deck_archetype": ["attack"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "permanent_power", "amount": 2},
+								{"kind": "upgrade_random"},
+							],
+							"log": "你不發一語，緩緩運起滿身劍意。醉道士的眼一下子亮了，半分醉意全無：「有點意思。」他屈指在你劍上彈了三下——三處你自己都沒察覺的破綻，應聲而消。",
+						},
+					},
+					{
 						"id": "leave",
 						"label": "繞過他繼續趕路",
 						"kind_hint": "neutral",
@@ -3280,6 +3505,20 @@ const VARIANTS: Dictionary = {
 						},
 					},
 					{
+						"id": "intimidate_private",
+						"label": "亮出一身殺氣，逼官差私下了結",
+						"kind_hint": "mixed",
+						"requires": {"deck_archetype": ["power"]},
+						"outcome": {
+							"kind": "mixed",
+							"effects": [
+								{"kind": "gold", "amount": 20},
+								{"kind": "set_flag", "flag": "yamen_grudge"},
+							],
+							"log": "你不閃不避，只把一身殺氣緩緩壓向那年輕官差。他額角滲汗，到底是識相收了「辛苦費」放你走——只是他把你的臉，牢牢記在了心裡。",
+						},
+					},
+					{
 						"id": "leave",
 						"label": "裝沒看見，徑直走過",
 						"kind_hint": "neutral",
@@ -3448,11 +3687,46 @@ const VARIANTS: Dictionary = {
 						},
 					},
 					{
+						"id": "lxy_legend",
+						"label": "（李逍遙）想起師父說的生死節點傳說，誠心祈願",
+						"kind_hint": "reward",
+						"requires": {"character": ["li_xiaoyao"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "revive", "amount": 24},
+								{"kind": "heal", "amount": 8},
+							],
+							"log": "逍遙想起師父講過：有些廟宇是天地節點，連著生死兩界。他平時不信，今天願意信一次。油燈金光大盛——倒下的同伴在暖流中睜開了眼。",
+						},
+					},
+					{
 						"id": "decipher_wall",
 						"label": "推敲廟牆上的武學銘文",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_inscription",
+					},
+					{
+						"id": "lowhp_burn_life",
+						"label": "燃自身精血，向神明換一線生機",
+						"kind_hint": "gamble",
+						"hide_badge": true,
+						"requires": {"hp_below": 0.4},
+						"outcome": {
+							"kind": "gamble",
+							"gamble": {
+								"win_chance": 0.6,
+								"win_effects": [
+									{"kind": "heal", "amount": 24},
+									{"kind": "permanent_power", "amount": 1},
+								],
+								"lose_effects": [
+									{"kind": "max_hp", "amount": -3},
+								],
+							},
+							"log": "你已是重傷之身，索性燃起一縷精血供於燈前——拿命換命，看神明肯不肯收。",
+						},
 					},
 					{
 						"id": "leave",
@@ -3691,6 +3965,20 @@ const VARIANTS: Dictionary = {
 								],
 							},
 							"log": "月如踏出半步，劍尖點在花妖咽喉前一寸。她用林家堡最簡單的封魔式——『以正鎖邪』，連花香都被劍意逼退三尺。",
+						},
+					},
+					{
+						"id": "poison_counter",
+						"label": "放蠱反制她的迷香",
+						"kind_hint": "reward",
+						"requires": {"deck_archetype": ["poison"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "gain_card_pool", "pool": "character"},
+								{"kind": "gold", "amount": 12},
+							],
+							"log": "你不慌不忙放出隨身的毒蠱。蠱毒對上花妖的迷香，是毒攻毒——她的香氣一寸寸被噬空，最後反倒乖乖獻出了一道煉香的祕法，只求你把蠱收回去。",
 						},
 					},
 					{
@@ -4221,6 +4509,20 @@ const VARIANTS: Dictionary = {
 								{"kind": "permanent_power", "amount": 1},
 							],
 							"log": "月如沒有廢話，直接示範了正確的起手式。少年僵硬地照做，月如的眼神難得地溫和：『你有天賦，但別逼自己拿不該拿的劍。』她示範完，自己手裡某道招式也跟著開了竅。",
+						},
+					},
+					{
+						"id": "true_exchange",
+						"label": "以滿身劍意，與他來一場真正的對劍",
+						"kind_hint": "reward",
+						"requires": {"deck_archetype": ["attack"]},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "permanent_power", "amount": 2},
+								{"kind": "upgrade_random"},
+							],
+							"log": "你收起輕視，認真地拔劍與他對招。少年的劍稚嫩，卻逼你把自己的劍意一層層攤開來看——教人，原來也是磨自己。一場酣暢之後，你手裡某道招式自己開了竅。",
 						},
 					},
 					{
@@ -4842,11 +5144,48 @@ const VARIANTS: Dictionary = {
 						},
 					},
 					{
+						"id": "lxy_shushan_lineage",
+						"label": "（李逍遙）以酒劍仙傳的御劍術叩問秘府",
+						"kind_hint": "reward",
+						"requires": {"character": ["li_xiaoyao"], "not_event_flag": "shushan_recognized"},
+						"outcome": {
+							"kind": "reward",
+							"effects": [
+								{"kind": "gain_card_pool", "pool": "character"},
+								{"kind": "permanent_power", "amount": 2},
+								{"kind": "heal", "amount": 8},
+								{"kind": "set_flag", "flag": "shushan_recognized"},
+							],
+							"log": "逍遙運起師父傳的御劍術，劍意一吐，滿壁劍訣竟齊齊一亮——秘府認得這縷蜀山的氣。他鼻頭一酸：原來師父那只破酒葫蘆，從來都把他算進了這份傳承裡。一道御劍真意順勢流入丹田。",
+						},
+					},
+					{
 						"id": "study_wall",
 						"label": "細讀石壁劍訣的盡頭",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_wall",
+					},
+					{
+						"id": "lowhp_blood_pact",
+						"label": "拚著重傷，以血引動鎮府靈光",
+						"kind_hint": "gamble",
+						"hide_badge": true,
+						"requires": {"hp_below": 0.4},
+						"outcome": {
+							"kind": "gamble",
+							"gamble": {
+								"win_chance": 0.6,
+								"win_effects": [
+									{"kind": "gain_relic_pool", "pool": "rare"},
+									{"kind": "permanent_power", "amount": 2},
+								],
+								"lose_effects": [
+									{"kind": "damage", "amount": 6},
+								],
+							},
+							"log": "你已是強弩之末，索性割破掌心，把血按上鎮府法寶——以傷勢為注，賭秘府肯不肯在絕境裡拉你一把。",
+						},
 					},
 					{
 						"id": "leave",
