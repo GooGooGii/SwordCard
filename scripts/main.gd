@@ -4458,26 +4458,38 @@ func _show_event_tree_node(node_id: String) -> void:
 	_set_event_background()
 	_clear_root()
 	_show_title_bar()
-	var panel: PanelContainer = UIFactory.make_panel()
-	root.add_child(panel)
-	var box: VBoxContainer = VBoxContainer.new()
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 14)
-	panel.add_child(box)
 	var ed: Dictionary = EventData.for_variant(run_state.current_event_variant)
-	box.add_child(_title(String(ed["title"]), 32))
-	# Hero banner：assets/art/events/<variant>.png 直接掛在標題下，
-	# 把背景的同一張圖再放大成主視覺（背景被 panel 罩著看不太清楚）
-	var banner: Control = _make_event_illustration_banner(run_state.current_event_variant, 760, 200)
-	if banner != null:
-		var banner_wrap: CenterContainer = CenterContainer.new()
-		banner_wrap.add_child(banner)
-		box.add_child(banner_wrap)
 	var node: Dictionary = EventRunner.get_node(ed, node_id)
 	if node.is_empty():
 		push_warning("event tree: missing node '%s' in variant '%s'" % [node_id, run_state.current_event_variant])
 		advance_non_battle_node()
 		return
+	var content_w: int = 640
+	var panel: PanelContainer = UIFactory.make_panel()
+	root.add_child(panel)
+	# 整頁垂直可捲動：選項多時不溢出畫面（水平鎖死、只縱向捲）
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_child(scroll)
+	# 水平置中固定寬度內容欄
+	var center: CenterContainer = CenterContainer.new()
+	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(center)
+	var col: VBoxContainer = VBoxContainer.new()
+	col.custom_minimum_size = Vector2(content_w, 0)
+	col.add_theme_constant_override("separation", 14)
+	center.add_child(col)
+	# Hero banner：僅 root 顯示、slim；子節點專注後續抉擇不再重複大圖
+	if node_id == EventRunner.ROOT_ID:
+		var banner: Control = _make_event_illustration_banner(run_state.current_event_variant, content_w, 150)
+		if banner != null:
+			col.add_child(banner)
+	# 標題
+	var title_lbl: Label = _title(String(ed["title"]), 28)
+	title_lbl.custom_minimum_size = Vector2(content_w, 0)
+	col.add_child(title_lbl)
 	# Prompt：root 用 character_flavors fallback 到 flavor；sub-node 用該 node.prompt
 	var prompt_text: String = String(node.get("prompt", ""))
 	if node_id == EventRunner.ROOT_ID:
@@ -4487,15 +4499,20 @@ func _show_event_tree_node(node_id: String) -> void:
 		var flavor_text: String = EventData.flavor_for(ed, active_char_id)
 		if not flavor_text.is_empty():
 			prompt_text = flavor_text if prompt_text.is_empty() else (flavor_text + "\n\n" + prompt_text)
-	box.add_child(UIFactory.paragraph(prompt_text))
+	var para: Label = UIFactory.paragraph(prompt_text)
+	para.custom_minimum_size = Vector2(content_w, 0)
+	col.add_child(para)
+	# 細分隔線，把敘事與抉擇分開
+	var sep: HSeparator = HSeparator.new()
+	sep.custom_minimum_size = Vector2(content_w, 0)
+	col.add_child(sep)
+	# 選項：單欄直列、全寬、左側 kind 彩條 + 主標 + 右側徽章
 	var ctx: Dictionary = _build_event_context()
 	var visible_choices: Array = EventRunner.visible_choices(node, ctx)
-	var grid: GridContainer = GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 16)
-	grid.add_theme_constant_override("v_separation", 14)
-	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	box.add_child(grid)
+	var list: VBoxContainer = VBoxContainer.new()
+	list.custom_minimum_size = Vector2(content_w, 0)
+	list.add_theme_constant_override("separation", 8)
+	col.add_child(list)
 	for choice_v: Variant in visible_choices:
 		var choice: Dictionary = choice_v as Dictionary
 		var label: String = String(choice.get("label", choice.get("id", "?")))
@@ -4505,16 +4522,11 @@ func _show_event_tree_node(node_id: String) -> void:
 		# Event Redesign：hide_badge 的選項刻意隱藏「機緣/風險」徽章，做成「不知後果」的神秘選項。
 		if bool(choice.get("hide_badge", false)):
 			badge_text = "❔ 未知"
-		# 副標：徽章 + observe token 提示（若有）
-		var subtitle_parts: Array[String] = []
-		if not badge_text.is_empty():
-			subtitle_parts.append(badge_text)
 		var requires: Dictionary = choice.get("requires", {}) as Dictionary
 		if bool(requires.get("observe_token", false)):
-			subtitle_parts.append("（消耗 1 觀察）")
-		var subtitle: String = "　".join(subtitle_parts)
-		grid.add_child(_event_choice_button(label, subtitle, false,
-			func() -> void: _on_event_tree_choice_selected(choice), kind))
+			badge_text = ("%s · 耗 1 觀察" % badge_text) if not badge_text.is_empty() else "耗 1 觀察"
+		list.add_child(_event_choice_row(label, badge_text, kind,
+			func() -> void: _on_event_tree_choice_selected(choice)))
 
 func _build_event_context() -> Dictionary:
 	# 包裝 run_state 當下狀態給 EventRunner.eval_requires 用。
@@ -5187,6 +5199,68 @@ func _event_choice_button(title: String, subtitle: String, disabled: bool, on_pr
 		ribbon.set_anchor_and_offset(SIDE_BOTTOM, 1.0, -8.0)
 		ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		btn.add_child(ribbon)
+	if not disabled:
+		btn.pressed.connect(on_press)
+	return btn
+
+func _event_choice_row(title: String, badge_text: String, kind: String, on_press: Callable, disabled: bool = false) -> Button:
+	# 全寬單列選項（取代舊的 2 欄卡片網格）：左側 kind 彩條 + 主標（左對齊、可換行）+ 右側徽章小字。
+	# 直列排版整齊、不受按鈕長短影響，選項再多也只是往下捲、不溢出。
+	var btn: Button = Button.new()
+	btn.custom_minimum_size = Vector2(0, 54)
+	btn.size_flags_horizontal = Control.SIZE_FILL
+	btn.disabled = disabled
+	btn.focus_mode = Control.FOCUS_NONE
+	btn.text = ""
+	btn.add_theme_stylebox_override("normal", _event_card_style(Color("f3ede2", 0.9), Color("c8b46f", 0.55), 1))
+	btn.add_theme_stylebox_override("hover", _event_card_style(Color("faf5ec", 0.98), Color("e4c66a", 0.95), 2))
+	btn.add_theme_stylebox_override("pressed", _event_card_style(Color("e7dece", 0.95), Color("c8b46f", 0.95), 2))
+	btn.add_theme_stylebox_override("disabled", _event_card_style(Color("a89e88", 0.30), Color("8a8576", 0.35), 1))
+	var row: HBoxContainer = HBoxContainer.new()
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	row.offset_left = 12
+	row.offset_right = -14
+	row.offset_top = 6
+	row.offset_bottom = -6
+	row.add_theme_constant_override("separation", 12)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(row)
+	# kind 彩條
+	var ribbon: PanelContainer = PanelContainer.new()
+	ribbon.custom_minimum_size = Vector2(4, 0)
+	ribbon.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var rs: StyleBoxFlat = StyleBoxFlat.new()
+	var rc: Color = _event_kind_color(kind)
+	if disabled:
+		rc.a *= 0.35
+	rs.bg_color = rc
+	rs.set_corner_radius_all(2)
+	ribbon.add_theme_stylebox_override("panel", rs)
+	row.add_child(ribbon)
+	# 主標（左對齊、垂直置中、可換行）
+	var tl: Label = Label.new()
+	tl.text = title
+	tl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tl.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	tl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	tl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tl.add_theme_font_size_override("font_size", 18)
+	tl.add_theme_color_override("font_color", Color("3a2f1c") if not disabled else Color("6f6a5d"))
+	tl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(tl)
+	# 右側徽章（kind 同色小字）
+	if not badge_text.is_empty():
+		var bl: Label = Label.new()
+		bl.text = badge_text
+		bl.custom_minimum_size = Vector2(92, 0)
+		bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		bl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		bl.autowrap_mode = TextServer.AUTOWRAP_OFF
+		bl.add_theme_font_size_override("font_size", 12)
+		bl.add_theme_color_override("font_color", rc if not disabled else Color("7c7768"))
+		bl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(bl)
 	if not disabled:
 		btn.pressed.connect(on_press)
 	return btn
