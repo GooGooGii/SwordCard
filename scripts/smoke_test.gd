@@ -154,6 +154,7 @@ func _initialize() -> void:
 	_test_enemy_thorns(characters[0], enemies[0])
 	_test_enemy_strip_and_artifact(characters[3], enemies[0])
 	_test_enemy_split_and_ultimate(characters[0])
+	_test_downed_reaction(characters)
 	# 技能/能力多樣化：翻倍 / 蓄勢 / 每回合引擎 / 回合結束 AOE
 	_test_block_multiply(characters[1], enemies[0])
 	_test_next_attack_mult(characters[0], enemies[0])
@@ -1987,6 +1988,20 @@ func _test_enemy_heal_and_strength(character: CharacterData, enemy: EnemyData) -
 	_check(int(bc.state["enemy_strength"]) == 5, "enemy_strength should accumulate to 5")
 	bc.resolver._resolve_effect({"kind": "damage", "amount": 10}, bc.state, true)
 	_check(int(bc.state["player_hp"]) == 85, "enemy_strength: 10+5=15 dmg, 100-15=85, got %d" % int(bc.state["player_hp"]))
+
+func _test_downed_reaction(characters: Array[CharacterData]) -> void:
+	# 隊友倒下 → 換上場者的 PAL1 反應台詞
+	var rs: RunState = RunState.new()
+	rs.init_for([characters[0], characters[2]])  # 0=李逍遙, 1=林月如
+	var bc: BattleController = BattleController.new()
+	bc.run_state = rs
+	var line_lin: String = bc._downed_reaction_line(1, 0)  # 林月如 對 李逍遙 倒下
+	_check(line_lin.contains("林月如") and line_lin.contains("傻瓜"), "lin reacts to li downed: %s" % line_lin)
+	var line_li: String = bc._downed_reaction_line(0, 1)   # 李逍遙 對 林月如 倒下
+	_check(line_li.contains("月如"), "li reacts to lin downed: %s" % line_li)
+	# 無對位專屬台詞 → 走 _default
+	var line_anu: String = bc._downed_reaction_line(0, 0)  # 同 index 不會發生但測 _default fallback
+	_check(not line_anu.is_empty(), "reactor should always have a line (default)")
 
 func _test_enemy_split_and_ultimate(character: CharacterData) -> void:
 	# 分裂：HP 過半 → 召出 split_into 分身（一次性）

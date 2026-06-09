@@ -309,6 +309,7 @@ func _is_active_alive() -> bool:
 # free=true 不收 energy
 func _force_switch_to_first_alive(announce: bool = true) -> bool:
 	var players: Array = state.get("players", []) as Array
+	var fallen_idx: int = _active_index()  # 倒下的（舊 active），換人前先記下
 	for i: int in range(players.size()):
 		if i == _active_index():
 			continue
@@ -321,9 +322,47 @@ func _force_switch_to_first_alive(announce: bool = true) -> bool:
 			if i < decks.size():
 				decks[i].draw(HAND_SIZE)
 			if announce:
+				# PAL1 味：上場的隊友對倒下的同伴說一句反應台詞
+				var line: String = _downed_reaction_line(i, fallen_idx)
+				if not line.is_empty():
+					add_log(line)
 				add_log("%s 上場接戰！" % state["player_name"])
 			return true
 	return false
+
+# 隊友倒下 → 換上場者的反應台詞（PAL1 角色情感）。reactor / fallen 為 characters index。
+const DOWNED_REACTIONS: Dictionary = {
+	"li_xiaoyao": {
+		"lin_yueru": "李逍遙：月如！別嚇我……這筆帳，我跟他們算到底！",
+		"zhao_linger": "李逍遙：靈兒！撐住，我這就來護著妳！",
+		"anu": "李逍遙：阿奴！可惡，倒下的不該是妳！",
+		"_default": "李逍遙：倒下一個就少一分勝算……都讓開，我頂上！",
+	},
+	"zhao_linger": {
+		"li_xiaoyao": "趙靈兒：逍遙哥哥！不要——大家退後，剩下的交給我！",
+		"_default": "趙靈兒：不能再有人倒下了……我來擋！",
+	},
+	"lin_yueru": {
+		"li_xiaoyao": "林月如：傻瓜，怎麼能讓你先倒下！看我的！",
+		"_default": "林月如：哼，倒下的退後，這裡有我林月如在！",
+	},
+	"anu": {
+		"_default": "阿奴：苗疆的咒術，不會讓你白白倒下……",
+	},
+}
+
+func _downed_reaction_line(reactor_idx: int, fallen_idx: int) -> String:
+	if run_state == null:
+		return ""
+	var chars: Array = run_state.characters
+	if reactor_idx < 0 or reactor_idx >= chars.size() or fallen_idx < 0 or fallen_idx >= chars.size():
+		return ""
+	var reactor_id: String = chars[reactor_idx].id
+	var fallen_id: String = chars[fallen_idx].id
+	var table: Dictionary = DOWNED_REACTIONS.get(reactor_id, {}) as Dictionary
+	if table.has(fallen_id):
+		return String(table[fallen_id])
+	return String(table.get("_default", ""))
 
 # 玩家主動切人
 # 回傳 {changed: bool, free: bool, reason: String}
