@@ -347,7 +347,8 @@ const DOWNED_REACTIONS: Dictionary = {
 		"_default": "林月如：哼，倒下的退後，這裡有我林月如在！",
 	},
 	"anu": {
-		"_default": "阿奴：苗疆的咒術，不會讓你白白倒下……",
+		"li_xiaoyao": "阿奴：逍遙哥哥別倒下呀……壞人，全讓蠱蟲咬死！",
+		"_default": "阿奴：你倒了……阿奴放蠱，替你咬回來。",
 	},
 }
 
