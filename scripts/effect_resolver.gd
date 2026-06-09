@@ -112,6 +112,7 @@ func tick_player_statuses(state: Dictionary) -> Array[String]:
 # 敵方對玩家造成傷害的共用公式（含 ascension 倍率 / 虛弱 / 破綻 / 減傷 / 格擋；不含 thorns）。
 # 回傳實際扣血量。供 damage(from_enemy)、gamble_attack、lecher_steal 等共用。
 func _enemy_hit_player(state: Dictionary, raw: int) -> int:
+	raw += int(state.get("enemy_strength", 0))  # 漸怒：累積攻擊力
 	var dmg_mult: float = float(state.get("enemy_damage_mult", 1.0))
 	if dmg_mult != 1.0:
 		raw = int(round(raw * dmg_mult))
@@ -140,6 +141,8 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 	match kind:
 		"damage":
 			if from_enemy:
+				# 漸怒：敵人累積的 strength 直接加進基礎傷（越拖越痛，逼玩家速戰）
+				amount += int(state.get("enemy_strength", 0))
 				# Ascension A2-4：敵人傷害倍率（一般/精英/boss），在 weak/vuln 前先放大基礎傷
 				var dmg_mult: float = float(state.get("enemy_damage_mult", 1.0))
 				if dmg_mult != 1.0:
@@ -599,6 +602,16 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				slot["vulnerable"] = int(slot["vulnerable"]) + amount
 				log_lines.append("%s 受到 %d 層破綻。" % [String(slot["name"]), amount])
 			_sync_alias_from_active_slot(state)
+		"enemy_heal":
+			# 敵方自療 / 吸血：回復自身 HP（封頂 max_hp）。逼玩家速戰、否則被它耗死回。
+			var ehp: int = int(state.get("enemy_hp", 0))
+			var emax: int = int(state.get("enemy_max_hp", ehp))
+			state["enemy_hp"] = min(emax, ehp + amount)
+			log_lines.append("%s 回復了 %d 點生命。" % [state.get("enemy_name", "敵人"), state["enemy_hp"] - ehp])
+		"enemy_strength":
+			# 漸怒：敵人累積攻擊力，往後每次出手傷害 +N（_enemy_hit_player / damage from_enemy 讀取）
+			state["enemy_strength"] = int(state.get("enemy_strength", 0)) + amount
+			log_lines.append("%s 怒氣高漲，攻擊力 +%d！" % [state.get("enemy_name", "敵人"), amount])
 		"summon":
 			# 由 enemy action 觸發：將召喚請求加進 pending list，
 			# BattleController.resolve_enemy_phase 結算完該敵 action 後處理。

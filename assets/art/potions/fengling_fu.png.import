@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://lhfem584cxxn"
-path="res://.godot/imported/fumo_xiang.png-75215aefea7e4041a3f83dae957755c5.ctex"
+uid="uid://bsdt72n1i562q"
+path="res://.godot/imported/fengling_fu.png-a6f5f2eb42eda15ff51541942f3208a5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/potions/fumo_xiang.png"
-dest_files=["res://.godot/imported/fumo_xiang.png-75215aefea7e4041a3f83dae957755c5.ctex"]
+source_file="res://assets/art/potions/fengling_fu.png"
+dest_files=["res://.godot/imported/fengling_fu.png-a6f5f2eb42eda15ff51541942f3208a5.ctex"]
 
 [params]
 
