@@ -224,10 +224,23 @@ static func ignore_child_mouse(node: Node) -> void:
 			(child as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
 		ignore_child_mouse(child)
 
+# 位移類動畫（shake / dash）共用的「先 kill 舊 tween 並還原真正原點」前處理，
+# 避免同節點重複觸發時把「位移中的位置」誤當成原點 → 動畫結束回不到原位。
+static func _reset_pos_fx(node: Control) -> Vector2:
+	if node.has_meta("_fx_pos_tween"):
+		var prev: Variant = node.get_meta("_fx_pos_tween")
+		if prev is Tween and (prev as Tween).is_valid():
+			(prev as Tween).kill()
+		if node.has_meta("_fx_pos_rest"):
+			node.position = node.get_meta("_fx_pos_rest")
+	var rest: Vector2 = node.position
+	node.set_meta("_fx_pos_rest", rest)
+	return rest
+
 static func shake_node(node: Control, intensity: float = 8.0, duration: float = 0.25) -> void:
 	if node == null:
 		return
-	var orig_pos: Vector2 = node.position
+	var orig_pos: Vector2 = _reset_pos_fx(node)
 	var steps: int = 5
 	var step_duration: float = duration / float(steps + 1)
 	var tween: Tween = node.create_tween()
@@ -235,19 +248,31 @@ static func shake_node(node: Control, intensity: float = 8.0, duration: float = 
 		var offset: Vector2 = Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity))
 		tween.tween_property(node, "position", orig_pos + offset, step_duration).set_trans(Tween.TRANS_SINE)
 	tween.tween_property(node, "position", orig_pos, step_duration)
+	node.set_meta("_fx_pos_tween", tween)
 
 static func dash_node(node: Control, direction: Vector2, distance: float = 36.0, duration: float = 0.24) -> void:
 	if node == null:
 		return
-	var orig_pos: Vector2 = node.position
+	var orig_pos: Vector2 = _reset_pos_fx(node)
 	var tween: Tween = node.create_tween()
 	tween.tween_property(node, "position", orig_pos + direction.normalized() * distance, duration * 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(node, "position", orig_pos, duration * 0.55).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	node.set_meta("_fx_pos_tween", tween)
 
 static func flash_node(node: Control, color: Color = Color(1.4, 1.4, 1.6), duration: float = 0.22) -> void:
 	if node == null:
 		return
+	# 同節點上一個 flash 還沒結束時，先 kill 並還原 modulate 原值，避免把「閃光中
+	# 的亮色」當成原值 → 節點卡在亮色回不來。
+	if node.has_meta("_fx_mod_tween"):
+		var prev: Variant = node.get_meta("_fx_mod_tween")
+		if prev is Tween and (prev as Tween).is_valid():
+			(prev as Tween).kill()
+		if node.has_meta("_fx_mod_rest"):
+			node.modulate = node.get_meta("_fx_mod_rest")
 	var orig_mod: Color = node.modulate
+	node.set_meta("_fx_mod_rest", orig_mod)
 	var tween: Tween = node.create_tween()
 	tween.tween_property(node, "modulate", color, duration * 0.35)
 	tween.tween_property(node, "modulate", orig_mod, duration * 0.65)
+	node.set_meta("_fx_mod_tween", tween)

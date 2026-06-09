@@ -310,15 +310,9 @@ func _force_switch_to_first_alive(announce: bool = true) -> bool:
 			if i < decks.size():
 				decks[i].draw(HAND_SIZE)
 			if announce:
-				add_log("%s 倒下，%s 上場！" % [String((players[_previous_active_index()] as Dictionary)["name"]) if false else "前一名角色", state["player_name"]])
-				# 簡化 log：只說新人上場
-				battle_log[-1] = "%s 上場接戰！" % state["player_name"]
+				add_log("%s 上場接戰！" % state["player_name"])
 			return true
 	return false
-
-# 沒被使用 (helper)
-func _previous_active_index() -> int:
-	return _active_index()
 
 # 玩家主動切人
 # 回傳 {changed: bool, free: bool, reason: String}

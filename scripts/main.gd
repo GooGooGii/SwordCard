@@ -167,16 +167,7 @@ func _build_pause_menu() -> void:
 
 func _build_pause_button() -> void:
 	pause_button = Button.new()
-	pause_button.text = "暫停"
-	pause_button.custom_minimum_size = PAUSE_BUTTON_SIZE
-	pause_button.size = PAUSE_BUTTON_SIZE
 	pause_button.set_anchors_preset(Control.PRESET_TOP_RIGHT, false)
-	pause_button.add_theme_font_size_override("font_size", 18)
-	pause_button.add_theme_color_override("font_color", ThemeColors.TEXT_LIGHT)
-	pause_button.add_theme_color_override("font_hover_color", Color("ffffff"))
-	pause_button.add_theme_stylebox_override("normal", _pause_button_style(ThemeColors.PANEL_NAVY, ThemeColors.BORDER_GOLD, 2))
-	pause_button.add_theme_stylebox_override("hover", _pause_button_style(ThemeColors.PANEL_NAVY_HOV, ThemeColors.ACCENT_GOLD, 3))
-	pause_button.add_theme_stylebox_override("pressed", _pause_button_style(ThemeColors.PANEL_NAVY_PRS, ThemeColors.BORDER_GOLD, 2))
 	pause_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	pause_button.visible = false
 	pause_button.text = "⚙"
@@ -489,6 +480,13 @@ func _clear_root() -> void:
 	close_deck_view()
 	_hide_card_preview()
 	_cancel_end_turn_warning()
+	# 取消殘留的延遲回呼：切場景後若 pose timer / 切換動畫才 fire，會對已銷毀的
+	# 戰鬥 UI 做事（_refresh_battle 已加 battle==null 防呆，這裡再從根斷掉）
+	if _switch_tween != null and _switch_tween.is_valid():
+		_switch_tween.kill()
+	_switch_tween = null
+	_pose_timer = null
+	_temporary_player_pose = ""
 	_capture_transition_snapshot()
 	active_map_scroll = null
 	_map_drag_candidate = false
@@ -7878,6 +7876,7 @@ func _animate_hand_discard() -> void:
 		tween.tween_property(button, "scale", Vector2(0.42, 0.42), 0.32).set_delay(delay)
 		tween.tween_property(button, "modulate:a", 0.0, 0.32).set_delay(delay + 0.08)
 		tween.finished.connect(func() -> void:
+			animating_cards.erase(button)
 			if is_instance_valid(button):
 				button.queue_free())
 	card_buttons.clear()
@@ -8040,6 +8039,12 @@ func _wrap_feedback_label(label: Label) -> Control:
 func _show_feedback(label: Label, lines: Array[String], color: Color) -> void:
 	if label == null:
 		return
+	# 連續快速觸發（多段傷害 / 敵人回合）時 kill 上一個淡出 tween，
+	# 否則新舊 tween 搶同一個 modulate:a → 浮字閃爍或卡半透明
+	if label.has_meta("_fb_tween"):
+		var prev: Variant = label.get_meta("_fb_tween")
+		if prev is Tween and (prev as Tween).is_valid():
+			(prev as Tween).kill()
 	label.text = "\n".join(lines)
 	label.modulate = Color(color.r, color.g, color.b, 1.0)
 	label.scale = Vector2(1.08, 1.08)
@@ -8047,6 +8052,7 @@ func _show_feedback(label: Label, lines: Array[String], color: Color) -> void:
 	tween.tween_property(label, "scale", Vector2.ONE, 0.12)
 	tween.tween_interval(0.55)
 	tween.tween_property(label, "modulate:a", 0.0, 0.45)
+	label.set_meta("_fb_tween", tween)
 
 func _passive_text() -> String:
 	var labels: Array[String] = []
