@@ -331,6 +331,15 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 		"power":
 			state["player_power"] = int(state["player_power"]) + amount
 			log_lines.append("本場戰鬥傷害提升 %d。" % amount)
+		"draw_on_attack":
+			# 御劍心訣（持久能力，李逍遙劍流引擎）：本場每打出一張「攻擊」牌抽 amount 張。
+			# 實際抽牌由 BattleController.play_card 讀 state["draw_on_attack"] 觸發。
+			state["draw_on_attack"] = int(state.get("draw_on_attack", 0)) + amount
+			log_lines.append("御劍心訣：往後每出一張攻擊牌抽 %d 張。" % amount)
+		"draw_on_skill":
+			# 靈息訣（持久能力，趙靈兒神術引擎）：本場每打出一張「技能」牌抽 amount 張。
+			state["draw_on_skill"] = int(state.get("draw_on_skill", 0)) + amount
+			log_lines.append("靈息訣：往後每出一張技能牌抽 %d 張。" % amount)
 		"poison_engine":
 			# 毒引擎（StS Noxious Fumes 式）：持久能力，每回合開始自動對全體敵人施毒。
 			# 實際每回合施毒由 BattleController.start_turn 讀 state["poison_per_turn"] 執行。
@@ -424,6 +433,26 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			state["enemy_block"] = int(state["enemy_block"]) - blocked
 			state["enemy_hp"] = max(0, int(state["enemy_hp"]) - (modified - blocked))
 			log_lines.append("debuff 加成 +%d，造成 %d 點傷害。" % [bonus_per * layers, modified - blocked])
+		"damage_debuff_bonus_all":
+			# 杖流 AoE payoff（趙靈兒）：對「每隻」敵人各依其自身 weak+vuln 層數加傷。
+			# 配合她的 weak_all / vulnerable_all → 全體疊 debuff 後一次性放大爆發。
+			_sync_active_slot_from_alias(state)
+			var ddba_bonus: int = int(effect.get("bonus_per_layer", 0))
+			var ddba_slots: Array = state.get("enemies", []) as Array
+			for ddba_v: Variant in ddba_slots:
+				var es: Dictionary = ddba_v as Dictionary
+				if int(es["hp"]) <= 0:
+					continue
+				var es_layers: int = int(es["weak"]) + int(es["vulnerable"])
+				var es_raw: int = amount + ddba_bonus * es_layers
+				var es_mod: int = max(0, es_raw + int(state["player_power"]) - int(state["player_weak"])) + int(state.get("damage_out_bonus", 0))
+				if int(es["vulnerable"]) > 0:
+					es_mod = int(ceil(es_mod * 1.5))
+				var es_blocked: int = min(int(es["block"]), es_mod)
+				es["block"] = int(es["block"]) - es_blocked
+				es["hp"] = max(0, int(es["hp"]) - (es_mod - es_blocked))
+				log_lines.append("對 %s 依 debuff 造成 %d 點傷害。" % [String(es["name"]), es_mod - es_blocked])
+			_sync_alias_from_active_slot(state)
 		"consume_energy_damage_all":
 			var spent_all: int = int(state["energy"])
 			state["energy"] = 0

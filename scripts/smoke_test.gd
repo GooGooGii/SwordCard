@@ -144,6 +144,10 @@ func _initialize() -> void:
 	_test_poison_engine(characters[3], enemies)
 	_test_poison_burst_aoe(characters[3], enemies)
 	_test_enemy_poison_ticks_before_acting(characters[3], enemies[0])
+	# 李/趙 引擎循環 2026-06：御劍心訣(攻擊抽牌) / 靈息訣(技能抽牌) / 萬靈噬(debuff AoE payoff)
+	_test_draw_on_attack(characters[0], enemies[0])
+	_test_draw_on_skill(characters[1], enemies[0])
+	_test_damage_debuff_bonus_all(characters[1], enemies)
 	# 技能/能力多樣化：翻倍 / 蓄勢 / 每回合引擎 / 回合結束 AOE
 	_test_block_multiply(characters[1], enemies[0])
 	_test_next_attack_mult(characters[0], enemies[0])
@@ -1908,6 +1912,53 @@ func _test_enemy_poison_ticks_before_acting(character: CharacterData, enemy: Ene
 	_check(int(slot["hp"]) == 0, "lethal poison should kill enemy at enemy-phase start, got hp %d" % int(slot["hp"]))
 	_check(bc.is_victory(), "all enemies poisoned to death → victory")
 	_check(int(bc.state["player_hp"]) == player_hp_before, "dead enemy must not deal its attack (player hp unchanged)")
+
+func _test_draw_on_attack(character: CharacterData, enemy: EnemyData) -> void:
+	# 御劍心訣：開引擎後每打出攻擊牌多抽 1（淨手牌不變：打掉 1 補回 1）；關閉時打攻擊不補
+	var atk: CardData = GameData.make_card("t_atk", "測試攻擊", "P", 1, "attack", "", [{"kind": "damage", "amount": 3}])
+	# 開引擎
+	var bc: BattleController = _make_multi_battle(character, [enemy])
+	bc.start_turn()
+	bc.state["draw_on_attack"] = 1
+	bc.deck.hand.append(atk.clone())
+	var hand_on: int = bc.deck.hand.size()
+	bc.play_card(bc.deck.hand[bc.deck.hand.size() - 1])
+	_check(bc.deck.hand.size() == hand_on, "draw_on_attack: 打攻擊牌淨手牌不變(打1補1), 前 %d 後 %d" % [hand_on, bc.deck.hand.size()])
+	# 關引擎對照
+	var bc2: BattleController = _make_multi_battle(character, [enemy])
+	bc2.start_turn()
+	bc2.state["draw_on_attack"] = 0
+	bc2.deck.hand.append(atk.clone())
+	var hand_off: int = bc2.deck.hand.size()
+	bc2.play_card(bc2.deck.hand[bc2.deck.hand.size() - 1])
+	_check(bc2.deck.hand.size() == hand_off - 1, "draw_on_attack 關閉時不補抽, 前 %d 後 %d" % [hand_off, bc2.deck.hand.size()])
+
+func _test_draw_on_skill(character: CharacterData, enemy: EnemyData) -> void:
+	# 靈息訣：每打出技能牌多抽 1（淨手牌不變）
+	var skl: CardData = GameData.make_card("t_skl", "測試技能", "P", 1, "skill", "", [{"kind": "block", "amount": 3}])
+	var bc: BattleController = _make_multi_battle(character, [enemy])
+	bc.start_turn()
+	bc.state["draw_on_skill"] = 1
+	bc.deck.hand.append(skl.clone())
+	var hand_on: int = bc.deck.hand.size()
+	bc.play_card(bc.deck.hand[bc.deck.hand.size() - 1])
+	_check(bc.deck.hand.size() == hand_on, "draw_on_skill: 打技能牌淨手牌不變(打1補1), 前 %d 後 %d" % [hand_on, bc.deck.hand.size()])
+
+func _test_damage_debuff_bonus_all(character: CharacterData, enemies: Array[EnemyData]) -> void:
+	# 萬靈噬：對每隻敵人各依其自身 weak+vuln 層數加傷（base + bonus_per_layer × 層）
+	var bc: BattleController = _make_multi_battle(character, [enemies[0], enemies[1]])
+	bc.start_turn()
+	bc.state["player_power"] = 0
+	var e0: Dictionary = bc.state["enemies"][0] as Dictionary
+	var e1: Dictionary = bc.state["enemies"][1] as Dictionary
+	e0["hp"] = 100; e0["block"] = 0; e0["weak"] = 2; e0["vulnerable"] = 0
+	e1["hp"] = 100; e1["block"] = 0; e1["weak"] = 0; e1["vulnerable"] = 0
+	bc._sync_active_enemy_to_state()
+	bc.resolver._resolve_effect({"kind": "damage_debuff_bonus_all", "amount": 6, "bonus_per_layer": 3}, bc.state)
+	# e0：2 層虛弱 → 6 + 3*2 = 12（無破綻不 ×1.5）→ 100-12=88
+	_check(int(e0["hp"]) == 88, "ddba_all e0 (2 weak): 100-12=88, got %d" % int(e0["hp"]))
+	# e1：0 debuff → 6 → 100-6=94
+	_check(int(e1["hp"]) == 94, "ddba_all e1 (no debuff): 100-6=94, got %d" % int(e1["hp"]))
 
 func _test_block_multiply(character: CharacterData, enemy: EnemyData) -> void:
 	# 聚靈訣：護體翻倍；無護體時無效

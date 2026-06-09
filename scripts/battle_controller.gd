@@ -167,6 +167,8 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"lin_block_used": false,
 		"player_thorns": 0,  # 反擊（Thorns）：被攻擊時反彈 N 點傷害給攻擊者，不衰減
 		"poison_per_turn": 0,  # 毒引擎（StS Noxious Fumes 式）：每回合開始對全體敵人施毒
+		"draw_on_attack": 0,  # 御劍心訣（李）：每打出攻擊牌抽 N
+		"draw_on_skill": 0,   # 靈息訣（趙）：每打出技能牌抽 N
 		"poison_on_attack": 0,  # 蠱刃：攻擊無格擋敵人時每段施毒（damage / damage_all 讀取）
 		"corpse_poison": false,  # 屍蠱：中毒敵人死亡時殘餘蠱毒隨機轉移給其他敵人
 		"power_per_turn": 0,  # 靈犀訣（Demon Form）：每回合開始 +N 力量
@@ -633,6 +635,11 @@ func play_card(card: CardData) -> Dictionary:
 		else:
 			deck.discard_card(card)
 	_process_deck_manipulation()  # 牌庫操作：升級全手牌 / 複製攻擊 / 生成劍氣置頂（此時打出的卡已離手）
+	# 出牌引擎：御劍心訣（攻擊牌抽牌）/ 靈息訣（技能牌抽牌）。power 牌本身不觸發（它是 power 型）。
+	if card.card_type == "attack" and int(state.get("draw_on_attack", 0)) > 0:
+		state["pending_draw"] = int(state["pending_draw"]) + int(state["draw_on_attack"])
+	elif card.card_type == "skill" and int(state.get("draw_on_skill", 0)) > 0:
+		state["pending_draw"] = int(state["pending_draw"]) + int(state["draw_on_skill"])
 	if int(state["pending_draw"]) > 0:
 		if deck != null:
 			deck.draw(int(state["pending_draw"]))
