@@ -151,10 +151,14 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				if int(state["player_vulnerable"]) > 0:
 					modified = int(ceil(modified * 1.5))
 				modified = max(0, modified - int(state.get("damage_taken_reduction", 0)))
-				var blocked: int = min(int(state["player_block"]), modified)
+				var pierce: bool = bool(effect.get("pierce", false))
+				var blocked: int = 0 if pierce else min(int(state["player_block"]), modified)
 				state["player_block"] = int(state["player_block"]) - blocked
 				state["player_hp"] = max(0, int(state["player_hp"]) - (modified - blocked))
-				log_lines.append("%s 攻擊，造成 %d 點傷害。" % [state["enemy_name"], modified - blocked])
+				if pierce:
+					log_lines.append("%s 穿甲一擊，無視護體造成 %d 點傷害！" % [state["enemy_name"], modified])
+				else:
+					log_lines.append("%s 攻擊，造成 %d 點傷害。" % [state["enemy_name"], modified - blocked])
 				# Thorns 反擊：被攻擊時反彈 player_thorns 點傷害給攻擊者（不過 weak/vuln，
 				# 直接扣血 / 透過 enemy_block）。每次 from_enemy damage 觸發一次。
 				var thorns: int = int(state.get("player_thorns", 0))

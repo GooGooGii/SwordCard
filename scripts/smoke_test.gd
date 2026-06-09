@@ -148,8 +148,9 @@ func _initialize() -> void:
 	_test_draw_on_attack(characters[0], enemies[0])
 	_test_draw_on_skill(characters[1], enemies[0])
 	_test_damage_debuff_bonus_all(characters[1], enemies)
-	# 敵人機制 2026-06：自療(enemy_heal) / 漸怒(enemy_strength 累積攻擊力)
+	# 敵人機制 2026-06：自療(enemy_heal) / 漸怒(enemy_strength 累積攻擊力) / 穿甲(pierce 無視護體)
 	_test_enemy_heal_and_strength(characters[0], enemies[0])
+	_test_enemy_pierce(characters[0], enemies[0])
 	# 技能/能力多樣化：翻倍 / 蓄勢 / 每回合引擎 / 回合結束 AOE
 	_test_block_multiply(characters[1], enemies[0])
 	_test_next_attack_mult(characters[0], enemies[0])
@@ -1983,6 +1984,24 @@ func _test_enemy_heal_and_strength(character: CharacterData, enemy: EnemyData) -
 	_check(int(bc.state["enemy_strength"]) == 5, "enemy_strength should accumulate to 5")
 	bc.resolver._resolve_effect({"kind": "damage", "amount": 10}, bc.state, true)
 	_check(int(bc.state["player_hp"]) == 85, "enemy_strength: 10+5=15 dmg, 100-15=85, got %d" % int(bc.state["player_hp"]))
+
+func _test_enemy_pierce(character: CharacterData, enemy: EnemyData) -> void:
+	# 穿甲：pierce 攻擊無視玩家護體直接打 HP
+	var bc: BattleController = _make_multi_battle(character, [enemy])
+	bc.start_turn()
+	bc.state["player_hp"] = 100
+	bc.state["player_block"] = 30
+	bc.state["player_vulnerable"] = 0
+	bc.state["enemy_weak"] = 0
+	bc.state["enemy_strength"] = 0
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 12, "pierce": true}, bc.state, true)
+	_check(int(bc.state["player_hp"]) == 88, "pierce: 無視 30 護體, 100-12=88, got %d" % int(bc.state["player_hp"]))
+	_check(int(bc.state["player_block"]) == 30, "pierce: 護體未被消耗, got %d" % int(bc.state["player_block"]))
+	# 對照：非 pierce 同樣傷害被護體擋下
+	bc.state["player_hp"] = 100
+	bc.state["player_block"] = 30
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 12}, bc.state, true)
+	_check(int(bc.state["player_hp"]) == 100, "非 pierce: 12 被 30 護體全擋, HP 不變, got %d" % int(bc.state["player_hp"]))
 
 func _test_block_multiply(character: CharacterData, enemy: EnemyData) -> void:
 	# 聚靈訣：護體翻倍；無護體時無效

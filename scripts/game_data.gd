@@ -1040,7 +1040,8 @@ static func _rock_guardian() -> EnemyData:
 	enemy.actions = [
 		{"intent": "巨岩砸 19", "effects": [{"kind": "damage", "amount": 19}]},
 		{"intent": "岩甲 22", "effects": [{"kind": "block", "amount": 22}]},
-		{"intent": "崩石 14 + 破綻 1", "effects": [{"kind": "damage", "amount": 14}, {"kind": "vulnerable", "amount": 1}]}
+		{"intent": "崩石 14 + 破綻 1", "effects": [{"kind": "damage", "amount": 14}, {"kind": "vulnerable", "amount": 1}]},
+		{"intent": "怒岩漸盛 攻擊力+4", "effects": [{"kind": "enemy_strength", "amount": 4}]}
 	]
 	return enemy
 
@@ -1635,7 +1636,7 @@ static func _viper() -> EnemyData:
 	enemy.portrait_path = "res://assets/art/enemies/serpent_demon.png"
 	enemy.default_facing_left = true
 	enemy.actions = [
-		{"intent": "毒砂咬 5 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 5}, {"kind": "poison", "amount": 2}]},
+		{"intent": "毒牙穿甲 7（無視護體）+ 蠱毒 2", "effects": [{"kind": "damage", "amount": 7, "pierce": true}, {"kind": "poison", "amount": 2}]},
 		{"intent": "盤繞 6", "effects": [{"kind": "block", "amount": 6}]}
 	]
 	return enemy
@@ -1826,7 +1827,7 @@ static func _vampire_giant() -> EnemyData:
 	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "狂暴巨拳 20", "effects": [{"kind": "damage", "amount": 20}]},
-		{"intent": "吸血齧咬 12", "effects": [{"kind": "damage", "amount": 12}]},
+		{"intent": "吸血齧咬 12（回 12）", "effects": [{"kind": "damage", "amount": 12}, {"kind": "enemy_heal", "amount": 12}]},
 		{"intent": "骨甲 16", "effects": [{"kind": "block", "amount": 16}]}
 	]
 	return enemy
@@ -1899,7 +1900,7 @@ static func _five_eyed_demon() -> EnemyData:
 	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "五眼邪光 16 + 破綻 1", "effects": [{"kind": "damage", "amount": 16}, {"kind": "vulnerable", "amount": 1}]},
-		{"intent": "魔光干涉 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]},
+		{"intent": "五眼咒視 虛弱 2 + 破綻 2", "effects": [{"kind": "weak", "amount": 2}, {"kind": "vulnerable", "amount": 2}]},
 		{"intent": "魔影重重 14", "effects": [{"kind": "block", "amount": 14}]}
 	]
 	return enemy
