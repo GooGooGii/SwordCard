@@ -111,6 +111,14 @@ func tick_player_statuses(state: Dictionary) -> Array[String]:
 
 # 敵方對玩家造成傷害的共用公式（含 ascension 倍率 / 虛弱 / 破綻 / 減傷 / 格擋；不含 thorns）。
 # 回傳實際扣血量。供 damage(from_enemy)、gamble_attack、lecher_steal 等共用。
+# 護咒（Artifact）：玩家對敵施加負面狀態時，若 active 敵有護咒則消耗一層擋下，回傳 true。
+func _artifact_absorb(state: Dictionary, log_lines: Array[String], debuff_name: String) -> bool:
+	if int(state.get("enemy_artifact", 0)) > 0:
+		state["enemy_artifact"] = int(state["enemy_artifact"]) - 1
+		log_lines.append("護咒擋下了%s。" % debuff_name)
+		return true
+	return false
+
 func _enemy_hit_player(state: Dictionary, raw: int) -> int:
 	raw += int(state.get("enemy_strength", 0))  # 漸怒：累積攻擊力
 	var dmg_mult: float = float(state.get("enemy_damage_mult", 1.0))
@@ -234,6 +242,8 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			if from_enemy:
 				state["player_poison"] = int(state["player_poison"]) + amount
 				log_lines.append("被施加 %d 層蠱毒。" % amount)
+			elif _artifact_absorb(state, log_lines, "蠱毒"):
+				pass
 			else:
 				var poison_amount: int = amount + int(state.get("poison_bonus", 0))
 				state["enemy_poison"] = int(state["enemy_poison"]) + poison_amount
@@ -245,6 +255,8 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				else:
 					state["player_weak"] = int(state["player_weak"]) + amount
 					log_lines.append("你受到 %d 層虛弱。" % amount)
+			elif _artifact_absorb(state, log_lines, "虛弱"):
+				pass
 			else:
 				state["enemy_weak"] = int(state["enemy_weak"]) + amount
 				log_lines.append("敵人受到 %d 層虛弱。" % amount)
@@ -255,6 +267,8 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				else:
 					state["player_vulnerable"] = int(state["player_vulnerable"]) + amount
 					log_lines.append("你受到 %d 層破綻。" % amount)
+			elif _artifact_absorb(state, log_lines, "破綻"):
+				pass
 			else:
 				state["enemy_vulnerable"] = int(state["enemy_vulnerable"]) + amount
 				log_lines.append("敵人受到 %d 層破綻。" % amount)
@@ -626,6 +640,17 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			# 反甲：敵人豎起尖刺，玩家近身攻擊它時受 N 反傷（單體 damage 路徑讀取）。跨回合保留。
 			state["enemy_thorns"] = int(state.get("enemy_thorns", 0)) + amount
 			log_lines.append("%s 豎起反甲尖刺（反傷 %d）。" % [state.get("enemy_name", "敵人"), amount])
+		"strip_block":
+			# 碎甲：擊碎玩家護體（amount<=0 表全清）。懲罰純龜流，常與 damage 同招組成「破甲重擊」。
+			var before_block: int = int(state.get("player_block", 0))
+			var stripped: int = before_block if amount <= 0 else min(before_block, amount)
+			state["player_block"] = before_block - stripped
+			log_lines.append("%s 擊碎了你 %d 點護體。" % [state.get("enemy_name", "敵人"), stripped])
+		"enemy_artifact":
+			# 護咒（StS Artifact）：敵人獲得 N 層護咒，每層擋掉玩家施加的一個負面狀態
+			# （虛弱/破綻/蠱毒）。剋制 debuff / 毒流，逼玩家硬輸出。
+			state["enemy_artifact"] = int(state.get("enemy_artifact", 0)) + amount
+			log_lines.append("%s 結起護咒（免疫 %d 次負面）。" % [state.get("enemy_name", "敵人"), amount])
 		"summon":
 			# 由 enemy action 觸發：將召喚請求加進 pending list，
 			# BattleController.resolve_enemy_phase 結算完該敵 action 後處理。

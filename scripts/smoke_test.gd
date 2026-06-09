@@ -152,6 +152,7 @@ func _initialize() -> void:
 	_test_enemy_heal_and_strength(characters[0], enemies[0])
 	_test_enemy_pierce(characters[0], enemies[0])
 	_test_enemy_thorns(characters[0], enemies[0])
+	_test_enemy_strip_and_artifact(characters[3], enemies[0])
 	# 技能/能力多樣化：翻倍 / 蓄勢 / 每回合引擎 / 回合結束 AOE
 	_test_block_multiply(characters[1], enemies[0])
 	_test_next_attack_mult(characters[0], enemies[0])
@@ -1985,6 +1986,26 @@ func _test_enemy_heal_and_strength(character: CharacterData, enemy: EnemyData) -
 	_check(int(bc.state["enemy_strength"]) == 5, "enemy_strength should accumulate to 5")
 	bc.resolver._resolve_effect({"kind": "damage", "amount": 10}, bc.state, true)
 	_check(int(bc.state["player_hp"]) == 85, "enemy_strength: 10+5=15 dmg, 100-15=85, got %d" % int(bc.state["player_hp"]))
+
+func _test_enemy_strip_and_artifact(character: CharacterData, enemy: EnemyData) -> void:
+	var bc: BattleController = _make_multi_battle(character, [enemy])
+	bc.start_turn()
+	# strip_block：amount 0 = 全清護體；正數 = 清該量
+	bc.state["player_block"] = 25
+	bc.resolver._resolve_effect({"kind": "strip_block", "amount": 0}, bc.state, true)
+	_check(int(bc.state["player_block"]) == 0, "strip_block(0) 全清護體, got %d" % int(bc.state["player_block"]))
+	bc.state["player_block"] = 25
+	bc.resolver._resolve_effect({"kind": "strip_block", "amount": 10}, bc.state, true)
+	_check(int(bc.state["player_block"]) == 15, "strip_block(10) 25-10=15, got %d" % int(bc.state["player_block"]))
+	# enemy_artifact：護咒擋掉玩家施加的 debuff，逐層消耗
+	bc.state["enemy_artifact"] = 1
+	bc.state["enemy_poison"] = 0
+	bc.state["enemy_weak"] = 0
+	bc.resolver._resolve_effect({"kind": "poison", "amount": 5}, bc.state)  # 被護咒擋
+	_check(int(bc.state["enemy_poison"]) == 0, "artifact 擋下蠱毒, got poison %d" % int(bc.state["enemy_poison"]))
+	_check(int(bc.state["enemy_artifact"]) == 0, "artifact 消耗一層, got %d" % int(bc.state["enemy_artifact"]))
+	bc.resolver._resolve_effect({"kind": "weak", "amount": 2}, bc.state)  # 護咒已用完 → 正常生效
+	_check(int(bc.state["enemy_weak"]) == 2, "artifact 用完後 debuff 正常生效, got weak %d" % int(bc.state["enemy_weak"]))
 
 func _test_enemy_thorns(character: CharacterData, enemy: EnemyData) -> void:
 	# 反甲：玩家「單體攻擊」它時受反傷（每次攻擊一次，直接扣 HP）；AoE 不觸發

@@ -1593,7 +1593,7 @@ static func _xing_tian() -> EnemyData:
 	enemy.portrait_path = "res://assets/art/enemies/xing_tian.png"
 	enemy.default_facing_left = true
 	enemy.actions = [
-		{"intent": "巨斧猛擊 22", "effects": [{"kind": "damage", "amount": 22}]},
+		{"intent": "破軍斬 碎甲 + 22", "effects": [{"kind": "strip_block", "amount": 0}, {"kind": "damage", "amount": 22}]},
 		{"intent": "刑天戰盾 16", "effects": [{"kind": "block", "amount": 16}]},
 		{"intent": "狂暴橫掃 14 + 破綻 1", "effects": [{"kind": "damage", "amount": 14}, {"kind": "vulnerable", "amount": 1}]}
 	]
@@ -1693,7 +1693,7 @@ static func _gourd_sage() -> EnemyData:
 	enemy.portrait_path = "res://assets/art/enemies/gu_cultist.png"
 	enemy.default_facing_left = true
 	enemy.actions = [
-		{"intent": "葫蘆結界 16", "effects": [{"kind": "block", "amount": 16}]},
+		{"intent": "葫蘆護咒 防 16 + 護咒 2", "effects": [{"kind": "block", "amount": 16}, {"kind": "enemy_artifact", "amount": 2}]},
 		{"intent": "收妖葫蘆 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]},
 		{"intent": "神葫仙芒 18", "effects": [{"kind": "damage", "amount": 18}]}
 	]
