@@ -1145,10 +1145,14 @@ const BALANCE_BASELINES_MID: Dictionary = {
 	# random AI 起始牌組對上調後的蜈蚣大王，限時勝率再下修（故意調整，重測觀測值）。
 	# lin_yueru 50→70：林月如姿態 power（block-per-attack / dexterity）buff 後，
 	# random AI 中手清關率上升（故意調整，重測觀測值）。
-	"li_xiaoyao": 13,
-	"zhao_linger": 30,
-	"lin_yueru": 70,
-	"anu": 87
+	# 2026-06 玩家經濟回拉（對齊 StS：護體單價下修、戰中治療砍量、大型工具卡改 exhaust）：
+	# 起始牌組防/補變薄，random AI 中手清關率全面下修（故意調整，重測觀測值）：
+	# li 13→3、zhao 30→27、lin 70→40、anu 87→83。這正是「困難旅途」目標——
+	# 起始裸組對 boss 本就該險；真正戰力靠後續選牌/升級（見 UPGRADED / LEVELED baseline）。
+	"li_xiaoyao": 3,
+	"zhao_linger": 27,
+	"lin_yueru": 40,
+	"anu": 83
 }
 # 全升級起始牌組 vs 山賊頭目。升級應嚴格 >= 基礎勝率，預期全 100%。
 const BALANCE_BASELINES_UPGRADED: Dictionary = {
@@ -1185,8 +1189,10 @@ const BALANCE_BASELINES_LEVELED: Dictionary = {
 	# Lv20 vs 拜月教主（HP 136）：67-90%，最終 boss 壓力提升
 	# 2026-06 八幕擴充後重測：LEVEL_TO_ACT 改對 act 2/4/6/8（水靈蛇妖 / 塚中亡將 / 鎮獄明王 / 拜月教主）。
 	# 故意調整：因 boss-per-act 重新配置，Lv10 改打塚中亡將（較蜈蚣大王易），勝率上修。
-	"li_xiaoyao":  {5: 100, 10: 87,  15: 97,  20: 50},
-	"zhao_linger": {5: 100, 10: 90,  15: 83,  20: 53},
+	# 2026-06 玩家經濟回拉後重測：升級/分級牌組受影響較小（少數被砍卡占比低），
+	# 僅李 Lv10/Lv20、趙 Lv20 略降，更新觀測值（故意調整）。
+	"li_xiaoyao":  {5: 100, 10: 77,  15: 97,  20: 43},
+	"zhao_linger": {5: 100, 10: 90,  15: 83,  20: 40},
 	"lin_yueru":   {5: 100, 10: 100, 15: 100, 20: 87},
 	"anu":         {5: 100, 10: 100, 15: 100, 20: 93},
 }
