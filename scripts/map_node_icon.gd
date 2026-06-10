@@ -38,22 +38,26 @@ func _draw() -> void:
 	var c: Vector2 = size / 2.0
 	var core_radius: float = s * 0.34
 	var ring_radius: float = s * 0.43
-	# 2026-05 改版：未抵達(locked) 不再用暗灰圓盤蓋住 icon；可前往(selectable)/已選(selected)
-	# 只用金光環提示，不蓋實心圓盤，讓原本的節點 icon 直接露出來。
+	# 2026-06 改版：所有狀態都加「墨色襯底圓盤」——淺色水墨底圖會吃掉裸 icon 的對比，
+	# 襯底讓節點浮起來；狀態差異由襯底深淺 + 光環表達。
 	match state_mode:
 		"completed":
 			_draw_completed_brush_ring(c, s)
-			draw_circle(c, core_radius + 4.0, Color("14202b", 0.10))
+			draw_circle(c, core_radius + 4.0, Color("14202b", 0.22))
 		"selected":
+			draw_circle(c, ring_radius + 1.0, Color("1b2836", 0.72))
 			draw_circle(c, ring_radius + 9.0, Color("f5d27a", 0.20))
 			draw_circle(c, ring_radius + 3.0, Color("f7df9c", 0.26))
 			draw_arc(c, ring_radius + 3.0, 0.0, TAU, 64, Color("ffe6a0", 0.96), 3.4, true)
 		"selectable":
+			draw_circle(c, ring_radius + 1.0, Color("1b2836", 0.66))
 			draw_circle(c, ring_radius + 7.0, Color("f5d27a", 0.16))
 			draw_circle(c, ring_radius + 2.0, Color("f7df9c", 0.20))
-			draw_arc(c, ring_radius + 1.0, 0.0, TAU, 48, Color("f8d878", 0.78), 2.2, true)
+			draw_arc(c, ring_radius + 1.0, 0.0, TAU, 48, Color("f8d878", 0.85), 2.6, true)
 		_:
-			# locked / 其他：完全不畫底盤，只露出原本的 icon
+			# locked / 其他：淡墨襯底 + 細灰環，icon 仍清楚但存在感低一階
+			draw_circle(c, ring_radius, Color("182430", 0.40))
+			draw_arc(c, ring_radius, 0.0, TAU, 48, Color("46525d", 0.55), 1.4, true)
 			if highlighted:
 				draw_arc(c, ring_radius + 0.5, 0.0, TAU, 48, Color("f8d878", 0.7), 1.8, true)
 	if icon_texture != null:
