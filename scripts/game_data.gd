@@ -423,10 +423,11 @@ static func _li_xiaoyao() -> CharacterData:
 	# 加 萬劍訣 (PAL1 Lv7 早期可習) 作為 burst attack，否則對 boss 過弱
 	character.starting_deck = [
 		cards[0], cards[0], cards[0],     # 3x 御劍術 (山神廟 basic 7dmg)
-		cards[15], cards[15],              # 2x 氣療術 (初登場 basic heal8)
+		cards[15],                         # 1x 氣療術 (初登場 basic heal6)
+		cards[8],                          # 1x 靈火符 (uncommon 6dmg+破綻1) — 補李逍遙早期直傷、減一張純補
 		cards[16],                         # 1x 冰心訣 (手卷 basic cure_debuff+3block)
 		cards[2],                          # 1x 飛龍探雲手 (手卷 basic 4dmg+steal+draw+energy)
-		cards[7], cards[7],                # 2x 劍氣護身 (basic 10block)
+		cards[7], cards[7],                # 2x 劍氣成牆 (basic 8block)
 		cards[1],                          # 1x 萬劍訣 (PAL1 Lv7 uncommon 5x3=15 burst)
 		cards[5],                          # 1x 仙風雲體 (蜀山 uncommon 8block+draw1)
 		cards[6],                          # 1x 醉夢望月 (蜀山 uncommon power+2)
@@ -489,13 +490,13 @@ static func _zhao_linger() -> CharacterData:
 	# PAL1 對齊：9 basic + 3 uncommon + 0 rare
 	# 加 天雷破 (PAL1 Lv22) 作為 boss burst — uncommon 18dmg
 	character.starting_deck = [
-		cards[3], cards[3], cards[3],     # 3x 雷咒 (初登場 basic 10dmg)
-		cards[0], cards[0],                # 2x 觀音咒 (初登場 basic 8heal)
-		cards[15],                         # 1x 金剛咒 (初登場 basic 10block)
+		cards[3], cards[3], cards[3],     # 3x 雷咒 (初登場 basic 10dmg；被動 +3 力 → 實打 13)
+		cards[0], cards[0],                # 2x 觀音咒 (初登場 basic heal6)
+		cards[15],                         # 1x 金剛咒 (初登場 basic 8block)
 		cards[16],                         # 1x 冰咒 (初登場 basic 6dmg+weak1)
 		cards[17],                         # 1x 炎咒 (初登場 basic 8dmg+vuln1)
 		cards[18],                         # 1x 冰心訣 (初登場 basic cure_debuff+3block)
-		cards[1],                          # 1x 五氣朝元 (PAL1 Lv8 uncommon 16heal+6block)
+		cards[1],                          # 1x 五氣朝元 (PAL1 Lv8 uncommon 全隊回7+6block)
 		cards[6],                          # 1x 天雷破 (uncommon 18dmg) — burst
 		cards[8],                          # 1x 幻雨咒 (uncommon 7block+weak1)
 	]
@@ -549,7 +550,7 @@ static func _lin_yueru() -> CharacterData:
 	# PAL1 對齊：10 basic + 2 uncommon + 0 rare
 	character.starting_deck = [
 		cards[0], cards[0], cards[0], cards[0],   # 4x 氣劍指 (初登場 basic 8dmg)
-		cards[15], cards[15],                      # 2x 凝神歸元 (初登場 basic 12heal)
+		cards[15], cards[15],                      # 2x 凝神歸元 (初登場 basic heal8)
 		cards[4], cards[4],                        # 2x 回身反擊 (basic 8block+5dmg)
 		cards[10], cards[10],                      # 2x 旋劍花舞 (basic 5x2)
 		cards[1],                                   # 1x 一陽指 (PAL1 Lv7 uncommon 18dmg)
