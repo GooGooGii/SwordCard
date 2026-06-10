@@ -220,8 +220,9 @@
 - `cl_fenjinjue` (焚盡訣，通用・消耗 finisher)（借：`cl_xunjiezhan`）— 建議：引燃真氣、烈焰焚牌
 
 ### 🔴 藥品圖示待補（3 瓶，2026-06-10 新增 — build-enabler 藥品）
-藥品圖示依 `id` 直接讀 `assets/art/potions/<id>.png`（無 `art_id` 間接層）。以下 3 瓶
-**已放暫代 PNG**（複製主題相近的既有藥圖，避免渲染空白），待補專屬水墨藥瓶圖：
+藥品圖示依 `id` 直接讀 `assets/art/potions/<id>.png`（無 `art_id` 間接層）。**需去背（透明背景 RGBA）**，
+與既有藥圖一致（藥瓶居中、四周透明，當 icon 疊在藥格上）。以下 3 瓶
+**已放暫代 PNG**（複製主題相近的既有藥圖、本身已去背，避免渲染空白），待補專屬水墨藥瓶圖：
 - `fenshen_dan` (分身丹，下一張牌發動兩次)（暫代：`lingli_dan`）— 建議：一分為二的靈體分身
 - `xianren_yitui` (仙人遺蛻，瀕死自動復活)（暫代：`jiujie_changpu`）— 建議：仙人蛻殼遺留的靈氣寶瓶
 - `hunyuan_dan` (混元丹，本回合 0 費)（暫代：`shenxian_cha`）— 建議：混元一氣、靈力奔湧
@@ -417,6 +418,7 @@
 程式已接好（`main.gd:_show_boss_story`）：圖檔不存在時自動略過、不阻擋勝利流程，**補圖後即自動生效**。
 
 - 路徑：`assets/art/story/<boss_id>.png`（新資料夾 `assets/art/story/`）
+- **不需去背**：這是全幅劇情插畫（會鋪滿黑底全螢幕顯示），請畫完整背景、勿留透明。
 - 建議尺寸：橫向滿版（對齊遊戲 16:9，如 1920×1080 或 1280×720），KEEP_ASPECT 置中顯示
 - 風格：水墨 / 劇照式單幅敘事圖，呼應該 Boss 在 PAL1 劇情中的關鍵場景或擊敗後的轉折
 
@@ -440,4 +442,8 @@
 ## 補圖規格
 
 - 格式：PNG，存於 `assets/art/cards/<id>.png`（卡圖）或 `assets/art/<檔名>.png`（背景）；UI 圖示存 `assets/ui/<檔名>.png`，藥品圖示存 `assets/art/potions/<檔名>.png`，Boss 劇情圖存 `assets/art/story/<boss_id>.png`
+- **去背規範**：
+  - **需去背（透明背景 RGBA）**：卡圖、藥品圖、遺物圖示、UI／意圖 icon、敵人／角色肖像（主體居中、四周透明）。
+  - **不需去背（畫滿背景）**：戰鬥背景、地圖背景、**Boss 劇情圖**。
+  - 去背工具可用 `C:\Users\sean.wu\source\repos\BgRemover`。
 - 完成後補 `.import` 配置（`godot --headless --path . --import`）
