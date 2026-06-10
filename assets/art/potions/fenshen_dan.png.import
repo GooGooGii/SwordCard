@@ -2,16 +2,10 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cj7smee87rcqw"
-path="res://.godot/imported/fenshen_dan.png-d312572ef2c76e530ea6e0db231f1e20.ctex"
-metadata={
-"vram_texture": false
-}
 
 [deps]
 
 source_file="res://assets/art/potions/fenshen_dan.png"
-dest_files=["res://.godot/imported/fenshen_dan.png-d312572ef2c76e530ea6e0db231f1e20.ctex"]
 
 [params]
 

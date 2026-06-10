@@ -2,16 +2,10 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cfvfidd8ax6eo"
-path="res://.godot/imported/zl_wanlingshi.png-60d57c18e83d0aba2191e8bcdf7be4df.ctex"
-metadata={
-"vram_texture": false
-}
 
 [deps]
 
 source_file="res://assets/art/cards/zl_wanlingshi.png"
-dest_files=["res://.godot/imported/zl_wanlingshi.png-60d57c18e83d0aba2191e8bcdf7be4df.ctex"]
 
 [params]
 

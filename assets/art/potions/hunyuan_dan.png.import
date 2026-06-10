@@ -2,16 +2,10 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dqmbyrhiv0671"
-path="res://.godot/imported/hunyuan_dan.png-a2de7a9865941a55d69bf8e6d91c7b92.ctex"
-metadata={
-"vram_texture": false
-}
 
 [deps]
 
 source_file="res://assets/art/potions/hunyuan_dan.png"
-dest_files=["res://.godot/imported/hunyuan_dan.png-a2de7a9865941a55d69bf8e6d91c7b92.ctex"]
 
 [params]
 

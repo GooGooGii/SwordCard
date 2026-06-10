@@ -8,7 +8,7 @@
 
 | 檔名 | 事件 | 目前狀態 | 建議風格 |
 |---|---|---|---|
-| `assets/art/events/shushan_vault.png` | 蜀山秘府（稀有奇遇） | 🔴 缺圖（無 banner，事件仍可玩，只是沒有主視覺） | 仙家洞府秘境：山壁裂縫後別有洞天，蟠桃酒缸 + 鎮府法寶靈光 + 滿壁劍訣，蜀山仙氣、金光內斂，水墨國風與既有事件插畫一致 |
+| `assets/art/events/shushan_vault.png` | 蜀山秘府（稀有奇遇） | 🟢 已完成（專屬美術） | 仙家洞府秘境：山壁裂縫後別有洞天，蟠桃酒缸 + 鎮府法寶靈光 + 滿壁劍訣，蜀山仙氣、金光內斂，水墨國風與既有事件插畫一致 |
 
 > 規格同既有事件插畫：橫幅構圖，`UIFactory` 會自動載入 `assets/art/events/<variant>.png` 當標題下 banner（760×200）與結算面板小圖（660×160）。補圖後 `godot --headless --path . --import` 重匯入即生效。其餘 10 個由扁平改寫成分支樹的事件沿用原有插畫，無須補圖。
 
@@ -205,27 +205,22 @@
 - `zl_lingguangpuzhao` (靈光普照) - 🟢 已完成專屬水墨圖
 - `zl_lingxijue` (靈息訣) - 🟢 已完成專屬水墨圖
 
-### 🔴 額度受限暫代待補（2 張，2026-06-10 新增）
-已脫離代碼借用（有獨立的 PNG 檔案路徑與配置），但由於 AI 生成額度限制，暫時複製原借用卡圖作為 fallback，待額度恢復後需使用專屬水墨風格重繪：
-- `zl_wanlingshi` (萬靈噬)（暫代：`zl_diliebeng`）
-- `lyr_tiegu` (鐵骨樁)（暫代：`lyr_tieyi`）
+### 🟢 已完成專屬卡圖（2 張，2026-06-10 新增）
+- `zl_wanlingshi` (萬靈噬) - 🟢 已完成專屬水墨圖
+- `lyr_tiegu` (鐵骨樁) - 🟢 已完成專屬水墨圖
 
-### 🔴 借圖待補（6 張，2026-06-10 新增 — StS 對照優化：debuff payoff / 消耗流）
-新增卡牌目前以 `art_id` 借用既有同類卡圖，待補專屬去背水墨圖（補圖後移除 `game_data.gd` 的 `art_id` 參數即生效）：
-- `anu_guxue_shixin` (蠱血噬心，阿奴・毒爆 payoff)（借：`anu_guxue`）— 建議：驅蠱入血、血色蠱蟲噬心的暗黑苗巫風
-- `lyr_suohun` (索魂十三劍，林月如・破綻 payoff)（借：`lyr_juesha`）— 建議：連環劍影趁隙痛擊
-- `cl_chenxi_poshi` (趁隙破勢，通用・debuff 引爆)（借：`cl_xunjiezhan`）— 建議：抓住破綻一擊爆發
-- `cl_wutongjue` (無痛訣，通用・消耗 power)（借：`cl_hushenjue`）— 建議：凝神忘痛、護體氣場
-- `cl_shipaijue` (噬牌訣，通用・消耗 power)（借：`cl_yunchou`）— 建議：以牌飼心、符牌燃化為靈氣
-- `cl_fenjinjue` (焚盡訣，通用・消耗 finisher)（借：`cl_xunjiezhan`）— 建議：引燃真氣、烈焰焚牌
+### 🟢 已完成專屬卡圖（6 張，2026-06-10 新增 — StS 對照優化：debuff payoff / 消耗流）
+- `anu_guxue_shixin` (蠱血噬心) - 🟢 已完成專屬水墨圖
+- `lyr_suohun` (索魂十三劍) - 🟢 已完成專屬水墨圖
+- `cl_chenxi_poshi` (趁隙破勢) - 🟢 已完成專屬水墨圖
+- `cl_wutongjue` (無痛訣) - 🟢 已完成專屬水墨圖
+- `cl_shipaijue` (噬牌訣) - 🟢 已完成專屬水墨圖
+- `cl_fenjinjue` (焚盡訣) - 🟢 已完成專屬水墨圖
 
-### 🔴 藥品圖示待補（3 瓶，2026-06-10 新增 — build-enabler 藥品）
-藥品圖示依 `id` 直接讀 `assets/art/potions/<id>.png`（無 `art_id` 間接層）。**需去背（透明背景 RGBA）**，
-與既有藥圖一致（藥瓶居中、四周透明，當 icon 疊在藥格上）。以下 3 瓶
-**已放暫代 PNG**（複製主題相近的既有藥圖、本身已去背，避免渲染空白），待補專屬水墨藥瓶圖：
-- `fenshen_dan` (分身丹，下一張牌發動兩次)（暫代：`lingli_dan`）— 建議：一分為二的靈體分身
-- `xianren_yitui` (仙人遺蛻，瀕死自動復活)（暫代：`jiujie_changpu`）— 建議：仙人蛻殼遺留的靈氣寶瓶
-- `hunyuan_dan` (混元丹，本回合 0 費)（暫代：`shenxian_cha`）— 建議：混元一氣、靈力奔湧
+### 🟢 已完成藥品圖示（3 瓶，2026-06-10 新增 — build-enabler 藥品）
+- `fenshen_dan` (分身丹) - 🟢 已完成專屬水墨圖
+- `xianren_yitui` (仙人遺蛻) - 🟢 已完成專屬水墨圖
+- `hunyuan_dan` (混元丹) - 🟢 已完成專屬水墨圖
 
 > 備註：本次同時新增的 7 件遺物（逍遙令/攝魂蠱鈴/血棘冠/玄武重甲/狂戰護符/龜息玄甲/業火爐）採程序化圖示（icon_color + icon_shape），**不需** PNG。
 
