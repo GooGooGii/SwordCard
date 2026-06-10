@@ -80,6 +80,7 @@ static func enemies() -> Array[EnemyData]:
 static func _bee_cocoon() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "bee_cocoon"
+	enemy.default_facing_left = true  # 原圖面向左，戰鬥中不再翻轉
 	enemy.portrait_scale = 0.72  # 小型：蜂蛹（借 wild_bee 圖）
 	enemy.display_name = "蜂蛹"
 	enemy.max_hp = 30
@@ -1048,6 +1049,7 @@ static func _grave_fire() -> EnemyData:
 static func _rock_guardian() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "rock_guardian"
+	enemy.default_facing_left = true  # 原圖面向左，戰鬥中不再翻轉
 	enemy.portrait_scale = 1.2  # 大型：石守衛
 	enemy.display_name = "試煉石靈"
 	enemy.max_hp = 100
@@ -1267,6 +1269,7 @@ static func _zombie_soldier() -> EnemyData:
 static func _toxic_centipede() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "toxic_centipede"
+	enemy.default_facing_left = true  # 原圖面向左，戰鬥中不再翻轉
 	enemy.portrait_scale = 0.88  # 小型：毒蜈蚣
 	enemy.display_name = "毒蜈蚣"
 	enemy.max_hp = 69
@@ -1573,6 +1576,7 @@ static func _tower_wisp() -> EnemyData:
 static func _thief() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "thief"
+	enemy.default_facing_left = true  # 原圖面向左，戰鬥中不再翻轉
 	enemy.display_name = "小偷"
 	enemy.max_hp = 62
 	enemy.portrait_path = "res://assets/art/enemies/thief.png"
