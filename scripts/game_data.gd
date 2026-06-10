@@ -42,6 +42,10 @@ static func colorless_cards() -> Array[CardData]:
 		make_card("cl_huacaijianyi", "華彩劍意", "無門", 1, "power", "本回合每出 5 張牌，對全體敵人造成 10 點傷害。", [{"kind": "combo_strike", "amount": 10, "threshold": 5}], "rare"),
 		# debuff 引爆 finisher（通用，讓四角色的破綻/虛弱堆疊都有爆發出口）：art 借迅捷斬
 		make_card("cl_chenxi_poshi", "趁隙破勢", "無門", 1, "attack", "趁敵破綻盡顯，引爆敵人全部虛弱與破綻，每層造成 4 點傷害。", [{"kind": "consume_debuff_damage", "amount": 4}], "rare", "cl_xunjiezhan"),
+		# ── 消耗流 archetype（通用，對齊 StS Feel No Pain / Dark Embrace / Fiend Fire）──
+		make_card("cl_wutongjue", "無痛訣", "無門", 1, "power", "凝神忘痛。本場戰鬥每消耗 1 張牌，獲得 3 點護體。", [{"kind": "block_on_exhaust", "amount": 3}], "uncommon", "cl_hushenjue"),
+		make_card("cl_shipaijue", "噬牌訣", "無門", 1, "power", "以牌飼心。本場戰鬥每消耗 1 張牌，抽 1 張牌。", [{"kind": "draw_on_exhaust", "amount": 1}], "rare", "cl_yunchou"),
+		make_card("cl_fenjinjue", "焚盡訣", "無門", 1, "attack", "引燃真氣，消耗手牌中其餘所有牌，每張對敵人造成 5 點傷害。打出後消耗。", [{"kind": "exhaust_hand_damage", "amount": 5}], "rare", "cl_xunjiezhan", false, true),
 	]
 	# exhaust 標記（make_card 無此參數，直接設）
 	for c: CardData in list:

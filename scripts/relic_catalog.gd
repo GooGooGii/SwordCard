@@ -1,7 +1,7 @@
 class_name RelicCatalog
 extends RefCounted
 
-# 70 件裝備：54 通用 + 10 角色專武 + 6 神器
+# 71 件裝備：55 通用 + 10 角色專武 + 6 神器
 
 static func all() -> Array[RelicData]:
 	var list: Array[RelicData] = []
@@ -197,6 +197,9 @@ static func _generals() -> Array[RelicData]:
 	# 取捨②龜甲流：高減傷換低輸出（懲罰多段連擊、獎勵毒/反傷流）
 	l.append(_make("guixi_xuanjia", "龜息玄甲", "受到的傷害 -3（最低 0），但造成的傷害 -1。", "rare",
 		[{"trigger": "passive_modifier", "effects": [{"kind": "damage_taken_reduction", "amount": 3}, {"kind": "damage_out_bonus", "amount": -1}]}], Color("6a8a78")))
+	# 消耗流協同（StS Charon's Ashes 式）：每消耗 1 張牌就對敵造成傷害
+	l.append(_make("yehuo_lu", "業火爐", "每消耗 1 張牌，對敵人造成 3 點直接傷害。", "rare",
+		[{"trigger": "card_exhausted", "effects": [{"kind": "enemy_damage", "amount": 3}]}], Color("e2552a")))
 	return l
 
 static func _weapons() -> Array[RelicData]:

@@ -153,6 +153,9 @@ func _initialize() -> void:
 	_test_consume_debuff_damage(characters[1], enemies[0])
 	# 開流派 / 取捨型遺物 2026-06：狂戰護符(負值 passive) / 逍遙令(0費 payoff)
 	_test_archetype_relics(characters[0], enemies[0])
+	# 消耗流 archetype + build-enabler 藥品 2026-06
+	_test_exhaust_archetype(characters[0], enemies[0])
+	_test_build_enabler_potions(characters[0], enemies[0])
 	# 敵人機制 2026-06：自療(enemy_heal) / 漸怒(enemy_strength 累積攻擊力) / 穿甲(pierce 無視護體)
 	_test_enemy_heal_and_strength(characters[0], enemies[0])
 	_test_enemy_pierce(characters[0], enemies[0])
@@ -1472,7 +1475,7 @@ func _test_deck_pile_views(characters: Array[CharacterData]) -> void:
 
 func _test_potion_catalog() -> void:
 	var all_potions: Array[Dictionary] = PotionCatalog.all()
-	_check(all_potions.size() == 34, "PotionCatalog should have 34 potions, got %d" % all_potions.size())
+	_check(all_potions.size() == 37, "PotionCatalog should have 37 potions, got %d" % all_potions.size())
 	var ids: Array[String] = []
 	for p: Dictionary in all_potions:
 		_check(p.has("id") and String(p["id"]).length() > 0, "potion missing id")
@@ -2045,6 +2048,56 @@ func _test_archetype_relics(character: CharacterData, enemy: EnemyData) -> void:
 	bc2.state["enemy_hp"] = 100
 	bc2._fire_relic_triggers("card_played", {"card_cost": 1, "card_type": "attack", "card_effects": []})
 	_check(int(bc2.state["enemy_hp"]) == 100, "逍遙令: 1 費牌不應觸發, got %d" % int(bc2.state["enemy_hp"]))
+
+func _test_exhaust_archetype(character: CharacterData, enemy: EnemyData) -> void:
+	# 無痛訣 / 噬牌訣：每消耗 1 張牌 → +護體 / 抽牌；業火爐遺物：每消耗 1 張 → 敵 -3。
+	var bc: BattleController = _make_multi_battle(character, [enemy])
+	bc.start_turn()
+	bc.state["player_block"] = 0
+	bc.state["pending_draw"] = 0
+	bc.state["enemy_hp"] = 100
+	bc.state["enemy_block"] = 0
+	bc.run_state.relics.append(RelicCatalog.by_id("yehuo_lu"))  # 業火爐：消耗 → 敵 -3
+	bc.resolver._resolve_effect({"kind": "block_on_exhaust", "amount": 3}, bc.state)
+	bc.resolver._resolve_effect({"kind": "draw_on_exhaust", "amount": 1}, bc.state)
+	bc._on_card_exhausted()
+	_check(int(bc.state["player_block"]) == 3, "無痛訣: 消耗 1 牌 +3 護體, got %d" % int(bc.state["player_block"]))
+	_check(int(bc.state["pending_draw"]) == 1, "噬牌訣: 消耗 1 牌 pending_draw=1, got %d" % int(bc.state["pending_draw"]))
+	_check(int(bc.state["enemy_hp"]) == 97, "業火爐: 消耗 1 牌敵 -3, 100-3=97, got %d" % int(bc.state["enemy_hp"]))
+	# 焚盡訣：消耗手牌其餘所有牌、每張對敵 5 傷
+	var bc2: BattleController = _make_multi_battle(character, [enemy])
+	bc2.start_turn()
+	var n: int = bc2.deck.hand.size()
+	bc2.state["player_power"] = 0; bc2.state["player_weak"] = 0
+	bc2.state["enemy_hp"] = 300; bc2.state["enemy_block"] = 0; bc2.state["enemy_vulnerable"] = 0
+	bc2.state["exhaust_hand_pending"] = 5
+	bc2._process_exhaust_hand()
+	_check(bc2.deck.hand.is_empty(), "焚盡訣: 手牌應被清空, 剩 %d" % bc2.deck.hand.size())
+	_check(bc2.deck.exhausted_pile.size() == n, "焚盡訣: %d 張進消耗堆, got %d" % [n, bc2.deck.exhausted_pile.size()])
+	_check(int(bc2.state["enemy_hp"]) == 300 - 5 * n, "焚盡訣: %d 張 ×5 傷, got %d" % [n, int(bc2.state["enemy_hp"])])
+
+func _test_build_enabler_potions(character: CharacterData, enemy: EnemyData) -> void:
+	# 分身丹：下一張攻擊/技能牌效果結算兩次
+	var bc: BattleController = _make_multi_battle(character, [enemy])
+	bc.start_turn()
+	bc.state["player_power"] = 0; bc.state["player_weak"] = 0
+	bc.state["enemy_hp"] = 100; bc.state["enemy_block"] = 0; bc.state["enemy_vulnerable"] = 0
+	bc.state["energy"] = 3
+	bc.resolver.resolve_effects_list([{"kind": "next_card_double", "amount": 1}], bc.state)
+	var atk: CardData = GameData.make_card("test_double_atk", "測試攻擊", character.id, 0, "attack", "", [{"kind": "damage", "amount": 5}])
+	bc.play_card(atk)
+	_check(int(bc.state["enemy_hp"]) == 90, "分身丹: 5 傷 ×2, 100-10=90, got %d" % int(bc.state["enemy_hp"]))
+	_check(int(bc.state["next_card_double"]) == 0, "分身丹: 用後歸零")
+	# 仙人遺蛻：瀕死自動保命一次
+	bc.state["revive_charge"] = 25
+	bc.state["player_hp"] = 0
+	bc._check_player_revive()
+	_check(int(bc.state["player_hp"]) == 25, "仙人遺蛻: 瀕死回 25, got %d" % int(bc.state["player_hp"]))
+	_check(int(bc.state["revive_charge"]) == 0, "仙人遺蛻: 一次性、用後歸零")
+	# 混元丹：本回合手牌 0 費
+	bc.resolver.resolve_effects_list([{"kind": "free_turn"}], bc.state)
+	var pricey: CardData = GameData.make_card("test_pricey", "測試貴牌", character.id, 3, "skill", "", [{"kind": "block", "amount": 5}])
+	_check(bc.effective_card_cost(pricey) == 0, "混元丹: 3 費牌應變 0 費, got %d" % bc.effective_card_cost(pricey))
 
 func _test_enemy_heal_and_strength(character: CharacterData, enemy: EnemyData) -> void:
 	var bc: BattleController = _make_multi_battle(character, [enemy])
@@ -2717,16 +2770,16 @@ func _test_chain_draw_relic(characters: Array[CharacterData], enemies: Array[Ene
 	_check(int(bc.state["pending_draw"]) == 1, "第 5 張應觸發連環珮抽 1，實得 pending_draw=%d" % int(bc.state["pending_draw"]))
 
 func _test_colorless_pool() -> void:
-	# 共同牌池：10 張、owner=無門、art 存在、恰 2 張 exhaust
+	# 共同牌池：14 張、owner=無門、art 存在、恰 3 張 exhaust
 	var pool: Array[CardData] = GameData.colorless_cards()
-	_check(pool.size() == 11, "共同牌應為 11 張，實得 %d" % pool.size())
+	_check(pool.size() == 14, "共同牌應為 14 張，實得 %d" % pool.size())
 	var exhaust_n: int = 0
 	for c: CardData in pool:
 		_check(c.owner == "無門", "%s owner 應為無門，實得 %s" % [c.id, c.owner])
 		_check(ResourceLoader.exists(c.art_path), "%s art 缺失: %s" % [c.id, c.art_path])
 		if c.exhaust:
 			exhaust_n += 1
-	_check(exhaust_n == 2, "共同牌應有 2 張 exhaust（金創藥帖/運籌帷幄），實得 %d" % exhaust_n)
+	_check(exhaust_n == 3, "共同牌應有 3 張 exhaust（金創藥帖/運籌帷幄/焚盡訣），實得 %d" % exhaust_n)
 	_check(GameData.colorless_card_by_id("cl_huacaijianyi") != null, "華彩劍意應存在於共同牌池")
 
 func _test_colorless_exhaust(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:

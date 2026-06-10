@@ -175,7 +175,7 @@ static func action_has_damage(action: Dictionary) -> bool:
 # 玩家手牌：哪些 effect kind 是「打到敵人身上」（drag 時需要丟到敵人附近才算）。
 # 其餘的（block / heal / draw / energy / power / self_damage）視為非單體，丟到手牌以外
 # 任何地方都算打出。
-const ENEMY_TARGETED_KINDS: Array[String] = ["damage", "damage_all", "poison", "poison_all", "weak", "weak_all", "vulnerable", "vulnerable_all", "consume_energy_damage", "consume_energy_damage_all", "poison_burst", "damage_debuff_bonus", "damage_poison_bonus", "consume_debuff_damage", "stun", "silence", "berserk"]
+const ENEMY_TARGETED_KINDS: Array[String] = ["damage", "damage_all", "poison", "poison_all", "weak", "weak_all", "vulnerable", "vulnerable_all", "consume_energy_damage", "consume_energy_damage_all", "poison_burst", "damage_debuff_bonus", "damage_poison_bonus", "consume_debuff_damage", "exhaust_hand_damage", "stun", "silence", "berserk"]
 
 static func requires_enemy_target(card: CardData) -> bool:
 	# 能力牌（card_type=="power"）一律對自己：power 增益本就 self，混的 debuff

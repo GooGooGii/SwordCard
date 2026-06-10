@@ -250,6 +250,30 @@ static func all() -> Array[Dictionary]:
 			"description": "使敵人陷入瘋魔 1 回合（失控隨機攻擊，可能誤擊友軍）。",
 			"effects": [{"kind": "berserk", "amount": 1}]
 		},
+		{
+			# build-enabler（StS Duplication Potion 式）：下一張攻擊/技能牌發動兩次 → combo turn。
+			"id": "fenshen_dan",
+			"display_name": "分身丹",
+			"rarity": "rare",
+			"description": "下一張攻擊或技能牌效果發動兩次。",
+			"effects": [{"kind": "next_card_double", "amount": 1}]
+		},
+		{
+			# build-enabler（StS Fairy in a Bottle 式）：預先服下、瀕死時自動保命一次。
+			"id": "xianren_yitui",
+			"display_name": "仙人遺蛻",
+			"rarity": "rare",
+			"description": "服下後，本場戰鬥瀕死時自動回復 25 生命並存活（僅一次）。",
+			"effects": [{"kind": "revive_charge", "amount": 25}]
+		},
+		{
+			# build-enabler（StS Chaos/Entropic 式）：本回合手牌全 0 費 → 爆發 combo turn。
+			"id": "hunyuan_dan",
+			"display_name": "混元丹",
+			"rarity": "rare",
+			"description": "本回合手牌費用全部視為 0。",
+			"effects": [{"kind": "free_turn"}]
+		},
 	]
 
 static func by_id(id: String) -> Dictionary:

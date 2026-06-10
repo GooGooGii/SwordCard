@@ -407,6 +407,32 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			# 靈光普照（StS Metallicize 式）：持久能力，每回合開始得 amount 護體。
 			state["block_per_turn"] = int(state.get("block_per_turn", 0)) + amount
 			log_lines.append("靈光普照：每回合開始獲得 %d 護體。" % amount)
+		"block_on_exhaust":
+			# 無痛訣（StS Feel No Pain 式）：本場每消耗 1 張牌獲得 amount 護體。
+			# 實際結算由 BattleController._on_card_exhausted 讀 state["block_on_exhaust"] 執行。
+			state["block_on_exhaust"] = int(state.get("block_on_exhaust", 0)) + amount
+			log_lines.append("無痛訣：往後每消耗一張牌獲得 %d 護體。" % amount)
+		"draw_on_exhaust":
+			# 噬牌訣（StS Dark Embrace 式）：本場每消耗 1 張牌抽 amount 張。
+			state["draw_on_exhaust"] = int(state.get("draw_on_exhaust", 0)) + amount
+			log_lines.append("噬牌訣：往後每消耗一張牌抽 %d 張。" % amount)
+		"exhaust_hand_damage":
+			# 焚盡訣（StS Fiend Fire 式）：消耗手牌其餘所有牌，每張對敵造成 amount 傷害。
+			# resolver 無法存取 deck → 僅設旗標，實際消耗/傷害由 BattleController._process_exhaust_hand 結算。
+			state["exhaust_hand_pending"] = amount
+			log_lines.append("焚盡訣：引燃手中真氣……")
+		"next_card_double":
+			# 複製丹（StS Duplication Potion 式）：下一張(攻擊/技能)牌效果結算兩次。
+			state["next_card_double"] = int(state.get("next_card_double", 0)) + max(1, amount)
+			log_lines.append("複製丹：下一張攻擊或技能牌將發動兩次。")
+		"revive_charge":
+			# 仙人遺蛻（StS Fairy in a Bottle 式）：瀕死時自動回復 amount 並存活（一次性）。
+			state["revive_charge"] = max(int(state.get("revive_charge", 0)), amount)
+			log_lines.append("仙人遺蛻：靈氣護身，瀕死時將自動回復 %d 生命。" % amount)
+		"free_turn":
+			# 混元丹：本回合手牌費用全部視為 0（由 BattleController.effective_card_cost 讀取）。
+			state["free_cards_this_turn"] = true
+			log_lines.append("混元丹：本回合出牌不耗靈力！")
 		"end_turn_damage_all":
 			# 五雷轟頂（StS Combust 式）：持久能力，回合結束對全體敵人造成 amount 傷害。
 			# 實際結算由 BattleController.begin_enemy_phase 讀 state["end_turn_damage"] 執行。

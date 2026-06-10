@@ -198,7 +198,13 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"player_stun_immune": false,       # 金剛座：免疫暈眩
 		"player_silence_immune": false,    # 通靈玉：免疫禁言
 		"player_berserk_immune": false,    # 定魂珠：免疫瘋魔
-		"steal_result": {}
+		"steal_result": {},
+		"next_card_double": 0,          # 複製丹：下一張(攻擊/技能)牌效果結算兩次
+		"revive_charge": 0,             # 仙人遺蛻：瀕死時自動回復此值並存活（一次性）
+		"free_cards_this_turn": false,  # 混元丹：本回合手牌費用全部視為 0
+		"block_on_exhaust": 0,          # 無痛訣（Feel No Pain）：每消耗 1 張牌 +N 護體
+		"draw_on_exhaust": 0,           # 噬牌訣（Dark Embrace）：每消耗 1 張牌抽 N
+		"exhaust_hand_pending": 0       # 焚盡訣：消耗手牌其餘所有牌、每張對敵 N 傷（play_card 結算）
 	}
 	# 若 active 死了（舊存檔載入後可能發生），自動跳到第一個活的
 	if not _is_active_alive():
@@ -561,6 +567,8 @@ func _check_split() -> void:
 			spawn_enemy(e.split_into)
 
 func effective_card_cost(card: CardData) -> int:
+	if bool(state.get("free_cards_this_turn", false)):
+		return 0  # 混元丹：本回合所有牌 0 費
 	if character == null:
 		return card.cost
 	var passive: Dictionary = character.passive_by_trigger("first_attack_cost")
@@ -586,6 +594,7 @@ func start_turn() -> Dictionary:
 	state["lin_block_used"] = false
 	state["switched_this_turn"] = false
 	state["cards_this_turn"] = 0  # 連打計數（華彩 combo_strike 用），每回合歸零
+	state["free_cards_this_turn"] = false  # 混元丹效果僅持續使用的當回合
 	if int(state["enemy_vulnerable"]) > 0:
 		state["enemy_vulnerable"] = int(state["enemy_vulnerable"]) - 1
 	if int(state["enemy_weak"]) > 0:
@@ -678,6 +687,11 @@ func play_card(card: CardData) -> Dictionary:
 	add_log("施放 %s。" % card.display_title())
 	var before_card: Dictionary = snapshot_state()
 	add_logs(resolver.resolve_card(card, state))
+	# 複製丹（Duplication）：下一張攻擊/技能牌效果再結算一次
+	if int(state.get("next_card_double", 0)) > 0 and (card.card_type == "attack" or card.card_type == "skill"):
+		state["next_card_double"] = int(state["next_card_double"]) - 1
+		add_log("複製丹：「%s」再次發動！" % card.display_title())
+		add_logs(resolver.resolve_card(card, state))
 	var steal: Dictionary = state.get("steal_result", {}) as Dictionary
 	var stolen_item: Dictionary = {}
 	if not steal.is_empty():
@@ -707,9 +721,11 @@ func play_card(card: CardData) -> Dictionary:
 			deck.consume_card(card)
 		elif card.exhaust:
 			deck.exhaust_card(card)
+			_on_card_exhausted()  # 消耗流 payoff（無痛訣 / 噬牌訣 / 消耗協同遺物）
 		else:
 			deck.discard_card(card)
 	_process_deck_manipulation()  # 牌庫操作：升級全手牌 / 複製攻擊 / 生成劍氣置頂（此時打出的卡已離手）
+	_process_exhaust_hand()  # 焚盡訣：消耗手牌其餘所有牌、依張數對敵造成傷害
 	# 出牌引擎：御劍心訣（攻擊牌抽牌）/ 靈息訣（技能牌抽牌）。power 牌本身不觸發（它是 power 型）。
 	if card.card_type == "attack" and int(state.get("draw_on_attack", 0)) > 0:
 		state["pending_draw"] = int(state["pending_draw"]) + int(state["draw_on_attack"])
@@ -726,6 +742,52 @@ func play_card(card: CardData) -> Dictionary:
 	_process_corpse_poison()  # 屍蠱：剛被打死的中毒敵人殘餘毒轉移給活敵
 	_check_active_enemy_death()  # active 敵被打死 → 自動換到下一個活敵
 	return {"affordable": true, "before_card": before_card, "ended": is_battle_over(), "stolen_item": stolen_item}
+
+# 消耗流 on-exhaust 觸發：每消耗 1 張牌 → 無痛訣(+護體) / 噬牌訣(抽牌) / 消耗協同遺物。
+# 由 play_card 的 exhaust 分支與 _process_exhaust_hand 對每張被消耗的牌呼叫一次。
+func _on_card_exhausted(count: int = 1) -> void:
+	for _i: int in range(count):
+		var b: int = int(state.get("block_on_exhaust", 0))
+		if b > 0:
+			state["player_block"] = int(state["player_block"]) + b
+			add_log("無痛訣：消耗一張牌，獲得 %d 護體。" % b)
+		var d: int = int(state.get("draw_on_exhaust", 0))
+		if d > 0:
+			state["pending_draw"] = int(state["pending_draw"]) + d
+		_fire_relic_triggers("card_exhausted")
+
+# 焚盡訣：消耗手牌其餘所有牌，每消耗 1 張對 active 敵造成 amount 傷害。
+# resolver 的 exhaust_hand_damage effect 只設旗標（它無法存取 deck），實際消耗在這裡做。
+func _process_exhaust_hand() -> void:
+	var per_card: int = int(state.get("exhaust_hand_pending", 0))
+	if per_card <= 0 or deck == null:
+		return
+	state["exhaust_hand_pending"] = 0
+	var hand_copy: Array = deck.hand.duplicate()
+	var n: int = hand_copy.size()
+	for c_v: Variant in hand_copy:
+		deck.exhaust_card(c_v as CardData)
+		_on_card_exhausted()
+	if n > 0:
+		add_log("焚盡訣：燃盡 %d 張牌！" % n)
+		add_logs(resolver._resolve_effect({"kind": "damage", "amount": per_card * n}, state))
+	# 被消耗的牌可能觸發抽牌（噬牌訣），結算 pending_draw
+	if int(state.get("pending_draw", 0)) > 0:
+		deck.draw(int(state["pending_draw"]))
+		state["pending_draw"] = 0
+
+# 仙人遺蛻：active 玩家瀕死（HP <= 0）時，若已備妥復活之力，回復並存活（一次性）。
+# 在敵人 action 結算後呼叫，搶在 is_defeat / 強制換人之前。
+func _check_player_revive() -> void:
+	if int(state.get("player_hp", 1)) > 0:
+		return
+	var charge: int = int(state.get("revive_charge", 0))
+	if charge <= 0:
+		return
+	state["revive_charge"] = 0
+	state["player_hp"] = charge
+	_sync_state_to_active()  # 寫回 active slot，避免 is_defeat 仍判定陣亡
+	add_log("仙人遺蛻：瀕死之際靈光護身，回復 %d 生命！" % charge)
 
 # active 敵 HP <= 0 時，自動切換 active 到第一個活敵
 # 屍蠱：掃描剛死且仍帶蠱毒的敵人，把殘餘蠱毒隨機轉移給一個還活著的敵人（轉移後清零，只轉一次）。
@@ -932,6 +994,7 @@ func resolve_enemy_phase(actions: Variant) -> Dictionary:
 		add_log("%s：%s。" % [_enemy_display_name_for(i), String(action.get("intent", ""))])
 		add_logs(resolver.resolve_enemy_action(action, state))
 		_sync_state_to_active_enemy()
+		_check_player_revive()  # 仙人遺蛻：active 瀕死自動保命（搶在 is_defeat 之前）
 		# 林月如反擊指向最後一個對玩家造成傷害的敵人
 		if CardFormat.action_has_damage(action):
 			state["last_attacker_index"] = i
