@@ -1,13 +1,11 @@
 # 卡圖待補清單
 
-最後更新：2026-06-10（新增第十四節：總體檢報告衍生需求；§13 主選單題字提升為**最高優先**）
+最後更新：2026-06-10（新增第十四節：總體檢報告衍生需求；水墨 UI 五件套已全部完成）
 
 > **目前優先順序**（依 `docs/IMPROVEMENT_PLAN_2026-06.md`）：
-> 1. §13 主選單題字 `title_swordcard.png`（第一印象單點，最高優先）
-> 2. §13 水墨 UI 5 件套其餘 4 件
-> 3. §11 Boss 擊敗劇情圖（`baiyue_lord` 終幕優先；程式已有文字 fallback 規劃，不阻塞）
-> 4. §6C Boss phase 2 圖 ×2 落檔（tomb_general / centipede_lord，概念圖已生成）
-> 5. §14 卡圖風格違和重生成（待 contact sheet 盤點後列清單）
+> 1. §11 Boss 擊敗劇情圖（`baiyue_lord` 終幕優先；程式已有文字 fallback 規劃，不阻塞）
+> 2. §6C Boss phase 2 圖 ×2 落檔（tomb_general / centipede_lord，概念圖已生成）
+> 3. §14 卡圖風格違和重生成（待 contact sheet 盤點後列清單）
 
 ---
 
@@ -472,19 +470,15 @@ birefnet-general）後選 birefnet——邊緣最乾淨、無灰色 halo、水�
 
 ---
 
-## 十三、水墨風選單美術（🔴 待補，2026-06-10 — 選單質感升級用）
+## 十三、水墨風選單美術（🟢 已全部完成，2026-06-10 — 選單質感升級用）
 
-選單已先做「程式層」水墨化（標題墨色描邊、面板暖金邊+柔影、按鈕墨藍鍍金、標題下方
-❖ 金線分隔；見 `ui_factory.gd`）。下列**需美術**才能再上一層真正的水墨質感：
+選單已做「美術與程式層」水墨化，已成功生成並導入這 5 張去背/無縫水墨資源，在遊戲中呈現優雅的手繪水墨體驗：
 
-- **宣紙底紋 texture**（`assets/art/ui/paper_texture.png`，可平鋪）：鋪在面板底，取代純色，增加紙張顆粒感。
-- **卷軸九宮格邊框**（`assets/art/ui/scroll_frame.png`，9-slice）：給主面板（角色選擇/商店/獎勵）當外框，捲軸感。
-- **毛筆筆觸分隔線**（`assets/art/ui/brush_divider.png`）：取代目前程式畫的 ❖ 金線，兩端自然飛白收筆。
-- **角落水墨花紋**（`assets/art/ui/corner_ink.png`，四角鏡像）：面板四角點綴墨竹／雲紋。
-- **主選單題字**（`assets/art/ui/title_swordcard.png`）：水墨毛筆「劍 / SwordCard」題字，取代純文字標題。
-
-> 皆為 UI 裝飾、**需去背（透明 PNG）**。補上後在 `ui_factory.gd` 的 `make_panel` / `ink_divider`
-> 改用對應貼圖即可（程式接點已就緒，換圖不需改版面）。
+- **宣紙底紋 texture**（`assets/art/ui/paper_texture.png`，可平鋪）：🟢 已完成。鋪在面板底，取代純色，增加紙張顆粒感。
+- **卷軸九宮格邊框**（`assets/art/ui/scroll_frame.png`，9-slice）：🟢 已完成。給主面板當外框，增添古典捲軸質感。
+- **毛筆筆觸分隔線**（`assets/art/ui/brush_divider.png`）：🟢 已完成。取代金線，呈現大氣流暢的書法毛筆分隔線。
+- **角落水墨花紋**（`assets/art/ui/corner_ink.png`，四角鏡像）：🟢 已完成。面板四角點綴墨竹與雲紋。
+- **主選單題字**（`assets/art/ui/title_swordcard.png`）：🟢 已完成。手書「SwordCard」題字配金色小字與朱砂紅泥印章。
 
 ---
 
