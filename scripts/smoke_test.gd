@@ -151,6 +151,8 @@ func _initialize() -> void:
 	# debuff payoff 2026-06：蠱毒加成(阿奴) / 引爆虛弱破綻(通用)
 	_test_damage_poison_bonus(characters[3], enemies[0])
 	_test_consume_debuff_damage(characters[1], enemies[0])
+	# 開流派 / 取捨型遺物 2026-06：狂戰護符(負值 passive) / 逍遙令(0費 payoff)
+	_test_archetype_relics(characters[0], enemies[0])
 	# 敵人機制 2026-06：自療(enemy_heal) / 漸怒(enemy_strength 累積攻擊力) / 穿甲(pierce 無視護體)
 	_test_enemy_heal_and_strength(characters[0], enemies[0])
 	_test_enemy_pierce(characters[0], enemies[0])
@@ -2015,6 +2017,34 @@ func _test_consume_debuff_damage(character: CharacterData, enemy: EnemyData) -> 
 	# (2+3) 層 × 4 = 20 傷害 → 100-20=80；weak/vuln 歸零
 	_check(int(bc.state["enemy_hp"]) == 80, "consume_debuff_damage 5*4=20, 100-20=80, got %d" % int(bc.state["enemy_hp"]))
 	_check(int(bc.state["enemy_weak"]) == 0 and int(bc.state["enemy_vulnerable"]) == 0, "consume_debuff_damage 應清空 weak/vuln")
+
+func _test_archetype_relics(character: CharacterData, enemy: EnemyData) -> void:
+	# 取捨型遺物（passive_modifier 帶負值）：狂戰護符 = 造成 +3 / 受到 +1。
+	var bc: BattleController = _make_multi_battle(character, [enemy])
+	bc.run_state.relics.append(RelicCatalog.by_id("kuangzhan_fu"))
+	bc._apply_relic_modifiers()
+	_check(int(bc.state["damage_out_bonus"]) == 3, "狂戰護符 damage_out_bonus 應 +3, got %d" % int(bc.state["damage_out_bonus"]))
+	_check(int(bc.state["damage_taken_reduction"]) == -1, "狂戰護符 damage_taken_reduction 應 -1, got %d" % int(bc.state["damage_taken_reduction"]))
+	# 造成傷害 +3 驗證
+	bc.state["player_power"] = 0; bc.state["player_weak"] = 0
+	bc.state["enemy_hp"] = 100; bc.state["enemy_block"] = 0; bc.state["enemy_vulnerable"] = 0
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 10}, bc.state)
+	_check(int(bc.state["enemy_hp"]) == 87, "狂戰護符: 10+3=13 傷, 100-13=87, got %d" % int(bc.state["enemy_hp"]))
+	# 受到傷害 +1 驗證（負 reduction）
+	bc.state["player_hp"] = 100; bc.state["player_block"] = 0; bc.state["player_vulnerable"] = 0
+	bc.state["enemy_weak"] = 0; bc.state["enemy_strength"] = 0
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 10}, bc.state, true)
+	_check(int(bc.state["player_hp"]) == 89, "狂戰護符: 受到 10-(-1)=11 傷, 100-11=89, got %d" % int(bc.state["player_hp"]))
+	# 0 費 payoff 遺物：逍遙令 — 出 0 費牌對敵造成 4 傷
+	var bc2: BattleController = _make_multi_battle(character, [enemy])
+	bc2.run_state.relics.append(RelicCatalog.by_id("xiaoyao_ling"))
+	bc2.state["enemy_hp"] = 100; bc2.state["enemy_block"] = 0
+	bc2._fire_relic_triggers("card_played", {"card_cost": 0, "card_type": "attack", "card_effects": []})
+	_check(int(bc2.state["enemy_hp"]) == 96, "逍遙令: 0 費牌 → 敵 -4, 100-4=96, got %d" % int(bc2.state["enemy_hp"]))
+	# 非 0 費牌不觸發
+	bc2.state["enemy_hp"] = 100
+	bc2._fire_relic_triggers("card_played", {"card_cost": 1, "card_type": "attack", "card_effects": []})
+	_check(int(bc2.state["enemy_hp"]) == 100, "逍遙令: 1 費牌不應觸發, got %d" % int(bc2.state["enemy_hp"]))
 
 func _test_enemy_heal_and_strength(character: CharacterData, enemy: EnemyData) -> void:
 	var bc: BattleController = _make_multi_battle(character, [enemy])

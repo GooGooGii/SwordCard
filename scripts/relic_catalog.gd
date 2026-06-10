@@ -1,7 +1,7 @@
 class_name RelicCatalog
 extends RefCounted
 
-# 64 件裝備：48 通用 + 10 角色專武 + 6 神器
+# 70 件裝備：54 通用 + 10 角色專武 + 6 神器
 
 static func all() -> Array[RelicData]:
 	var list: Array[RelicData] = []
@@ -178,6 +178,25 @@ static func _generals() -> Array[RelicData]:
 	# Event Branching P4：淨化符 — 戰鬥勝利時驅散 1 張詛咒
 	l.append(_make("jing_hua_fu", "淨化符", "戰鬥勝利時，從牌組中除去 1 張隨機詛咒牌。", "rare",
 		[{"trigger": "battle_victory", "effects": [{"kind": "remove_random_curse"}]}], Color("c8e4ff"), "star"))
+	# ── 6 件「開流派 / 有取捨」遺物（2026-06，對齊 StS 流派型遺物，不再只是 +數值）──
+	# 0 費流派：把信手一劍/驚鴻一點等 0 費牌變成輸出引擎（李/林 0 費牌多）
+	l.append(_make("xiaoyao_ling", "逍遙令", "每出 1 張 0 費牌，對敵人造成 4 點直接傷害。", "uncommon",
+		[{"trigger": "card_played", "filter": {"cost_eq": 0}, "effects": [{"kind": "enemy_damage", "amount": 4}]}], Color("e8d27a")))
+	# 毒流核心：把堆疊的蠱毒部分即時轉為傷害（阿奴疊毒滾雪球）
+	l.append(_make("shehun_guling", "攝魂蠱鈴", "每回合結束，敵人當前蠱毒的一半轉為直接傷害。", "rare",
+		[{"trigger": "turn_end", "effects": [{"kind": "poison_resonance"}]}], Color("8a4a76")))
+	# 荊棘流開啟（任何角色）：搭配護體/反擊卡建反傷流
+	l.append(_make("xueji_guan", "血棘冠", "戰鬥開始獲得 5 點荊棘（被攻擊時反彈傷害給攻擊者）。", "uncommon",
+		[{"trigger": "battle_start", "effects": [{"kind": "self_thorns", "amount": 5}]}], Color("e89a5f")))
+	# 護體跨回合（barricade-lite）：讓堆護體有意義、開防禦滾雪球流
+	l.append(_make("xuanwu_zhongjia", "玄武重甲", "每回合結束保留 4 點護體到下回合。", "rare",
+		[{"trigger": "turn_end", "effects": [{"kind": "block_carry", "amount": 4}]}], Color("4a6478")))
+	# 取捨①玻璃大砲：高輸出換高承傷
+	l.append(_make("kuangzhan_fu", "狂戰護符", "造成的傷害 +3，但受到的傷害 +1。", "rare",
+		[{"trigger": "passive_modifier", "effects": [{"kind": "damage_out_bonus", "amount": 3}, {"kind": "damage_taken_reduction", "amount": -1}]}], Color("d83a3a")))
+	# 取捨②龜甲流：高減傷換低輸出（懲罰多段連擊、獎勵毒/反傷流）
+	l.append(_make("guixi_xuanjia", "龜息玄甲", "受到的傷害 -3（最低 0），但造成的傷害 -1。", "rare",
+		[{"trigger": "passive_modifier", "effects": [{"kind": "damage_taken_reduction", "amount": 3}, {"kind": "damage_out_bonus", "amount": -1}]}], Color("6a8a78")))
 	return l
 
 static func _weapons() -> Array[RelicData]:
