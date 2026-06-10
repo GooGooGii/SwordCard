@@ -1158,7 +1158,10 @@ const BALANCE_BASELINES_MID: Dictionary = {
 	# 起始牌組防/補變薄，random AI 中手清關率全面下修（故意調整，重測觀測值）：
 	# li 13→3、zhao 30→27、lin 70→40、anu 87→83。這正是「困難旅途」目標——
 	# 起始裸組對 boss 本就該險；真正戰力靠後續選牌/升級（見 UPGRADED / LEVELED baseline）。
-	"li_xiaoyao": 3,
+	# 2026-06 角色公平性修正：李 passive「每場第一張攻擊 -1 費」改「戰鬥前 3 回合每回合 1 次」。
+	# 故意調整：li 3→37（原本墊底 27 倍差距；無限每回合版測得 73% 衝頂、前 3 回合版落中間帶）。
+	# anu 試過開場毒 5→3 僅 83→80（無實效）已回滾，維持 5。
+	"li_xiaoyao": 37,
 	"zhao_linger": 27,
 	"lin_yueru": 40,
 	"anu": 83
@@ -1175,7 +1178,8 @@ const BALANCE_BASELINES_UPGRADED: Dictionary = {
 # 召喚幼蟲，升級版毒流也能在 10 回合內穩殺（故意調整，2026-06 起始牌組重做）。
 const BALANCE_BASELINES_MID_UPGRADED: Dictionary = {
 	# 2026-06 難度收斂後重測（敵人傷害 +15%）：升級牌組仍多能過，但李/林限時勝率下修。
-	"li_xiaoyao": 80,
+	# 2026-06 李 passive 改版（前 3 回合折扣）：li 80→100（故意調整，升級組+折扣即穩過）。
+	"li_xiaoyao": 100,
 	"zhao_linger": 93,
 	"lin_yueru": 83,
 	"anu": 100
@@ -1200,7 +1204,9 @@ const BALANCE_BASELINES_LEVELED: Dictionary = {
 	# 故意調整：因 boss-per-act 重新配置，Lv10 改打塚中亡將（較蜈蚣大王易），勝率上修。
 	# 2026-06 玩家經濟回拉後重測：升級/分級牌組受影響較小（少數被砍卡占比低），
 	# 僅李 Lv10/Lv20、趙 Lv20 略降，更新觀測值（故意調整）。
-	"li_xiaoyao":  {5: 100, 10: 77,  15: 97,  20: 43},
+	# 2026-06 李 passive 改版（前 3 回合折扣）：Lv10 77→93、Lv20 43→50（故意調整，
+	# 終於不再是 Lv20 墊底；50% 介於趙 40 / 林 87 之間）。
+	"li_xiaoyao":  {5: 100, 10: 93,  15: 97,  20: 50},
 	"zhao_linger": {5: 100, 10: 90,  15: 83,  20: 40},
 	"lin_yueru":   {5: 100, 10: 100, 15: 100, 20: 87},
 	"anu":         {5: 100, 10: 100, 15: 100, 20: 93},

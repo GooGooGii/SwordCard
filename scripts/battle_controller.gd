@@ -610,6 +610,8 @@ func start_turn() -> Dictionary:
 	state["enemy_block"] = 0
 	state["pending_draw"] = 0
 	state["lin_block_used"] = false
+	# 2026-06 平衡：李逍遙折扣改「戰鬥前 3 回合，每回合第一張攻擊 -1 費」
+	state["li_discount_used"] = int(state["turn"]) > 3
 	state["switched_this_turn"] = false
 	state["cards_this_turn"] = 0  # 連打計數（華彩 combo_strike 用），每回合歸零
 	state["free_cards_this_turn"] = false  # 混元丹效果僅持續使用的當回合

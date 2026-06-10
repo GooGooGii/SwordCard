@@ -660,7 +660,9 @@ static func _passives_for(id: String) -> Array[Dictionary]:
 			return [{
 				"trigger": "first_attack_cost",
 				"amount": 1,
-				"label": "每場戰鬥第一張攻擊牌費用 -1",
+				# 2026-06 平衡：每場 1 次 → 戰鬥前 3 回合每回合 1 次。
+				# 每場版 mid 勝率 3%（墊底）、無限每回合版 73%（衝頂），前 3 回合版取中間帶。
+				"label": "戰鬥前 3 回合，每回合第一張攻擊牌費用 -1",
 				"status_label": "下一張攻擊牌費用 -1"
 			}]
 		"zhao_linger":
@@ -681,6 +683,8 @@ static func _passives_for(id: String) -> Array[Dictionary]:
 			return [{
 				"trigger": "battle_start",
 				"kind": "enemy_poison",
+				# 2026-06 平衡驗證：試過 5→3，mid 勝率僅 83→80（毒 DoT 賽跑贏在牌組毒卡、
+				# 不在開場層數）——nerf 無實效、損蠱術 identity，維持 5
 				"amount": 5,
 				"label": "敵人每場戰鬥開場受到 5 層蠱毒"
 			}]
