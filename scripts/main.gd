@@ -3868,6 +3868,57 @@ func _set_battle_input_enabled(enabled: bool) -> void:
 		if is_instance_valid(button):
 			button.disabled = not enabled
 
+# Boss 擊敗劇情圖：全螢幕顯示一張對應 boss 的劇情插畫，點一下任意處跳過 → on_done。
+# 美術未補（assets/art/story/<boss_id>.png 不存在）時直接 on_done，不阻擋勝利流程。
+func _show_boss_story(boss_id: String, on_done: Callable) -> void:
+	var tex: Texture2D = UIFactory.load_texture("res://assets/art/story/%s.png" % boss_id)
+	if tex == null:
+		on_done.call()
+		return
+	var layer: CanvasLayer = CanvasLayer.new()
+	layer.layer = 120  # 蓋過畫面切換過場層（100）
+	add_child(layer)
+	var rootc: Control = Control.new()
+	rootc.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	rootc.mouse_filter = Control.MOUSE_FILTER_STOP
+	layer.add_child(rootc)
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0, 0, 0, 1)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rootc.add_child(backdrop)
+	var pic: TextureRect = TextureRect.new()
+	pic.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	pic.texture = tex
+	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rootc.add_child(pic)
+	var hint: Label = UIFactory.card_label("（點一下繼續）", 18, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_CENTER)
+	hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	hint.offset_top = -58
+	hint.offset_bottom = -22
+	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rootc.add_child(hint)
+	# 淡入
+	rootc.modulate.a = 0.0
+	var fade_in: Tween = create_tween()
+	fade_in.tween_property(rootc, "modulate:a", 1.0, 0.4).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	# 點一下任意處 → 淡出後關閉並續流程（guard 防重複觸發）
+	var dismissed: Array = [false]
+	rootc.gui_input.connect(func(ev: InputEvent) -> void:
+		var is_tap: bool = (ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed) \
+			or (ev is InputEventScreenTouch and (ev as InputEventScreenTouch).pressed)
+		if not is_tap or dismissed[0]:
+			return
+		dismissed[0] = true
+		var fade_out: Tween = create_tween()
+		fade_out.tween_property(rootc, "modulate:a", 0.0, 0.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+		fade_out.tween_callback(func() -> void:
+			if is_instance_valid(layer):
+				layer.queue_free()
+			on_done.call()))
+
 func _complete_battle_victory() -> void:
 	# Event Branching P3：tree-triggered battle → 走簡化勝利流程，跑 victory_effects 後回地圖
 	if not run_state.pending_event_return.is_empty():
@@ -3919,33 +3970,36 @@ func _complete_battle_victory() -> void:
 			boss_id_for_drop = defeated_e.id
 			break
 	if was_boss:
-		# 最終 boss（第八幕拜月教主）擊敗 = 直接通關，不再給任何戰利品（遺物/藥品/稀有卡）
-		if run_state.act >= 8:
-			run_state.encounter_index = run_state.encounter_index + 1
-			show_result(true)
-			return
-		# Event Branching P5：boss 勝利補 1 個 observe token
-		run_state.grant_observe_tokens(RunState.OBSERVE_TOKEN_BOSS_REWARD)
-		var choices: Array[RelicData] = _make_boss_relic_choices(boss_id_for_drop)
-		# Boss 流程：遺物三選一 → 稀有卡三選一 → potion drop → 推進地圖
-		# （boss 永遠是該幕最後節點，故 card reward 必須在 act 轉場前插入）
-		_after_boss_relic_choice = func() -> void:
-			var proceed_after_potion = func() -> void:
-				_boss_card_reward = true
-				_after_card_reward = func() -> void:
-					run_state.encounter_index = run_state.encounter_index + 1
-					if run_state.act < 8:
-						show_act_complete()
-					else:
-						show_result(true)
-				show_card_reward()
-			if randf() < 0.6:
-				var all_p: Array[Dictionary] = PotionCatalog.all()
-				var pot: Dictionary = (all_p[randi() % all_p.size()]).duplicate()
-				gain_potion_with_replace_dialog(pot, proceed_after_potion)
-			else:
-				proceed_after_potion.call()
-		show_boss_relic_choice(choices)
+		# 先放 boss 劇情圖（點一下跳過），結束後才跑戰利品/通關流程
+		var boss_post: Callable = func() -> void:
+			# 最終 boss（第八幕拜月教主）擊敗 = 直接通關，不再給任何戰利品（遺物/藥品/稀有卡）
+			if run_state.act >= 8:
+				run_state.encounter_index = run_state.encounter_index + 1
+				show_result(true)
+				return
+			# Event Branching P5：boss 勝利補 1 個 observe token
+			run_state.grant_observe_tokens(RunState.OBSERVE_TOKEN_BOSS_REWARD)
+			var choices: Array[RelicData] = _make_boss_relic_choices(boss_id_for_drop)
+			# Boss 流程：遺物三選一 → 稀有卡三選一 → potion drop → 推進地圖
+			# （boss 永遠是該幕最後節點，故 card reward 必須在 act 轉場前插入）
+			_after_boss_relic_choice = func() -> void:
+				var proceed_after_potion = func() -> void:
+					_boss_card_reward = true
+					_after_card_reward = func() -> void:
+						run_state.encounter_index = run_state.encounter_index + 1
+						if run_state.act < 8:
+							show_act_complete()
+						else:
+							show_result(true)
+					show_card_reward()
+				if randf() < 0.6:
+					var all_p: Array[Dictionary] = PotionCatalog.all()
+					var pot: Dictionary = (all_p[randi() % all_p.size()]).duplicate()
+					gain_potion_with_replace_dialog(pot, proceed_after_potion)
+				else:
+					proceed_after_potion.call()
+			show_boss_relic_choice(choices)
+		_show_boss_story(boss_id_for_drop, boss_post)
 		return
 	# 一般戰鬥：自動 25% 掉裝備
 	var dropped: RelicData = _try_random_relic_drop(0.25)

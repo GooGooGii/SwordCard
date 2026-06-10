@@ -1,6 +1,6 @@
 # 卡圖待補清單
 
-最後更新：2026-06-10（StS 對照優化：debuff payoff + 消耗流 archetype 新增 6 張借圖卡待補，見第五節）
+最後更新：2026-06-10（新增第十一節：Boss 擊敗劇情圖 9 張待補；程式已接好、補圖即生效）
 
 ---
 
@@ -411,7 +411,33 @@
 
 ---
 
+## 十一、Boss 擊敗劇情圖（🔴 全數待補，2026-06-10 新增）
+
+擊敗各幕 Boss 後，全螢幕顯示一張**劇情插畫**（過場用），玩家**點一下任意處**即淡出跳過、續接戰利品流程。
+程式已接好（`main.gd:_show_boss_story`）：圖檔不存在時自動略過、不阻擋勝利流程，**補圖後即自動生效**。
+
+- 路徑：`assets/art/story/<boss_id>.png`（新資料夾 `assets/art/story/`）
+- 建議尺寸：橫向滿版（對齊遊戲 16:9，如 1920×1080 或 1280×720），KEEP_ASPECT 置中顯示
+- 風格：水墨 / 劇照式單幅敘事圖，呼應該 Boss 在 PAL1 劇情中的關鍵場景或擊敗後的轉折
+
+| boss_id | 顯示名 | 對應幕 | 建議劇情場景 |
+|---|---|---|---|
+| `miao_chieftain` | 黑苗頭領 | 苗疆系 | 苗寨衝突落幕、黑苗頭領伏誅 |
+| `centipede_lord` | 石長老（蜈蚣精） | — | 蜈蚣巨妖崩解、洞窟脫困 |
+| `witch_queen` | 火麒麟 | — | 火麒麟現形與鎮服的靈獸場面 |
+| `red_eye_demon` | 蛇妖男 | — | 妖蛇巢穴決戰收場 |
+| `tomb_general` | 赤鬼王 | 將軍塚 | 將軍塚亡將歸於塵土 |
+| `zombie_general` | 殭屍王 | — | 屍王潰滅、邪氣消散 |
+| `zhenyu_mingwang` | 鎮獄明王 | 鎖妖塔 | 鎖妖塔頂層、明王鎮壓 |
+| `baiyue_lord` | 拜月教主 | 拜月決戰（終幕） | 拜月教主敗亡、水魔獸最終形態（可考慮二連圖） |
+| `moon_worshipper` | 拜月教徒 | 拜月系 | 拜月教壇場景、教徒潰散 |
+
+> 9 個 boss_id 來源見 `scripts/ascension.gd` 的 `BOSS_IDS` + `is_boss_id()`。
+> 終幕 `baiyue_lord`（act 8）擊敗即通關，其劇情圖等同 ending 場景，優先度最高。
+
+---
+
 ## 補圖規格
 
-- 格式：PNG，存於 `assets/art/cards/<id>.png`（卡圖）或 `assets/art/<檔名>.png`（背景）；UI 圖示存 `assets/ui/<檔名>.png`，藥品圖示存 `assets/art/potions/<檔名>.png`
+- 格式：PNG，存於 `assets/art/cards/<id>.png`（卡圖）或 `assets/art/<檔名>.png`（背景）；UI 圖示存 `assets/ui/<檔名>.png`，藥品圖示存 `assets/art/potions/<檔名>.png`，Boss 劇情圖存 `assets/art/story/<boss_id>.png`
 - 完成後補 `.import` 配置（`godot --headless --path . --import`）
