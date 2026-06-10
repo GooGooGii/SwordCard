@@ -2,10 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://ddgufijprr4pp"
+path="res://.godot/imported/lyr_tiegu.png-fd44fa3009fb0708dd5e2139d9dc3c32.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/lyr_tiegu.png"
+dest_files=["res://.godot/imported/lyr_tiegu.png-fd44fa3009fb0708dd5e2139d9dc3c32.ctex"]
 
 [params]
 

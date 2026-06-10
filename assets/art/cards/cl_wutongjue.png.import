@@ -2,10 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://binufha3uqwis"
+path="res://.godot/imported/cl_wutongjue.png-9b9b53c68730b69432bc3b2a34e91784.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/cl_wutongjue.png"
+dest_files=["res://.godot/imported/cl_wutongjue.png-9b9b53c68730b69432bc3b2a34e91784.ctex"]
 
 [params]
 

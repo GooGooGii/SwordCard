@@ -2,10 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://m4w66cbtbkkx"
+path="res://.godot/imported/cl_fenjinjue.png-80bdc03a83fefcf43118ac9e1f36fa86.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/cards/cl_fenjinjue.png"
+dest_files=["res://.godot/imported/cl_fenjinjue.png-80bdc03a83fefcf43118ac9e1f36fa86.ctex"]
 
 [params]
 
