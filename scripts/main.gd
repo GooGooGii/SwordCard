@@ -6693,12 +6693,14 @@ func show_deck_view(mode: String = "view", custom_cards = null, custom_title: St
 				filtered.append(c)
 		target_cards = filtered
 
-	var count_text: String = "%s  HP %d/%d  銅錢 %d" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold]
-	if custom_cards == null:
-		count_text += "  共 %d 張牌" % run_state.deck.size()
-	else:
-		count_text += "  共 %d 張牌" % target_cards.size()
-	box.add_child(UIFactory.paragraph(count_text))
+	# 升級畫面不顯示「角色名 / HP / 銅錢 / 張數」那行（聚焦在卡牌本身、騰出空間放大卡片）
+	if deck_view_mode != "upgrade" and deck_view_mode != "shop_upgrade":
+		var count_text: String = "%s  HP %d/%d  銅錢 %d" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold]
+		if custom_cards == null:
+			count_text += "  共 %d 張牌" % run_state.deck.size()
+		else:
+			count_text += "  共 %d 張牌" % target_cards.size()
+		box.add_child(UIFactory.paragraph(count_text))
 	
 	var summary_text: String = _deck_summary_text(target_cards, custom_cards == null)
 	if deck_view_mode == "upgrade" or deck_view_mode == "shop_upgrade":
@@ -6718,7 +6720,8 @@ func show_deck_view(mode: String = "view", custom_cards = null, custom_title: St
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(scroll)
 	var grid: GridContainer = GridContainer.new()
-	grid.columns = 5
+	# 升級畫面卡片放大 → 改 4 欄避免橫向過擠；其餘維持 5 欄
+	grid.columns = 4 if (deck_view_mode == "upgrade" or deck_view_mode == "shop_upgrade") else 5
 	grid.add_theme_constant_override("h_separation", 10)
 	grid.add_theme_constant_override("v_separation", 10)
 	scroll.add_child(grid)
@@ -6856,7 +6859,10 @@ func _deck_view_card(card: CardData, mode: String = "view", count: int = 1) -> C
 	var is_curse: bool = CurseCatalog.is_curse(card)
 	var selectable: bool = (not is_curse) and (mode == "remove" or mode == "shop_remove" or ((mode == "upgrade" or mode == "shop_upgrade") and not card.upgraded))
 	var visually_enabled: bool = (mode != "upgrade" and mode != "shop_upgrade") or not card.upgraded
-	var button: Button = _make_card_button(card, card.cost, Vector2(153, 287), true, visually_enabled)
+	# 升級畫面把卡片放大（隱藏角色名那行騰出的空間），其餘檢視/移除維持原尺寸
+	var is_upgrade_mode: bool = (mode == "upgrade" or mode == "shop_upgrade")
+	var card_dims: Vector2 = Vector2(196, 368) if is_upgrade_mode else Vector2(153, 287)
+	var button: Button = _make_card_button(card, card.cost, card_dims, true, visually_enabled)
 	button.disabled = not selectable
 	if mode == "remove":
 		button.pressed.connect(func(): _show_remove_confirm_overlay(card, func(): remove_card_from_deck(card)))
