@@ -1,6 +1,6 @@
 # 卡圖待補清單
 
-最後更新：2026-06-09（奇遇事件重設計：全 33 事件轉分支樹，新增稀有奇遇「蜀山秘府」待補事件插畫）
+最後更新：2026-06-10（StS 對照優化：debuff payoff + 消耗流 archetype 新增 6 張借圖卡待補，見第五節）
 
 ---
 
@@ -209,6 +209,17 @@
 已脫離代碼借用（有獨立的 PNG 檔案路徑與配置），但由於 AI 生成額度限制，暫時複製原借用卡圖作為 fallback，待額度恢復後需使用專屬水墨風格重繪：
 - `zl_wanlingshi` (萬靈噬)（暫代：`zl_diliebeng`）
 - `lyr_tiegu` (鐵骨樁)（暫代：`lyr_tieyi`）
+
+### 🔴 借圖待補（6 張，2026-06-10 新增 — StS 對照優化：debuff payoff / 消耗流）
+新增卡牌目前以 `art_id` 借用既有同類卡圖，待補專屬去背水墨圖（補圖後移除 `game_data.gd` 的 `art_id` 參數即生效）：
+- `anu_guxue_shixin` (蠱血噬心，阿奴・毒爆 payoff)（借：`anu_guxue`）— 建議：驅蠱入血、血色蠱蟲噬心的暗黑苗巫風
+- `lyr_suohun` (索魂十三劍，林月如・破綻 payoff)（借：`lyr_juesha`）— 建議：連環劍影趁隙痛擊
+- `cl_chenxi_poshi` (趁隙破勢，通用・debuff 引爆)（借：`cl_xunjiezhan`）— 建議：抓住破綻一擊爆發
+- `cl_wutongjue` (無痛訣，通用・消耗 power)（借：`cl_hushenjue`）— 建議：凝神忘痛、護體氣場
+- `cl_shipaijue` (噬牌訣，通用・消耗 power)（借：`cl_yunchou`）— 建議：以牌飼心、符牌燃化為靈氣
+- `cl_fenjinjue` (焚盡訣，通用・消耗 finisher)（借：`cl_xunjiezhan`）— 建議：引燃真氣、烈焰焚牌
+
+> 備註：本次同時新增的 6 件遺物（逍遙令/攝魂蠱鈴/血棘冠/玄武重甲/狂戰護符/龜息玄甲/業火爐）與 3 瓶藥（分身丹/仙人遺蛻/混元丹）採程序化圖示/文字格，**不需**卡圖。
 
 
 ---
