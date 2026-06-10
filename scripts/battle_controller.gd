@@ -508,6 +508,24 @@ func _highest_damage_action(actions: Array[Dictionary]) -> Dictionary:
 			best = a
 	return best
 
+# 禁言過濾：移除招式中所有「法術」效果，只保留純攻擊（傷害）。
+# 法術 = 傷害以外的一切（格擋/異常/控制/強化/治療/召喚…），被禁言時全數封印。
+# 純法術招（過濾後無傷害）→ 回傳 {}，呼叫端視為「無法出招」。
+# 攻擊+異常複合招 → 只留傷害、附帶效果（毒/弱/破綻/格擋等）全部消失。
+const SILENCE_KEEP_KINDS: Array[String] = ["damage", "damage_all"]
+func silence_filtered_action(action: Dictionary) -> Dictionary:
+	if action.is_empty():
+		return {}
+	var kept: Array = []
+	for e_v: Variant in (action.get("effects", []) as Array):
+		if String((e_v as Dictionary).get("kind", "")) in SILENCE_KEEP_KINDS:
+			kept.append(e_v)
+	if kept.is_empty():
+		return {}
+	var filtered: Dictionary = action.duplicate(true)
+	filtered["effects"] = kept
+	return filtered
+
 func _enemy_display_name() -> String:
 	return _enemy_display_name_for(_active_enemy_index())
 
@@ -935,14 +953,20 @@ func begin_enemy_phase() -> Array[Dictionary]:
 			add_log("%s 暈眩，無法行動！" % _enemy_display_name_for(i))
 			continue
 		var action: Dictionary = _action_for_enemy(i)
-		# 禁言：無傷害的法術招無法施放（攻擊招仍可），消耗一層、該招 fizzle 換下一招
+		# 禁言：過濾掉所有法術效果（異常/控制/強化/治療/召喚），只保留物理（攻擊/格擋）。
+		# 純法術招 → 無法出招；攻擊+異常招 → 攻擊照常、附帶狀態消失。每被禁言回合消耗一層。
 		if int(slot.get("silenced", 0)) > 0:
 			slot["silenced"] = int(slot["silenced"]) - 1
-			if not CardFormat.action_has_damage(action):
+			var orig_count: int = (action.get("effects", []) as Array).size()
+			var filtered: Dictionary = silence_filtered_action(action)
+			if filtered.is_empty():
 				enemy_action_indices[i] = enemy_action_indices[i] + 1
 				actions.append({})
 				add_log("%s 被禁言，法術無法施放！" % _enemy_display_name_for(i))
 				continue
+			if (filtered.get("effects", []) as Array).size() != orig_count:
+				add_log("%s 被禁言，法術效果被封印，只能強攻！" % _enemy_display_name_for(i))
+			action = filtered
 		enemy_action_indices[i] = enemy_action_indices[i] + 1
 		actions.append(action)
 		add_log("%s 準備施放：%s。" % [_enemy_display_name_for(i), String(action.get("intent", ""))])

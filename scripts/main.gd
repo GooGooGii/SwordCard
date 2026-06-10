@@ -2849,9 +2849,14 @@ func _refresh_enemy_widgets() -> void:
 		if intent_label != null and is_instance_valid(intent_label):
 			var enemy_idx: int = int(w["enemy_idx"])
 			var action: Dictionary = battle._action_for_enemy(enemy_idx)
+			# 該敵被禁言 → 預告顯示禁言後的實際招式（法術效果被過濾）
+			var is_silenced: bool = int(slot.get("silenced", 0)) > 0
+			if is_silenced and not action.is_empty():
+				action = battle.silence_filtered_action(action)
 			var intent_icons: Array = w.get("intent_icons", []) as Array
 			if action.is_empty() or int(slot["hp"]) <= 0:
-				intent_label.text = ""
+				# 被禁言且無物理招可出 → 顯示「禁言」而非空白
+				intent_label.text = "[禁言]" if (is_silenced and int(slot["hp"]) > 0) else ""
 				for ic_v: Variant in intent_icons:
 					(ic_v as TextureRect).visible = false
 			else:

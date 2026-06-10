@@ -189,6 +189,7 @@ func _initialize() -> void:
 	_test_summon_from_boss_pool(characters)
 	_test_stun(characters, enemies)
 	_test_silence(characters)
+	_test_silence_strips_status(characters)
 	_test_berserk(characters)
 	_test_debuff_immunity(characters, enemies)
 	# 連擊 multi-hit（阿奴刀流 / 引擎地基）
@@ -2503,6 +2504,33 @@ func _test_silence(characters: Array[CharacterData]) -> void:
 	var actions2: Array[Dictionary] = bc.begin_enemy_phase()
 	_check(actions2.size() >= 1 and not actions2[0].is_empty(), "silenced enemy can still use an attack action")
 	_check(CardFormat.action_has_damage(actions2[0]), "allowed action under silence should be the attack")
+
+func _test_silence_strips_status(characters: Array[CharacterData]) -> void:
+	# 禁言：攻擊+異常複合招 → 攻擊照常，但附帶的異常狀態被過濾掉（不施加到玩家）
+	var dummy: EnemyData = EnemyData.new()
+	dummy.id = "silence_strip_dummy"
+	dummy.display_name = "毒樁"
+	dummy.max_hp = 60
+	# 攻擊 6 + 毒 3 + 虛弱 2 的複合招
+	dummy.actions = [{"intent": "毒擊", "effects": [
+		{"kind": "damage", "amount": 6}, {"kind": "poison", "amount": 3}, {"kind": "weak", "amount": 2}]}]
+	var bc: BattleController = _make_multi_battle(characters[0], [dummy])
+	bc.start_turn()
+	# 直接驗證過濾函式：只留 damage
+	var filtered: Dictionary = bc.silence_filtered_action(dummy.actions[0])
+	_check((filtered.get("effects", []) as Array).size() == 1, "silence filter 應只留 1 個傷害效果")
+	_check(String((filtered["effects"][0] as Dictionary).get("kind", "")) == "damage", "保留的應是 damage")
+	# 整段流程：禁言下出招 → 玩家被打但不中毒/不虛弱
+	bc.resolver.resolve_effects_list([{"kind": "silence", "amount": 1}], bc.state)
+	bc._sync_state_to_active_enemy()
+	bc.state["player_hp"] = 50
+	bc.state["player_block"] = 0
+	bc.state["player_poison"] = 0
+	bc.state["player_weak"] = 0
+	bc.resolve_enemy_phase(bc.begin_enemy_phase())
+	_check(int(bc.state["player_hp"]) == 44, "禁言下攻擊照常：50-6=44, got %d" % int(bc.state["player_hp"]))
+	_check(int(bc.state["player_poison"]) == 0, "禁言下毒應被過濾，player_poison 仍 0, got %d" % int(bc.state["player_poison"]))
+	_check(int(bc.state["player_weak"]) == 0, "禁言下虛弱應被過濾，player_weak 仍 0, got %d" % int(bc.state["player_weak"]))
 
 func _test_berserk(characters: Array[CharacterData]) -> void:
 	# 瘋魔：失控攻擊者隨機目標（玩家 / 友軍敵人）或 25% 呆立。120 次取樣應三種結果都出現。
