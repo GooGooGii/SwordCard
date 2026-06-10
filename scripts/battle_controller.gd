@@ -3,6 +3,8 @@ extends RefCounted
 
 const HAND_SIZE: int = 5
 const BASE_TURN_ENERGY: int = 3
+const SWITCH_IN_BLOCK: int = 2  # P3-11：切人上場護體（鼓勵主動切人）
+const PARTY_ENEMY_HP_STEP: float = 0.35  # P2-10：每多 1 名隊員，敵 HP +35%（組隊白給補正）
 const BENCH_HEAL_PER_TURN: int = 2
 const MAX_ENEMIES_PER_BATTLE: int = 3
 const FEMALE_CHARACTER_IDS: Array[String] = ["zhao_linger", "lin_yueru", "anu"]
@@ -92,7 +94,10 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 	resolver = EffectResolver.new()
 	battle_log.clear()
 	var party_size: int = run_state.characters.size()
-	var per_turn_energy: int = BASE_TURN_ENERGY + max(0, party_size - 1)
+	# P2-10 組隊白給修正：能量 3+(n-1) → 3+(n-1)/2（2人3、3人4）。
+	# 實測 vs 中段 boss：舊公式 2/3 人隊 100%（單人最高 83%）；敵 HP 補正單獨拉不動
+	#（×2.4 仍 97%，瓶頸是 tempo 不是血池）。新公式+HP 0.35 → duo 83 / trio 87。
+	var per_turn_energy: int = BASE_TURN_ENERGY + max(0, party_size - 1) / 2
 	# 每個角色獨立 DeckManager
 	decks.clear()
 	for i: int in range(party_size):
@@ -114,14 +119,18 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 			"power": run_state.character_power_bonus[i],
 			"is_female": c.id in FEMALE_CHARACTER_IDS,  # 淫賊偷內衣判定
 		})
-	# 多敵 slot 陣列
+	# 多敵 slot 陣列。
+	# P2-10 組隊難度補正：多人隊（能量+1/人、後排回血、切人迴避）實測 vs 中段 boss
+	# 勝率 100%（單人最高 83%）= 白給；敵 HP 按隊伍人數補正拉回張力（2 人 ×1.2、3 人 ×1.4）。
+	var party_hp_mult: float = 1.0 + PARTY_ENEMY_HP_STEP * max(0, party_size - 1)
 	var enemy_slots: Array[Dictionary] = []
 	for e: EnemyData in enemies:
+		var scaled_hp: int = max(1, int(round(e.max_hp * party_hp_mult)))
 		enemy_slots.append({
 			"id": e.id,
 			"name": e.display_name,
-			"max_hp": e.max_hp,
-			"hp": e.max_hp,
+			"max_hp": scaled_hp,
+			"hp": scaled_hp,
 			"block": 0,
 			"poison": 0,
 			"weak": 0,
@@ -396,8 +405,11 @@ func switch_active(new_index: int) -> Dictionary:
 	if new_index < decks.size():
 		decks[new_index].draw(HAND_SIZE)
 	state["switched_this_turn"] = true
+	# P3-11 切人正向 hook：切入者 +2 護體（鼓勵主動運營切人，而非只在瀕死時逃命）
+	state["player_block"] = int(state.get("player_block", 0)) + SWITCH_IN_BLOCK
+	_sync_state_to_active()
 	var cost_label: String = "" if was_free else "（耗 1 靈力）"
-	add_log("換 %s 上場%s" % [String(state["player_name"]), cost_label])
+	add_log("換 %s 上場%s，獲得 %d 護體。" % [String(state["player_name"]), cost_label, SWITCH_IN_BLOCK])
 	return {"changed": true, "free": was_free}
 
 func add_log(line: String) -> void:
