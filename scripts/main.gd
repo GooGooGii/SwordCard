@@ -75,6 +75,7 @@ var _suppress_next_card_play: bool = false
 var _selected_hand_card: CardData = null
 var _potion_buttons: Array[Button] = []
 var _battle_potion_strip: HBoxContainer = null
+var _potion_popup: CenterContainer = null  # 戰鬥中藥品說明彈窗（單一實例，避免疊開）
 var _potion_overlay: HBoxContainer = null
 var _potion_overlay_buttons: Array[Button] = []
 var _selected_hand_button: Button = null
@@ -2770,12 +2771,12 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	# HP bar
 	var hp_bar: ProgressBar = UIFactory.hp_bar(ThemeColors.HP_FILL, ThemeColors.HP_BG_DARK)
 	var hp_value: Label = UIFactory.card_label("",
-		10 if (_battle_compact or total >= 2) else 12,
+		12 if (_battle_compact or total >= 2) else 14,
 		ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(_hp_bar_with_overlay(hp_bar, hp_value))
-	# Status line
+	# Status line（蠱毒 / 虛弱 / 破綻 等）：字級調大，戰鬥中較易讀
 	var status_line: Label = UIFactory.card_label("",
-		10 if (_battle_compact or total >= 2) else 12,
+		14 if (_battle_compact or total >= 2) else 16,
 		Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
 	status_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(status_line)
@@ -2950,10 +2951,10 @@ func _animate_enemy_death(w: Dictionary) -> void:
 
 
 func _build_battle_potion_strip(parent: VBoxContainer) -> void:
-	var slot_size: int = 28 if _battle_compact else 34
+	var slot_size: int = 46 if _battle_compact else 54  # 放大易點（觸控）
 	var strip: HBoxContainer = HBoxContainer.new()
 	strip.alignment = BoxContainer.ALIGNMENT_CENTER
-	strip.add_theme_constant_override("separation", 6)
+	strip.add_theme_constant_override("separation", 8)
 	strip.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	parent.add_child(strip)
 	_battle_potion_strip = strip
@@ -2961,7 +2962,7 @@ func _build_battle_potion_strip(parent: VBoxContainer) -> void:
 	for i: int in range(run_state.effective_potion_slots()):
 		var btn: Button = Button.new()
 		btn.custom_minimum_size = Vector2(slot_size, slot_size)
-		btn.add_theme_font_size_override("font_size", 9 if _battle_compact else 10)
+		btn.add_theme_font_size_override("font_size", 11 if _battle_compact else 12)
 		var idx: int = i
 		# 點藥草不再立即使用，先彈出說明 + 確認
 		btn.pressed.connect(func(): _show_use_potion_confirm(idx))
@@ -3285,16 +3286,25 @@ func _use_potion(slot: int) -> void:
 		_spawn_damage_popup(player_portrait_wrap, block_delta, "block")
 
 # 戰鬥中點藥草：先彈出說明 + 「使用 / 取消」，避免誤觸
+func _close_potion_popup() -> void:
+	if _potion_popup != null and is_instance_valid(_potion_popup):
+		_potion_popup.queue_free()
+	_potion_popup = null
+
 func _show_use_potion_confirm(slot: int) -> void:
 	if battle == null or slot >= run_state.potions.size():
 		return
+	# 單一實例：先關掉已開的彈窗，避免點第二個藥草疊開多視窗
+	_close_potion_popup()
 	var potion: Dictionary = run_state.potions[slot]
+	var total_potions: int = run_state.potions.size()
 	var rarity_col: Color = PotionCatalog.rarity_color(potion)
 	var center_wrap: CenterContainer = CenterContainer.new()
 	center_wrap.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	center_wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	center_wrap.z_index = 300
 	add_child(center_wrap)
+	_potion_popup = center_wrap
 	var popup: PanelContainer = PanelContainer.new()
 	popup.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.96), rarity_col, 2, 10))
 	center_wrap.add_child(popup)
@@ -3302,11 +3312,30 @@ func _show_use_potion_confirm(slot: int) -> void:
 	box.add_theme_constant_override("separation", 12)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	popup.add_child(box)
-	box.add_child(UIFactory.card_label(String(potion.get("display_name", "?")), 22, rarity_col, HORIZONTAL_ALIGNMENT_CENTER))
-	# 稀有度標籤（common / uncommon / rare）
+	# 標題列：◀ 名稱 ▶（多瓶時可左右切換）
+	var title_row: HBoxContainer = HBoxContainer.new()
+	title_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	title_row.add_theme_constant_override("separation", 16)
+	box.add_child(title_row)
+	if total_potions > 1:
+		var prev_btn: Button = _button("◀")
+		prev_btn.custom_minimum_size = Vector2(44, 44)
+		prev_btn.add_theme_font_size_override("font_size", 22)
+		prev_btn.pressed.connect(func() -> void: _show_use_potion_confirm((slot - 1 + total_potions) % total_potions))
+		title_row.add_child(prev_btn)
+	title_row.add_child(UIFactory.card_label(String(potion.get("display_name", "?")), 22, rarity_col, HORIZONTAL_ALIGNMENT_CENTER))
+	if total_potions > 1:
+		var next_btn: Button = _button("▶")
+		next_btn.custom_minimum_size = Vector2(44, 44)
+		next_btn.add_theme_font_size_override("font_size", 22)
+		next_btn.pressed.connect(func() -> void: _show_use_potion_confirm((slot + 1) % total_potions))
+		title_row.add_child(next_btn)
+	# 稀有度標籤 + 多瓶時的位置指示（i / n）
 	var rarity_text: String = "%s 藥草" % String(potion.get("rarity", "common")).capitalize()
+	if total_potions > 1:
+		rarity_text += "　(%d / %d)" % [slot + 1, total_potions]
 	box.add_child(UIFactory.card_label(rarity_text, 12, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-	
+
 	# Icon
 	var art_path: String = "res://assets/art/potions/%s.png" % potion.get("id", "")
 	var texture: Texture2D = UIFactory.load_texture(art_path)
@@ -3318,7 +3347,7 @@ func _show_use_potion_confirm(slot: int) -> void:
 		rect.custom_minimum_size = Vector2(72, 72)
 		rect.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		box.add_child(rect)
-		
+
 	# 描述
 	var desc: Label = UIFactory.card_label(String(potion.get("description", "")), 14, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -3331,11 +3360,11 @@ func _show_use_potion_confirm(slot: int) -> void:
 	box.add_child(btn_row)
 	var captured_slot: int = slot
 	var cancel_btn: Button = _button("取消")
-	cancel_btn.pressed.connect(func() -> void: center_wrap.queue_free())
+	cancel_btn.pressed.connect(func() -> void: _close_potion_popup())
 	btn_row.add_child(cancel_btn)
 	var use_btn: Button = _button("使用")
 	use_btn.pressed.connect(func() -> void:
-		center_wrap.queue_free()
+		_close_potion_popup()
 		_use_potion(captured_slot))
 	btn_row.add_child(use_btn)
 
@@ -3562,7 +3591,7 @@ func _refresh_relic_strip() -> void:
 		child.queue_free()
 	for r: RelicData in run_state.relics:
 		var icon: RelicIcon = RelicIcon.new()
-		icon.custom_minimum_size = Vector2(28, 28)
+		icon.custom_minimum_size = Vector2(40, 40)  # 放大易點（觸控）
 		relic_strip.add_child(icon)
 		icon.set_relic(r)
 
