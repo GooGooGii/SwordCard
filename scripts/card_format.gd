@@ -299,3 +299,145 @@ static func live_preview_delta(card: CardData, state: Dictionary) -> int:
 	for p: Dictionary in live_effect_previews(card, state):
 		diff += (int(p["value"]) - int(p["base"])) * int(p["hits"])
 	return diff
+
+# ── 卡面一行摘要（IMPROVEMENT_PLAN P1-5「圖大字少」）────────────────────────
+# 把卡片 effects 壓成一行短詞（≤14 字目標），完整描述留給長按預覽。
+# 純函式、不讀戰鬥 state（戰鬥中的即時數值另有 live_preview_text）。
+# 新增 effect kind 時補 _summary_token；smoke test 會抓「摘要為空」的卡。
+
+static func card_effect_summary(card: CardData) -> String:
+	var parts: Array[String] = []
+	for effect: Dictionary in card.effects:
+		var token: String = _summary_token(effect)
+		if not token.is_empty() and not parts.has(token):
+			parts.append(token)
+		if parts.size() >= 3:
+			break  # 卡面最多三節，再多交給長按預覽
+	if parts.is_empty():
+		return CardFormat.card_type_name(card.card_type)
+	return "·".join(parts)
+
+static func _summary_token(effect: Dictionary) -> String:
+	var kind: String = String(effect.get("kind", ""))
+	var amount: int = int(effect.get("amount", 0))
+	var hits: int = max(1, int(effect.get("hits", 1)))
+	match kind:
+		"damage":
+			return ("%d傷×%d" % [amount, hits]) if hits > 1 else ("%d傷" % amount)
+		"damage_all":
+			return ("全體%d傷×%d" % [amount, hits]) if hits > 1 else ("全體%d傷" % amount)
+		"block":
+			return "%d護" % amount
+		"heal":
+			return "回%d血" % amount
+		"heal_party":
+			return "全隊回%d" % amount
+		"revive":
+			return "復活"
+		"draw":
+			return "抽%d" % amount
+		"energy":
+			return "靈力+%d" % amount
+		"power":
+			return "攻+%d" % amount
+		"power_per_turn":
+			return "每回合攻+%d" % amount
+		"block_per_turn":
+			return "每回合%d護" % amount
+		"poison":
+			return "毒%d" % amount
+		"poison_all":
+			return "全體毒%d" % amount
+		"poison_multiply":
+			return "毒翻倍"
+		"poison_on_attack":
+			return "攻擊附毒"
+		"poison_burst":
+			return "引爆蠱毒"
+		"poison_burst_aoe":
+			return "全體爆毒"
+		"corpse_poison":
+			return "屍毒擴散"
+		"weak":
+			return "弱%d" % amount
+		"weak_all":
+			return "全體弱%d" % amount
+		"vulnerable":
+			return "破%d" % amount
+		"vulnerable_all":
+			return "全體破%d" % amount
+		"stun":
+			return "暈眩"
+		"silence":
+			return "禁言"
+		"berserk":
+			return "瘋魔"
+		"thorns":
+			return "反傷%d" % amount
+		"self_damage":
+			return "自損%d" % amount
+		"self_weak":
+			return "自弱%d" % amount
+		"self_vulnerable":
+			return "自破%d" % amount
+		"steal":
+			return "偷錢"
+		"gamble_attack":
+			return "賭命一擊"
+		"consume_energy_damage":
+			return "耗靈轟擊"
+		"consume_energy_damage_all":
+			return "耗靈全轟"
+		"consume_debuff_damage":
+			return "引爆異常"
+		"damage_debuff_bonus":
+			return "%d傷+異常加成" % amount
+		"damage_debuff_bonus_all":
+			return "全體傷+異常加成"
+		"damage_poison_bonus":
+			return "%d傷+毒加成" % amount
+		"next_attack_mult":
+			return "蓄勢翻倍"
+		"next_card_double":
+			return "複製下張"
+		"block_multiply":
+			return "護體翻倍"
+		"block_per_attack":
+			return "攻擊附護"
+		"block_on_exhaust":
+			return "耗牌得護"
+		"self_block_bonus":
+			return "護體強化"
+		"draw_on_attack":
+			return "攻擊抽牌"
+		"draw_on_skill":
+			return "技能抽牌"
+		"draw_on_exhaust":
+			return "耗牌抽牌"
+		"upgrade_hand":
+			return "升級手牌"
+		"copy_attack":
+			return "仿敵一擊"
+		"spawn_top_tokens":
+			return "造劍氣"
+		"exhaust_hand_damage":
+			return "焚手轟擊"
+		"cure_poison":
+			return "解毒"
+		"cure_debuff":
+			return "淨化"
+		"debuff_immunity":
+			return "異常免疫"
+		"damage_reduction":
+			return "減傷%d" % amount
+		"end_turn_damage":
+			return "回合末%d傷" % amount
+		"end_turn_damage_all":
+			return "回合末全體%d傷" % amount
+		"free_cards_this_turn":
+			return "本回合免費"
+		"max_hp":
+			return "上限+%d" % amount
+	if amount > 0:
+		return "%s %d" % [kind, amount]
+	return kind
