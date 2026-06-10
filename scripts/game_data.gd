@@ -404,12 +404,12 @@ static func _li_xiaoyao() -> CharacterData:
 		make_card("lxy_jianyi", "靈犀訣", "李逍遙", 2, "power", "靈犀漸明，每回合開始攻擊力 +1。", [{"kind": "power_per_turn", "amount": 1}], "rare", "", true),
 		# 牌庫操作（StS Armaments+ / Dual Wield / Shiv）
 		make_card("lxy_linzhen", "臨陣磨槍", "李逍遙", 1, "skill", "臨陣磨礪，將手上所有牌升級（本場戰鬥）。", [{"kind": "upgrade_hand"}], "rare", "", true),
-		make_card("lxy_xiangcheng", "御劍相承", "李逍遙", 1, "skill", "御劍化形，複製手上一張攻擊牌。", [{"kind": "copy_attack"}], "uncommon", "lxy_jiulong", true),
-		make_card("lxy_jianqizonghen", "劍氣縱橫", "李逍遙", 1, "skill", "劍氣化形，生成 3 道「劍氣」置於抽牌堆頂。", [{"kind": "spawn_top_tokens", "amount": 3}], "uncommon", "lxy_jianqi"),
+		make_card("lxy_xiangcheng", "御劍相承", "李逍遙", 1, "skill", "御劍化形，複製手上一張攻擊牌。", [{"kind": "copy_attack"}], "uncommon", "", true),
+		make_card("lxy_jianqizonghen", "劍氣縱橫", "李逍遙", 1, "skill", "劍氣化形，生成 3 道「劍氣」置於抽牌堆頂。", [{"kind": "spawn_top_tokens", "amount": 3}], "uncommon"),
 		# 幽冥仙途語感（明心劍宗）：青煙竹影＝節節拔升多段劍。art 暫借八方劍陣
 		make_card("lxy_qingyan_zhuying", "青煙竹影", "李逍遙", 2, "attack", "劍勢如新筍出土節節拔升，造成 4 點傷害四次。", [{"kind": "damage", "amount": 4, "hits": 4}], "uncommon"),
 		# 劍流引擎核心：御劍心訣 —— 每出攻擊牌抽 1，接上既有 0 費攻擊 / 複製攻擊 / 劍氣置頂 →「御劍不滅」連打循環。
-		make_card("lxy_yujianxinjue", "御劍心訣", "李逍遙", 1, "power", "心與劍合，本場戰鬥每打出一張攻擊牌便抽 1 張牌。", [{"kind": "draw_on_attack", "amount": 1}], "rare", "lxy_yujian"),
+		make_card("lxy_yujianxinjue", "御劍心訣", "李逍遙", 1, "power", "心與劍合，本場戰鬥每打出一張攻擊牌便抽 1 張牌。", [{"kind": "draw_on_attack", "amount": 1}], "rare"),
 	]
 	var character: CharacterData = _character("li_xiaoyao", "李逍遙", 74, "劍仙風流，禦劍、偷取與酒神系高風險高傷害。", cards)
 	# PAL1 對齊：9 basic + 3 uncommon + 0 rare
@@ -470,13 +470,13 @@ static func _zhao_linger() -> CharacterData:
 		make_card("zl_huguangzhou", "琉璃護光", "趙靈兒", 0, "skill", "獲得 4 點護體。", [{"kind": "block", "amount": 4}]),
 		make_card("zl_lianzhuzhou", "連珠雷咒", "趙靈兒", 1, "attack", "造成 5 點傷害兩次。", [{"kind": "damage", "amount": 5, "hits": 2}], "uncommon", "", true),
 		# 靈族神術引擎（StS Entrench / Metallicize / Combust，art 暫借既有仙術卡）
-		make_card("zl_juling", "聚靈訣", "趙靈兒", 1, "skill", "聚斂靈氣，當前護體翻倍。", [{"kind": "block_multiply", "amount": 2}], "uncommon", "zl_lingguang", true),
-		make_card("zl_lingguangpuzhao", "靈光普照", "趙靈兒", 1, "power", "靈光普照，每回合開始獲得 5 點護體。", [{"kind": "block_per_turn", "amount": 5}], "uncommon", "zl_nvwa"),
+		make_card("zl_juling", "聚靈訣", "趙靈兒", 1, "skill", "聚斂靈氣，當前護體翻倍。", [{"kind": "block_multiply", "amount": 2}], "uncommon", "", true),
+		make_card("zl_lingguangpuzhao", "靈光普照", "趙靈兒", 1, "power", "靈光普照，每回合開始獲得 5 點護體。", [{"kind": "block_per_turn", "amount": 5}], "uncommon"),
 		make_card("zl_wuleihongding", "五雷轟頂", "趙靈兒", 2, "power", "凝聚天雷，每回合結束對所有敵人降下 6 點雷傷。", [{"kind": "end_turn_damage_all", "amount": 6}], "rare"),
 		# 神術引擎核心：靈息訣 —— 每出技能牌抽 1，接上既有 0 費技能 →「靈息不息」循環。
-		make_card("zl_lingxijue", "靈息訣", "趙靈兒", 1, "power", "靈息綿長，本場戰鬥每打出一張技能牌便抽 1 張牌。", [{"kind": "draw_on_skill", "amount": 1}], "rare", "zl_guanyin"),
+		make_card("zl_lingxijue", "靈息訣", "趙靈兒", 1, "power", "靈息綿長，本場戰鬥每打出一張技能牌便抽 1 張牌。", [{"kind": "draw_on_skill", "amount": 1}], "rare"),
 		# 杖流 payoff：萬靈噬 —— 對全體依各自虛弱/破綻層數加傷，承接她大量的 weak_all / vulnerable_all 鋪場。
-		make_card("zl_wanlingshi", "萬靈噬", "趙靈兒", 2, "attack", "五靈反噬，對所有敵人造成 6 點傷害，敵人每層虛弱／破綻額外 +3。", [{"kind": "damage_debuff_bonus_all", "amount": 6, "bonus_per_layer": 3}], "rare", "zl_diliebeng"),
+		make_card("zl_wanlingshi", "萬靈噬", "趙靈兒", 2, "attack", "五靈反噬，對所有敵人造成 6 點傷害，敵人每層虛弱／破綻額外 +3。", [{"kind": "damage_debuff_bonus_all", "amount": 6, "bonus_per_layer": 3}], "rare"),
 	]
 	var character: CharacterData = _character("zhao_linger", "趙靈兒", 68, "五靈仙術、治療、護盾、解狀態與長戰持續。", cards)
 	# PAL1 對齊：9 basic + 3 uncommon + 0 rare
@@ -534,7 +534,7 @@ static func _lin_yueru() -> CharacterData:
 		make_card("lyr_shuangren", "霜刃反擊", "林月如", 1, "skill", "凝霜於刃，獲得 8 點荊棘（被攻擊時反彈傷害給攻擊者）。", [{"kind": "thorns", "amount": 8}], "uncommon"),
 		# 連武架式 / 鐵骨（StS Demon Form 護體版 / Dexterity）
 		make_card("lyr_jianwu", "劍舞架式", "林月如", 1, "power", "舞劍成勢，本場戰鬥每出一張攻擊牌獲得 3 點護體。", [{"kind": "block_per_attack", "amount": 3}], "uncommon"),
-		make_card("lyr_tiegu", "鐵骨樁", "林月如", 1, "power", "紮穩鐵骨樁步，本場戰鬥每次獲得護體額外 +2。", [{"kind": "self_block_bonus", "amount": 2}], "uncommon", "lyr_tieyi"),
+		make_card("lyr_tiegu", "鐵骨樁", "林月如", 1, "power", "紮穩鐵骨樁步，本場戰鬥每次獲得護體額外 +2。", [{"kind": "self_block_bonus", "amount": 2}], "uncommon"),
 	]
 	var character: CharacterData = _character("lin_yueru", "林月如", 72, "鞭劍武學、連擊、反擊與內勁治療。", cards)
 	# PAL1 對齊：10 basic + 2 uncommon + 0 rare
