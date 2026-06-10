@@ -1,6 +1,6 @@
 # 卡圖待補清單
 
-最後更新：2026-06-10（新增第十一節：Boss 擊敗劇情圖 9 張待補；程式已接好、補圖即生效）
+最後更新：2026-06-10（新增第十一節 Boss 劇情圖 9 張；第十二節：盤點出 15 張敵人肖像未真正去背、待重做）
 
 ---
 
@@ -436,6 +436,37 @@
 
 > 9 個 boss_id 來源見 `scripts/ascension.gd` 的 `BOSS_IDS` + `is_boss_id()`。
 > 終幕 `baiyue_lord`（act 8）擊敗即通關，其劇情圖等同 ending 場景，優先度最高。
+
+---
+
+## 十二、敵人肖像未去背待處理（🔴 15 張，2026-06-10 盤點）
+
+下列敵人肖像**沒有真正的透明背景**——背景（棋盤格／灰底）被烤進不透明像素
+（四角 alpha=255、透明像素 0%）。戰鬥中 `ground_portrait` 會把整張矩形連灰底畫出來，
+敵人身後出現一塊灰方塊。需重新去背成 RGBA 透明（主體保留、背景清成 alpha=0）。
+
+工具：`C:\Users\sean.wu\source\repos\BgRemover`。去背後存回原路徑 `assets/art/enemies/<id>.png` 再 `--import`。
+
+| 檔名 | 敵人 |
+|---|---|
+| `thug` | 山賊 |
+| `thief` | 盜賊 |
+| `tree_demon` | 樹妖 |
+| `turtle_demon` | 傻仔龜 |
+| `flower_spirit` | 花妖 |
+| `xing_tian` | 刑天 |
+| `bee_cocoon` | 蜂蛹 |
+| `grass_sprite` | 草精 |
+| `leaf_sprite` | 綠葉小妖 |
+| `octopus_imp` | 章魚怪 |
+| `clam_spirit` | 蚌精 |
+| `conch_maiden` | 海螺女 |
+| `miao_maiden` | 苗女 |
+| `black_impermanence` | 黑無常 |
+| `white_impermanence` | 白無常 |
+
+> 其餘 45 張敵人肖像已是真去背（四角 alpha=0），無需處理。
+> 盤點方式：PIL 掃 `assets/art/enemies/*.png`，四角 alpha 全 255 且透明像素 <8% 即判定未去背。
 
 ---
 
