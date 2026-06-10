@@ -46,6 +46,12 @@ var next_battle_buffs: Array[Dictionary] = []
 var event_flags: Dictionary = {}
 # 幕間字卡：已看過開場字卡的最大幕數（純加欄位，舊存檔 default 0 = 下次進地圖補看當幕字卡）
 var act_intro_seen: int = 0
+# 短征模式（IMPROVEMENT_PLAN P3-12）："full" = 8 幕完整旅程；"short" = 3 幕速通。
+# 純加欄位，舊存檔 default "full"。短征通關不解「通關」類成就（show_result 判定）。
+var run_mode: String = "full"
+
+func final_act() -> int:
+	return 3 if run_mode == "short" else 8
 # pending_event_return：若非空表示當前進行的戰鬥是事件樹觸發的，戰鬥結束時要
 # 結算 victory_effects / defeat_effects 並回地圖，而非走標準 victory 流程。
 # 結構：{victory_effects: Array, defeat_effects: Array}
@@ -165,6 +171,7 @@ func init_for(chars: Variant) -> void:
 	pending_event_return = {}
 	event_flags = {}
 	act_intro_seen = 0
+	run_mode = "full"
 	# 每人各拿自己的 starter weapon
 	for c: CharacterData in party:
 		var weapons: Array[RelicData] = RelicCatalog.weapons_for_character(c.id)
@@ -288,6 +295,7 @@ func to_dict() -> Dictionary:
 		"next_battle_buffs": next_battle_buffs.duplicate(),
 		"event_flags": event_flags.duplicate(true),
 		"act_intro_seen": act_intro_seen,
+		"run_mode": run_mode,
 	}
 
 func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> bool:
@@ -393,6 +401,7 @@ func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> 
 			next_battle_buffs.append(buff_v as Dictionary)
 	event_flags = (data.get("event_flags", {}) as Dictionary).duplicate(true)
 	act_intro_seen = int(data.get("act_intro_seen", 0))
+	run_mode = String(data.get("run_mode", "full"))
 	return true
 
 # Event Redesign：設定 / 查詢長尾旗標。value 預設 true，亦可存數值（例如人情次數）。

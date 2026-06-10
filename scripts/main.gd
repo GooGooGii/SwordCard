@@ -99,6 +99,7 @@ var title_bar_relics_button: Button = null
 var map_legend_panel: Control = null
 var _map_legend_shown_once: bool = false  # 本次啟動已看過完整圖例 → 之後收成「？」鈕
 var _banter_used: Dictionary = {}  # 本場戰鬥已說過的隊友台詞（同句不重複），每場 setup 時清空
+var pending_run_mode: String = "full"  # P3-12 短征模式：選單按鈕設定，start_run 時寫進 run_state
 const TITLE_BAR_HEIGHT: float = 52.0
 
 var _temporary_player_pose: String = ""
@@ -666,19 +667,27 @@ func _build_minimal_main_menu(ultra_compact: bool, compact_layout: bool, viewpor
 	var secondary_row: HBoxContainer = HBoxContainer.new()
 	secondary_row.add_theme_constant_override("separation", 8)
 	secondary_row.custom_minimum_size.x = content_width
+	var short_button: Button = UIFactory.main_menu_button("短征試煉", false, minor_height, minor_font_size)
+	short_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	short_button.tooltip_text = "三幕速通：打到第三幕頭目即通關（不解「通關」類成就）"
+	short_button.pressed.connect(func() -> void:
+		pending_run_mode = "short"
+		pending_seed = 0
+		show_character_select())
+	secondary_row.add_child(short_button)
 	var seed_button: Button = UIFactory.main_menu_button("輸入種子", false, minor_height, minor_font_size)
 	seed_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	seed_button.pressed.connect(_show_seed_input_popup)
 	secondary_row.add_child(seed_button)
-	var bestiary_button: Button = UIFactory.main_menu_button("敵將圖鑑", false, minor_height, minor_font_size)
-	bestiary_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bestiary_button.pressed.connect(show_bestiary)
-	secondary_row.add_child(bestiary_button)
 	action_box.add_child(secondary_row)
 
 	var record_row: HBoxContainer = HBoxContainer.new()
 	record_row.add_theme_constant_override("separation", 8)
 	record_row.custom_minimum_size.x = content_width
+	var bestiary_button: Button = UIFactory.main_menu_button("敵將圖鑑", false, minor_height, minor_font_size)
+	bestiary_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bestiary_button.pressed.connect(show_bestiary)
+	record_row.add_child(bestiary_button)
 	var history_button: Button = UIFactory.main_menu_button("征途錄", false, minor_height, minor_font_size)
 	history_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	history_button.pressed.connect(show_history)
@@ -734,6 +743,7 @@ func _build_menu_title_block(ultra_compact: bool, compact_layout: bool) -> Contr
 
 func _on_start_random_pressed() -> void:
 	pending_seed = 0
+	pending_run_mode = "full"
 	show_character_select()
 
 func _show_seed_input_popup() -> void:
@@ -771,6 +781,7 @@ func _show_seed_input_popup() -> void:
 			popup.hide()
 			return
 		pending_seed = text.hash() if text.hash() != 0 else 1
+		pending_run_mode = "full"  # 種子分享固定完整模式，避免殘留短征設定
 		popup.hide()
 		show_character_select()
 	confirm.pressed.connect(on_confirm)
@@ -1171,6 +1182,7 @@ func start_run(party_or_char: Variant) -> void:
 	seed(seed_for_run)
 	run_state.map_seed = seed_for_run
 	run_state.init_for(party)
+	run_state.run_mode = pending_run_mode  # P3-12：init_for 會重設為 full，這裡套選單選擇
 	# 套 ascension starting_hp 倍率（A6）+ 最大 HP 平鋪扣減（A14）到每個角色
 	var hp_mult: float = Ascension.starting_hp_multiplier(run_state.ascension_level)
 	var hp_flat: int = Ascension.max_hp_flat_penalty(run_state.ascension_level)
@@ -4189,7 +4201,7 @@ func _complete_battle_victory() -> void:
 		# 先放 boss 劇情圖（點一下跳過），結束後才跑戰利品/通關流程
 		var boss_post: Callable = func() -> void:
 			# 最終 boss（第八幕拜月教主）擊敗 = 直接通關，不再給任何戰利品（遺物/藥品/稀有卡）
-			if run_state.act >= 8:
+			if run_state.act >= run_state.final_act():
 				run_state.encounter_index = run_state.encounter_index + 1
 				show_result(true)
 				return
@@ -4203,7 +4215,7 @@ func _complete_battle_victory() -> void:
 					_boss_card_reward = true
 					_after_card_reward = func() -> void:
 						run_state.encounter_index = run_state.encounter_index + 1
-						if run_state.act < 8:
+						if run_state.act < run_state.final_act():
 							show_act_complete()
 						else:
 							show_result(true)
@@ -4225,7 +4237,7 @@ func _complete_battle_victory() -> void:
 	var proceed_after_potion = func() -> void:
 		run_state.encounter_index = run_state.encounter_index + 1
 		if run_state.encounter_index >= run_state.encounter_choices.size():
-			if run_state.act < 8:
+			if run_state.act < run_state.final_act():
 				show_act_complete()
 			else:
 				show_result(true)
@@ -6829,7 +6841,7 @@ func _removable_cards() -> Array[CardData]:
 func advance_non_battle_node() -> void:
 	run_state.encounter_index = run_state.encounter_index + 1
 	if run_state.encounter_index >= run_state.encounter_choices.size():
-		if run_state.act < 8:
+		if run_state.act < run_state.final_act():
 			show_act_complete()
 		else:
 			show_result(true)
@@ -7357,9 +7369,12 @@ func show_result(victory: bool) -> void:
 	var death_by: String = ""
 	if not victory and battle != null and battle.enemy != null:
 		death_by = battle.enemy.id
-	RunHistory.record(RunHistory.entry_from_run(run_state, victory, death_by))
-	# 成就：run 結束點（通關另帶 run_victory ctx）
-	var ach_ctx: Dictionary = {"kind": "run_victory" if victory else "run_end", "run_state": run_state, "battle": battle}
+	var history_entry: Dictionary = RunHistory.entry_from_run(run_state, victory, death_by)
+	history_entry["mode"] = run_state.run_mode
+	RunHistory.record(history_entry)
+	# 成就：run 結束點（完整模式通關才帶 run_victory ctx；短征通關不解「通關」類成就）
+	var full_victory: bool = victory and run_state.run_mode != "short"
+	var ach_ctx: Dictionary = {"kind": "run_victory" if full_victory else "run_end", "run_state": run_state, "battle": battle}
 	_show_achievement_toasts(Achievements.check_all(ach_ctx))
 	if victory:
 		Ascension.mark_cleared(run_state.ascension_level)
@@ -7374,9 +7389,15 @@ func show_result(victory: bool) -> void:
 	box.add_theme_constant_override("separation", 14)
 	panel.add_child(box)
 	if victory:
-		box.add_child(_title("通關！仙劍成道", 34))
+		var is_short: bool = run_state.run_mode == "short"
+		box.add_child(_title("短征功成" if is_short else "通關！仙劍成道", 34))
 		box.add_child(UIFactory.ink_divider())
-		box.add_child(UIFactory.paragraph("%s 歷經五幕征途，終於擊敗了拜月教主，守護了天下蒼生。\n最終 HP %d/%d，剩餘銅錢 %d。" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold]))
+		var victory_text: String
+		if is_short:
+			victory_text = "%s 速通三幕短征試煉，圓滿落幕。\n最終 HP %d/%d，剩餘銅錢 %d。" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold]
+		else:
+			victory_text = "%s 歷經八幕征途，終於擊敗了拜月教主，守護了天下蒼生。\n最終 HP %d/%d，剩餘銅錢 %d。" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold]
+		box.add_child(UIFactory.paragraph(victory_text))
 	else:
 		box.add_child(_title("勝敗乃兵家常事", 34))
 		box.add_child(UIFactory.ink_divider())

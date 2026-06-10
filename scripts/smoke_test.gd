@@ -268,6 +268,8 @@ func _initialize() -> void:
 	_test_achievements(characters)
 	# 多人隊 baseline（IMPROVEMENT_PLAN P2-10）：隨機 AI + 最簡切人 policy
 	_test_balance_party(characters, bosses)
+	# 短征模式（IMPROVEMENT_PLAN P3-12）
+	_test_short_run_mode(characters)
 	if _smoke_failures > 0:
 		push_error("[smoke] %d 個 _check() 失敗。以 quit(1) 結束。" % _smoke_failures)
 		print("SwordCard smoke test FAILED (%d check failures)." % _smoke_failures)
@@ -4043,6 +4045,27 @@ func _test_act_intro_seen_roundtrip(characters: Array[CharacterData]) -> void:
 	var old_restored: RunState = RunState.new()
 	_check(old_restored.from_dict(legacy, characters), "legacy save should load")
 	_check(old_restored.act_intro_seen == 0, "legacy save defaults act_intro_seen to 0")
+
+func _test_short_run_mode(characters: Array[CharacterData]) -> void:
+	var rs: RunState = RunState.new()
+	rs.init_for(characters[0])
+	_check(rs.run_mode == "full", "default run_mode should be full")
+	_check(rs.final_act() == 8, "full mode final act = 8")
+	rs.run_mode = "short"
+	_check(rs.final_act() == 3, "short mode final act = 3")
+	# round-trip 保留 mode
+	var restored: RunState = RunState.new()
+	_check(restored.from_dict(rs.to_dict(), characters), "short mode save should load")
+	_check(restored.run_mode == "short", "run_mode should roundtrip")
+	# 舊存檔無欄位 → full
+	var legacy: Dictionary = rs.to_dict()
+	legacy.erase("run_mode")
+	var old_restored: RunState = RunState.new()
+	_check(old_restored.from_dict(legacy, characters), "legacy save should load")
+	_check(old_restored.run_mode == "full", "legacy save defaults to full mode")
+	# init_for 重設
+	rs.init_for(characters[0])
+	_check(rs.run_mode == "full", "init_for resets run_mode")
 
 func _test_card_effect_summary(characters: Array[CharacterData]) -> void:
 	# 全部玩家可得卡（起始+獎勵池+共同牌）摘要非空且 ≤ 16 字

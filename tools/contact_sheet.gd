@@ -33,15 +33,21 @@ func _initialize() -> void:
 		var rows: int = int(ceil(float(files.size()) / COLS))
 		var sheet: Image = Image.create(COLS * CELL.x, rows * CELL.y, false, Image.FORMAT_RGBA8)
 		sheet.fill(Color("202830"))
+		var missing: int = 0
 		for i: int in range(files.size()):
-			var img: Image = Image.load_from_file("res://assets/art/cards/%s" % files[i])
-			if img == null:
+			var abs_path: String = ProjectSettings.globalize_path("res://assets/art/cards/%s" % files[i])
+			var img: Image = Image.load_from_file(abs_path)
+			if img == null or img.is_empty():
+				missing += 1
 				continue
+			if img.is_compressed():
+				img.decompress()
+			img.convert(Image.FORMAT_RGBA8)
 			img.resize(CELL.x, CELL.y, Image.INTERPOLATE_BILINEAR)
 			var dst: Vector2i = Vector2i((i % COLS) * CELL.x, (i / COLS) * CELL.y)
 			sheet.blend_rect(img, Rect2i(Vector2i.ZERO, CELL), dst)
 		var out: String = "res://_contact_%s.png" % group
 		sheet.save_png(out)
-		print("[contact] %s: %d cards -> %s" % [group, files.size(), out])
+		print("[contact] %s: %d cards (%d load-failed) -> %s" % [group, files.size(), missing, out])
 	print("[contact] done")
 	quit(0)
