@@ -995,6 +995,7 @@ func show_character_select(preview_id: String = "") -> void:
 	screen.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(screen)
 	screen.add_child(_title("選擇隊伍（%d / %d）" % [selected_party_ids.size(), PARTY_MAX_SIZE], 30))
+	screen.add_child(UIFactory.ink_divider())
 	var stage: Control = _character_select_stage(preview_character)
 	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	screen.add_child(stage)
@@ -4123,6 +4124,7 @@ func show_card_reward() -> void:
 	box.add_theme_constant_override("separation", 14)
 	panel.add_child(box)
 	box.add_child(_title("Boss 招式精粹" if _boss_card_reward else "戰鬥勝利", 34))
+	box.add_child(UIFactory.ink_divider())
 	if _boss_card_reward:
 		box.add_child(UIFactory.card_label("擊敗 Boss！三選一稀有招式。", 14, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER))
 	for lu: Dictionary in _pending_levelups:
@@ -5915,6 +5917,7 @@ func show_shop_node() -> void:
 	var title_text: String = "夜路黑店" if run_state.current_shop_is_black else "山道商店"
 	var flavor_text: String = "簾後藏著來路不明的珍品，價格狠，成色也狠。" if run_state.current_shop_is_black else "行商在山道旁支起小攤，貨色普通但價格公道。"
 	box.add_child(_title(title_text, 34))
+	box.add_child(UIFactory.ink_divider())
 	box.add_child(UIFactory.paragraph(flavor_text))
 	# 依種類分列：第一列卡片、第二列遺物、第三列藥品、第四列其它（服務 + 導覽）。
 	# 每列用 HFlowContainer → 商品多時自動換行，不會超出畫面右緣（全部可見、可點購買）。
@@ -6647,6 +6650,7 @@ func show_act_complete() -> void:
 	var sub: Label = _title(_act_title(completed_act), 22)
 	sub.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
 	box.add_child(sub)
+	box.add_child(UIFactory.ink_divider())
 	box.add_child(UIFactory.paragraph(_act_complete_flavor(completed_act)))
 	box.add_child(UIFactory.paragraph("所有角色恢復 %d 點生命。" % ACT_HEAL_AMOUNT))
 	var hp_parts: Array[String] = []
@@ -6738,7 +6742,8 @@ func show_deck_view(mode: String = "view", custom_cards = null, custom_title: St
 	elif deck_view_mode == "upgrade" or deck_view_mode == "shop_upgrade":
 		title_text = "選擇要升級的牌"
 	box.add_child(_title(title_text, 32))
-	
+	box.add_child(UIFactory.ink_divider())
+
 	var target_cards: Array
 	if custom_cards == null:
 		target_cards = run_state.deck
@@ -7152,9 +7157,11 @@ func show_result(victory: bool) -> void:
 	panel.add_child(box)
 	if victory:
 		box.add_child(_title("通關！仙劍成道", 34))
+		box.add_child(UIFactory.ink_divider())
 		box.add_child(UIFactory.paragraph("%s 歷經五幕征途，終於擊敗了拜月教主，守護了天下蒼生。\n最終 HP %d/%d，剩餘銅錢 %d。" % [selected_character.display_name, run_state.hp, selected_character.max_hp, run_state.gold]))
 	else:
 		box.add_child(_title("勝敗乃兵家常事", 34))
+		box.add_child(UIFactory.ink_divider())
 		box.add_child(UIFactory.paragraph("大俠請重新來過。\n（%s 敗於 %s）" % [selected_character.display_name, battle.enemy.display_name]))
 		var general_count: int = 0
 		for r: RelicData in run_state.relics:

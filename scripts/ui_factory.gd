@@ -23,7 +23,12 @@ static func make_panel() -> PanelContainer:
 	var panel: PanelContainer = PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_theme_stylebox_override("panel", style_box(Color("18212f", 0.86), Color("536277"), 1, 8))
+	# 水墨風：較深的宣紙底、暖金邊、柔和投影 → 面板像浮在卷上的紙片
+	var sb: StyleBoxFlat = style_box(Color("141b27", 0.90), Color("c8b46f", 0.42), 1, 12)
+	sb.shadow_color = Color("000000", 0.40)
+	sb.shadow_size = 7
+	sb.shadow_offset = Vector2(0, 4)
+	panel.add_theme_stylebox_override("panel", sb)
 	panel.add_theme_constant_override("margin_left", 18)
 	panel.add_theme_constant_override("margin_top", 18)
 	panel.add_theme_constant_override("margin_right", 18)
@@ -37,7 +42,42 @@ static func title_label(text: String, size: int) -> Label:
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size", size)
 	label.add_theme_color_override("font_color", ThemeColors.ACCENT_GOLD)
+	# 墨色描邊：標題像毛筆字、在繁雜背景上更清晰、更有書法質感
+	label.add_theme_color_override("font_outline_color", Color("17110a", 0.92))
+	label.add_theme_constant_override("outline_size", max(3, int(size * 0.12)))
 	return label
+
+# 水墨風分隔線：中央菱紋 ❖ 兩側金線（純 Control，無需美術）。screen 標題下方可放一條。
+static func ink_divider(thickness: int = 2) -> Control:
+	var row: HBoxContainer = HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_theme_constant_override("separation", 10)
+	row.add_child(_ink_rule(thickness))
+	var gem: Label = card_label("❖", 14, ThemeColors.BORDER_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	gem.autowrap_mode = TextServer.AUTOWRAP_OFF
+	row.add_child(gem)
+	row.add_child(_ink_rule(thickness))
+	return row
+
+static func _ink_rule(thickness: int) -> Control:
+	var p: PanelContainer = PanelContainer.new()
+	p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	p.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	p.custom_minimum_size = Vector2(0, thickness)
+	var sb: StyleBoxFlat = StyleBoxFlat.new()
+	sb.bg_color = Color("c8b46f", 0.45)
+	sb.set_corner_radius_all(thickness)
+	p.add_theme_stylebox_override("panel", sb)
+	return p
+
+# 水墨風段落標題：標題 + 下方分隔線（VBox）。給內嵌建構的標題用（不影響 _title 的 Label 型別）。
+static func section_header(text: String, size: int) -> VBoxContainer:
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	box.add_child(title_label(text, size))
+	box.add_child(ink_divider())
+	return box
 
 static func paragraph(text: String) -> Label:
 	var label: Label = Label.new()
@@ -48,12 +88,13 @@ static func paragraph(text: String) -> Label:
 	return label
 
 static func style_button(button: Button) -> void:
-	button.add_theme_stylebox_override("normal", style_box(ThemeColors.PANEL_NAVY, Color("8ea3c4"), 1, 6))
-	button.add_theme_stylebox_override("hover", style_box(Color("33435c"), Color("c3d3ee"), 2, 6))
-	button.add_theme_stylebox_override("pressed", style_box(Color("1f2a3c"), Color("e4c66a"), 2, 6))
-	button.add_theme_color_override("font_color", Color("edf2f7"))
-	button.add_theme_color_override("font_hover_color", Color("ffffff"))
-	button.add_theme_color_override("font_pressed_color", Color("f7e7a2"))
+	# 水墨風：墨藍底、暖金邊，hover 提亮鍍金、pressed 沉色描金 → 取代原本偏冷的藍灰
+	button.add_theme_stylebox_override("normal", style_box(Color("1d2735", 0.95), Color("b89e63", 0.62), 1, 7))
+	button.add_theme_stylebox_override("hover", style_box(Color("2a3850", 0.97), ThemeColors.ACCENT_GOLD, 1, 7))
+	button.add_theme_stylebox_override("pressed", style_box(Color("141d2a", 0.98), ThemeColors.BORDER_GOLD, 2, 7))
+	button.add_theme_color_override("font_color", Color("ecdfc2"))
+	button.add_theme_color_override("font_hover_color", Color("fff3cf"))
+	button.add_theme_color_override("font_pressed_color", ThemeColors.HIGHLIGHT_GOLD)
 
 static func main_menu_button(text: String, emphasized: bool = false, min_height: float = 58.0, font_size: int = 20) -> Button:
 	var button: Button = Button.new()
