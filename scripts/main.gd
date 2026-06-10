@@ -2517,7 +2517,7 @@ func _swap_to_phase_2_portrait() -> void:
 				var total: int = (battle.state["enemies"] as Array).size()
 				var new_box: Vector2 = _enemy_portrait_size_for(total) * p2_scale
 				if enemy_portrait_wrap != null and is_instance_valid(enemy_portrait_wrap):
-					enemy_portrait_wrap.custom_minimum_size = new_box
+					enemy_portrait_wrap.custom_minimum_size = _enemy_wrap_layout_size(new_box, total)
 				enemy_portrait_image.set_meta("ground_box", new_box)
 			UIFactory.ground_portrait(enemy_portrait_image)  # 變身後重新貼地
 	var phase_2_tint: Color = battle.enemy.phase_2_portrait_tint
@@ -2685,6 +2685,13 @@ func _enemy_portrait_size_for(total: int) -> Vector2:
 		scale_factor = 0.62
 	return Vector2(base_w * scale_factor, base_h * scale_factor)
 
+# boss / 大型敵人視覺可超過基準高度（portrait_scale > 1），但版面「保留」高度只到基準，
+# 多出的部分讓肖像往下溢出、由 name/hp 標籤與手牌列蓋住（boss 在手牌之下），
+# 避免高 boss 撐高 arena 把手牌列擠出畫面下緣（小怪 scale < 1 則維持原高、不放大）。
+func _enemy_wrap_layout_size(visual_size: Vector2, total: int) -> Vector2:
+	var base_h: float = _enemy_portrait_size_for(total).y
+	return Vector2(visual_size.x, min(visual_size.y, base_h))
+
 func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	var slot: Dictionary = battle.state["enemies"][idx] as Dictionary
 	var enemy_data: EnemyData = battle.enemies[idx]
@@ -2728,12 +2735,15 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 		intent_size, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(intent_label)
 	# portrait wrap（含 block badge）
+	# 版面只保留 layout_size（封頂在基準高度）；肖像照 portrait_size 全尺寸繪製、
+	# 超出 layout 的部分往下溢出、被下方標籤與手牌蓋住，避免高 boss 擠掉手牌列。
+	var layout_size: Vector2 = _enemy_wrap_layout_size(portrait_size, total)
 	var wrap: Control = Control.new()
-	wrap.custom_minimum_size = portrait_size
+	wrap.custom_minimum_size = layout_size
 	wrap.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	var portrait: TextureRect = UIFactory.portrait_rect(portrait_path, portrait_size, true)
 	portrait.set_meta("ground_box", portrait_size)
-	UIFactory.ground_portrait(portrait)  # 底部對齊地面線
+	UIFactory.ground_portrait(portrait)  # 底部對齊地面線（以視覺 box 為準，往下溢出）
 	portrait.modulate = portrait_tint_col
 	portrait.flip_h = not enemy_data.default_facing_left
 	wrap.add_child(portrait)
@@ -2741,7 +2751,7 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	var badge_size: float = 40.0 if total >= 2 else 48.0
 	badge.custom_minimum_size = Vector2(badge_size, badge_size + 8)
 	badge.size = Vector2(badge_size, badge_size + 8)
-	badge.position = Vector2(6, portrait_size.y - (badge_size + 16))
+	badge.position = Vector2(6, layout_size.y - (badge_size + 16))
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	wrap.add_child(badge)
 	# Click handler — 切 active 敵
