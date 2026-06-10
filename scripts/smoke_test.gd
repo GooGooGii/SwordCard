@@ -257,6 +257,17 @@ func _initialize() -> void:
 	_test_event_flags_old_save_compat(characters)
 	_test_deck_archetype_detection(characters)
 	_test_rare_event_rarity_and_weight()
+	# 旅程敘事層（IMPROVEMENT_PLAN P1-3 / P2-9）：幕間字卡 + Boss 定場 + 結局變體 + banter
+	_test_story_data(characters)
+	_test_banter_data(characters)
+	_test_act_intro_seen_roundtrip(characters)
+	# 卡面一行摘要（IMPROVEMENT_PLAN P1-5）：全卡非空且簡短
+	_test_card_effect_summary(characters)
+	# 征途錄 + 成就（IMPROVEMENT_PLAN P2-6 / P2-7）
+	_test_run_history(characters)
+	_test_achievements(characters)
+	# 多人隊 baseline（IMPROVEMENT_PLAN P2-10）：隨機 AI + 最簡切人 policy
+	_test_balance_party(characters, bosses)
 	if _smoke_failures > 0:
 		push_error("[smoke] %d 個 _check() 失敗。以 quit(1) 結束。" % _smoke_failures)
 		print("SwordCard smoke test FAILED (%d check failures)." % _smoke_failures)
@@ -613,14 +624,13 @@ func _test_party_state_sync(characters: Array[CharacterData], enemy_template: En
 	bc.state["player_block"] = 7
 	bc.state["player_poison"] = 3
 	bc._sync_state_to_active()
-	# 切到 1
+	# 切到 1（P3-11：切入者 +SWITCH_IN_BLOCK 護體）
 	bc.switch_active(1)
-	# active 是 1，他應該沒有 block / poison
-	_check(int(bc.state["player_block"]) == 0, "new active should start with 0 block")
+	_check(int(bc.state["player_block"]) == BattleController.SWITCH_IN_BLOCK, "new active should start with switch-in block; got %d" % int(bc.state["player_block"]))
 	_check(int(bc.state["player_poison"]) == 0, "new active should start with 0 poison")
-	# 切回 0
+	# 切回 0：原有 7 護體保留 + 切入 bonus
 	bc.switch_active(0)
-	_check(int(bc.state["player_block"]) == 7, "block should persist when switched back; got %d" % int(bc.state["player_block"]))
+	_check(int(bc.state["player_block"]) == 7 + BattleController.SWITCH_IN_BLOCK, "block should persist + switch-in bonus; got %d" % int(bc.state["player_block"]))
 	_check(int(bc.state["player_poison"]) == 3, "poison should persist when switched back; got %d" % int(bc.state["player_poison"]))
 
 func _test_party_auto_switch_on_death(characters: Array[CharacterData], enemy_template: EnemyData) -> void:
@@ -1447,6 +1457,95 @@ func _simulate_random_battle(character: CharacterData, enemy_template: EnemyData
 		var actions: Array = bc.begin_enemy_phase()
 		bc.resolve_enemy_phase(actions)
 	return bc.is_victory()
+
+# 多人隊模擬（IMPROVEMENT_PLAN P2-10）：隨機 AI + 最簡切人 policy——
+# active HP < 30% 且有更健康的活隊友 → 用免費切換換上（只用每回合 1 次的免費額度）。
+func _simulate_party_battle(party: Array[CharacterData], enemy_template: EnemyData, max_turns: int = 20) -> bool:
+	var run_state: RunState = RunState.new()
+	run_state.init_for(party)
+	var enemy: EnemyData = enemy_template.clone()
+	var bc: BattleController = BattleController.new()
+	bc.setup(run_state, party[0], enemy)
+	for _turn: int in range(max_turns):
+		bc.start_turn()
+		if bc.is_battle_over():
+			break
+		# 切人 policy（每回合至多一次、只用免費額度）
+		var players: Array = bc.state.get("players", []) as Array
+		var active_idx: int = int(bc.state.get("active_player_index", 0))
+		if active_idx < players.size():
+			var active_slot: Dictionary = players[active_idx] as Dictionary
+			var active_frac: float = float(int(active_slot["hp"])) / max(1.0, float(int(active_slot["max_hp"])))
+			if active_frac < 0.3:
+				var best_idx: int = -1
+				var best_frac: float = active_frac
+				for i: int in range(players.size()):
+					if i == active_idx:
+						continue
+					var slot: Dictionary = players[i] as Dictionary
+					if int(slot["hp"]) <= 0:
+						continue
+					var frac: float = float(int(slot["hp"])) / max(1.0, float(int(slot["max_hp"])))
+					if frac > best_frac:
+						best_frac = frac
+						best_idx = i
+				if best_idx >= 0:
+					bc.switch_active(best_idx)
+		for _attempt: int in range(20):
+			if bc.is_battle_over():
+				break
+			var affordable: Array[CardData] = []
+			for card: CardData in bc.deck.hand:
+				if bc.effective_card_cost(card) <= int(bc.state["energy"]):
+					affordable.append(card)
+			if affordable.is_empty():
+				break
+			var chosen: CardData = affordable[randi() % affordable.size()]
+			var played: Dictionary = bc.play_card(chosen)
+			if not bool(played.get("affordable", false)):
+				break
+		if bc.is_battle_over():
+			break
+		var actions: Array = bc.begin_enemy_phase()
+		bc.resolve_enemy_phase(actions)
+	return bc.is_victory()
+
+# 多人隊 baseline（vs 中段 boss、10 回合限時，與 BALANCE_BASELINES_MID 同情境）。
+# null = 尚未觀測；初跑後填入。若 3 人隊勝率 >95% = 組隊白給，要回頭評估能量/敵 HP scale。
+const BALANCE_BASELINES_PARTY: Dictionary = {
+	"duo_li_anu": null,      # 李逍遙 + 阿奴 —— null = 尚未觀測，初跑後填入
+	"trio_li_zhao_lin": null,  # 李 + 趙 + 林
+}
+
+func _test_balance_party(characters: Array[CharacterData], bosses: Array[EnemyData]) -> void:
+	if bosses.size() < 2 or characters.size() < 4:
+		return
+	var mid_boss: EnemyData = bosses[1]
+	var combos: Dictionary = {
+		"duo_li_anu": [characters[0], characters[3]],
+		"trio_li_zhao_lin": [characters[0], characters[1], characters[2]],
+	}
+	print("Balance regression (party) vs %s (10-turn limit), %d trials/combo:" % [mid_boss.display_name, BALANCE_TRIALS])
+	for combo_key: String in combos.keys():
+		var party_untyped: Array = combos[combo_key]
+		var party: Array[CharacterData] = []
+		for c: Variant in party_untyped:
+			party.append(c as CharacterData)
+		var wins: int = 0
+		for trial: int in range(BALANCE_TRIALS):
+			seed(trial * 7919 + hash(combo_key) * 17)
+			if _simulate_party_battle(party, mid_boss, 10):
+				wins += 1
+		randomize()
+		var win_rate: int = int(round(100.0 * float(wins) / float(BALANCE_TRIALS)))
+		var baseline_v: Variant = BALANCE_BASELINES_PARTY.get(combo_key, null)
+		if baseline_v == null:
+			print("  %s: %d%% (no baseline yet — add to BALANCE_BASELINES_PARTY)" % [combo_key, win_rate])
+			continue
+		var baseline: int = int(baseline_v)
+		var delta: int = abs(win_rate - baseline)
+		print("  %s: %d%% (baseline %d%%, delta %d pp)" % [combo_key, win_rate, baseline, delta])
+		_check(delta <= BALANCE_TOLERANCE_PP, "party balance regression: %s win rate %d%% drifted %d pp from baseline %d%%" % [combo_key, win_rate, delta, baseline])
 
 func _test_deck_pile_views(characters: Array[CharacterData]) -> void:
 	var main_script = load("res://scripts/main.gd")
@@ -3872,3 +3971,158 @@ func _test_rare_event_rarity_and_weight() -> void:
 	randomize()
 	# weight 1 vs 5 → 期望 ~1/6 ≈ 167；給寬鬆界線確保確實被降權（< 均勻的 500）
 	_check(rare_hits < 350, "rare event should be down-weighted; got %d/1000 hits" % rare_hits)
+
+# ── 旅程敘事層（IMPROVEMENT_PLAN P1-3 / P2-9）─────────────────────────────
+
+func _test_story_data(characters: Array[CharacterData]) -> void:
+	# 8 幕都有開場字卡（title + 至少 2 行）
+	for act: int in range(1, 9):
+		var intro: Dictionary = StoryData.act_intro(act)
+		_check(not intro.is_empty(), "act %d should have intro" % act)
+		_check(not String(intro.get("title", "")).is_empty(), "act %d intro title" % act)
+		_check((intro.get("lines", []) as Array).size() >= 2, "act %d intro should have >= 2 lines" % act)
+	# 全部 9 個 boss（BOSS_IDS + 三個正史 boss）都有定場文字
+	var all_boss_ids: Array[String] = []
+	all_boss_ids.append_array(Ascension.BOSS_IDS)
+	for extra: String in ["miao_chieftain", "tomb_general", "zhenyu_mingwang"]:
+		if not all_boss_ids.has(extra):
+			all_boss_ids.append(extra)
+	for boss_id: String in all_boss_ids:
+		_check(not StoryData.boss_outro(boss_id).is_empty(), "boss %s should have outro" % boss_id)
+	# 結局變體：無旗標 = 預設；nuwa_jade / fox_spared 各出不同結語
+	var rs: RunState = RunState.new()
+	rs.init_for(characters[0])
+	var ending_default: String = StoryData.ending_line(rs)
+	_check(not ending_default.is_empty(), "default ending should exist")
+	rs.set_event_flag("fox_spared")
+	var ending_fox: String = StoryData.ending_line(rs)
+	_check(ending_fox != ending_default, "fox_spared ending should differ")
+	rs.set_event_flag("nuwa_jade")
+	var ending_jade: String = StoryData.ending_line(rs)
+	_check(ending_jade != ending_fox and ending_jade != ending_default, "nuwa_jade ending should take priority")
+
+func _test_banter_data(characters: Array[CharacterData]) -> void:
+	# 每角色三個觸發都有台詞池
+	for c: CharacterData in characters:
+		for trigger: String in ["switch_in", "ally_down", "victory"]:
+			var used: Dictionary = {}
+			var line: String = BanterData.line_for(trigger, c.id, "", used)
+			_check(not line.is_empty(), "%s should have %s banter" % [c.id, trigger])
+	# pair 台詞的角色 id 都存在
+	var known_ids: Array[String] = []
+	for c: CharacterData in characters:
+		known_ids.append(c.id)
+	for key: Variant in BanterData.SWITCH_IN_PAIR.keys():
+		var parts: PackedStringArray = String(key).split("|")
+		_check(parts.size() == 2, "pair key format: %s" % key)
+		_check(known_ids.has(parts[0]) and known_ids.has(parts[1]), "pair key ids should exist: %s" % key)
+	# used 去重：把池抽乾後回空字串、不會無限重複
+	var used_all: Dictionary = {}
+	for _i: int in range(40):
+		var l: String = BanterData.line_for("victory", characters[0].id, "", used_all)
+		if l.is_empty():
+			break
+		_check(not used_all.has(l), "line_for should not repeat used lines")
+		used_all[l] = true
+	_check(BanterData.line_for("victory", characters[0].id, "", used_all).is_empty(), "exhausted pool should return empty")
+
+func _test_act_intro_seen_roundtrip(characters: Array[CharacterData]) -> void:
+	var rs: RunState = RunState.new()
+	rs.init_for(characters[0])
+	_check(rs.act_intro_seen == 0, "new run starts with no intro seen")
+	rs.act_intro_seen = 3
+	var restored: RunState = RunState.new()
+	var loaded: bool = restored.from_dict(rs.to_dict(), characters)
+	_check(loaded, "act_intro_seen roundtrip load")
+	_check(restored.act_intro_seen == 3, "act_intro_seen should roundtrip")
+	# 舊存檔無欄位 → default 0
+	var legacy: Dictionary = rs.to_dict()
+	legacy.erase("act_intro_seen")
+	var old_restored: RunState = RunState.new()
+	_check(old_restored.from_dict(legacy, characters), "legacy save should load")
+	_check(old_restored.act_intro_seen == 0, "legacy save defaults act_intro_seen to 0")
+
+func _test_card_effect_summary(characters: Array[CharacterData]) -> void:
+	# 全部玩家可得卡（起始+獎勵池+共同牌）摘要非空且 ≤ 16 字
+	var seen_ids: Dictionary = {}
+	var all_cards: Array[CardData] = []
+	for c: CharacterData in characters:
+		for card: CardData in c.starting_deck:
+			if not seen_ids.has(card.id):
+				seen_ids[card.id] = true
+				all_cards.append(card)
+		for card: CardData in c.reward_pool:
+			if not seen_ids.has(card.id):
+				seen_ids[card.id] = true
+				all_cards.append(card)
+	for card: CardData in GameData.colorless_cards():
+		if not seen_ids.has(card.id):
+			seen_ids[card.id] = true
+			all_cards.append(card)
+	_check(all_cards.size() >= 100, "summary test should cover 100+ cards; got %d" % all_cards.size())
+	for card: CardData in all_cards:
+		var s: String = CardFormat.card_effect_summary(card)
+		_check(not s.is_empty(), "card %s summary should not be empty" % card.id)
+		_check(s.length() <= 16, "card %s summary too long (%d): %s" % [card.id, s.length(), s])
+
+func _test_run_history(characters: Array[CharacterData]) -> void:
+	# smoke 環境 user:// 是測試專用，可放心清
+	RunHistory.clear_all()
+	_check(RunHistory.load_all().is_empty(), "history starts empty")
+	var rs: RunState = RunState.new()
+	rs.init_for(characters[0])
+	rs.gold = 77
+	var entry: Dictionary = RunHistory.entry_from_run(rs, false, "bandit")
+	_check(String(entry["death_by"]) == "bandit")
+	_check(int(entry["gold"]) == 77)
+	_check((entry["characters"] as Array)[0] == characters[0].id)
+	RunHistory.record(entry)
+	RunHistory.record(RunHistory.entry_from_run(rs, true))
+	var entries: Array = RunHistory.load_all()
+	_check(entries.size() == 2, "two entries recorded")
+	_check(bool((entries[0] as Dictionary)["victory"]), "newest first")
+	var s: Dictionary = RunHistory.summary()
+	_check(int(s["total"]) == 2 and int(s["wins"]) == 1, "summary counts")
+	# 上限滾動：塞 60 筆 → 保留 MAX_ENTRIES
+	for i: int in range(60):
+		RunHistory.record(RunHistory.entry_from_run(rs, false, "x"))
+	_check(RunHistory.load_all().size() == RunHistory.MAX_ENTRIES, "rolling cap at %d" % RunHistory.MAX_ENTRIES)
+	RunHistory.clear_all()
+
+func _test_achievements(characters: Array[CharacterData]) -> void:
+	Achievements.clear_all()
+	RunHistory.clear_all()
+	Bestiary.clear_all()
+	Ascension.clear_all()
+	_check(Achievements.unlocked_all().is_empty(), "achievements start empty")
+	# 定義完整性：30 條、id 唯一、欄位齊全
+	var defs: Array[Dictionary] = Achievements.definitions()
+	_check(defs.size() == 30, "should have 30 achievements; got %d" % defs.size())
+	var ids: Dictionary = {}
+	for d: Dictionary in defs:
+		_check(d.has("id") and d.has("title") and d.has("desc"), "achievement fields complete")
+		_check(not ids.has(d["id"]), "duplicate achievement id %s" % d["id"])
+		ids[d["id"]] = true
+	# check_all 對三種 ctx 都不 crash；空資料不該解鎖任何里程碑
+	var rs: RunState = RunState.new()
+	rs.init_for(characters[0])
+	var none: Array[Dictionary] = Achievements.check_all({"kind": "run_end", "run_state": rs, "battle": null})
+	_check(none.is_empty(), "fresh data should unlock nothing; got %d" % none.size())
+	# 通關一輪（隊長 = characters[0]）→ first_victory + 角色成就 + poor_victory（gold 0）
+	RunHistory.record(RunHistory.entry_from_run(rs, true))
+	rs.gold = 0
+	var newly: Array[Dictionary] = Achievements.check_all({"kind": "run_victory", "run_state": rs, "battle": null})
+	var newly_ids: Array[String] = []
+	for d: Dictionary in newly:
+		newly_ids.append(String(d["id"]))
+	_check(newly_ids.has("first_victory"), "first_victory should unlock; got %s" % str(newly_ids))
+	_check(newly_ids.has("poor_victory"), "poor_victory should unlock (gold 0)")
+	# 不重複解鎖
+	var again: Array[Dictionary] = Achievements.check_all({"kind": "run_victory", "run_state": rs, "battle": null})
+	for d: Dictionary in again:
+		_check(String(d["id"]) != "first_victory", "should not re-unlock first_victory")
+	_check(Achievements.is_unlocked("first_victory"), "persisted unlock")
+	Achievements.clear_all()
+	RunHistory.clear_all()
+	Bestiary.clear_all()
+	Ascension.clear_all()
