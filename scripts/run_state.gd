@@ -44,6 +44,8 @@ var next_battle_buffs: Array[Dictionary] = []
 # 與某妖立契」等，供後續事件的 requires.event_flag / not_event_flag 檢定，做回訪與後果。
 # 純加欄位，舊存檔 from_dict 用 data.get("event_flags", {}) 後援，不升 SAVE_VERSION。
 var event_flags: Dictionary = {}
+# 幕間字卡：已看過開場字卡的最大幕數（純加欄位，舊存檔 default 0 = 下次進地圖補看當幕字卡）
+var act_intro_seen: int = 0
 # pending_event_return：若非空表示當前進行的戰鬥是事件樹觸發的，戰鬥結束時要
 # 結算 victory_effects / defeat_effects 並回地圖，而非走標準 victory 流程。
 # 結構：{victory_effects: Array, defeat_effects: Array}
@@ -162,6 +164,7 @@ func init_for(chars: Variant) -> void:
 	next_battle_buffs.clear()
 	pending_event_return = {}
 	event_flags = {}
+	act_intro_seen = 0
 	# 每人各拿自己的 starter weapon
 	for c: CharacterData in party:
 		var weapons: Array[RelicData] = RelicCatalog.weapons_for_character(c.id)
@@ -284,6 +287,7 @@ func to_dict() -> Dictionary:
 		"observe_tokens": observe_tokens,
 		"next_battle_buffs": next_battle_buffs.duplicate(),
 		"event_flags": event_flags.duplicate(true),
+		"act_intro_seen": act_intro_seen,
 	}
 
 func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> bool:
@@ -388,6 +392,7 @@ func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> 
 		if buff_v is Dictionary:
 			next_battle_buffs.append(buff_v as Dictionary)
 	event_flags = (data.get("event_flags", {}) as Dictionary).duplicate(true)
+	act_intro_seen = int(data.get("act_intro_seen", 0))
 	return true
 
 # Event Redesign：設定 / 查詢長尾旗標。value 預設 true，亦可存數值（例如人情次數）。

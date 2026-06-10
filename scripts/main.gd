@@ -98,6 +98,7 @@ var title_bar_observe_label: Label = null
 var title_bar_relics_button: Button = null
 var map_legend_panel: Control = null
 var _map_legend_shown_once: bool = false  # 本次啟動已看過完整圖例 → 之後收成「？」鈕
+var _banter_used: Dictionary = {}  # 本場戰鬥已說過的隊友台詞（同句不重複），每場 setup 時清空
 const TITLE_BAR_HEIGHT: float = 52.0
 
 var _temporary_player_pose: String = ""
@@ -674,6 +675,19 @@ func _build_minimal_main_menu(ultra_compact: bool, compact_layout: bool, viewpor
 	bestiary_button.pressed.connect(show_bestiary)
 	secondary_row.add_child(bestiary_button)
 	action_box.add_child(secondary_row)
+
+	var record_row: HBoxContainer = HBoxContainer.new()
+	record_row.add_theme_constant_override("separation", 8)
+	record_row.custom_minimum_size.x = content_width
+	var history_button: Button = UIFactory.main_menu_button("征途錄", false, minor_height, minor_font_size)
+	history_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	history_button.pressed.connect(show_history)
+	record_row.add_child(history_button)
+	var ach_button: Button = UIFactory.main_menu_button("成就錄", false, minor_height, minor_font_size)
+	ach_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ach_button.pressed.connect(show_achievements)
+	record_row.add_child(ach_button)
+	action_box.add_child(record_row)
 
 	var ascension_picker: Control = _build_ascension_picker(compact_layout, ultra_compact)
 	ascension_picker.custom_minimum_size.x = content_width
@@ -1551,6 +1565,7 @@ func _show_boon_rewards_popup(rewards: Array[Dictionary], on_close: Callable) ->
 	popup.popup_centered()
 
 func show_progress_screen() -> void:
+	_maybe_show_act_intro()  # 每幕首次進地圖：開場字卡（旗標隨下一行 save 持久化）
 	SaveManager.save(run_state)
 	_play_bgm("map_act%d" % max(1, run_state.act))
 	_set_background("res://assets/art/map_bg_ink.png")
@@ -2177,6 +2192,7 @@ func start_next_battle(enemies: Variant, is_elite: bool = false) -> void:
 	battle.state["enemy_damage_mult"] = Ascension.enemy_damage_multiplier(run_state.ascension_level, enemy_tier)
 	battle.state["battle_is_elite"] = is_elite  # 供 A18 招式判斷 tier
 	battle_end_pending = false
+	_banter_used = {}
 	_build_battle_scene()
 	_start_player_turn()
 
@@ -2371,6 +2387,7 @@ func _bench_hp_pip(portrait_w: float, ratio: float) -> Control:
 func _on_bench_pressed(index: int) -> void:
 	if battle == null:
 		return
+	var outgoing_idx: int = int(battle.state.get("active_player_index", 0))
 	var result: Dictionary = battle.switch_active(index)
 	if not bool(result.get("changed", false)):
 		var reason: String = String(result.get("reason", ""))
@@ -2380,8 +2397,10 @@ func _on_bench_pressed(index: int) -> void:
 			battle.add_log("該角色已倒下。")
 		_refresh_battle()
 		return
-	# 切換成功 → 淡出舊肖像、換圖、淡入新肖像
+	# 切換成功 → 淡出舊肖像、換圖、淡入新肖像 + 上場台詞
 	_animate_portrait_switch()
+	if index < run_state.characters.size() and outgoing_idx < run_state.characters.size():
+		_show_banter("switch_in", run_state.characters[index].id, run_state.characters[outgoing_idx].id)
 
 func _animate_portrait_switch() -> void:
 	# 若前一個切換動畫還沒跑完，先中止並重設 alpha
@@ -3701,6 +3720,7 @@ func end_player_turn() -> void:
 	# Multi-Enemy 模式：begin_enemy_phase 回傳每隻敵人的 action（陣列）
 	# Phase 4 UI 才會每敵顯示獨立 intent；目前先取 active 敵 (或首個非空) 作 preview
 	var actions: Array[Dictionary] = battle.begin_enemy_phase()
+	var prev_active_player: int = int(battle.state.get("active_player_index", 0))
 	var preview_action: Dictionary = {}
 	var preview_idx: int = battle._active_enemy_index()
 	if preview_idx >= 0 and preview_idx < actions.size():
@@ -3721,6 +3741,14 @@ func end_player_turn() -> void:
 	_process_battle_curses()
 	_show_state_feedback(result["before_enemy"])
 	_refresh_battle()
+	# 隊友倒下、後排被迫接替上場 → 接替者台詞
+	var now_active_player: int = int(battle.state.get("active_player_index", 0))
+	if now_active_player != prev_active_player and not bool(result["ended"]):
+		var players_arr: Array = battle.state.get("players", []) as Array
+		if prev_active_player < players_arr.size() \
+				and int((players_arr[prev_active_player] as Dictionary).get("hp", 1)) <= 0 \
+				and now_active_player < run_state.characters.size():
+			_show_banter("ally_down", run_state.characters[now_active_player].id)
 	await _play_lecher_event_if_any()
 	if bool(result["ended"]) and await _finish_battle_after_delay():
 		return
@@ -3808,11 +3836,13 @@ func _set_battle_input_enabled(enabled: bool) -> void:
 		if is_instance_valid(button):
 			button.disabled = not enabled
 
-# Boss 擊敗劇情圖：全螢幕顯示一張對應 boss 的劇情插畫，點一下任意處跳過 → on_done。
-# 美術未補（assets/art/story/<boss_id>.png 不存在）時直接 on_done，不阻擋勝利流程。
+# Boss 擊敗劇情：全螢幕劇情插畫＋底部定場文字（StoryData.BOSS_OUTROS），點一下跳過 → on_done。
+# 美術未補（assets/art/story/<boss_id>.png 不存在）時 fallback 成「黑底＋定場文字」字卡，
+# 文字也沒有才直接 on_done。終幕拜月教主的定場文字依 event_flags 出結局變體。
 func _show_boss_story(boss_id: String, on_done: Callable) -> void:
 	var tex: Texture2D = UIFactory.load_texture("res://assets/art/story/%s.png" % boss_id)
-	if tex == null:
+	var caption: String = StoryData.ending_line(run_state) if boss_id == "baiyue_lord" else StoryData.boss_outro(boss_id)
+	if tex == null and caption.is_empty():
 		on_done.call()
 		return
 	var layer: CanvasLayer = CanvasLayer.new()
@@ -3827,13 +3857,32 @@ func _show_boss_story(boss_id: String, on_done: Callable) -> void:
 	backdrop.color = Color(0, 0, 0, 1)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rootc.add_child(backdrop)
-	var pic: TextureRect = TextureRect.new()
-	pic.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	pic.texture = tex
-	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rootc.add_child(pic)
+	if tex != null:
+		var pic: TextureRect = TextureRect.new()
+		pic.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		pic.texture = tex
+		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		rootc.add_child(pic)
+	if not caption.is_empty():
+		var cap: Label = UIFactory.card_label(caption, 21, Color("f2e7c8"), HORIZONTAL_ALIGNMENT_CENTER)
+		cap.add_theme_color_override("font_outline_color", Color("0a0805", 0.95))
+		cap.add_theme_constant_override("outline_size", 8)
+		cap.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+		cap.offset_left = 80
+		cap.offset_right = -80
+		cap.offset_top = -136 if tex != null else -420
+		cap.offset_bottom = -66
+		if tex == null:
+			# 純文字字卡：置中、放大
+			cap.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			cap.offset_left = 110
+			cap.offset_right = -110
+			cap.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			cap.add_theme_font_size_override("font_size", 26)
+		cap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		rootc.add_child(cap)
 	var hint: Label = UIFactory.card_label("（點一下繼續）", 18, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_CENTER)
 	hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	hint.offset_top = -58
@@ -3859,6 +3908,228 @@ func _show_boss_story(boss_id: String, on_done: Callable) -> void:
 				layer.queue_free()
 			on_done.call()))
 
+# 幕間開場字卡：每幕首次進地圖時顯示（act_intro_seen 持久化，load 舊檔不重看已看過的幕）
+func _maybe_show_act_intro() -> void:
+	if run_state == null:
+		return
+	if run_state.act <= run_state.act_intro_seen:
+		return
+	var intro: Dictionary = StoryData.act_intro(run_state.act)
+	if intro.is_empty():
+		return
+	run_state.act_intro_seen = run_state.act
+	_show_story_card(
+		"第%s幕" % _act_numeral(run_state.act),
+		String(intro.get("title", "")),
+		intro.get("lines", []) as Array,
+		"res://assets/art/battle_bg_act_%d.png" % clamp(run_state.act, 1, 8)
+	)
+
+# 通用故事字卡 overlay：幕背景 + 暗角 + 幕名 + 數行文字，點一下淡出。
+func _show_story_card(kicker_text: String, title_text: String, lines: Array, bg_path: String) -> void:
+	var layer: CanvasLayer = CanvasLayer.new()
+	layer.layer = 120
+	add_child(layer)
+	var rootc: Control = Control.new()
+	rootc.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	rootc.mouse_filter = Control.MOUSE_FILTER_STOP
+	layer.add_child(rootc)
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0, 0, 0, 1)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rootc.add_child(backdrop)
+	var bg_tex: Texture2D = UIFactory.load_texture(bg_path)
+	if bg_tex != null:
+		var bg: TextureRect = TextureRect.new()
+		bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		bg.texture = bg_tex
+		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		bg.modulate = Color(0.55, 0.55, 0.6)  # 壓暗讓文字浮出
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		rootc.add_child(bg)
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rootc.add_child(center)
+	var col: VBoxContainer = VBoxContainer.new()
+	col.custom_minimum_size = Vector2(620, 0)
+	col.add_theme_constant_override("separation", 14)
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center.add_child(col)
+	var kicker: Label = UIFactory.card_label(kicker_text, 18, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	kicker.add_theme_color_override("font_outline_color", Color("0a0805", 0.9))
+	kicker.add_theme_constant_override("outline_size", 6)
+	col.add_child(kicker)
+	col.add_child(UIFactory.title_label(title_text, 42))
+	col.add_child(UIFactory.ink_divider())
+	for line_v: Variant in lines:
+		var line: Label = UIFactory.card_label(String(line_v), 19, Color("efe7d2"), HORIZONTAL_ALIGNMENT_CENTER)
+		line.add_theme_color_override("font_outline_color", Color("0a0805", 0.9))
+		line.add_theme_constant_override("outline_size", 6)
+		col.add_child(line)
+	var hint: Label = UIFactory.card_label("（點一下繼續）", 16, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_CENTER)
+	hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	hint.offset_top = -52
+	hint.offset_bottom = -20
+	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rootc.add_child(hint)
+	rootc.modulate.a = 0.0
+	var fade_in: Tween = create_tween()
+	fade_in.tween_property(rootc, "modulate:a", 1.0, 0.45).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	var dismissed: Array = [false]
+	rootc.gui_input.connect(func(ev: InputEvent) -> void:
+		var is_tap: bool = (ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed) \
+			or (ev is InputEventScreenTouch and (ev as InputEventScreenTouch).pressed)
+		if not is_tap or dismissed[0]:
+			return
+		dismissed[0] = true
+		var fade_out: Tween = create_tween()
+		fade_out.tween_property(rootc, "modulate:a", 0.0, 0.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+		fade_out.tween_callback(func() -> void:
+			if is_instance_valid(layer):
+				layer.queue_free()))
+
+# 隊友戰鬥台詞（BanterData）：肖像旁彈一句，本場同句不重複。
+func _show_banter(trigger: String, incoming_id: String, outgoing_id: String = "") -> void:
+	var line: String = BanterData.line_for(trigger, incoming_id, outgoing_id, _banter_used)
+	if line.is_empty():
+		return
+	_banter_used[line] = true
+	_spawn_text_popup(player_portrait_wrap, line, Color("ffe9b8"))
+
+# 成就解鎖 toast：螢幕上緣滑入金邊橫幅，2 秒後淡出；多個成就垂直堆疊。
+func _show_achievement_toasts(newly: Array[Dictionary]) -> void:
+	for i: int in range(newly.size()):
+		var define: Dictionary = newly[i]
+		var layer: CanvasLayer = CanvasLayer.new()
+		layer.layer = 150
+		add_child(layer)
+		var toast: PanelContainer = PanelContainer.new()
+		toast.anchor_left = 0.5
+		toast.anchor_right = 0.5
+		toast.offset_left = -190
+		toast.offset_right = 190
+		toast.offset_top = 18.0 + i * 64.0
+		toast.add_theme_stylebox_override("panel", UIFactory.style_box(Color("1a2433", 0.95), ThemeColors.ACCENT_GOLD, 2, 12))
+		layer.add_child(toast)
+		var row: VBoxContainer = VBoxContainer.new()
+		row.add_theme_constant_override("separation", 2)
+		toast.add_child(row)
+		row.add_child(UIFactory.card_label("🏆 成就解鎖：%s" % String(define["title"]), 17, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_CENTER))
+		row.add_child(UIFactory.card_label(String(define["desc"]), 13, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_CENTER))
+		toast.modulate.a = 0.0
+		var t: Tween = create_tween()
+		t.tween_property(toast, "modulate:a", 1.0, 0.3).set_delay(i * 0.25)
+		t.tween_interval(2.2)
+		t.tween_property(toast, "modulate:a", 0.0, 0.4)
+		t.tween_callback(layer.queue_free)
+
+# 征途錄（IMPROVEMENT_PLAN P2-6）：跨 run 戰績檔案
+func show_history() -> void:
+	_hide_title_bar()
+	_set_background("res://assets/art/login_background.jpg")
+	_clear_root()
+	var panel: PanelContainer = UIFactory.make_panel()
+	root.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
+	panel.add_child(box)
+	box.add_child(_title("征途錄", 30))
+	var s: Dictionary = RunHistory.summary()
+	var summary_text: String = "共 %d 輪冒險 · %d 次通關" % [int(s["total"]), int(s["wins"])]
+	if int(s["best_victory_ascension"]) > 0:
+		summary_text += " · 最高難度通關 A%d" % int(s["best_victory_ascension"])
+	box.add_child(UIFactory.card_label(summary_text, 15, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(UIFactory.ink_divider())
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(scroll)
+	var list: VBoxContainer = VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 6)
+	scroll.add_child(list)
+	var entries: Array = RunHistory.load_all()
+	if entries.is_empty():
+		list.add_child(UIFactory.paragraph("尚無紀錄。出發吧，少俠。"))
+	for e_v: Variant in entries:
+		var e: Dictionary = e_v as Dictionary
+		var won: bool = bool(e.get("victory", false))
+		var chars: Array = e.get("characters", []) as Array
+		var names: Array[String] = []
+		for cid: Variant in chars:
+			var cd: CharacterData = null
+			for c: CharacterData in characters:
+				if c.id == String(cid):
+					cd = c
+					break
+			names.append(cd.display_name if cd != null else String(cid))
+		var head: String = "%s  A%d  %s" % ["✦ 通關" if won else "✧ 敗北", int(e.get("ascension", 0)), "·".join(names)]
+		var detail: String = "第 %d 幕 %d 層" % [int(e.get("act", 0)), int(e.get("floor_index", 0)) + 1]
+		if not won and not String(e.get("death_by", "")).is_empty():
+			var killer: EnemyData = GameData.enemy_by_id(String(e.get("death_by", "")))
+			detail += " · 敗於 %s" % (killer.display_name if killer != null else String(e.get("death_by", "")))
+		detail += " · 牌 %d · 遺物 %d · %s" % [int(e.get("deck_size", 0)), int(e.get("relic_count", 0)), String(e.get("ts", "")).split("T")[0]]
+		var entry_panel: PanelContainer = PanelContainer.new()
+		var border: Color = ThemeColors.ACCENT_GOLD if won else Color("6d7882", 0.6)
+		entry_panel.add_theme_stylebox_override("panel", UIFactory.style_box(Color("141d2a", 0.85), border, 1, 8))
+		list.add_child(entry_panel)
+		var entry_box: VBoxContainer = VBoxContainer.new()
+		entry_box.add_theme_constant_override("separation", 2)
+		entry_panel.add_child(entry_box)
+		entry_box.add_child(UIFactory.card_label(head, 15, ThemeColors.TEXT_LIGHT if won else ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_LEFT))
+		entry_box.add_child(UIFactory.card_label(detail, 12, ThemeColors.TEXT_DIM, HORIZONTAL_ALIGNMENT_LEFT))
+	var back: Button = _button("返回主選單")
+	back.pressed.connect(show_main_menu)
+	box.add_child(back)
+
+# 成就錄（IMPROVEMENT_PLAN P2-7）
+func show_achievements() -> void:
+	_hide_title_bar()
+	_set_background("res://assets/art/login_background.jpg")
+	_clear_root()
+	var panel: PanelContainer = UIFactory.make_panel()
+	root.add_child(panel)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
+	panel.add_child(box)
+	var unlocked: Dictionary = Achievements.unlocked_all()
+	var defs: Array[Dictionary] = Achievements.definitions()
+	box.add_child(_title("成就錄", 30))
+	box.add_child(UIFactory.card_label("已解鎖 %d / %d" % [unlocked.size(), defs.size()], 15, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(UIFactory.ink_divider())
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(scroll)
+	var grid: GridContainer = GridContainer.new()
+	grid.columns = 2
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 8)
+	scroll.add_child(grid)
+	for define: Dictionary in defs:
+		var id: String = String(define["id"])
+		var got: bool = unlocked.has(id)
+		var cell: PanelContainer = PanelContainer.new()
+		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var border: Color = ThemeColors.ACCENT_GOLD if got else Color("4a5462", 0.6)
+		cell.add_theme_stylebox_override("panel", UIFactory.style_box(Color("141d2a", 0.85 if got else 0.55), border, 1, 8))
+		grid.add_child(cell)
+		var cell_box: VBoxContainer = VBoxContainer.new()
+		cell_box.add_theme_constant_override("separation", 2)
+		cell.add_child(cell_box)
+		var title_text: String = ("🏆 " if got else "🔒 ") + String(define["title"])
+		cell_box.add_child(UIFactory.card_label(title_text, 15, ThemeColors.HIGHLIGHT_GOLD if got else ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_LEFT))
+		cell_box.add_child(UIFactory.card_label(String(define["desc"]), 12, ThemeColors.TEXT_DIM if got else Color("7d8694"), HORIZONTAL_ALIGNMENT_LEFT))
+		if got:
+			cell_box.add_child(UIFactory.card_label(String(unlocked[id]).split("T")[0], 11, Color("8a93a3"), HORIZONTAL_ALIGNMENT_LEFT))
+	var back: Button = _button("返回主選單")
+	back.pressed.connect(show_main_menu)
+	box.add_child(back)
+
 func _complete_battle_victory() -> void:
 	# Event Branching P3：tree-triggered battle → 走簡化勝利流程，跑 victory_effects 後回地圖
 	if not run_state.pending_event_return.is_empty():
@@ -3879,8 +4150,13 @@ func _complete_battle_victory() -> void:
 		cb.call()
 		return
 	battle.complete_victory()
+	var victor_idx: int = int(battle.state.get("active_player_index", 0))
+	if victor_idx < run_state.characters.size():
+		_show_banter("victory", run_state.characters[victor_idx].id)
 	for defeated_e: EnemyData in battle.enemies:
 		Bestiary.mark_defeated(defeated_e.id)
+	# 成就：單場戰鬥勝利觸發點（滿血勝 / 三殺 / 護體 30…）
+	_show_achievement_toasts(Achievements.check_all({"kind": "battle_victory", "run_state": run_state, "battle": battle}))
 	_grant_battle_exp()
 	var gold_reward: int = 0
 	for defeated_e: EnemyData in battle.enemies:
@@ -7077,6 +7353,14 @@ func show_result(victory: bool) -> void:
 	_hide_title_bar()
 	_play_bgm("victory" if victory else "defeat")
 	_sfx("victory" if victory else "defeat")
+	# 征途錄：勝敗各記一筆（retry 同場重打不再重複記——record 在進結算畫面時一次性發生）
+	var death_by: String = ""
+	if not victory and battle != null and battle.enemy != null:
+		death_by = battle.enemy.id
+	RunHistory.record(RunHistory.entry_from_run(run_state, victory, death_by))
+	# 成就：run 結束點（通關另帶 run_victory ctx）
+	var ach_ctx: Dictionary = {"kind": "run_victory" if victory else "run_end", "run_state": run_state, "battle": battle}
+	_show_achievement_toasts(Achievements.check_all(ach_ctx))
 	if victory:
 		Ascension.mark_cleared(run_state.ascension_level)
 		SaveManager.clear()
@@ -7534,7 +7818,7 @@ func _card_button(card: CardData) -> Button:
 	var shown_cost: int = battle.effective_card_cost(card)
 	var affordable: bool = int(battle.state["energy"]) >= shown_cost
 	var card_size: Vector2 = Vector2(120, 225) if _battle_compact else Vector2(140, 262)
-	var button: Button = _make_card_button(card, shown_cost, card_size, affordable, true, battle.state)
+	var button: Button = _make_card_button(card, shown_cost, card_size, affordable, true, battle.state, true)
 	button.disabled = not affordable
 	button.pressed.connect(func() -> void: _on_card_button_pressed(card, button))
 	button.button_down.connect(func() -> void: _on_card_button_down(card, button))
@@ -7549,8 +7833,9 @@ func _on_card_button_down(card: CardData, button: Button) -> void:
 	_card_drag_card = card
 	_card_drag_start_global = button.get_global_mouse_position()
 	_card_drag_active = false
-	# 戰鬥中長按卡片預覽（升級對照）已移除——按下不再啟 0.5s timer。
-	# 拖拉打牌 / 桌面點兩下出牌仍正常運作。
+	# P1-5：卡面改一行摘要後，長按 0.5s 預覽（完整描述+升級對照）重新啟用——
+	# 它是戰鬥中讀完整卡片文字的唯一入口。拖拉開始會自動取消 timer、預覽不觸發出牌。
+	_start_card_long_press(card, button)
 
 func _on_card_button_up(card: CardData, button: Button) -> void:
 	_cancel_card_long_press()
@@ -7771,7 +8056,7 @@ func _rarity_gem_texture_path(card: CardData) -> String:
 		_:
 			return "res://assets/ui/card_lv1.png"
 
-func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: bool, selectable: bool, live_state: Dictionary = {}) -> Button:
+func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: bool, selectable: bool, live_state: Dictionary = {}, summary_mode: bool = false) -> Button:
 	# 全部用 anchor 百分比定位，元素位置 / 字體大小皆依卡片尺寸比例縮放。
 	# 卡套版面參考（2026-05 重做後再修：卡套_base 原圖 1024×1536 左右各內建 ~11.7% 透明留白，
 	#   會在 STRETCH_SCALE 鋪滿 Button 時露出背景成「外圍空白」。已把貼圖裁到實際內容
@@ -7922,14 +8207,26 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	var type_line: Label = UIFactory.card_label(CardFormat.card_type_name(card.card_type), type_font_size, CardFormat.card_color(card.card_type, true).darkened(0.05), HORIZONTAL_ALIGNMENT_CENTER)
 	type_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rules_box.add_child(type_line)
-	var desc: Label = UIFactory.card_label(card.display_description(), desc_font_size, Color("2d2418"), HORIZONTAL_ALIGNMENT_LEFT)
-	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	desc.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	# 行距收緊（預設 Label line_spacing = 3，縮成 -1 讓多行卡片描述列排更緊湊）
-	desc.add_theme_constant_override("line_spacing", -1)
-	desc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rules_box.add_child(desc)
+	if summary_mode:
+		# P1-5「圖大字少」：戰鬥手牌只放一行效果摘要（字大、置中），
+		# 完整描述交給長按預覽（_start_card_long_press → _show_card_preview）。
+		var summary: Label = UIFactory.card_label(CardFormat.card_effect_summary(card), desc_font_size + 3, Color("2d2418"), HORIZONTAL_ALIGNMENT_CENTER)
+		summary.name = "CardSummary"
+		summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		summary.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		summary.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		summary.add_theme_constant_override("line_spacing", -1)
+		summary.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		rules_box.add_child(summary)
+	else:
+		var desc: Label = UIFactory.card_label(card.display_description(), desc_font_size, Color("2d2418"), HORIZONTAL_ALIGNMENT_LEFT)
+		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		desc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		desc.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+		# 行距收緊（預設 Label line_spacing = 3，縮成 -1 讓多行卡片描述列排更緊湊）
+		desc.add_theme_constant_override("line_spacing", -1)
+		desc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		rules_box.add_child(desc)
 
 	# 即時數值預覽：戰鬥中（live_state 非空）若卡片實際打出的數字因 power / 虛弱 /
 	# 破綻 / 遺物 / 藥品而異於卡面基礎值，補一行「實際」數字讓玩家看得到真實效果。

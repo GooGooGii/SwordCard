@@ -589,8 +589,8 @@ func _test_party_switch_and_defeat(characters: Array[CharacterData], enemy_templ
 	var enemy: EnemyData = enemy_template.clone()
 	var bc: BattleController = BattleController.new()
 	bc.setup(run_state, characters[0], enemy)
-	# 起始 energy 應為 3 + (3-1) = 5
-	_check(int(bc.state["per_turn_energy"]) == 5, "3-party energy should be 5; got %d" % int(bc.state["per_turn_energy"]))
+	# 起始 energy 應為 3 + (3-1)/2 = 4（P2-10 組隊白給修正後的新公式）
+	_check(int(bc.state["per_turn_energy"]) == 4, "3-party energy should be 4; got %d" % int(bc.state["per_turn_energy"]))
 	# 切換到 index 1 (應免費)
 	var switch1: Dictionary = bc.switch_active(1)
 	_check(bool(switch1.get("changed", false)), "first switch should succeed")
@@ -1513,8 +1513,10 @@ func _simulate_party_battle(party: Array[CharacterData], enemy_template: EnemyDa
 # 多人隊 baseline（vs 中段 boss、10 回合限時，與 BALANCE_BASELINES_MID 同情境）。
 # null = 尚未觀測；初跑後填入。若 3 人隊勝率 >95% = 組隊白給，要回頭評估能量/敵 HP scale。
 const BALANCE_BASELINES_PARTY: Dictionary = {
-	"duo_li_anu": null,      # 李逍遙 + 阿奴 —— null = 尚未觀測，初跑後填入
-	"trio_li_zhao_lin": null,  # 李 + 趙 + 林
+	# 2026-06-11 P2-10 觀測：舊公式（能量 3+(n-1)、無敵 HP 補正）兩組皆 100% = 組隊白給。
+	# 修正：能量 3+(n-1)/2（2人3、3人4）＋ 敵 HP 每隊員 +35% → 落帶（單人最強阿奴 83%）。
+	"duo_li_anu": 80,        # 李逍遙 + 阿奴
+	"trio_li_zhao_lin": 87,  # 李 + 趙 + 林
 }
 
 func _test_balance_party(characters: Array[CharacterData], bosses: Array[EnemyData]) -> void:
