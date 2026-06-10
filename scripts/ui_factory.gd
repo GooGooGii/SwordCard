@@ -49,6 +49,16 @@ static func title_label(text: String, size: int) -> Label:
 
 # 水墨風分隔線：中央菱紋 ❖ 兩側金線（純 Control，無需美術）。screen 標題下方可放一條。
 static func ink_divider(thickness: int = 2) -> Control:
+	var brush_texture: Texture2D = load_texture("res://assets/art/ui/brush_divider.png")
+	if brush_texture != null:
+		var rect: TextureRect = TextureRect.new()
+		rect.texture = brush_texture
+		rect.custom_minimum_size = Vector2(0, max(18, thickness * 12))
+		rect.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		return rect
 	var row: HBoxContainer = HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
