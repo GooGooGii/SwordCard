@@ -175,7 +175,7 @@ static func action_has_damage(action: Dictionary) -> bool:
 # 玩家手牌：哪些 effect kind 是「打到敵人身上」（drag 時需要丟到敵人附近才算）。
 # 其餘的（block / heal / draw / energy / power / self_damage）視為非單體，丟到手牌以外
 # 任何地方都算打出。
-const ENEMY_TARGETED_KINDS: Array[String] = ["damage", "damage_all", "poison", "poison_all", "weak", "weak_all", "vulnerable", "vulnerable_all", "consume_energy_damage", "consume_energy_damage_all", "poison_burst", "damage_debuff_bonus", "stun", "silence", "berserk"]
+const ENEMY_TARGETED_KINDS: Array[String] = ["damage", "damage_all", "poison", "poison_all", "weak", "weak_all", "vulnerable", "vulnerable_all", "consume_energy_damage", "consume_energy_damage_all", "poison_burst", "damage_debuff_bonus", "damage_poison_bonus", "consume_debuff_damage", "stun", "silence", "berserk"]
 
 static func requires_enemy_target(card: CardData) -> bool:
 	# 能力牌（card_type=="power"）一律對自己：power 增益本就 self，混的 debuff
@@ -255,6 +255,18 @@ static func live_effect_previews(card: CardData, state: Dictionary) -> Array[Dic
 				if enemy_vuln > 0:
 					modified = int(ceil(modified * 1.5))
 				out.append({"label": "傷害", "value": modified, "base": amount, "hits": 1})
+			"damage_poison_bonus":
+				var ppb_bonus: int = int(effect.get("bonus_per_layer", 0))
+				var ppb_layers: int = int(state.get("enemy_poison", 0))
+				var ppb_raw: int = amount + ppb_bonus * ppb_layers
+				var ppb_mod: int = max(0, ppb_raw + power - weak) + dmg_bonus
+				if enemy_vuln > 0:
+					ppb_mod = int(ceil(ppb_mod * 1.5))
+				out.append({"label": "傷害", "value": ppb_mod, "base": amount, "hits": 1})
+			"consume_debuff_damage":
+				var cdd_layers: int = int(state.get("enemy_weak", 0)) + enemy_vuln
+				var cdd_mod: int = max(0, amount * cdd_layers + power - weak) + dmg_bonus
+				out.append({"label": "傷害", "value": cdd_mod, "base": amount, "hits": 1})
 			"consume_energy_damage", "consume_energy_damage_all":
 				var spent: int = int(state.get("energy", 0))
 				var d: int = max(0, amount * spent - weak)

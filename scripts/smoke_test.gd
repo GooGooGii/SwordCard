@@ -148,6 +148,9 @@ func _initialize() -> void:
 	_test_draw_on_attack(characters[0], enemies[0])
 	_test_draw_on_skill(characters[1], enemies[0])
 	_test_damage_debuff_bonus_all(characters[1], enemies)
+	# debuff payoff 2026-06：蠱毒加成(阿奴) / 引爆虛弱破綻(通用)
+	_test_damage_poison_bonus(characters[3], enemies[0])
+	_test_consume_debuff_damage(characters[1], enemies[0])
 	# 敵人機制 2026-06：自療(enemy_heal) / 漸怒(enemy_strength 累積攻擊力) / 穿甲(pierce 無視護體)
 	_test_enemy_heal_and_strength(characters[0], enemies[0])
 	_test_enemy_pierce(characters[0], enemies[0])
@@ -1981,6 +1984,38 @@ func _test_damage_debuff_bonus_all(character: CharacterData, enemies: Array[Enem
 	# e1：0 debuff → 6 → 100-6=94
 	_check(int(e1["hp"]) == 94, "ddba_all e1 (no debuff): 100-6=94, got %d" % int(e1["hp"]))
 
+func _test_damage_poison_bonus(character: CharacterData, enemy: EnemyData) -> void:
+	# 蠱血噬心：base + bonus_per_layer × 敵蠱毒層；毒「不」消耗。
+	var bc: BattleController = _make_multi_battle(character, [enemy])
+	bc.start_turn()
+	bc.state["player_power"] = 0
+	bc.state["player_weak"] = 0
+	bc.state["enemy_hp"] = 100
+	bc.state["enemy_max_hp"] = 100
+	bc.state["enemy_block"] = 0
+	bc.state["enemy_vulnerable"] = 0
+	bc.state["enemy_poison"] = 8
+	bc.resolver._resolve_effect({"kind": "damage_poison_bonus", "amount": 6, "bonus_per_layer": 2}, bc.state)
+	# 6 + 2*8 = 22 傷害 → 100-22=78；毒層維持 8（不消耗）
+	_check(int(bc.state["enemy_hp"]) == 78, "damage_poison_bonus 6+2*8=22, 100-22=78, got %d" % int(bc.state["enemy_hp"]))
+	_check(int(bc.state["enemy_poison"]) == 8, "damage_poison_bonus 不消耗毒層, got %d" % int(bc.state["enemy_poison"]))
+
+func _test_consume_debuff_damage(character: CharacterData, enemy: EnemyData) -> void:
+	# 趁隙破勢：消耗敵全部 weak+vuln，每層 amount 傷害（層數已消耗 → 不再 ×1.5）。
+	var bc: BattleController = _make_multi_battle(character, [enemy])
+	bc.start_turn()
+	bc.state["player_power"] = 0
+	bc.state["player_weak"] = 0
+	bc.state["enemy_hp"] = 100
+	bc.state["enemy_max_hp"] = 100
+	bc.state["enemy_block"] = 0
+	bc.state["enemy_weak"] = 2
+	bc.state["enemy_vulnerable"] = 3
+	bc.resolver._resolve_effect({"kind": "consume_debuff_damage", "amount": 4}, bc.state)
+	# (2+3) 層 × 4 = 20 傷害 → 100-20=80；weak/vuln 歸零
+	_check(int(bc.state["enemy_hp"]) == 80, "consume_debuff_damage 5*4=20, 100-20=80, got %d" % int(bc.state["enemy_hp"]))
+	_check(int(bc.state["enemy_weak"]) == 0 and int(bc.state["enemy_vulnerable"]) == 0, "consume_debuff_damage 應清空 weak/vuln")
+
 func _test_enemy_heal_and_strength(character: CharacterData, enemy: EnemyData) -> void:
 	var bc: BattleController = _make_multi_battle(character, [enemy])
 	bc.start_turn()
@@ -2654,7 +2689,7 @@ func _test_chain_draw_relic(characters: Array[CharacterData], enemies: Array[Ene
 func _test_colorless_pool() -> void:
 	# 共同牌池：10 張、owner=無門、art 存在、恰 2 張 exhaust
 	var pool: Array[CardData] = GameData.colorless_cards()
-	_check(pool.size() == 10, "共同牌應為 10 張，實得 %d" % pool.size())
+	_check(pool.size() == 11, "共同牌應為 11 張，實得 %d" % pool.size())
 	var exhaust_n: int = 0
 	for c: CardData in pool:
 		_check(c.owner == "無門", "%s owner 應為無門，實得 %s" % [c.id, c.owner])

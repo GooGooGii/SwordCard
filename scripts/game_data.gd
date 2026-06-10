@@ -40,6 +40,8 @@ static func colorless_cards() -> Array[CardData]:
 		make_card("cl_qimendunjia", "奇門遁甲", "無門", 0, "attack", "對全體敵人造成 8 點傷害。", [{"kind": "damage_all", "amount": 8}], "uncommon"),
 		make_card("cl_yunchou", "運籌帷幄", "無門", 0, "skill", "抽 3 張牌。打出後消耗。", [{"kind": "draw", "amount": 3}], "rare", "", false, true),
 		make_card("cl_huacaijianyi", "華彩劍意", "無門", 1, "power", "本回合每出 5 張牌，對全體敵人造成 10 點傷害。", [{"kind": "combo_strike", "amount": 10, "threshold": 5}], "rare"),
+		# debuff 引爆 finisher（通用，讓四角色的破綻/虛弱堆疊都有爆發出口）：art 借迅捷斬
+		make_card("cl_chenxi_poshi", "趁隙破勢", "無門", 1, "attack", "趁敵破綻盡顯，引爆敵人全部虛弱與破綻，每層造成 4 點傷害。", [{"kind": "consume_debuff_damage", "amount": 4}], "rare", "cl_xunjiezhan"),
 	]
 	# exhaust 標記（make_card 無此參數，直接設）
 	for c: CardData in list:
@@ -536,6 +538,8 @@ static func _lin_yueru() -> CharacterData:
 		# 連武架式 / 鐵骨（StS Demon Form 護體版 / Dexterity）
 		make_card("lyr_jianwu", "劍舞架式", "林月如", 1, "power", "舞劍成勢，本場戰鬥每出一張攻擊牌獲得 3 點護體。", [{"kind": "block_per_attack", "amount": 3}], "uncommon"),
 		make_card("lyr_tiegu", "鐵骨樁", "林月如", 1, "power", "紮穩鐵骨樁步，本場戰鬥每次獲得護體額外 +2。", [{"kind": "self_block_bonus", "amount": 2}], "uncommon"),
+		# debuff payoff（破綻/虛弱越多打越痛）：呼應她的萬里狂沙/索命一劍堆破綻 → 一劍爆發。art 借索命一劍
+		make_card("lyr_suohun", "索魂十三劍", "林月如", 2, "attack", "趁敵頹勢連刺，造成 6 點傷害；敵人每層虛弱與破綻額外造成 3 點傷害。", [{"kind": "damage_debuff_bonus", "amount": 6, "bonus_per_layer": 3}], "uncommon", "lyr_juesha"),
 	]
 	var character: CharacterData = _character("lin_yueru", "林月如", 72, "鞭劍武學、連擊、反擊與內勁治療。", cards)
 	# PAL1 對齊：10 basic + 2 uncommon + 0 rare
@@ -605,6 +609,8 @@ static func _anu() -> CharacterData:
 		make_card("anu_guihuo_liaoyuan", "鬼火燎原", "阿奴", 3, "attack", "鬼火燎原，對全體敵人造成 7 點傷害兩次並施加 2 層蠱毒。", [{"kind": "damage_all", "amount": 7, "hits": 2}, {"kind": "poison_all", "amount": 2}], "rare"),
 		# 蝶毒群控（呼應單體的「醉蝶迷魂」，補阿奴缺的 AOE 虛弱）：art 暫借醉蝶迷魂
 		make_card("anu_huadie_guimeng", "化蝶歸夢", "阿奴", 1, "skill", "化蝶入夢，使全體敵人虛弱 2 層並抽 1 張牌。", [{"kind": "weak_all", "amount": 2}, {"kind": "draw", "amount": 1}], "uncommon"),
+		# 蠱毒 payoff（疊毒爆發）：傷害隨敵蠱毒層數成長、且毒不消耗（持續 tick）→ 獎勵阿奴疊毒。art 借蠱血
+		make_card("anu_guxue_shixin", "蠱血噬心", "阿奴", 2, "attack", "驅蠱入血，造成 6 點傷害；敵人每層蠱毒額外造成 2 點傷害（蠱毒不消耗）。", [{"kind": "damage_poison_bonus", "amount": 6, "bonus_per_layer": 2}], "rare", "anu_guxue"),
 	]
 	# HP 66→82：阿奴是「長戰持續傷害」毒龜流，毒需要時間 ramp+tick，必須夠肉才撐得到
 	# 毒生效（pilot 實測：66 HP 對上 +15% 傷害的多敵戰撐不過 3 回合就被消耗死）。

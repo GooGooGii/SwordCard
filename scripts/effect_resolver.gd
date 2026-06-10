@@ -460,6 +460,31 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			state["enemy_block"] = int(state["enemy_block"]) - blocked
 			state["enemy_hp"] = max(0, int(state["enemy_hp"]) - (modified - blocked))
 			log_lines.append("debuff 加成 +%d，造成 %d 點傷害。" % [bonus_per * layers, modified - blocked])
+		"damage_poison_bonus":
+			# 蠱毒 payoff（阿奴）：對中毒敵加傷，基礎 amount + bonus_per_layer × 敵蠱毒層數。
+			# 蠱毒「不」消耗（持續 tick），獎勵疊毒後的爆發；走標準傷害管線。
+			var pb_bonus: int = int(effect.get("bonus_per_layer", 0))
+			var pb_layers: int = int(state["enemy_poison"])
+			var pb_raw: int = amount + pb_bonus * pb_layers
+			var pb_mod: int = max(0, pb_raw + int(state["player_power"]) - int(state["player_weak"])) + int(state.get("damage_out_bonus", 0))
+			if int(state["enemy_vulnerable"]) > 0:
+				pb_mod = int(ceil(pb_mod * 1.5))
+			var pb_blocked: int = min(int(state["enemy_block"]), pb_mod)
+			state["enemy_block"] = int(state["enemy_block"]) - pb_blocked
+			state["enemy_hp"] = max(0, int(state["enemy_hp"]) - (pb_mod - pb_blocked))
+			log_lines.append("蠱毒加成 +%d，造成 %d 點傷害。" % [pb_bonus * pb_layers, pb_mod - pb_blocked])
+		"consume_debuff_damage":
+			# debuff 引爆 payoff：消耗敵全部虛弱+破綻層，每層造成 amount 傷害。
+			# 層數已消耗 → 不再額外 ×1.5（避免雙重結算）。獎勵 debuff 堆疊的爆發 finisher。
+			var cdd_layers: int = int(state["enemy_weak"]) + int(state["enemy_vulnerable"])
+			state["enemy_weak"] = 0
+			state["enemy_vulnerable"] = 0
+			var cdd_raw: int = amount * cdd_layers
+			var cdd_mod: int = max(0, cdd_raw + int(state["player_power"]) - int(state["player_weak"])) + int(state.get("damage_out_bonus", 0))
+			var cdd_blocked: int = min(int(state["enemy_block"]), cdd_mod)
+			state["enemy_block"] = int(state["enemy_block"]) - cdd_blocked
+			state["enemy_hp"] = max(0, int(state["enemy_hp"]) - (cdd_mod - cdd_blocked))
+			log_lines.append("引爆 %d 層虛弱/破綻，造成 %d 點傷害。" % [cdd_layers, cdd_mod - cdd_blocked])
 		"damage_debuff_bonus_all":
 			# 杖流 AoE payoff（趙靈兒）：對「每隻」敵人各依其自身 weak+vuln 層數加傷。
 			# 配合她的 weak_all / vulnerable_all → 全體疊 debuff 後一次性放大爆發。
