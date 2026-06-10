@@ -697,7 +697,7 @@ func _build_menu_title_block(ultra_compact: bool, compact_layout: bool) -> Contr
 		rect.texture = tex
 		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		var art_w: float = 300.0 if ultra_compact else (380.0 if compact_layout else 460.0)
+		var art_w: float = 350.0 if ultra_compact else (430.0 if compact_layout else 510.0)
 		var aspect: float = 0.30
 		if tex != null and tex.get_width() > 0:
 			aspect = float(tex.get_height()) / float(tex.get_width())
