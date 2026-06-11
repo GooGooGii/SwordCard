@@ -1420,7 +1420,7 @@ static func _baiyue_lord() -> EnemyData:
 static func _miao_chieftain() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "miao_chieftain"
-	enemy.portrait_scale = 1.35  # boss：黑苗頭領
+	enemy.portrait_scale = 1.6  # boss：黑苗頭領（放大強化 Boss 壓迫感；超出部分往下被手牌蓋住）
 	enemy.display_name = "黑苗頭領"
 	enemy.max_hp = 96
 	enemy.portrait_path = "res://assets/art/enemies/miao_chieftain.png"
