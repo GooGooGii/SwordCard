@@ -1,10 +1,11 @@
 class_name HandFan
 extends Control
 
-# Phase D1（BATTLE_UI_POLISH）：弧度加深（半徑縮、每卡角度增），扇形感對齊 StS
-const ARC_RADIUS: float = 1250.0
-const MAX_TOTAL_ANGLE_DEG: float = 34.0
-const ANGLE_PER_CARD_DEG: float = 5.5
+# Phase D1（BATTLE_UI_POLISH）：扇形感對齊 StS。
+# 2026-06-11 回調：1250/34° 讓邊卡下沉超出畫面底緣（實機回報），半徑回拉、總角收斂。
+const ARC_RADIUS: float = 1450.0
+const MAX_TOTAL_ANGLE_DEG: float = 30.0
+const ANGLE_PER_CARD_DEG: float = 5.0
 const HOVER_LIFT: float = 56.0
 var hand_base_lift: float = 72.0
 const HOVER_SCALE: float = 1.06

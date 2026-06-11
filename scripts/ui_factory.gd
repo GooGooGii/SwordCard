@@ -238,18 +238,24 @@ static func status_chip(kind: String, value: int, chip_px: float = 24.0) -> Cont
 		c.draw_circle(Vector2(chip_px * 0.5, chip_px * 0.5), chip_px * 0.5, Color(col.r, col.g, col.b, 0.92))
 		c.draw_circle(Vector2(chip_px * 0.5, chip_px * 0.5), chip_px * 0.5, Color(0, 0, 0, 0.45), false, 1.5))
 	var sym: Label = card_label(String(define["symbol"]), int(chip_px * 0.55), Color("fff4dc"), HORIZONTAL_ALIGNMENT_CENTER)
+	sym.autowrap_mode = TextServer.AUTOWRAP_OFF  # 窄框下 card_label 預設 wrap 會逐字直書
 	sym.size = Vector2(chip_px, chip_px)
 	sym.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	sym.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.6))
 	sym.add_theme_constant_override("outline_size", 2)
 	sym.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	c.add_child(sym)
-	var num: Label = card_label(("%+d" % value) if kind == "power" else str(value), int(chip_px * 0.6), Color("ffe9b0"), HORIZONTAL_ALIGNMENT_LEFT)
+	var num_text: String = ("%+d" % value) if kind == "power" else str(value)
+	var num: Label = card_label(num_text, int(chip_px * 0.6), Color("ffe9b0"), HORIZONTAL_ALIGNMENT_LEFT)
+	num.autowrap_mode = TextServer.AUTOWRAP_OFF  # 「+5」兩字元曾被 wrap 拆行
 	num.position = Vector2(chip_px + 1, chip_px * 0.12)
+	num.size = Vector2(chip_px, chip_px)
 	num.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
 	num.add_theme_constant_override("outline_size", 3)
 	num.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	c.add_child(num)
+	# chip 總寬涵蓋數字（含 +N 兩三字元），避免溢出蓋到下一顆
+	c.custom_minimum_size = Vector2(chip_px + 8 + num_text.length() * chip_px * 0.38, chip_px)
 	return c
 
 # 重填一整排 chips。stats = [{"kind": "poison", "value": 3}, ...]，value 0 的自動略過。
