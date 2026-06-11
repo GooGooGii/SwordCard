@@ -1,9 +1,10 @@
 class_name HandFan
 extends Control
 
-const ARC_RADIUS: float = 1600.0
-const MAX_TOTAL_ANGLE_DEG: float = 28.0
-const ANGLE_PER_CARD_DEG: float = 4.0
+# Phase D1（BATTLE_UI_POLISH）：弧度加深（半徑縮、每卡角度增），扇形感對齊 StS
+const ARC_RADIUS: float = 1250.0
+const MAX_TOTAL_ANGLE_DEG: float = 34.0
+const ANGLE_PER_CARD_DEG: float = 5.5
 const HOVER_LIFT: float = 56.0
 var hand_base_lift: float = 72.0
 const HOVER_SCALE: float = 1.06

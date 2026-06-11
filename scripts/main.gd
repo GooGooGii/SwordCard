@@ -2227,11 +2227,15 @@ func _build_battle_scene() -> void:
 	var screen: VBoxContainer = VBoxContainer.new()
 	screen.add_theme_constant_override("separation", 4 if _battle_compact else 6)
 	root.add_child(screen)
+	# Phase C2：遺物帶左對齊單排（StS 語法）＋ 半透明墨帶襯底，超量摺疊進 +N
+	var relic_band: PanelContainer = PanelContainer.new()
+	relic_band.add_theme_stylebox_override("panel", UIFactory.style_box(Color(0, 0, 0, 0.25), Color(0, 0, 0, 0), 0, 6))
+	screen.add_child(relic_band)
 	relic_strip = HBoxContainer.new()
-	relic_strip.alignment = BoxContainer.ALIGNMENT_CENTER
+	relic_strip.alignment = BoxContainer.ALIGNMENT_BEGIN
 	relic_strip.add_theme_constant_override("separation", 4)
 	relic_strip.mouse_filter = Control.MOUSE_FILTER_PASS
-	screen.add_child(relic_strip)
+	relic_band.add_child(relic_strip)
 	_refresh_relic_strip()
 	_build_battle_potion_strip(screen)
 	var arena: HBoxContainer = HBoxContainer.new()
@@ -2980,6 +2984,21 @@ func _build_battle_potion_strip(parent: VBoxContainer) -> void:
 		strip.add_child(btn)
 	_refresh_potion_buttons()
 
+# Phase D2 牌堆藥丸鈕（StS 角落計數語法）：圓角藥丸、染色底、短文字「抽 N」
+func _pile_pill_button(symbol: String, tint: Color) -> Button:
+	var btn: Button = Button.new()
+	btn.text = "%s 0" % symbol
+	btn.focus_mode = Control.FOCUS_NONE
+	btn.custom_minimum_size = Vector2(64, 30)
+	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	btn.add_theme_font_size_override("font_size", 13)
+	btn.add_theme_color_override("font_color", Color("f0e6cc"))
+	btn.add_theme_color_override("font_hover_color", Color("ffffff"))
+	btn.add_theme_stylebox_override("normal", UIFactory.style_box(Color(tint.r, tint.g, tint.b, 0.55), Color(tint.r, tint.g, tint.b, 0.9).lightened(0.25), 1, 15))
+	btn.add_theme_stylebox_override("hover", UIFactory.style_box(Color(tint.r, tint.g, tint.b, 0.75), ThemeColors.HIGHLIGHT_GOLD, 1, 15))
+	btn.add_theme_stylebox_override("pressed", UIFactory.style_box(Color(tint.r, tint.g, tint.b, 0.9), ThemeColors.BORDER_GOLD, 1, 15))
+	return btn
+
 func _build_left_dock(parent: HBoxContainer) -> void:
 	var dock: VBoxContainer = VBoxContainer.new()
 	dock.custom_minimum_size = Vector2(110 if _battle_compact else 140, 0)
@@ -2994,9 +3013,7 @@ func _build_left_dock(parent: HBoxContainer) -> void:
 	dock.add_child(energy_orb)
 	var btn_h: float = 26.0 if _battle_compact else 32.0
 	var btn_f: int = 11 if _battle_compact else 13
-	draw_pile_button = _button("抽牌堆 (0)")
-	draw_pile_button.add_theme_font_size_override("font_size", btn_f)
-	draw_pile_button.custom_minimum_size = Vector2(0, btn_h)
+	draw_pile_button = _pile_pill_button("抽", Color("3a5a8c"))
 	draw_pile_button.pressed.connect(show_draw_pile_view)
 	dock.add_child(draw_pile_button)
 
@@ -3024,14 +3041,10 @@ func _build_right_dock(parent: HBoxContainer) -> void:
 	dock.add_child(end_turn_button)
 	var btn_h: float = 26.0 if _battle_compact else 32.0
 	var btn_f: int = 11 if _battle_compact else 13
-	discard_pile_button = _button("棄牌堆 (0)")
-	discard_pile_button.add_theme_font_size_override("font_size", btn_f)
-	discard_pile_button.custom_minimum_size = Vector2(0, btn_h)
+	discard_pile_button = _pile_pill_button("棄", Color("8c5a3a"))
 	discard_pile_button.pressed.connect(show_discard_pile_view)
 	dock.add_child(discard_pile_button)
-	exhausted_pile_button = _button("消耗堆 (0)")
-	exhausted_pile_button.add_theme_font_size_override("font_size", btn_f)
-	exhausted_pile_button.custom_minimum_size = Vector2(0, btn_h)
+	exhausted_pile_button = _pile_pill_button("耗", Color("5e4a6e"))
 	exhausted_pile_button.pressed.connect(show_exhaust_pile_view)
 	dock.add_child(exhausted_pile_button)
 
@@ -3159,9 +3172,11 @@ func _refresh_title_bar() -> void:
 	if char_data != null:
 		name_text = "%s   Lv %d" % [char_data.display_name, lv]
 	title_bar_name_label.text = name_text
+	# Phase C1：戰鬥中玩家身上已有血條 → 頂欄改數字式（❤ N/M），不重複畫寬條
+	title_bar_hp_bar.visible = not _in_battle
 	title_bar_hp_bar.max_value = max(1, max_hp_v)
 	title_bar_hp_bar.value = hp
-	title_bar_hp_label.text = "%d / %d" % [hp, max_hp_v]
+	title_bar_hp_label.text = ("❤ %d/%d" % [hp, max_hp_v]) if _in_battle else ("%d / %d" % [hp, max_hp_v])
 	title_bar_gold_label.text = "銅錢 %d" % run_state.gold
 	if title_bar_observe_label != null:
 		title_bar_observe_label.text = "觀察 %d" % run_state.observe_tokens
@@ -3692,11 +3707,30 @@ func _refresh_relic_strip() -> void:
 		return
 	for child: Node in relic_strip.get_children():
 		child.queue_free()
+	# Phase C2：最多顯示 MAX_RELIC_STRIP 顆，其餘摺進「+N」鈕（開既有遺物清單 popup）
+	const MAX_RELIC_STRIP: int = 12
+	var shown: int = 0
 	for r: RelicData in run_state.relics:
+		if shown >= MAX_RELIC_STRIP:
+			break
 		var icon: RelicIcon = RelicIcon.new()
-		icon.custom_minimum_size = Vector2(40, 40)  # 放大易點（觸控）
+		icon.custom_minimum_size = Vector2(34, 34)
 		relic_strip.add_child(icon)
 		icon.set_relic(r)
+		shown += 1
+	var overflow: int = run_state.relics.size() - shown
+	if overflow > 0:
+		var more_btn: Button = Button.new()
+		more_btn.text = "+%d" % overflow
+		more_btn.custom_minimum_size = Vector2(38, 34)
+		more_btn.focus_mode = Control.FOCUS_NONE
+		more_btn.add_theme_font_size_override("font_size", 14)
+		more_btn.add_theme_color_override("font_color", ThemeColors.HIGHLIGHT_GOLD)
+		more_btn.add_theme_stylebox_override("normal", UIFactory.style_box(Color("1d2735", 0.8), ThemeColors.BORDER_GOLD, 1, 8))
+		more_btn.add_theme_stylebox_override("hover", UIFactory.style_box(Color("273449", 0.9), ThemeColors.HIGHLIGHT_GOLD, 1, 8))
+		more_btn.tooltip_text = "查看全部 %d 件遺物" % run_state.relics.size()
+		more_btn.pressed.connect(_show_battle_relics_popup)
+		relic_strip.add_child(more_btn)
 
 func _grant_relic(relic: RelicData) -> bool:
 	if relic == null:
@@ -7919,11 +7953,12 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 	if status_label != null and is_instance_valid(status_label):
 		status_label.text = "    ".join(top_parts)
 	if draw_pile_button != null and is_instance_valid(draw_pile_button):
-		draw_pile_button.text = "抽牌堆 (%d)" % battle.deck.draw_pile.size()
+		draw_pile_button.text = "抽 %d" % battle.deck.draw_pile.size()
 	if discard_pile_button != null and is_instance_valid(discard_pile_button):
-		discard_pile_button.text = "棄牌堆 (%d)" % battle.deck.discard_pile.size()
+		discard_pile_button.text = "棄 %d" % battle.deck.discard_pile.size()
 	if exhausted_pile_button != null and is_instance_valid(exhausted_pile_button):
-		exhausted_pile_button.text = "消耗堆 (%d)" % battle.deck.exhausted_pile.size()
+		exhausted_pile_button.text = "耗 %d" % battle.deck.exhausted_pile.size()
+		exhausted_pile_button.visible = battle.deck.exhausted_pile.size() > 0  # StS：0 時隱藏
 	# 玩家欄位反映 ACTIVE 角色（battle.character 為 active 的 alias）
 	if battle.character != null:
 		if player_name_label != null:
@@ -8748,8 +8783,14 @@ func _passive_text() -> String:
 func _style_card_button(button: Button, card: CardData, affordable: bool) -> void:
 	var hover_tint: Color = CardFormat.card_color(card.card_type, true).lightened(0.18)
 	var press_tint: Color = CardFormat.card_color(card.card_type, true).darkened(0.2)
+	# Phase D1：normal 加柔影，收掉白卡在暗場景的「過亮貼紙感」（卡套美術不動）
 	var normal: StyleBoxFlat = UIFactory.style_box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, 18)
+	normal.shadow_size = 7
+	normal.shadow_color = Color(0, 0, 0, 0.42)
+	normal.shadow_offset = Vector2(0, 3)
 	var hover: StyleBoxFlat = UIFactory.style_box(Color(hover_tint.r, hover_tint.g, hover_tint.b, 0.12), Color(1, 0.98, 0.88, 0.38), 1, 18)
+	hover.shadow_size = 9
+	hover.shadow_color = Color(0, 0, 0, 0.5)
 	var pressed: StyleBoxFlat = UIFactory.style_box(Color(press_tint.r, press_tint.g, press_tint.b, 0.18), Color(1, 0.9, 0.62, 0.45), 1, 18)
 	var disabled: StyleBoxFlat = UIFactory.style_box(Color(0, 0, 0, 0.08), Color(0, 0, 0, 0), 0, 18)
 	button.add_theme_stylebox_override("normal", normal)
