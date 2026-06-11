@@ -75,6 +75,7 @@ var _suppress_next_card_play: bool = false
 var _selected_hand_card: CardData = null
 var _potion_buttons: Array[Button] = []
 var _battle_potion_strip: HBoxContainer = null
+var _in_battle: bool = false  # 是否正處於戰鬥場景（battle 物件會殘留，不能用 battle!=null 判斷）
 var _potion_popup: CenterContainer = null  # 戰鬥中藥品說明彈窗（單一實例，避免疊開）
 var _potion_overlay: HBoxContainer = null
 var _potion_overlay_buttons: Array[Button] = []
@@ -481,6 +482,7 @@ func _build_root() -> void:
 	add_child(root)
 
 func _clear_root() -> void:
+	_in_battle = false  # 離開任何畫面即非戰鬥；_build_battle_scene 會在其 _clear_root 後再設回 true
 	close_deck_view()
 	_hide_card_preview()
 	_cancel_end_turn_warning()
@@ -2215,7 +2217,8 @@ func start_next_battle(enemies: Variant, is_elite: bool = false) -> void:
 func _build_battle_scene() -> void:
 	_lecher_loot_shown = false
 	_set_background(_battle_background_path())
-	_clear_root()
+	_clear_root()  # 會把 _in_battle 設回 false
+	_in_battle = true  # 進入戰鬥場景（_clear_root 之後再設，故維持 true）
 	_show_title_bar()
 	if _potion_overlay != null:
 		_potion_overlay.visible = false
@@ -6061,8 +6064,11 @@ func _show_potion_replacement_overlay(new_potion: Dictionary, on_done: Callable)
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
 	center.add_child(col)
 
+	# 攻擊型等戰鬥限定藥品在非戰鬥時（事件/商店/地圖）不可當場使用
+	var can_use_now: bool = _in_battle or PotionCatalog.usable_outside_battle(new_potion)
 	col.add_child(_title("替換藥品", 26))
-	col.add_child(UIFactory.card_label("替換一瓶已有藥品、當場使用，或放棄新藥品。", 14, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER))
+	var instr: String = "替換一瓶已有藥品、當場使用，或放棄新藥品。" if can_use_now else "替換一瓶已有藥品，或放棄新藥品。"
+	col.add_child(UIFactory.card_label(instr, 14, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER))
 
 	# 1. Show the New Potion
 	var new_p_panel: PanelContainer = PanelContainer.new()
@@ -6163,7 +6169,7 @@ func _show_potion_replacement_overlay(new_potion: Dictionary, on_done: Callable)
 		old_row.add_child(rep_btn)
 
 	# 3. Use New Potion Button —— 戰鬥中任何藥可用；戰鬥外僅限 usable_outside_battle 的藥
-	var can_use_now: bool = battle != null or PotionCatalog.usable_outside_battle(new_potion)
+	# （can_use_now 已於上方計算：_in_battle or usable_outside_battle）
 	if can_use_now:
 		var use_btn: Button = _button("立即使用新藥品")
 		use_btn.custom_minimum_size = Vector2(160, 36)
