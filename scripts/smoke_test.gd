@@ -1253,9 +1253,12 @@ const BALANCE_BASELINES_MID: Dictionary = {
 	# 2026-06 角色公平性修正：李 passive「每場第一張攻擊 -1 費」改「戰鬥前 3 回合每回合 1 次」。
 	# 故意調整：li 3→37（原本墊底 27 倍差距；無限每回合版測得 73% 衝頂、前 3 回合版落中間帶）。
 	# anu 試過開場毒 5→3 僅 83→80（無實效）已回滾，維持 5。
-	"li_xiaoyao": 37,
+	# 2026-06-11 出牌 AI 升級（隨機 → BattlePolicy 斬殺/集火/格擋/毒引爆/debuff時序）：
+	# 全層 baseline 重置。li 37→27（policy 先鋪引擎、限時下 tempo 微降）、lin 40→97
+	# （反擊 passive＋格擋時機被聰明打法放大——中段平衡新 outlier，見 BALANCE_REPORT §七）。
+	"li_xiaoyao": 27,
 	"zhao_linger": 27,
-	"lin_yueru": 40,
+	"lin_yueru": 97,
 	"anu": 83
 }
 # 全升級起始牌組 vs 山賊頭目。升級應嚴格 >= 基礎勝率，預期全 100%。
@@ -1271,9 +1274,11 @@ const BALANCE_BASELINES_UPGRADED: Dictionary = {
 const BALANCE_BASELINES_MID_UPGRADED: Dictionary = {
 	# 2026-06 難度收斂後重測（敵人傷害 +15%）：升級牌組仍多能過，但李/林限時勝率下修。
 	# 2026-06 李 passive 改版（前 3 回合折扣）：li 80→100（故意調整，升級組+折扣即穩過）。
+	# 2026-06-11 BattlePolicy 重置：全升級組＋聰明打法 → 4 角全飽和 100（本層退化為
+	# 純 regression 上界警報，雙向靈敏度遺失；細靈敏度看 MID / LEVELED 層）。
 	"li_xiaoyao": 100,
-	"zhao_linger": 93,
-	"lin_yueru": 83,
+	"zhao_linger": 100,
+	"lin_yueru": 100,
 	"anu": 100
 }
 
@@ -1298,10 +1303,13 @@ const BALANCE_BASELINES_LEVELED: Dictionary = {
 	# 僅李 Lv10/Lv20、趙 Lv20 略降，更新觀測值（故意調整）。
 	# 2026-06 李 passive 改版（前 3 回合折扣）：Lv10 77→93、Lv20 43→50（故意調整，
 	# 終於不再是 Lv20 墊底；50% 介於趙 40 / 林 87 之間）。
-	"li_xiaoyao":  {5: 100, 10: 93,  15: 97,  20: 50},
-	"zhao_linger": {5: 100, 10: 90,  15: 83,  20: 40},
-	"lin_yueru":   {5: 100, 10: 100, 15: 100, 20: 87},
-	"anu":         {5: 100, 10: 100, 15: 100, 20: 93},
+	# 2026-06-11 BattlePolicy 重置（聰明打法重洗終幕排序）：
+	# 李 Lv20 50→90（折扣+斬殺集火被放大）、林 Lv20 87→50（謹慎打法 20 回合內輸出不足
+	# 拜月 136 HP）、趙 Lv10 90→60（防禦傾向 vs 赤鬼王跑錶）。終幕 spread 30-100 健康。
+	"li_xiaoyao":  {5: 100, 10: 97,  15: 100, 20: 90},
+	"zhao_linger": {5: 100, 10: 60,  15: 90,  20: 30},
+	"lin_yueru":   {5: 100, 10: 100, 15: 93,  20: 50},
+	"anu":         {5: 100, 10: 100, 15: 100, 20: 100},
 }
 
 # Lv → act 對應（8 幕版：取樣早/中/中後/終幕代表 boss，含正史鎮獄明王與最終水魔獸）
@@ -1510,6 +1518,9 @@ func _ai_smoke_choice(view: Dictionary) -> String:
 	return AiRunEngine.auto_choice(view)
 
 func _simulate_random_battle(character: CharacterData, enemy_template: EnemyData, max_turns: int = 20, deck_override: Array[CardData] = []) -> bool:
+	# 2026-06-11 起出牌改用 BattlePolicy（共用「會玩的」啟發式：斬殺/集火/格擋/毒引爆/引擎早放），
+	# 取代純隨機選牌——baseline 因此全面重觀測（隨機手測不出真實平衡）。
+	# 函式名沿用（call site 多）；seed 仍由呼叫端控制（policy 本身 deterministic）。
 	var run_state: RunState = RunState.new()
 	run_state.init_for(character)
 	if not deck_override.is_empty():
@@ -1521,26 +1532,29 @@ func _simulate_random_battle(character: CharacterData, enemy_template: EnemyData
 		bc.start_turn()
 		if bc.is_battle_over():
 			break
-		for _attempt: int in range(20):
-			if bc.is_battle_over():
-				break
-			var affordable: Array[CardData] = []
-			for card: CardData in bc.deck.hand:
-				if bc.effective_card_cost(card) <= int(bc.state["energy"]):
-					affordable.append(card)
-			if affordable.is_empty():
-				break
-			var chosen: CardData = affordable[randi() % affordable.size()]
-			var played: Dictionary = bc.play_card(chosen)
-			if not bool(played.get("affordable", false)):
-				break
+		_policy_play_out_turn(bc)
 		if bc.is_battle_over():
 			break
 		var actions: Array = bc.begin_enemy_phase()
 		bc.resolve_enemy_phase(actions)
 	return bc.is_victory()
 
-# 多人隊模擬（IMPROVEMENT_PLAN P2-10）：隨機 AI + 最簡切人 policy——
+# 用 BattlePolicy 打完當前回合（出牌到 policy 回 end 或無法再出）
+func _policy_play_out_turn(bc: BattleController) -> void:
+	for _attempt: int in range(30):
+		if bc.is_battle_over():
+			return
+		var act: Dictionary = BattlePolicy.next_action(bc)
+		if String(act.get("kind", "end")) != "play":
+			return
+		var target: int = int(act.get("target", -1))
+		if target >= 0:
+			bc.set_active_enemy(target)
+		var played: Dictionary = bc.play_card(act["card"] as CardData)
+		if not bool(played.get("affordable", false)):
+			return
+
+# 多人隊模擬（IMPROVEMENT_PLAN P2-10）：BattlePolicy 出牌 + 最簡切人 policy——
 # active HP < 30% 且有更健康的活隊友 → 用免費切換換上（只用每回合 1 次的免費額度）。
 func _simulate_party_battle(party: Array[CharacterData], enemy_template: EnemyData, max_turns: int = 20) -> bool:
 	var run_state: RunState = RunState.new()
@@ -1573,19 +1587,7 @@ func _simulate_party_battle(party: Array[CharacterData], enemy_template: EnemyDa
 						best_idx = i
 				if best_idx >= 0:
 					bc.switch_active(best_idx)
-		for _attempt: int in range(20):
-			if bc.is_battle_over():
-				break
-			var affordable: Array[CardData] = []
-			for card: CardData in bc.deck.hand:
-				if bc.effective_card_cost(card) <= int(bc.state["energy"]):
-					affordable.append(card)
-			if affordable.is_empty():
-				break
-			var chosen: CardData = affordable[randi() % affordable.size()]
-			var played: Dictionary = bc.play_card(chosen)
-			if not bool(played.get("affordable", false)):
-				break
+		_policy_play_out_turn(bc)
 		if bc.is_battle_over():
 			break
 		var actions: Array = bc.begin_enemy_phase()
@@ -1596,9 +1598,11 @@ func _simulate_party_battle(party: Array[CharacterData], enemy_template: EnemyDa
 # null = 尚未觀測；初跑後填入。若 3 人隊勝率 >95% = 組隊白給，要回頭評估能量/敵 HP scale。
 const BALANCE_BASELINES_PARTY: Dictionary = {
 	# 2026-06-11 P2-10 觀測：舊公式（能量 3+(n-1)、無敵 HP 補正）兩組皆 100% = 組隊白給。
-	# 修正：能量 3+(n-1)/2（2人3、3人4）＋ 敵 HP 每隊員 +35% → 落帶（單人最強阿奴 83%）。
-	"duo_li_anu": 80,        # 李逍遙 + 阿奴
-	"trio_li_zhao_lin": 87,  # 李 + 趙 + 林
+	# 修正：能量 3+(n-1)/2（2人3、3人4）＋ 敵 HP 每隊員 +35% → 隨機 AI 下 duo 80 / trio 87。
+	# 2026-06-11 BattlePolicy 重置：聰明打法下兩組回 100（與單人最強林 97 一致＝
+	# 「組隊≈最強單人」非白給；本層同樣退化為 regression 上界警報）。
+	"duo_li_anu": 100,
+	"trio_li_zhao_lin": 100,
 }
 
 func _test_balance_party(characters: Array[CharacterData], bosses: Array[EnemyData]) -> void:

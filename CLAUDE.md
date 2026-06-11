@@ -67,8 +67,8 @@ godot --path . -s render_effects.gd       # 輸出 res://_<label>.png
 
 ### AI 平衡驅動器（agent 親自玩一整個 run）
 
-`smoke_test.gd` 的隨機 AI 出牌會把平衡數字測歪（從不換人/指定目標/打 combo/規劃牌組）。
-要評估「會玩的人」的真實平衡時，用 **`tools/ai_run.gd`**：headless 跑一整個 run、在每個決策點
+`smoke_test.gd` 的出牌已升級為 `BattlePolicy` 啟發式（斬殺/集火/格擋/毒引爆），但仍不會
+規劃牌組/路線/商店。要評估「會玩的人」的**整個 run** 真實平衡時，用 **`tools/ai_run.gd`**：headless 跑一整個 run、在每個決策點
 （boon/地圖/戰鬥/獎勵/商店/奇遇/休息）停下，透過檔案協定（`_ai_view.json` ↔ `_ai_cmd.json`）
 把局面交給我決定，戰鬥用**真實 BattleController**。引擎在 `scripts/ai_run_engine.gd`。
 
@@ -78,7 +78,7 @@ AIRUN_AUTO=1 godot --headless --path . -s tools/ai_run.gd  # 內建粗淺 policy
 ```
 
 完整協定 / choice 寫法 / 失真說明見 **[`docs/AI_BALANCE_HARNESS.md`](docs/AI_BALANCE_HARNESS.md)**。
-玩完刪 `_ai_*.json` 暫存。`_test_ai_run_engine_smoke` 守住引擎不爛（既有隨機 AI regression 保留為 CI 防回歸）。
+玩完刪 `_ai_*.json` 暫存。`_test_ai_run_engine_smoke` 守住引擎不爛（既有 BattlePolicy regression 保留為 CI 防回歸）。
 
 ## Project Layout
 
@@ -305,10 +305,10 @@ main.gd
 - Boss phase transition（3 boss 都有 phase_2_actions、HP <50% 觸發切換、next_enemy_action 用新招式）
 - Event variety（至少 10 種 variant，欄位齊全，MapGenerator pool 包含全部）
 - Map seed determinism（同 seed 兩次 generate 結構完全一致）
-- 平衡 regression（基礎）：4 角色 vs 山賊頭目，30 場隨機 AI 無時限，全 100%（純 regression 偵測）
-- 平衡 regression（中段）：4 角色 vs 蜈蚣大王，10 回合時限，30 場。
-  zhao_linger baseline 20%（雙向偵測），其餘 100%（regression-only）。
-  詳見「平衡 regression 失敗時怎麼處理」
+- 平衡 regression（基礎/中段/升級/分級/組隊）：出牌用 `BattlePolicy`（共用聰明啟發式：
+  斬殺/集火/AOE 評估/致命先擋/毒引爆時機/debuff→攻擊時序；deterministic），
+  2026-06-11 起取代隨機選牌、全層 baseline 重置。詳見「平衡 regression 失敗時怎麼處理」
+  與 `docs/BALANCE_REPORT.md` §七
 
 新增測試：在 `_initialize()` 加一個 `_test_xxx()` 呼叫，然後實作該函式用 `assert()`。
 
@@ -316,7 +316,7 @@ main.gd
 
 ### 平衡 regression 失敗時怎麼處理
 
-`_test_balance_regression()` 對每個角色用起始牌組 + 隨機 AI 出牌，跑 30 場固定 seed 模擬。基準 (`BALANCE_BASELINES`) 寫死在 smoke_test.gd 頂部，容差 `BALANCE_TOLERANCE_PP = 15` 個百分點。
+`_test_balance_regression()` 對每個角色用起始牌組 + `BattlePolicy` 出牌（聰明啟發式，deterministic），跑 30 場固定 seed 模擬。基準 (`BALANCE_BASELINES`) 寫死在 smoke_test.gd 頂部，容差 `BALANCE_TOLERANCE_PP = 15` 個百分點。
 
 當 assert fail 時要先判斷是哪種狀況：
 
@@ -333,7 +333,9 @@ main.gd
    → 暫時把該角色從 `BALANCE_BASELINES` 移掉（會印觀測值但不 assert）
    → 改完穩定後再補回 baseline
 
-容差 15 pp 是給隨機 AI 的雜訊空間，不是給「小調整」的緩衝；如果你做的調整在容差內，那其實就是無關緊要的改動，可以不更新 baseline。
+容差 15 pp 是給 30 場樣本的雜訊空間，不是給「小調整」的緩衝；如果你做的調整在容差內，那其實就是無關緊要的改動，可以不更新 baseline。
+另注意：`smoke_test.gd` 的隨機 AI regression 已於 2026-06-11 升級為 `BattlePolicy`；
+`docs/AI_BALANCE_HARNESS.md` 提到「隨機 AI 保留」的段落為歷史描述。
 
 ## 常見地雷
 
