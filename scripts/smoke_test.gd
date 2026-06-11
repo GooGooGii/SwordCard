@@ -117,6 +117,7 @@ func _initialize() -> void:
 	_test_intent_display()
 	_test_requires_enemy_target()
 	_test_all_upgrades_change(characters)
+	_test_no_unreachable_cards(characters)
 	_test_bestiary_persistence()
 	_test_artifact_boss_coverage()
 	_test_ascension_persistence_and_modifiers()
@@ -1115,6 +1116,17 @@ func _test_map_shop_rules(enemies: Array[EnemyData], bosses: Array[EnemyData]) -
 							"trial %d row %d: shop→shop 串連" % [trial, row_index])
 	# 規則 3：40 張圖中至少出現一次行腳商人（機率 0.18/事件節點，幾乎必中）
 	_check(found_merchant, "40 張地圖中從未出現行腳商人奇遇（merchant_event）")
+
+func _test_no_unreachable_cards(characters: Array[CharacterData]) -> void:
+	# 每張「定義過」的角色卡都必須可取得（在 starting_deck ∪ reward_pool ∪ 等級解鎖之一）。
+	# 防止 reward_pool=slice(5) 把 index 0-4 中非起手的卡（如斬龍訣/酒神咒）silently 漏掉。
+	for ch: CharacterData in characters:
+		var reachable: Dictionary = {}
+		for c: CardData in ch.starting_deck: reachable[c.id] = true
+		for c: CardData in ch.reward_pool: reachable[c.id] = true
+		for c: CardData in LevelSystem.all_unlocked_cards(ch.id, 99): reachable[c.id] = true
+		for c: CardData in ch.all_defined_cards:
+			_check(reachable.has(c.id), "%s 的卡「%s」(%s) 有定義但玩家取得不到（不在起手/獎勵/解鎖）" % [ch.display_name, c.display_name, c.id])
 
 func _test_all_upgrades_change(characters: Array[CharacterData]) -> void:
 	# 每張卡升級後一定要有變化（cost 降低 或 任一 effect 數值/bonus_per_layer 改變）。

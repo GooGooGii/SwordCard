@@ -9,6 +9,8 @@ extends Resource
 @export var starting_deck: Array[CardData] = []
 @export var reward_pool: Array[CardData] = []
 @export var passives: Array[Dictionary] = []
+# 該角色「定義過的全部卡」（由 _character 帶入，供 smoke 驗證無不可取得卡）。不序列化、clone 不複製。
+var all_defined_cards: Array[CardData] = []
 
 func clone() -> CharacterData:
 	var copy: CharacterData = CharacterData.new()

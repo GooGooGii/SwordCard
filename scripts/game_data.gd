@@ -433,6 +433,9 @@ static func _li_xiaoyao() -> CharacterData:
 		cards[5],                          # 1x 仙風雲體 (蜀山 uncommon 8block+draw1)
 		cards[6],                          # 1x 醉夢望月 (蜀山 uncommon power+2)
 	]
+	# 修：index 0-4 中未進起手的卡（reward_pool=slice(5) 會漏掉）補進獎勵池，否則永遠拿不到
+	character.reward_pool.append(cards[3])  # 天師符法
+	character.reward_pool.append(cards[4])  # 酒神咒
 	return character
 
 static func _zhao_linger() -> CharacterData:
@@ -501,6 +504,9 @@ static func _zhao_linger() -> CharacterData:
 		cards[6],                          # 1x 天雷破 (uncommon 18dmg) — burst
 		cards[8],                          # 1x 幻雨咒 (uncommon 7block+weak1)
 	]
+	# 修：補進獎勵池，否則永遠拿不到（reward_pool=slice(5) 漏掉的 index 0-4 非起手卡）
+	character.reward_pool.append(cards[2])  # 玄冰咒
+	character.reward_pool.append(cards[4])  # 夢蛇靈印
 	return character
 
 static func _lin_yueru() -> CharacterData:
@@ -557,6 +563,9 @@ static func _lin_yueru() -> CharacterData:
 		cards[1],                                   # 1x 一陽指 (PAL1 Lv7 uncommon 18dmg)
 		cards[6],                                   # 1x 月影身法 (uncommon 7block+draw1)
 	]
+	# 修：補進獎勵池，否則永遠拿不到（PAL1 名招斬龍訣、乾坤一擲先前被 slice(5) 漏掉）
+	character.reward_pool.append(cards[2])  # 斬龍訣（PAL1 名招）
+	character.reward_pool.append(cards[3])  # 乾坤一擲
 	return character
 
 static func _anu() -> CharacterData:
@@ -652,6 +661,7 @@ static func _character(id: String, display_name: String, max_hp: int, style: Str
 	character.portrait_path = "res://assets/art/portraits/%s.png" % id
 	character.starting_deck = [cards[0], cards[0], cards[0], cards[0], cards[1], cards[2], cards[3], cards[4], cards[7], cards[7], cards[7], cards[7]]
 	character.reward_pool = cards.slice(5)
+	character.all_defined_cards = cards  # 全部定義卡（供 smoke 驗證無不可取得卡）
 	character.passives = _passives_for(id)
 	return character
 
