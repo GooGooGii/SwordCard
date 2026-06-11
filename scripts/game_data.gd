@@ -44,7 +44,7 @@ static func colorless_cards() -> Array[CardData]:
 		make_card("cl_chenxi_poshi", "趁隙破勢", "無門", 1, "attack", "趁敵破綻盡顯，引爆敵人全部虛弱與破綻，每層造成 4 點傷害。", [{"kind": "consume_debuff_damage", "amount": 4}], "rare"),
 		# ── 消耗流 archetype（通用，對齊 StS Feel No Pain / Dark Embrace / Fiend Fire）──
 		make_card("cl_wutongjue", "無痛訣", "無門", 1, "power", "凝神忘痛。本場戰鬥每消耗 1 張牌，獲得 3 點護體。", [{"kind": "block_on_exhaust", "amount": 3}], "uncommon"),
-		make_card("cl_shipaijue", "噬牌訣", "無門", 1, "power", "以牌飼心。本場戰鬥每消耗 1 張牌，抽 1 張牌。", [{"kind": "draw_on_exhaust", "amount": 1}], "rare"),
+		make_card("cl_shipaijue", "噬牌訣", "無門", 1, "power", "以牌飼心。本場戰鬥每消耗 1 張牌，抽 1 張牌。", [{"kind": "draw_on_exhaust", "amount": 1}], "rare", "", true),
 		make_card("cl_fenjinjue", "焚盡訣", "無門", 1, "attack", "引燃真氣，消耗手牌中其餘所有牌，每張對敵人造成 5 點傷害。打出後消耗。", [{"kind": "exhaust_hand_damage", "amount": 5}], "rare", "", false, true),
 	]
 	# exhaust 標記（make_card 無此參數，直接設）
@@ -417,7 +417,7 @@ static func _li_xiaoyao() -> CharacterData:
 		# 幽冥仙途語感（明心劍宗）：青煙竹影＝節節拔升多段劍。art 暫借八方劍陣
 		make_card("lxy_qingyan_zhuying", "青煙竹影", "李逍遙", 2, "attack", "劍勢如新筍出土節節拔升，造成 4 點傷害四次。", [{"kind": "damage", "amount": 4, "hits": 4}], "uncommon"),
 		# 劍流引擎核心：御劍心訣 —— 每出攻擊牌抽 1，接上既有 0 費攻擊 / 複製攻擊 / 劍氣置頂 →「御劍不滅」連打循環。
-		make_card("lxy_yujianxinjue", "御劍心訣", "李逍遙", 1, "power", "心與劍合，本場戰鬥每打出一張攻擊牌便抽 1 張牌。", [{"kind": "draw_on_attack", "amount": 1}], "rare"),
+		make_card("lxy_yujianxinjue", "御劍心訣", "李逍遙", 1, "power", "心與劍合，本場戰鬥每打出一張攻擊牌便抽 1 張牌。", [{"kind": "draw_on_attack", "amount": 1}], "rare", "", true),
 	]
 	var character: CharacterData = _character("li_xiaoyao", "李逍遙", 74, "劍仙風流，禦劍、偷取與酒神系高風險高傷害。", cards)
 	# PAL1 對齊：9 basic + 3 uncommon + 0 rare
@@ -483,7 +483,7 @@ static func _zhao_linger() -> CharacterData:
 		make_card("zl_lingguangpuzhao", "靈光普照", "趙靈兒", 1, "power", "靈光普照，每回合開始獲得 5 點護體。", [{"kind": "block_per_turn", "amount": 5}], "uncommon"),
 		make_card("zl_wuleihongding", "五雷轟頂", "趙靈兒", 2, "power", "凝聚天雷，每回合結束對所有敵人降下 6 點雷傷。", [{"kind": "end_turn_damage_all", "amount": 6}], "rare"),
 		# 神術引擎核心：靈息訣 —— 每出技能牌抽 1，接上既有 0 費技能 →「靈息不息」循環。
-		make_card("zl_lingxijue", "靈息訣", "趙靈兒", 1, "power", "靈息綿長，本場戰鬥每打出一張技能牌便抽 1 張牌。", [{"kind": "draw_on_skill", "amount": 1}], "rare"),
+		make_card("zl_lingxijue", "靈息訣", "趙靈兒", 1, "power", "靈息綿長，本場戰鬥每打出一張技能牌便抽 1 張牌。", [{"kind": "draw_on_skill", "amount": 1}], "rare", "", true),
 		# 杖流 payoff：萬靈噬 —— 對全體依各自虛弱/破綻層數加傷，承接她大量的 weak_all / vulnerable_all 鋪場。
 		make_card("zl_wanlingshi", "萬靈噬", "趙靈兒", 2, "attack", "五靈反噬，對所有敵人造成 6 點傷害，敵人每層虛弱／破綻額外 +3。", [{"kind": "damage_debuff_bonus_all", "amount": 6, "bonus_per_layer": 3}], "rare"),
 	]

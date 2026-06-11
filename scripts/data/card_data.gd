@@ -58,6 +58,14 @@ func upgraded_copy() -> CardData:
 			var new_amount: int = int(upgraded_effect["amount"])
 			if old_amount != new_amount:
 				replacements[old_amount] = new_amount
+		# debuff payoff 卡（damage_debuff_bonus / damage_poison_bonus 等）的核心數值是
+		# 「每層加成」bonus_per_layer，升級時 +1 才有感（base amount 也已在上面升）。
+		if upgraded_effect.has("bonus_per_layer") and _should_upgrade_amount(kind):
+			var old_bonus: int = int(upgraded_effect["bonus_per_layer"])
+			var new_bonus: int = old_bonus + 1
+			upgraded_effect["bonus_per_layer"] = new_bonus
+			if old_bonus != new_bonus:
+				replacements[old_bonus] = new_bonus
 		copy.effects.append(upgraded_effect)
 	# Update description text to match upgraded effect amounts.
 	# Sort descending so e.g. "14" is replaced before "4", avoiding partial substitutions.
@@ -110,6 +118,7 @@ func _should_upgrade_amount(kind: String) -> bool:
 		"energy",
 		"power",
 		"consume_energy_damage",
+		"consume_energy_damage_all",
 		"poison_burst",
 		"poison_multiply",
 		"block_per_turn",
@@ -117,7 +126,17 @@ func _should_upgrade_amount(kind: String) -> bool:
 		"block_per_attack",
 		"self_block_bonus",
 		"spawn_top_tokens",
-		"revive"
+		"revive",
+		# 後期新增機制：先前漏進白名單 → 升級後無變化（2026-06 修）
+		"thorns",
+		"poison_engine",
+		"combo_strike",
+		"consume_debuff_damage",
+		"exhaust_hand_damage",
+		"block_on_exhaust",
+		"damage_debuff_bonus",
+		"damage_debuff_bonus_all",
+		"damage_poison_bonus"
 	]
 
 func to_dict() -> Dictionary:
@@ -165,7 +184,7 @@ func _upgraded_amount(kind: String, amount: int) -> int:
 			return amount + 1
 		"poison_multiply":
 			return amount + 1  # 蠱毒催化：2 倍 → 3 倍
-		"consume_energy_damage", "poison_burst":
+		"consume_energy_damage", "consume_energy_damage_all", "poison_burst":
 			return amount + 2
 		_:
 			return amount + max(1, int(ceil(amount * 0.25)))

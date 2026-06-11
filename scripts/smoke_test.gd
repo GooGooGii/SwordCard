@@ -116,6 +116,7 @@ func _initialize() -> void:
 	_test_predict_enemy_damage_matches_resolver()
 	_test_intent_display()
 	_test_requires_enemy_target()
+	_test_all_upgrades_change(characters)
 	_test_bestiary_persistence()
 	_test_artifact_boss_coverage()
 	_test_ascension_persistence_and_modifiers()
@@ -1113,6 +1114,35 @@ func _test_map_shop_rules(enemies: Array[EnemyData], bosses: Array[EnemyData]) -
 							"trial %d row %d: shop→shop 串連" % [trial, row_index])
 	# 規則 3：40 張圖中至少出現一次行腳商人（機率 0.18/事件節點，幾乎必中）
 	_check(found_merchant, "40 張地圖中從未出現行腳商人奇遇（merchant_event）")
+
+func _test_all_upgrades_change(characters: Array[CharacterData]) -> void:
+	# 每張卡升級後一定要有變化（cost 降低 或 任一 effect 數值/bonus_per_layer 改變）。
+	# 唯一允許「無變化」= 減費型且本就 0 費（減無可減）。防止新 effect kind 漏進升級白名單。
+	var seen: Dictionary = {}
+	var all_cards: Array[CardData] = []
+	for ch: CharacterData in characters:
+		for c: CardData in ch.starting_deck:
+			if not seen.has(c.id): seen[c.id] = true; all_cards.append(c)
+		for c: CardData in ch.reward_pool:
+			if not seen.has(c.id): seen[c.id] = true; all_cards.append(c)
+		for c: CardData in LevelSystem.all_unlocked_cards(ch.id, 99):
+			if not seen.has(c.id): seen[c.id] = true; all_cards.append(c)
+	for c: CardData in GameData.colorless_cards():
+		if not seen.has(c.id): seen[c.id] = true; all_cards.append(c)
+	for card: CardData in all_cards:
+		var up: CardData = card.upgraded_copy()
+		var changed: bool = up.cost != card.cost
+		if not changed:
+			for i: int in range(card.effects.size()):
+				if i >= up.effects.size():
+					changed = true; break
+				var oe: Dictionary = card.effects[i]
+				var ne: Dictionary = up.effects[i]
+				if int(ne.get("amount", -999)) != int(oe.get("amount", -999)) \
+						or int(ne.get("bonus_per_layer", -999)) != int(oe.get("bonus_per_layer", -999)):
+					changed = true; break
+		var allowed_noop: bool = card.upgrade_reduces_cost and card.cost == 0
+		_check(changed or allowed_noop, "卡 %s（%s）升級後無任何變化" % [card.id, card.display_name])
 
 func _test_requires_enemy_target() -> void:
 	# 純傷害
