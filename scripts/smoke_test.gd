@@ -153,6 +153,7 @@ func _initialize() -> void:
 	# debuff payoff 2026-06：蠱毒加成(阿奴) / 引爆虛弱破綻(通用)
 	_test_damage_poison_bonus(characters[3], enemies[0])
 	_test_consume_debuff_damage(characters[1], enemies[0])
+	_test_soul_reap(characters[3], enemies[0], bosses[0])
 	# 開流派 / 取捨型遺物 2026-06：狂戰護符(負值 passive) / 逍遙令(0費 payoff)
 	_test_archetype_relics(characters[0], enemies[0])
 	# 消耗流 archetype + build-enabler 藥品 2026-06
@@ -2274,6 +2275,44 @@ func _test_build_enabler_potions(character: CharacterData, enemy: EnemyData) -> 
 	bc.resolver.resolve_effects_list([{"kind": "free_turn"}], bc.state)
 	var pricey: CardData = GameData.make_card("test_pricey", "測試貴牌", character.id, 3, "skill", "", [{"kind": "block", "amount": 5}])
 	_check(bc.effective_card_cost(pricey) == 0, "混元丹: 3 費牌應變 0 費, got %d" % bc.effective_card_cost(pricey))
+
+func _test_soul_reap(character: CharacterData, small_enemy: EnemyData, boss_enemy: EnemyData) -> void:
+	var eff: Dictionary = {"kind": "soul_reap", "chance": 0.2, "boss_effect_chance": 0.65, "boss_min": 1, "boss_max": 4}
+	# 小怪：80 次中應同時出現「索命(hp=0)」與「未命中(hp不變)」
+	var saw_kill: bool = false
+	var saw_miss: bool = false
+	for _i: int in range(80):
+		var bc: BattleController = _make_multi_battle(character, [small_enemy])
+		bc.start_turn()
+		var hp0: int = int(bc.state["enemy_hp"])
+		bc.resolver._resolve_effect(eff, bc.state)
+		if int(bc.state["enemy_hp"]) == 0:
+			saw_kill = true
+		elif int(bc.state["enemy_hp"]) == hp0:
+			saw_miss = true
+	_check(saw_kill, "soul_reap 對小怪應有時直接索命")
+	_check(saw_miss, "soul_reap 對小怪應有時未命中")
+	# Boss：應同時出現「施加 debuff」與「無效」，且永不索命（hp 不歸零）
+	var saw_debuff: bool = false
+	var saw_noeffect: bool = false
+	var killed_boss: bool = false
+	for _j: int in range(80):
+		var bc2: BattleController = _make_multi_battle(character, [boss_enemy])
+		bc2.start_turn()
+		bc2.state["enemy_weak"] = 0
+		bc2.state["enemy_vulnerable"] = 0
+		bc2.state["enemy_poison"] = 0
+		bc2.resolver._resolve_effect(eff, bc2.state)
+		if int(bc2.state["enemy_hp"]) <= 0:
+			killed_boss = true
+		var deb: int = int(bc2.state["enemy_weak"]) + int(bc2.state["enemy_vulnerable"]) + int(bc2.state["enemy_poison"])
+		if deb > 0:
+			saw_debuff = true
+		else:
+			saw_noeffect = true
+	_check(not killed_boss, "soul_reap 不該索命 Boss")
+	_check(saw_debuff, "soul_reap 對 Boss 應有時施加隨機負面狀態")
+	_check(saw_noeffect, "soul_reap 對 Boss 應有時毫無作用")
 
 func _test_enemy_heal_and_strength(character: CharacterData, enemy: EnemyData) -> void:
 	var bc: BattleController = _make_multi_battle(character, [enemy])

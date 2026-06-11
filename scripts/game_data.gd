@@ -588,7 +588,7 @@ static func _anu() -> CharacterData:
 		make_card("anu_cuifeng", "淬鋒蠱刃", "阿奴", 1, "power", "刀刃淬入蠱毒，本場戰鬥傷害提升 2。", [{"kind": "power", "amount": 2}], "uncommon"),
 		make_card("anu_wuyuezhan", "巫月斬", "阿奴", 1, "attack", "巫月神刀連斬，造成 5 點傷害兩次。", [{"kind": "damage", "amount": 5, "hits": 2}], "uncommon"),
 		make_card("anu_xuerenwu", "血刃亂舞", "阿奴", 2, "attack", "亂刀狂舞，造成 4 點傷害三次。", [{"kind": "damage", "amount": 4, "hits": 3}], "rare"),
-		make_card("anu_duohun", "奪魂術", "阿奴", 1, "attack", "奪魂之術，造成 8 點傷害，使敵人虛弱 2 層。", [{"kind": "damage", "amount": 8}, {"kind": "weak", "amount": 2}], "uncommon"),
+		make_card("anu_duohun", "奪魂術", "阿奴", 1, "attack", "勾魂奪命，憑運氣定生死。對小怪有 20% 機率當場索命；對 Boss 則有機率施加隨機負面狀態與隨機層數（亦可能毫無作用）。", [{"kind": "soul_reap", "chance": 0.2, "boss_effect_chance": 0.65, "boss_min": 1, "boss_max": 4}], "uncommon", "", true),
 		make_card("anu_sanshigu", "三屍蠱", "阿奴", 2, "skill", "三屍蠱毒入體，施加 10 層蠱毒。", [{"kind": "poison", "amount": 10}], "rare"),
 		make_card("anu_shuhun", "聖姑庇佑", "阿奴", 1, "power", "術魂加持，本場戰鬥傷害提升 1，抽 1 張牌。", [{"kind": "power", "amount": 1}, {"kind": "draw", "amount": 1}], "uncommon"),
 		make_card("anu_wangushitian", "萬蠱噬天", "阿奴", 3, "skill", "萬蠱齊發，施加 12 層蠱毒，使敵人虛弱 3 層。", [{"kind": "poison", "amount": 12}, {"kind": "weak", "amount": 3}], "rare"),

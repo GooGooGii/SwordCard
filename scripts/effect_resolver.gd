@@ -511,6 +511,36 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			state["enemy_block"] = int(state["enemy_block"]) - cdd_blocked
 			state["enemy_hp"] = max(0, int(state["enemy_hp"]) - (cdd_mod - cdd_blocked))
 			log_lines.append("引爆 %d 層虛弱/破綻，造成 %d 點傷害。" % [cdd_layers, cdd_mod - cdd_blocked])
+		"soul_reap":
+			# 奪魂術（抽獎卡）：對「小怪」chance 機率直接索命；對 Boss 改為 boss_effect_chance
+			# 機率施加「隨機負面狀態 + 隨機層數」，也可能完全無效。high-variance、賭一把。
+			var sr_name: String = String(state.get("enemy_name", "敵人"))
+			var sr_is_boss: bool = false
+			var sr_slots: Array = state.get("enemies", []) as Array
+			var sr_aidx: int = int(state.get("active_enemy_index", 0))
+			if sr_aidx >= 0 and sr_aidx < sr_slots.size():
+				sr_is_boss = Ascension.is_boss_id(String((sr_slots[sr_aidx] as Dictionary).get("id", "")))
+			if not sr_is_boss:
+				# 小怪：chance 機率直接斃命
+				var kill_chance: float = float(effect.get("chance", 0.2))
+				if randf() < kill_chance:
+					state["enemy_hp"] = 0
+					log_lines.append("奪魂術勾走了 %s 的魂魄，當場斃命！" % sr_name)
+				else:
+					log_lines.append("奪魂術未能勾魂，%s 安然無恙……" % sr_name)
+			else:
+				# Boss：機率施加隨機負面狀態 + 隨機層數（也可能無效）
+				var boss_chance: float = float(effect.get("boss_effect_chance", 0.65))
+				if randf() < boss_chance:
+					var sr_kinds: Array[String] = ["weak", "vulnerable", "poison"]
+					var sr_pick: String = sr_kinds[randi() % sr_kinds.size()]
+					var sr_layers: int = randi_range(int(effect.get("boss_min", 1)), int(effect.get("boss_max", 4)))
+					var sr_key: String = "enemy_" + sr_pick
+					state[sr_key] = int(state.get(sr_key, 0)) + sr_layers
+					var sr_label: Dictionary = {"weak": "虛弱", "vulnerable": "破綻", "poison": "蠱毒"}
+					log_lines.append("奪魂術撼動 %s 的魂魄，施加 %d 層%s！" % [sr_name, sr_layers, sr_label[sr_pick]])
+				else:
+					log_lines.append("奪魂術撼不動 %s 的魂魄……（無效）" % sr_name)
 		"damage_debuff_bonus_all":
 			# 杖流 AoE payoff（趙靈兒）：對「每隻」敵人各依其自身 weak+vuln 層數加傷。
 			# 配合她的 weak_all / vulnerable_all → 全體疊 debuff 後一次性放大爆發。
