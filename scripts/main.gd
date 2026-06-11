@@ -7813,7 +7813,15 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 	if player_block_badge != null and is_instance_valid(player_block_badge):
 		player_block_badge.set_amount(int(battle.state["player_block"]))
 	if player_status_line != null and is_instance_valid(player_status_line):
-		player_status_line.text = UIFactory.status_summary(int(battle.state["player_poison"]), int(battle.state["player_weak"]), int(battle.state["player_vulnerable"]))
+		# 攻擊力（含奇遇累積、戰鬥內增益）顯示在最前；其後接毒/虛弱/破綻
+		var status_parts: Array[String] = []
+		var atk_bonus: int = int(battle.state["player_power"])
+		if atk_bonus != 0:
+			status_parts.append("攻擊 %+d" % atk_bonus)
+		var debuff_text: String = UIFactory.status_summary(int(battle.state["player_poison"]), int(battle.state["player_weak"]), int(battle.state["player_vulnerable"]))
+		if debuff_text != "":
+			status_parts.append(debuff_text)
+		player_status_line.text = "   ".join(status_parts)
 	_refresh_bench_strip()
 	# Multi-Enemy: 迭代更新每個敵人的 widget（active 高亮、死敵 dim、HP/block/status）
 	_refresh_enemy_widgets()
