@@ -3718,6 +3718,9 @@ func play_card(card: CardData, source_button: Button = null) -> void:
 			_animate_confuse_effect(card)
 		"anu_guzhang", "anu_duwu", "anu_sanshigu":
 			_animate_poison_fog_effect(card)
+		_:
+			# 沒有專屬特效的卡 → 通用分類 fallback（docs/ANIM_PLAN.md P1）
+			_play_generic_card_fx(card)
 	if bool(result["ended"]) and await _finish_battle_after_delay(_card_anim_duration(card)):
 		return
 
@@ -11336,8 +11339,204 @@ func _animate_poison_fog_effect(card: CardData) -> void:
 		# Fade in and out
 		tween.tween_property(fog, "modulate:a", 0.42, duration * 0.3).set_delay(delay)
 		tween.tween_property(fog, "modulate:a", 0.0, duration * 0.4).set_delay(delay + duration * 0.6)
-		
+
 		tween.finished.connect(func() -> void:
 			if is_instance_valid(fog):
 				fog.queue_free()
 		)
+
+# ════════════════════════════════════════════════════════════════════════════
+# P1 通用「分類 fallback」特效（docs/ANIM_PLAN.md）
+# 沒有專屬 _animate_* 的卡走這裡：依 effect kind 分類播通用演出。
+# 美術鐵則：不程式自繪美術 —— 用 assets/art/effects/ 既有圖；
+# 圖缺時退化為 flash / 位移等純動作回饋，fx_* 圖補進資料夾即自動升級。
+# ════════════════════════════════════════════════════════════════════════════
+
+func _play_generic_card_fx(card: CardData) -> void:
+	if battle == null:
+		return
+	var kinds: Dictionary = {}
+	for eff: Dictionary in card.effects:
+		kinds[String(eff.get("kind", ""))] = true
+	if card.card_type == "power":
+		_generic_power_fx()
+		return
+	var has_poison: bool = kinds.has("poison") or kinds.has("poison_all")
+	if kinds.has("damage") or kinds.has("damage_all"):
+		_generic_slash_fx(kinds.has("damage_all"), has_poison)
+	elif has_poison:
+		_generic_poison_fx(kinds.has("poison_all"))
+	elif kinds.has("block"):
+		_generic_block_fx()
+	elif kinds.has("heal") or kinds.has("heal_party"):
+		_generic_heal_fx()
+	elif kinds.has("draw") or kinds.has("energy"):
+		_generic_draw_fx()
+
+# 活著的敵人 widgets。aoe=false 回 [active 敵]（active 死亡時回第一個活敵）。
+func _generic_fx_targets(aoe: bool) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var enemy_slots: Array = battle.state.get("enemies", []) as Array
+	var active_idx: int = battle._active_enemy_index()
+	for w: Dictionary in enemy_widgets:
+		var i: int = int(w["enemy_idx"])
+		if i >= enemy_slots.size() or int((enemy_slots[i] as Dictionary)["hp"]) <= 0:
+			continue
+		if aoe:
+			out.append(w)
+		elif i == active_idx:
+			return [w]
+		elif out.is_empty():
+			out.append(w)
+	return out
+
+# 劍光斬：ink_slash 於目標身上斜劈放大淡出（AoE 逐敵 stagger）。毒系複合卡帶綠 tint。
+func _generic_slash_fx(aoe: bool, poison_tint: bool) -> void:
+	var targets: Array[Dictionary] = _generic_fx_targets(aoe)
+	if targets.is_empty():
+		return
+	var tex: Texture2D = UIFactory.load_texture("res://assets/art/effects/ink_slash.png")
+	for t_i: int in range(targets.size()):
+		var wrap: Control = targets[t_i].get("wrap") as Control
+		if wrap == null or not is_instance_valid(wrap):
+			continue
+		var delay: float = t_i * 0.08
+		if tex == null:
+			var cw: Control = wrap
+			get_tree().create_timer(delay).timeout.connect(func() -> void:
+				if is_instance_valid(cw):
+					UIFactory.flash_node(cw, Color(1.5, 1.4, 1.3), 0.2)
+					UIFactory.shake_node(cw, 6.0, 0.2))
+			continue
+		var slash: TextureRect = TextureRect.new()
+		slash.texture = tex
+		slash.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		slash.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		var s_size: Vector2 = Vector2(wrap.size.x, wrap.size.x) * 1.1
+		slash.size = s_size
+		slash.pivot_offset = s_size / 2.0
+		slash.global_position = wrap.global_position + wrap.size / 2.0 - s_size / 2.0
+		slash.rotation = deg_to_rad(randf_range(-12.0, 12.0))
+		slash.scale = Vector2(0.45, 0.45)
+		slash.modulate = (Color(0.8, 1.35, 0.85, 0.0) if poison_tint else Color(1.0, 1.0, 1.0, 0.0))
+		slash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slash.z_index = 60
+		add_child(slash)
+		var tween: Tween = create_tween().set_parallel(true)
+		tween.tween_property(slash, "scale", Vector2(1.12, 1.12), 0.26).set_delay(delay)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(slash, "modulate:a", 1.0, 0.10).set_delay(delay)
+		tween.tween_property(slash, "modulate:a", 0.0, 0.16).set_delay(delay + 0.18)
+		var captured_wrap: Control = wrap
+		tween.finished.connect(func() -> void:
+			if is_instance_valid(slash):
+				slash.queue_free()
+			if is_instance_valid(captured_wrap):
+				UIFactory.shake_node(captured_wrap, 6.0, 0.18))
+
+# 毒擊：毒針自玩家飛向目標（AoE 逐敵）。沿用 du_zhen 的飛行 pattern。
+func _generic_poison_fx(aoe: bool) -> void:
+	var targets: Array[Dictionary] = _generic_fx_targets(aoe)
+	if targets.is_empty():
+		return
+	var tex: Texture2D = UIFactory.load_texture("res://assets/art/effects/poison_needle.png")
+	var player_center: Vector2 = Vector2(120.0, get_viewport_rect().size.y * 0.65)
+	if player_portrait_wrap != null and is_instance_valid(player_portrait_wrap):
+		player_center = player_portrait_wrap.global_position + player_portrait_wrap.size / 2.0
+	for t_i: int in range(targets.size()):
+		var wrap: Control = targets[t_i].get("wrap") as Control
+		if wrap == null or not is_instance_valid(wrap):
+			continue
+		var delay: float = t_i * 0.08
+		var captured_wrap: Control = wrap
+		if tex == null:
+			get_tree().create_timer(delay + 0.2).timeout.connect(func() -> void:
+				if is_instance_valid(captured_wrap):
+					UIFactory.flash_node(captured_wrap, Color(0.8, 1.4, 0.9), 0.25))
+			continue
+		var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
+		var needle: TextureRect = TextureRect.new()
+		needle.texture = tex
+		needle.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		needle.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		var n_size: Vector2 = Vector2(65.0, 26.0)
+		needle.size = n_size
+		needle.pivot_offset = n_size / 2.0
+		needle.global_position = player_center - n_size / 2.0
+		needle.rotation = (target_center - player_center).angle()
+		needle.modulate = Color(0.8, 1.4, 0.9, 0.0)
+		needle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(needle)
+		var tween: Tween = create_tween().set_parallel(true)
+		tween.tween_property(needle, "global_position", target_center - n_size / 2.0, 0.28)\
+			.set_delay(delay).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tween.tween_property(needle, "modulate:a", 1.0, 0.08).set_delay(delay)
+		tween.finished.connect(func() -> void:
+			if is_instance_valid(needle):
+				needle.queue_free()
+			if is_instance_valid(captured_wrap):
+				UIFactory.flash_node(captured_wrap, Color(0.8, 1.4, 0.9), 0.2)
+				UIFactory.shake_node(captured_wrap, 4.0, 0.12))
+
+# 護體：fx_shield.png 浮現於玩家前方淡出；圖缺 → 藍 flash + scale pulse。
+func _generic_block_fx() -> void:
+	if player_portrait_wrap == null or not is_instance_valid(player_portrait_wrap):
+		return
+	var tex: Texture2D = UIFactory.load_texture("res://assets/art/effects/fx_shield.png")
+	if tex == null:
+		UIFactory.flash_node(player_portrait_wrap, Color(0.85, 1.15, 1.65), 0.32)
+		return
+	_spawn_rising_fx(tex, player_portrait_wrap, Vector2(0.9, 0.9), 0.0, Color(1, 1, 1))
+
+# 治療：fx_heal_glow.png 自腳下上飄；圖缺 → 綠金 flash。
+func _generic_heal_fx() -> void:
+	if player_portrait_wrap == null or not is_instance_valid(player_portrait_wrap):
+		return
+	var tex: Texture2D = UIFactory.load_texture("res://assets/art/effects/fx_heal_glow.png")
+	if tex == null:
+		UIFactory.flash_node(player_portrait_wrap, Color(1.0, 1.45, 1.0), 0.35)
+		return
+	_spawn_rising_fx(tex, player_portrait_wrap, Vector2(0.85, 0.85), -34.0, Color(1, 1, 1))
+
+# 能力啟動：fx_power_circle.png 法陣於腳下亮起；圖缺 → 金 flash + 微上浮。
+func _generic_power_fx() -> void:
+	if player_portrait_wrap == null or not is_instance_valid(player_portrait_wrap):
+		return
+	var tex: Texture2D = UIFactory.load_texture("res://assets/art/effects/fx_power_circle.png")
+	if tex == null:
+		UIFactory.flash_node(player_portrait_wrap, Color(1.5, 1.35, 0.9), 0.4)
+		UIFactory.dash_node(player_portrait_wrap, Vector2(0, -1), 12.0, 0.3)
+		return
+	_spawn_rising_fx(tex, player_portrait_wrap, Vector2(1.15, 1.15), 0.0, Color(1.2, 1.1, 0.85))
+
+# 抽牌/靈力：flash 既有 UI 節點，無需特效圖。
+func _generic_draw_fx() -> void:
+	if draw_pile_button != null and is_instance_valid(draw_pile_button):
+		UIFactory.flash_node(draw_pile_button, Color(1.5, 1.45, 1.2), 0.3)
+	if energy_orb != null and is_instance_valid(energy_orb):
+		UIFactory.flash_node(energy_orb, Color(1.5, 1.4, 1.0), 0.3)
+
+# 共用：在 anchor 節點上疊一張特效圖，淡入 → （可選上飄）→ 淡出後清除。
+# 給 block / heal / power 等「圖補上後自動升級」的退化型特效用。
+func _spawn_rising_fx(tex: Texture2D, anchor: Control, rel_scale: Vector2, rise: float, tint: Color) -> void:
+	var fx: TextureRect = TextureRect.new()
+	fx.texture = tex
+	fx.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	fx.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	var f_size: Vector2 = anchor.size * rel_scale
+	fx.size = f_size
+	fx.pivot_offset = f_size / 2.0
+	fx.global_position = anchor.global_position + anchor.size / 2.0 - f_size / 2.0
+	fx.modulate = Color(tint.r, tint.g, tint.b, 0.0)
+	fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fx.z_index = 60
+	add_child(fx)
+	var tween: Tween = create_tween().set_parallel(true)
+	tween.tween_property(fx, "modulate:a", 0.92, 0.16)
+	tween.tween_property(fx, "scale", Vector2(1.08, 1.08), 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	if rise != 0.0:
+		tween.tween_property(fx, "global_position:y", fx.global_position.y + rise, 0.5).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(fx, "modulate:a", 0.0, 0.22).set_delay(0.34)
+	tween.finished.connect(func() -> void:
+		if is_instance_valid(fx):
+			fx.queue_free())
