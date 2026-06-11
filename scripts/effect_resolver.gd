@@ -442,10 +442,11 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			state["free_cards_this_turn"] = true
 			log_lines.append("混元丹：本回合出牌不耗靈力！")
 		"end_turn_damage_all":
-			# 五雷轟頂（StS Combust 式）：持久能力，回合結束對全體敵人造成 amount 傷害。
-			# 實際結算由 BattleController.begin_enemy_phase 讀 state["end_turn_damage"] 執行。
+			# 五雷轟頂（StS Combust 式）：持久能力，每回合「開始」對全體敵人造成 amount 傷害。
+			# （原為回合結束；已改到回合開始，讓玩家一開場就看到敵人真實血量、不會算錯殺傷。）
+			# 實際結算由 BattleController.start_turn 讀 state["end_turn_damage"] 執行（key 名沿用）。
 			state["end_turn_damage"] = int(state.get("end_turn_damage", 0)) + amount
-			log_lines.append("五雷蓄勢：每回合結束對所有敵人降下 %d 點雷傷。" % amount)
+			log_lines.append("五雷蓄勢：每回合開始對所有敵人降下 %d 點雷傷。" % amount)
 		"next_attack_mult":
 			# 蓄劍式（StS Setup/Vigor 式）：下一張攻擊牌傷害翻 amount 倍（由 damage 路徑消耗）。
 			state["next_attack_mult"] = max(1, amount)

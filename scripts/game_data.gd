@@ -484,7 +484,7 @@ static func _zhao_linger() -> CharacterData:
 		# 靈族神術引擎（StS Entrench / Metallicize / Combust，art 暫借既有仙術卡）
 		make_card("zl_juling", "聚靈訣", "趙靈兒", 1, "skill", "聚斂靈氣，當前護體翻倍。", [{"kind": "block_multiply", "amount": 2}], "uncommon", "", true),
 		make_card("zl_lingguangpuzhao", "靈光普照", "趙靈兒", 1, "power", "靈光普照，每回合開始獲得 5 點護體。", [{"kind": "block_per_turn", "amount": 5}], "uncommon"),
-		make_card("zl_wuleihongding", "五雷轟頂", "趙靈兒", 2, "power", "凝聚天雷，每回合結束對所有敵人降下 6 點雷傷。", [{"kind": "end_turn_damage_all", "amount": 6}], "rare"),
+		make_card("zl_wuleihongding", "五雷轟頂", "趙靈兒", 2, "power", "凝聚天雷，每回合開始對所有敵人降下 6 點雷傷。", [{"kind": "end_turn_damage_all", "amount": 6}], "rare"),
 		# 神術引擎核心：靈息訣 —— 每出技能牌抽 1，接上既有 0 費技能 →「靈息不息」循環。
 		make_card("zl_lingxijue", "靈息訣", "趙靈兒", 1, "power", "靈息綿長，本場戰鬥每打出一張技能牌便抽 1 張牌。", [{"kind": "draw_on_skill", "amount": 1}], "rare", "", true),
 		# 杖流 payoff：萬靈噬 —— 對全體依各自虛弱/破綻層數加傷，承接她大量的 weak_all / vulnerable_all 鋪場。

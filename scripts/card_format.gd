@@ -431,9 +431,9 @@ static func _summary_token(effect: Dictionary) -> String:
 		"damage_reduction":
 			return "減傷%d" % amount
 		"end_turn_damage":
-			return "回合末%d傷" % amount
+			return "回合初%d傷" % amount
 		"end_turn_damage_all":
-			return "回合末全體%d傷" % amount
+			return "回合初全體%d傷" % amount
 		"free_cards_this_turn":
 			return "本回合免費"
 		"max_hp":

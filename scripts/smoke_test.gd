@@ -2520,13 +2520,15 @@ func _test_turn_engines(character: CharacterData, enemy: EnemyData) -> void:
 	bc.start_turn()
 	_check(int(bc.state["player_power"]) == power_before + 1, "power_per_turn +1 at start_turn, got %d" % int(bc.state["player_power"]))
 	_check(int(bc.state["player_block"]) >= 5, "block_per_turn +5 at start_turn, got %d" % int(bc.state["player_block"]))
-	# end_turn_damage：回合結束對敵固定傷害
+	# end_turn_damage（五雷轟頂）：已改在「回合開始」(start_turn) 結算，不再於 begin_enemy_phase 扣血
 	bc.state["end_turn_damage"] = 6
 	(bc.state["enemies"][0] as Dictionary)["hp"] = 100
 	(bc.state["enemies"][0] as Dictionary)["block"] = 0
 	bc._sync_active_enemy_to_state()
 	bc.begin_enemy_phase()
-	_check(int((bc.state["enemies"][0] as Dictionary)["hp"]) == 94, "end_turn_damage 6 (100->94), got %d" % int((bc.state["enemies"][0] as Dictionary)["hp"]))
+	_check(int((bc.state["enemies"][0] as Dictionary)["hp"]) == 100, "end_turn_damage 不應在敵人階段扣血（已移到回合開始），got %d" % int((bc.state["enemies"][0] as Dictionary)["hp"]))
+	bc.start_turn()  # 回合開始才結算雷傷
+	_check(int((bc.state["enemies"][0] as Dictionary)["hp"]) == 94, "end_turn_damage 6 應在 start_turn 結算 (100->94), got %d" % int((bc.state["enemies"][0] as Dictionary)["hp"]))
 
 func _test_deck_manipulation(character: CharacterData, enemy: EnemyData) -> void:
 	# 臨陣磨槍（升級全手牌）/ 御劍相承（複製攻擊）/ 劍氣縱橫（生成 token 置頂）

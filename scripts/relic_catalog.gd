@@ -106,14 +106,14 @@ static func _generals() -> Array[RelicData]:
 	l.append(_make("zhao_hun_fan", "招魂幡", "戰鬥第一回合多抽 1 張牌。", "common",
 		[{"trigger": "battle_start", "effects": [{"kind": "self_draw_next_turn", "amount": 1}]}], Color("8a76c8")))
 	# ── 8 turn_end effects (回合結束) ──
-	l.append(_make("zhu_que_huo", "朱雀火", "每回合結束對敵人造成 3 傷害。", "uncommon",
-		[{"trigger": "turn_end", "effects": [{"kind": "enemy_damage", "amount": 3}]}], ThemeColors.HP_FILL))
+	l.append(_make("zhu_que_huo", "朱雀火", "每回合開始對敵人造成 3 傷害。", "uncommon",
+		[{"trigger": "turn_start", "effects": [{"kind": "enemy_damage", "amount": 3}]}], ThemeColors.HP_FILL))
 	l.append(_make("xuan_wu_hun", "玄武魂", "每回合結束保留 2 護體（轉到下回合）。", "rare",
 		[{"trigger": "turn_end", "effects": [{"kind": "block_carry", "amount": 2}]}], Color("4a6478")))
 	l.append(_make("qing_long_yi", "青龍翼", "每回合結束回復 1 生命。", "common",
 		[{"trigger": "turn_end", "effects": [{"kind": "self_heal", "amount": 1}]}], Color("76c4d8")))
-	l.append(_make("bai_hu_ya", "白虎牙", "每回合結束對敵人造成 2 傷害。", "common",
-		[{"trigger": "turn_end", "effects": [{"kind": "enemy_damage", "amount": 2}]}], Color("e8e2c8")))
+	l.append(_make("bai_hu_ya", "白虎牙", "每回合開始對敵人造成 2 傷害。", "common",
+		[{"trigger": "turn_start", "effects": [{"kind": "enemy_damage", "amount": 2}]}], Color("e8e2c8")))
 	l.append(_make("yin_hun_deng", "引魂燈", "每回合結束敵人 +1 層蠱毒。", "common",
 		[{"trigger": "turn_end", "effects": [{"kind": "enemy_poison", "amount": 1}]}], Color("8a76c8")))
 	l.append(_make("zi_fu_fu", "紫府符", "每回合結束獲得 2 護體。", "common",
@@ -245,15 +245,15 @@ static func _artifacts() -> Array[RelicData]:
 		[{"trigger": "passive_modifier", "effects": [{"kind": "damage_taken_reduction", "amount": 3}]},
 		{"trigger": "turn_start", "effects": [{"kind": "self_block", "amount": 4}]}], Color("76c46a"), "gu_du"))
 	l.append(_make_artifact("shiling_gu", "麒麟火膽",
-		"戰鬥開始本局傷害 +2。每回合結束對敵人造成 4 點直接傷害。",
+		"戰鬥開始本局傷害 +2。每回合開始對敵人造成 4 點直接傷害。",
 		"witch_queen",
 		[{"trigger": "battle_start", "effects": [{"kind": "self_power", "amount": 2}]},
-		{"trigger": "turn_end", "effects": [{"kind": "enemy_damage", "amount": 4}]}], Color("e2a8ff")))
+		{"trigger": "turn_start", "effects": [{"kind": "enemy_damage", "amount": 4}]}], Color("e2a8ff")))
 	l.append(_make_artifact("chiyan_fuyin", "妖蛇鱗印",
-		"戰鬥開始本局傷害 +3。每回合結束對敵人造成 3 點直接傷害。",
+		"戰鬥開始本局傷害 +3。每回合開始對敵人造成 3 點直接傷害。",
 		"red_eye_demon",
 		[{"trigger": "battle_start", "effects": [{"kind": "self_power", "amount": 3}]},
-		{"trigger": "turn_end", "effects": [{"kind": "enemy_damage", "amount": 3}]}], Color("ff6644")))
+		{"trigger": "turn_start", "effects": [{"kind": "enemy_damage", "amount": 3}]}], Color("ff6644")))
 	l.append(_make_artifact("guijiang_lingpai", "屍王符令",
 		"每回合結束對敵人施加 2 層蠱毒並回復 4 生命。",
 		"zombie_general",

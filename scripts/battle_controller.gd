@@ -185,7 +185,7 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"corpse_poison": false,  # 屍蠱：中毒敵人死亡時殘餘蠱毒隨機轉移給其他敵人
 		"power_per_turn": 0,  # 靈犀訣（Demon Form）：每回合開始 +N 力量
 		"block_per_turn": 0,  # 靈光普照（Metallicize）：每回合開始 +N 護體
-		"end_turn_damage": 0,  # 五雷轟頂（Combust）：回合結束對全體敵人造成 N 傷害
+		"end_turn_damage": 0,  # 五雷轟頂（Combust）：每回合「開始」對全體敵人造成 N 傷害（key 名沿用，結算在 start_turn）
 		"next_attack_mult": 1,  # 蓄劍式（Vigor）：下一張攻擊傷害倍率（damage 路徑消耗）
 		"block_per_attack": 0,  # 劍舞架式：每出一張攻擊牌獲得 N 護體（play_card 讀取）
 		"upgrade_hand_pending": false,  # 臨陣磨槍：升級全手牌（play_card 執行）
@@ -642,7 +642,31 @@ func start_turn() -> Dictionary:
 	_sync_state_to_active()
 	if is_battle_over():
 		return {"before_tick": before_tick, "ended": true}
+	# 回合開始觸發「回合開始」遺物（朱雀火/白虎牙/麒麟火膽/妖蛇鱗印的直傷已從 turn_end 移來）。
 	_fire_relic_triggers("turn_start")
+	_sync_state_to_active_enemy()  # 遺物 enemy_damage 寫的是 alias → 先 commit 進 active slot
+	# 五雷轟頂（原 end_turn_damage）：把「毒以外的循環雷傷」改在玩家回合開始結算，
+	# 讓玩家一開場就看到敵人真實血量、不會在回合結束被隱性扣血而算錯殺傷。
+	var ts_dmg: int = int(state.get("end_turn_damage", 0))
+	if ts_dmg > 0:
+		var ts_slots: Array = state.get("enemies", []) as Array
+		var ts_hit: bool = false
+		for ts_i: int in range(ts_slots.size()):
+			var ts_slot: Dictionary = ts_slots[ts_i] as Dictionary
+			if int(ts_slot["hp"]) <= 0:
+				continue
+			var ts_blocked: int = min(int(ts_slot.get("block", 0)), ts_dmg)
+			ts_slot["block"] = int(ts_slot.get("block", 0)) - ts_blocked
+			ts_slot["hp"] = max(0, int(ts_slot["hp"]) - (ts_dmg - ts_blocked))
+			ts_hit = true
+		if ts_hit:
+			add_log("五雷轟頂：回合開始對全體敵人降下 %d 點雷傷！" % ts_dmg)
+	_sync_active_enemy_to_state()  # slot→alias 刷新顯示
+	_process_corpse_poison()       # 屍蠱：回合開始直傷打死的中毒敵殘餘毒轉移
+	_check_active_enemy_death()     # active 敵被打死 → 換到下一個活敵
+	_sync_state_to_active()
+	if is_battle_over():            # 回合開始的傷害可能直接清場 → 勝利
+		return {"before_tick": before_tick, "ended": true}
 	var draw_count: int = HAND_SIZE + int(state.get("draw_next_turn_bonus", 0))
 	state["draw_next_turn_bonus"] = 0
 	if deck != null:
@@ -919,25 +943,10 @@ func _check_combo_strike() -> void:
 func begin_enemy_phase() -> Array[Dictionary]:
 	# Multi-Enemy 模式：每隻活敵各預備一招，回傳陣列（死敵 = empty dict）
 	# 1v1 退化情況：array size == 1
+	# turn_end 遺物：保留「非直傷」效果（雷震子破綻、紫府符/雪魂符護體治療、引魂燈施毒、
+	# 屍王符令施毒+回血、玄武魂護體保留）。直傷型（朱雀火/白虎牙/兩個神器）已改在 start_turn 結算。
 	_fire_relic_triggers("turn_end")
-	# 五雷轟頂（Combust）：回合結束對全體敵人造成「固定」雷傷（不吃力量、不觸發蠱刃/蓄劍）
-	var end_dmg: int = int(state.get("end_turn_damage", 0))
-	if end_dmg > 0:
-		var et_slots: Array = state.get("enemies", []) as Array
-		var et_hit: bool = false
-		for i: int in range(et_slots.size()):
-			var et_slot: Dictionary = et_slots[i] as Dictionary
-			if int(et_slot["hp"]) <= 0:
-				continue
-			var et_blocked: int = min(int(et_slot.get("block", 0)), end_dmg)
-			et_slot["block"] = int(et_slot.get("block", 0)) - et_blocked
-			et_slot["hp"] = max(0, int(et_slot["hp"]) - (end_dmg - et_blocked))
-			et_hit = true
-		if et_hit:
-			add_log("五雷轟頂：對全體敵人降下 %d 點雷傷！" % end_dmg)
-			_sync_active_enemy_to_state()
-			_process_corpse_poison()
-			_check_active_enemy_death()
+	# 五雷轟頂的雷傷（end_turn_damage）已移至 start_turn（玩家回合開始）結算，此處不再扣血。
 	if deck != null:
 		deck.discard_hand()
 	if int(state["player_weak"]) > 0:
