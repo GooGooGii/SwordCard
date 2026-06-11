@@ -3750,8 +3750,28 @@ func end_player_turn() -> void:
 		_show_enemy_action_preview(preview_action)
 	_refresh_battle()
 	await get_tree().create_timer(0.8).timeout
-	if not preview_action.is_empty() and CardFormat.action_has_damage(preview_action):
-		UIFactory.dash_node(enemy_portrait_wrap, Vector2(-1, 0), 36.0, 0.22)
+	# 每隻要出傷害招的敵人各自動畫：重擊單體招 → 飛龍探雲手式大突進（衝向主角再回位）；
+	# 其餘傷害招維持原本小衝。多敵時逐隻啟動，比單一 active 敵更有臨場感。
+	var any_lunge: bool = false
+	var any_dash: bool = false
+	for ai: int in range(actions.size()):
+		var act_i: Dictionary = actions[ai]
+		if act_i.is_empty() or not CardFormat.action_has_damage(act_i):
+			continue
+		var w_wrap: Control = null
+		if ai < enemy_widgets.size():
+			w_wrap = enemy_widgets[ai].get("wrap")
+		if w_wrap == null or not is_instance_valid(w_wrap):
+			continue
+		any_dash = true
+		if _enemy_action_lunges(act_i):
+			any_lunge = true
+			UIFactory.dash_node(w_wrap, Vector2(-1.0, -0.08), 190.0, 0.5)
+		else:
+			UIFactory.dash_node(w_wrap, Vector2(-1, 0), 36.0, 0.22)
+	if any_lunge:
+		await get_tree().create_timer(0.26).timeout  # 等突進衝到位（前 45% 去程）才結算傷害
+	elif any_dash:
 		await get_tree().create_timer(0.1).timeout
 	var result: Dictionary = battle.resolve_enemy_phase(actions)
 	_process_battle_curses()
@@ -3793,6 +3813,23 @@ func _cancel_end_turn_warning() -> void:
 	_end_turn_warning_id = 0
 	if is_instance_valid(end_turn_button):
 		end_turn_button.text = "結束回合"
+
+# 敵招是否做「飛龍探雲手式」突進動畫（衝向主角再回原位）。
+# 顯式旗標優先：action 帶 "anim": "lunge" 強制突進、"anim": "none" 強制不突進；
+# 預設啟發式 = 單體 damage 總傷 >= 9（重砍/猛撲/穿刺類近身招）。
+# AoE（damage_all）視為法術波動、留在原地施放，不突進。
+func _enemy_action_lunges(action: Dictionary) -> bool:
+	var anim: String = String(action.get("anim", ""))
+	if anim == "lunge":
+		return true
+	if anim == "none":
+		return false
+	var total: int = 0
+	for eff_v: Variant in (action.get("effects", []) as Array):
+		var eff: Dictionary = eff_v as Dictionary
+		if String(eff.get("kind", "")) == "damage":
+			total += int(eff.get("amount", 0)) * max(1, int(eff.get("hits", 1)))
+	return total >= 9
 
 func _show_enemy_action_preview(action: Dictionary) -> void:
 	var preview_lines: Array[String] = []
