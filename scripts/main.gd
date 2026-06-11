@@ -2595,7 +2595,7 @@ func _build_player_widget(parent: HBoxContainer) -> void:
 	player_hp_bar = UIFactory.hp_bar(ThemeColors.HP_FILL, ThemeColors.HP_BG_DARK)
 	player_hp_value = UIFactory.card_label("", 11 if _battle_compact else 13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(_hp_bar_with_overlay(player_hp_bar, player_hp_value))
-	player_status_line = UIFactory.card_label("", 11 if _battle_compact else 13, Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
+	player_status_line = UIFactory.card_label("", 18 if _battle_compact else 20, Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
 	player_status_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(player_status_line)
 
