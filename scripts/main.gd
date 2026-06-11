@@ -7926,7 +7926,8 @@ func _card_button(card: CardData) -> Button:
 	var shown_cost: int = battle.effective_card_cost(card)
 	var affordable: bool = int(battle.state["energy"]) >= shown_cost
 	var card_size: Vector2 = Vector2(120, 225) if _battle_compact else Vector2(140, 262)
-	var button: Button = _make_card_button(card, shown_cost, card_size, affordable, true, battle.state, true)
+	# 還原：戰鬥手牌顯示完整效果描述（先前 P1-5 改一行摘要，使用者要求改回）
+	var button: Button = _make_card_button(card, shown_cost, card_size, affordable, true, battle.state, false)
 	button.disabled = not affordable
 	button.pressed.connect(func() -> void: _on_card_button_pressed(card, button))
 	button.button_down.connect(func() -> void: _on_card_button_down(card, button))
