@@ -458,7 +458,7 @@ static func _zhao_linger() -> CharacterData:
 		make_card("zl_shuiling", "明鏡止水", "趙靈兒", 2, "skill", "回復 6 點生命並獲得 8 點護體。", [{"kind": "heal", "amount": 6}, {"kind": "block", "amount": 8}], "uncommon"),
 		make_card("zl_leiguang", "紫電連珠", "趙靈兒", 1, "attack", "雷光雙擊，造成 4 點傷害兩次，使敵人虛弱 1 層。", [{"kind": "damage", "amount": 4}, {"kind": "damage", "amount": 4}, {"kind": "weak", "amount": 1}]),
 		make_card("zl_lingxi", "靈息吐納", "趙靈兒", 1, "skill", "抽 2 張牌並回復 4 點生命。", [{"kind": "draw", "amount": 2}, {"kind": "heal", "amount": 4}], "uncommon"),
-		make_card("zl_shenlei", "神雷降世", "趙靈兒", 3, "attack", "天降神雷，造成 20 點傷害，有 60% 機率使敵人暈眩（下回合無法行動）。", [{"kind": "damage", "amount": 20}, {"kind": "stun", "amount": 1, "chance": 0.6}], "rare"),
+		make_card("zl_shenlei", "神雷降世", "趙靈兒", 3, "attack", "天降神雷，造成 20 點傷害並機率性使敵人暈眩一回合。", [{"kind": "damage", "amount": 20}, {"kind": "stun", "amount": 1, "chance": 0.6}], "rare"),
 		# PAL1 初登場新增（art 暫借既有卡片）
 		make_card("zl_jingang", "金剛咒", "趙靈兒", 1, "skill", "獲得 8 點護體（道家護身咒術）。", [{"kind": "block", "amount": 8}], "basic"),
 		make_card("zl_bingzhou", "冰咒", "趙靈兒", 1, "attack", "初級冰系仙術，造成 6 點傷害並使敵人虛弱 1 層。", [{"kind": "damage", "amount": 6}, {"kind": "weak", "amount": 1}], "basic"),
