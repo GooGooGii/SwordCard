@@ -21,6 +21,7 @@ extends Resource
 @export var split_count: int = 1             # 分裂出幾隻（受 MAX_ENEMIES 上限）
 @export var ultimate_action: Dictionary = {} # 大招：每 ultimate_every 回合改放此招（空 = 無）
 @export var ultimate_every: int = 0          # 每 N 個自身回合放一次大招（0 = 無）
+@export var floats: bool = false             # 飄浮系（鬼火/劍靈等）：允許懸浮、腳底陰影縮小淡化
 
 func clone() -> EnemyData:
 	var copy: EnemyData = EnemyData.new()
@@ -44,6 +45,7 @@ func clone() -> EnemyData:
 	copy.split_count = split_count
 	copy.ultimate_action = ultimate_action.duplicate(true)
 	copy.ultimate_every = ultimate_every
+	copy.floats = floats
 	return copy
 
 func to_dict() -> Dictionary:

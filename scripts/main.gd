@@ -2241,6 +2241,13 @@ func _build_battle_scene() -> void:
 	screen.add_child(arena)
 	# 後排 + 隊長綁成一個「隊伍站位」群組：負分隔讓隊長肖像疊在後排前面、
 	# 後排從隊長身後斜向探出，形成有景深的陣形（而非並排的獨立格子）。
+	# Phase A3 敵我收攏：左右各加彈性邊距，把玩家/敵群從貼邊拉向中央（對峙感）。
+	# stretch_ratio 左 0.35 / 中 1.0 / 右 0.45 → 玩家中心 ~23%、敵群中心 ~72%。
+	var edge_left: Control = Control.new()
+	edge_left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	edge_left.size_flags_stretch_ratio = 0.35
+	edge_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	arena.add_child(edge_left)
 	var has_bench: bool = run_state != null and run_state.characters.size() > 1
 	var party_group: HBoxContainer = HBoxContainer.new()
 	party_group.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -2251,9 +2258,15 @@ func _build_battle_scene() -> void:
 	_build_player_widget(party_group)
 	var spacer: Control = Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spacer.size_flags_stretch_ratio = 1.0
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	arena.add_child(spacer)
 	_build_enemy_row(arena)
+	var edge_right: Control = Control.new()
+	edge_right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	edge_right.size_flags_stretch_ratio = 0.45
+	edge_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	arena.add_child(edge_right)
 	var bottom: HBoxContainer = HBoxContainer.new()
 	bottom.add_theme_constant_override("separation", 6 if _battle_compact else 14)
 	screen.add_child(bottom)
@@ -2649,14 +2662,15 @@ func _rebuild_enemy_row_in_place() -> void:
 	_set_active_enemy_aliases()
 
 func _enemy_portrait_size_for(total: int) -> Vector2:
-	# 1 敵=full size、2 敵=78%、3 敵=62%。compact mode 整體再縮 73%
+	# 1 敵=full size、2 敵=85%、3 敵=72%（Phase A3：資訊帶收緊後放大多敵佔比）。
+	# compact mode 整體再縮 73%
 	var base_w: float = 190.0 if _battle_compact else 260.0
 	var base_h: float = 220.0 if _battle_compact else 290.0
 	var scale_factor: float = 1.0
 	if total == 2:
-		scale_factor = 0.78
+		scale_factor = 0.85
 	elif total >= 3:
-		scale_factor = 0.62
+		scale_factor = 0.72
 	return Vector2(base_w * scale_factor, base_h * scale_factor)
 
 # boss / 大型敵人視覺可超過基準高度（portrait_scale > 1），但版面「保留」高度只到基準，
@@ -2715,6 +2729,10 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	var wrap: Control = Control.new()
 	wrap.custom_minimum_size = layout_size
 	wrap.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	# Phase A1 腳底陰影：portrait 之下、底部貼地面線；飄浮系縮小淡化
+	var shadow: Control = UIFactory.ground_shadow(portrait_size.x * 0.55, enemy_data.floats)
+	shadow.position = Vector2((layout_size.x - shadow.size.x) * 0.5, layout_size.y - shadow.size.y * 0.65)
+	wrap.add_child(shadow)
 	var portrait: TextureRect = UIFactory.portrait_rect(portrait_path, portrait_size, true)
 	portrait.set_meta("ground_box", portrait_size)
 	UIFactory.ground_portrait(portrait)  # 底部對齊地面線（以視覺 box 為準，往下溢出）
@@ -3630,6 +3648,10 @@ func _portrait_with_block_badge(path: String, portrait_size: Vector2, show_full:
 	var wrap: Control = Control.new()
 	wrap.custom_minimum_size = portrait_size
 	wrap.size_flags_horizontal = Control.SIZE_SHRINK_CENTER  # 維持 box 寬，地面線置中才準
+	# Phase A1 腳底陰影（玩家側）
+	var ground_shadow: Control = UIFactory.ground_shadow(portrait_size.x * 0.55)
+	ground_shadow.position = Vector2((portrait_size.x - ground_shadow.size.x) * 0.5, portrait_size.y - ground_shadow.size.y * 0.65)
+	wrap.add_child(ground_shadow)
 	var portrait: TextureRect = UIFactory.portrait_rect(path, portrait_size, show_full)
 	portrait.set_meta("ground_box", portrait_size)
 	UIFactory.ground_portrait(portrait)  # 底部對齊地面線（取代置中）

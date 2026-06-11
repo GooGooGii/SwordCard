@@ -1044,6 +1044,7 @@ static func _skeleton_soldier() -> EnemyData:
 static func _grave_fire() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "grave_fire"
+	enemy.floats = true  # 飄浮系：懸浮+陰影縮小（Phase A2）
 	enemy.display_name = "塚中鬼火"
 	enemy.max_hp = 64
 	enemy.portrait_path = "res://assets/art/enemies/grave_fire.png"  # 專屬鬼火美術
@@ -1077,6 +1078,7 @@ static func _rock_guardian() -> EnemyData:
 static func _trial_swordshade() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "trial_swordshade"
+	enemy.floats = true  # 飄浮系：懸浮+陰影縮小（Phase A2）
 	enemy.display_name = "試煉劍靈"
 	enemy.max_hp = 86
 	enemy.portrait_path = "res://assets/art/enemies/trial_swordshade.png"  # 專屬試煉劍靈美術
@@ -1573,6 +1575,7 @@ static func _centipede_brood() -> EnemyData:
 static func _tower_wisp() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "tower_wisp"
+	enemy.floats = true  # 飄浮系：懸浮+陰影縮小（Phase A2）
 	enemy.portrait_scale = 0.85  # 召喚物：鎖妖塔殘魂（小）
 	enemy.display_name = "鎖妖塔殘魂"
 	enemy.max_hp = 16
@@ -1674,6 +1677,7 @@ static func _viper() -> EnemyData:
 static func _flying_skull() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "flying_skull"
+	enemy.floats = true  # 飄浮系：懸浮+陰影縮小（Phase A2）
 	enemy.portrait_scale = 0.8  # 小型：飛骷髏
 	enemy.display_name = "飛頭蠻"
 	enemy.max_hp = 72
@@ -1775,6 +1779,7 @@ static func _grass_spider() -> EnemyData:
 static func _lantern_ghost() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "lantern_ghost"
+	enemy.floats = true  # 飄浮系：懸浮+陰影縮小（Phase A2）
 	enemy.portrait_scale = 0.85  # 小型：燈籠鬼
 	enemy.display_name = "燈籠怪"
 	enemy.max_hp = 40
@@ -1807,6 +1812,7 @@ static func _hydra_snake() -> EnemyData:
 static func _flying_snake() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "flying_snake"
+	enemy.floats = true  # 飄浮系：懸浮+陰影縮小（Phase A2）
 	enemy.portrait_scale = 0.82  # 小型：飛蛇
 	enemy.display_name = "飛蛇"
 	enemy.max_hp = 60

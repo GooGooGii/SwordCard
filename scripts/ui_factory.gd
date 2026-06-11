@@ -215,6 +215,26 @@ static func ground_portrait(rect: TextureRect) -> void:
 	var content_center_x: float = content_left + content_w * 0.5
 	rect.position = Vector2(box.x * 0.5 - content_center_x * s, box.y - content_bottom * s)
 
+# 戰鬥單位腳底橢圓陰影（BATTLE_UI_POLISH Phase A1）：純程式繪製、無需美術。
+# width = 陰影寬（建議 portrait box 寬 ×0.55）。掛在 portrait 同 wrap、底部貼地面線；
+# 飄浮系（floats=true）→ 陰影縮小 70%、更淡（「人浮影留地」語法）。
+static func ground_shadow(width: float, floats: bool = false) -> Control:
+	var w: float = width * (0.7 if floats else 1.0)
+	var h: float = w * 0.22
+	var alpha: float = 0.20 if floats else 0.30
+	var c: Control = Control.new()
+	c.custom_minimum_size = Vector2(w, h)
+	c.size = Vector2(w, h)
+	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	c.draw.connect(func() -> void:
+		var pts: PackedVector2Array = PackedVector2Array()
+		var center: Vector2 = Vector2(w * 0.5, h * 0.5)
+		for i: int in range(48):
+			var a: float = TAU * float(i) / 48.0
+			pts.append(center + Vector2(cos(a) * w * 0.5, sin(a) * h * 0.5))
+		c.draw_colored_polygon(pts, Color(0, 0, 0, alpha)))
+	return c
+
 static var _texture_cache: Dictionary = {}
 
 static func load_texture(path: String) -> Texture2D:
