@@ -165,9 +165,11 @@ static func _zl_unlocks() -> Dictionary:
 		],
 		# Lv6 (PAL1 Lv11) — 五雷咒：雷系中級
 		6: [
+			# 2026-06-11 平衡：16→18。BattlePolicy 觀測趙 leveled 限時輸出墊底
+			# （Lv10 60% / Lv20 30%），直傷上修補她的 clock race。
 			GameData.make_card("zl_wuleizhou", "五雷咒", "趙靈兒", 2, "attack",
-				"雷系中級。造成 16 點傷害。",
-				([{"kind": "damage", "amount": 16}] as Array[Dictionary]),
+				"雷系中級。造成 18 點傷害。",
+				([{"kind": "damage", "amount": 18}] as Array[Dictionary]),
 				"uncommon"),
 		],
 		# Lv7 (PAL1 Lv13) — 三昧真火：火系中級
@@ -179,9 +181,10 @@ static func _zl_unlocks() -> Dictionary:
 		],
 		# Lv10 (PAL1 Lv17) — 風雪冰天：冰系高級
 		10: [
+			# 2026-06-11 平衡：12→14（同五雷咒，趙 leveled 限時輸出上修）
 			GameData.make_card("zl_fengxuebing", "風雪冰天", "趙靈兒", 2, "attack",
-				"冰系高級。造成 12 點傷害並施加 2 層虛弱。",
-				([{"kind": "damage", "amount": 12}, {"kind": "weak", "amount": 2}] as Array[Dictionary]),
+				"冰系高級。造成 14 點傷害並施加 2 層虛弱。",
+				([{"kind": "damage", "amount": 14}, {"kind": "weak", "amount": 2}] as Array[Dictionary]),
 				"rare"),
 		],
 		# Lv12 (PAL1 Lv20) — 地裂天崩：土系高級
@@ -200,20 +203,24 @@ static func _zl_unlocks() -> Dictionary:
 				([{"kind": "power", "amount": 3}, {"kind": "draw", "amount": 1}] as Array[Dictionary]),
 				"rare"),
 		],
+		# （2026-06-11 試過 Lv14 加萬靈噬 payoff 進等級軌：對單體 boss 稀釋懲罰 > synergy，
+		#   Lv15 90→77 —— 已回滾。leveled 谷底改用直傷上修：五雷咒/風雪冰天 +2。）
 		# Lv16 (PAL1 Lv24) — 泰山壓頂
 		# 3c 28傷 → 2c 18傷
 		16: [
+			# 2026-06-11 平衡：18→20（趙 Lv20 終幕谷底 30%，後期絕招直傷上修）
 			GameData.make_card("zl_taishan", "泰山壓頂", "趙靈兒", 2, "attack",
-				"土系絕招。造成 18 點傷害。",
-				([{"kind": "damage", "amount": 18}] as Array[Dictionary]),
+				"土系絕招。造成 20 點傷害。",
+				([{"kind": "damage", "amount": 20}] as Array[Dictionary]),
 				"rare"),
 		],
 		# Lv18 (PAL1 Lv26) — 狂雷
 		# 3c 30傷 → 2c 20傷
 		18: [
+			# 2026-06-11 平衡：20→22（同泰山，趙 Lv20 終幕谷底上修）
 			GameData.make_card("zl_kuanglei", "狂雷", "趙靈兒", 2, "attack",
-				"雷系絕招。造成 20 點傷害。",
-				([{"kind": "damage", "amount": 20}] as Array[Dictionary]),
+				"雷系絕招。造成 22 點傷害。",
+				([{"kind": "damage", "amount": 22}] as Array[Dictionary]),
 				"rare"),
 		],
 	}

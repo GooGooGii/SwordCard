@@ -465,7 +465,7 @@ static func _zhao_linger() -> CharacterData:
 		make_card("zl_yanzhou", "炎咒", "趙靈兒", 1, "attack", "初級火系仙術，造成 8 點傷害並施加 1 層破綻。", [{"kind": "damage", "amount": 8}, {"kind": "vulnerable", "amount": 1}], "basic"),
 		make_card("zl_bingxin", "冰心訣", "趙靈兒", 1, "skill", "清除自身全部負面狀態，獲得 3 點護體。", [{"kind": "cure_debuff"}, {"kind": "block", "amount": 3}], "basic"),
 		# 杖流 payoff：對虛弱/破綻敵加傷（與冰咒/炎咒/玄冰咒/幻雨咒 synergy）
-		make_card("zl_shuiyin", "水靈封印", "趙靈兒", 2, "attack", "造成 5 點傷害（目標每層虛弱或破綻 +2 點傷害）並封印其法術 1 回合（無法施法）。", [{"kind": "damage_debuff_bonus", "amount": 5, "bonus_per_layer": 2}, {"kind": "silence", "amount": 1}], "uncommon"),
+		make_card("zl_shuiyin", "水靈封印", "趙靈兒", 2, "attack", "造成 5 點傷害（目標每層虛弱或破綻 +3 點傷害）並封印其法術 1 回合（無法施法）。", [{"kind": "damage_debuff_bonus", "amount": 5, "bonus_per_layer": 3}, {"kind": "silence", "amount": 1}], "uncommon"),
 		# 治療+護體一體（杖流續戰：靈族慈悲化作護身）
 		make_card("zl_ganlin", "甘霖咒", "趙靈兒", 1, "skill", "回復 6 點生命並獲得 6 點護體。", [{"kind": "heal", "amount": 6}, {"kind": "block", "amount": 6}], "uncommon"),
 		make_card("zl_diliebeng", "地裂崩", "趙靈兒", 3, "attack", "大地崩裂，對全體敵人造成 15 點傷害。", [{"kind": "damage_all", "amount": 15}], "rare"),
@@ -488,7 +488,7 @@ static func _zhao_linger() -> CharacterData:
 		# 神術引擎核心：靈息訣 —— 每出技能牌抽 1，接上既有 0 費技能 →「靈息不息」循環。
 		make_card("zl_lingxijue", "靈息訣", "趙靈兒", 1, "power", "靈息綿長，本場戰鬥每打出一張技能牌便抽 1 張牌。", [{"kind": "draw_on_skill", "amount": 1}], "rare", "", true),
 		# 杖流 payoff：萬靈噬 —— 對全體依各自虛弱/破綻層數加傷，承接她大量的 weak_all / vulnerable_all 鋪場。
-		make_card("zl_wanlingshi", "萬靈噬", "趙靈兒", 2, "attack", "五靈反噬，對所有敵人造成 6 點傷害，敵人每層虛弱／破綻額外 +3。", [{"kind": "damage_debuff_bonus_all", "amount": 6, "bonus_per_layer": 3}], "rare"),
+		make_card("zl_wanlingshi", "萬靈噬", "趙靈兒", 2, "attack", "五靈反噬，對所有敵人造成 6 點傷害，敵人每層虛弱／破綻額外 +4。", [{"kind": "damage_debuff_bonus_all", "amount": 6, "bonus_per_layer": 4}], "rare"),
 	]
 	var character: CharacterData = _character("zhao_linger", "趙靈兒", 68, "五靈仙術、治療、護盾、解狀態與長戰持續。", cards)
 	# PAL1 對齊：9 basic + 3 uncommon + 0 rare
@@ -696,6 +696,9 @@ static func _passives_for(id: String) -> Array[Dictionary]:
 				"kind": "enemy_poison",
 				# 2026-06 平衡驗證：試過 5→3，mid 勝率僅 83→80（毒 DoT 賽跑贏在牌組毒卡、
 				# 不在開場層數）——nerf 無實效、損蠱術 identity，維持 5
+				# 2026-06-11 重審（BattlePolicy 會玩毒了）再試 5→4：mid 因 RNG 流向反跳 100、
+				# Lv20 僅 -3 —— 開場層數確定不是阿奴的檔位閘（兩代 AI 結論一致），維持 5。
+				# 她的強度在毒引擎+引爆時機，要 nerf 得動引爆倍率或 boss 端淨化，見 BALANCE_REPORT §七。
 				"amount": 5,
 				"label": "敵人每場戰鬥開場受到 5 層蠱毒"
 			}]
