@@ -3354,22 +3354,69 @@ func _show_use_potion_confirm(slot: int) -> void:
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc.custom_minimum_size = Vector2(380, 0)
 	box.add_child(desc)
-	# 按鈕列：取消（中性）／使用（金色強調）
-	var btn_row: HBoxContainer = HBoxContainer.new()
-	btn_row.add_theme_constant_override("separation", 18)
-	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_child(btn_row)
 	var captured_slot: int = slot
-	var cancel_btn: Button = UIFactory.main_menu_button("取消", false, 46, 18)
-	cancel_btn.custom_minimum_size.x = 130
-	cancel_btn.pressed.connect(func() -> void: _close_potion_popup())
-	btn_row.add_child(cancel_btn)
-	var use_btn: Button = UIFactory.main_menu_button("使用", true, 46, 18)
-	use_btn.custom_minimum_size.x = 130
-	use_btn.pressed.connect(func() -> void:
-		_close_potion_popup()
-		_use_potion(captured_slot))
-	btn_row.add_child(use_btn)
+	# 單體攻擊型藥品 + 多於 1 名活敵 → 讓玩家選目標（一敵一鈕）；否則用一般「取消/使用」。
+	if _potion_needs_enemy_target(potion) and _living_enemy_count() > 1:
+		box.add_child(UIFactory.card_label("選擇目標", 15, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER))
+		var tgt_row: HBoxContainer = HBoxContainer.new()
+		tgt_row.add_theme_constant_override("separation", 12)
+		tgt_row.alignment = BoxContainer.ALIGNMENT_CENTER
+		box.add_child(tgt_row)
+		var en_slots: Array = battle.state.get("enemies", []) as Array
+		for ei: int in range(en_slots.size()):
+			var es: Dictionary = en_slots[ei] as Dictionary
+			if int(es["hp"]) <= 0:
+				continue
+			var tgt_btn: Button = UIFactory.main_menu_button(String(es["name"]), true, 44, 16)
+			var tgt_idx: int = ei
+			tgt_btn.pressed.connect(func() -> void:
+				if battle.set_active_enemy(tgt_idx):
+					_set_active_enemy_aliases()
+				_close_potion_popup()
+				_use_potion(captured_slot))
+			tgt_row.add_child(tgt_btn)
+		var cancel_only: Button = UIFactory.main_menu_button("取消", false, 42, 16)
+		cancel_only.custom_minimum_size.x = 120
+		cancel_only.pressed.connect(func() -> void: _close_potion_popup())
+		box.add_child(cancel_only)
+	else:
+		# 按鈕列：取消（中性）／使用（金色強調）
+		var btn_row: HBoxContainer = HBoxContainer.new()
+		btn_row.add_theme_constant_override("separation", 18)
+		btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+		box.add_child(btn_row)
+		var cancel_btn: Button = UIFactory.main_menu_button("取消", false, 46, 18)
+		cancel_btn.custom_minimum_size.x = 130
+		cancel_btn.pressed.connect(func() -> void: _close_potion_popup())
+		btn_row.add_child(cancel_btn)
+		var use_btn: Button = UIFactory.main_menu_button("使用", true, 46, 18)
+		use_btn.custom_minimum_size.x = 130
+		use_btn.pressed.connect(func() -> void:
+			_close_potion_popup()
+			_use_potion(captured_slot))
+		btn_row.add_child(use_btn)
+
+# 藥品是否為「單體・需選敵」型：含單體敵向 effect、且不含任何 *_all（AOE 不需選）。
+func _potion_needs_enemy_target(potion: Dictionary) -> bool:
+	var single: bool = false
+	for e_v: Variant in (potion.get("effects", []) as Array):
+		var k: String = String((e_v as Dictionary).get("kind", ""))
+		if k.ends_with("_all"):
+			return false
+		if k in ["damage", "poison", "weak", "vulnerable", "stun", "silence", "berserk",
+				"consume_energy_damage", "poison_burst", "damage_debuff_bonus",
+				"damage_poison_bonus", "consume_debuff_damage", "soul_reap"]:
+			single = true
+	return single
+
+func _living_enemy_count() -> int:
+	if battle == null:
+		return 0
+	var n: int = 0
+	for es_v: Variant in (battle.state.get("enemies", []) as Array):
+		if int((es_v as Dictionary)["hp"]) > 0:
+			n += 1
+	return n
 
 # 藥品彈窗的圓形金邊左右切換鈕
 func _potion_nav_button(glyph: String, on_press: Callable) -> Button:
