@@ -2205,11 +2205,11 @@ const VARIANTS: Dictionary = {
 		},
 		"tree": {
 			"root": {
-				"prompt": "你站在石壁前。符文流動如水，溫柔卻沉重——它認得血脈，也認得意圖。你伸出手，又停在半空。",
+				"prompt": "風穿過坍塌的石廊，帶來一股近乎水汽的清涼。石壁上的符文流動如水，一筆一畫都不像人間的字——溫柔，卻沉重得壓人。指尖還沒碰上，符文已自己亮了一線，像是認得你血裡的某樣東西，又像是在問：你來，是為了記得，還是為了取走？",
 				"choices": [
 					{
 						"id": "listen",
-						"label": "靜心聆聽符文",
+						"label": "收手垂目，靜聽符文低語",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -2222,7 +2222,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "force_channel",
-						"label": "強行引靈入體",
+						"label": "不等它應允，按掌強引靈氣",
 						"kind_hint": "gamble",
 						"hide_badge": true,
 						"outcome": {
@@ -2243,7 +2243,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "poison_rubbing",
-						"label": "以蠱毒拓印符文紋路",
+						"label": "放蠱沿紋爬行，拓走符文祕密",
 						"kind_hint": "mixed",
 						"requires": {"deck_archetype": ["poison"]},
 						"outcome": {
@@ -2288,7 +2288,7 @@ const VARIANTS: Dictionary = {
 			},
 			"nodes": {
 				"node_inscription": {
-					"prompt": "石板上刻著：「我們選擇沉默，是為了不讓恨意延續。」這個遺址的主人，做了一個比戰鬥更艱難的決定。",
+					"prompt": "你拂去石板上的塵，半行古字終於連成一句：「我們選擇沉默，是為了不讓恨意延續。」石壁深處傳來一聲極輕的嘆息——這曾被黑苗血洗、滅了滿門的一族，臨終留下的不是咒怨，而是一道叫後來者放下的訓誡。石板背後，隱約嵌著一塊溫潤的靈玉。",
 					"choices": [
 						{
 							"id": "honor_silence",
@@ -2356,17 +2356,17 @@ const VARIANTS: Dictionary = {
 		},
 		"tree": {
 			"root": {
-				"prompt": "廢棄祭壇，血環缺一塊，黃符反書。月光下符文詭異泛光。你站在血環外緣，腳下一步即是邪氣未散的儀軌之內。",
+				"prompt": "腐味先撲上來，焚香壓不住底下那股甜膩的血腥。月光斜照進廢殿，地上一圈血環畫得張狂，卻缺了一塊，像被人臨陣斬斷；黃符上的字全是反書，在光裡幽幽泛綠。拜月教的儀軌——你只差半步就踏進去。它仍餓著，等的就是一個肯走進來的人。",
 				"choices": [
 					{
 						"id": "step_inside",
-						"label": "踏入血環",
+						"label": "壓下寒意，跨進血環",
 						"kind_hint": "mixed",
 						"next": "node_inside",
 					},
 					{
 						"id": "observe_circle",
-						"label": "細看血環缺口",
+						"label": "蹲下，細辨那道缺口的形狀",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_complete",
@@ -2388,7 +2388,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "gu_devour_evil",
-						"label": "放蠱蟲噬食祭壇上的邪力",
+						"label": "驅蠱上前，噬食壇上邪力",
 						"kind_hint": "mixed",
 						"requires": {"deck_archetype": ["poison"]},
 						"outcome": {
@@ -2424,19 +2424,19 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "leave",
-						"label": "繞道而行",
+						"label": "不碰這口血盤，繞道而行",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你向祭壇拱手，繞路而過。背後的符文目送你的背影。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你退出血環外緣，把月光下泛綠的符文留在身後。走出廢殿好遠，那股甜膩的腥味才從鼻腔裡散去——有些便宜，貪不得。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_inside": {
-					"prompt": "腳底脈動，符文發燙。你必須做出選擇——抄錄、汲取，還是破除。",
+					"prompt": "腳一落進血環，腳底便傳來低沉的脈動，像踩在某種還在呼吸的東西背上。四周符文應和著燙起來，反書的字句湊到眼角，催著你伸手。抄它、吸它、還是毀它——它不在乎你選哪個，只在乎你終於肯動手。",
 					"choices": [
 						{
 							"id": "copy_runes",
-							"label": "冒險抄錄符文",
+							"label": "憑記性，把符文一筆筆描下",
 							"kind_hint": "gamble",
 							"outcome": {
 								"kind": "gamble",
@@ -2455,7 +2455,7 @@ const VARIANTS: Dictionary = {
 						},
 						{
 							"id": "draw_evil",
-							"label": "強行汲取邪力",
+							"label": "按掌血環，把邪力灌進經脈",
 							"kind_hint": "punish",
 							"outcome": {
 								"kind": "punish",
@@ -2469,7 +2469,7 @@ const VARIANTS: Dictionary = {
 						},
 						{
 							"id": "purify",
-							"label": "破除儀軌",
+							"label": "一劍挑破中心符文，斷了它",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -2483,11 +2483,11 @@ const VARIANTS: Dictionary = {
 					],
 				},
 				"node_complete": {
-					"prompt": "你瞇眼細看——血環的缺口形狀，正好是一個人形。儀式需要的，是一條人命。",
+					"prompt": "你蹲低細看，指尖才碰到缺口的邊，背上寒毛就全立了起來——那缺的一塊，分明是個蜷縮的人形。儀軌只差最後一筆：一條活生生的人命。它一直缺著，不是沒人畫完，是沒人敢補。",
 					"choices": [
 						{
 							"id": "fill_with_own_blood",
-							"label": "用自己的血補上",
+							"label": "割掌，以自己的血補全那一筆",
 							"kind_hint": "battle",
 							"outcome": {
 								"kind": "battle",
@@ -2508,7 +2508,7 @@ const VARIANTS: Dictionary = {
 						},
 						{
 							"id": "fill_with_old_blood",
-							"label": "翻出陶罐裡舊祭血補上",
+							"label": "尋來陶罐舊祭血，瞞天過海",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -2557,11 +2557,11 @@ const VARIANTS: Dictionary = {
 		},
 		"tree": {
 			"root": {
-				"prompt": "掌櫃擦著杯子，向你點了點頭。靠窗有個等人的老劍客，角落兩個商旅在低聲談著被截的商路。你要怎麼度過這一刻？",
+				"prompt": "酒香混著熱湯的暖氣先漫過來，像餘杭客棧後堂的味道。掌櫃頭也沒抬，擦杯的手卻穩得不像生意人，只朝你點了下頭，彷彿你早來過千百回。靠窗一個老劍客橫劍枯坐，眼神空得在等人；角落兩個商旅交頭接耳，壓著嗓子說某條商路被截了。",
 				"choices": [
 					{
 						"id": "hot_soup",
-						"label": "點一碗熱湯坐下",
+						"label": "卸下行囊，要一碗熱湯",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -2635,26 +2635,26 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "read_room",
-						"label": "細看掌櫃擦杯的手法",
+						"label": "盯著掌櫃那雙太穩的手看",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_keeper",
 					},
 					{
 						"id": "leave",
-						"label": "喝完便走",
+						"label": "把錢壓在桌上，喝完便走",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你放下幾文錢，起身離開。酒館的暖意留在背後，路還很長。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你把幾文錢壓在杯底，起身推門。掌櫃仍只是點了下頭，像送別一個明天還會回來的人。酒館的暖意留在背後，路還很長。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_keeper": {
-					"prompt": "掌櫃擦杯的手法太穩，是練過的——這酒館，多半是某個門派的隱秘聯絡點。你若報得出暗號……",
+					"prompt": "你越看越肯定：那擦杯的手腕翻轉，根本是握過刀的人才有的穩。掌櫃終於抬眼，目光在你臉上停了一瞬——這酒館哪是尋常生意，是哪個門派埋在江湖裡的暗樁。他不問你，只等你先開口；報得出暗記，這碗湯就不只是湯。",
 					"choices": [
 						{
 							"id": "give_sign",
-							"label": "試著比出江湖暗記",
+							"label": "賭一把，比出半懂的暗記",
 							"kind_hint": "gamble",
 							"outcome": {
 								"kind": "gamble",
@@ -2668,7 +2668,7 @@ const VARIANTS: Dictionary = {
 										{"kind": "gold", "amount": -8},
 									],
 								},
-								"log": "你比了個半懂不懂的手勢。掌櫃的眼神動了一下——認，還是不認？",
+								"log": "你比了個半懂不懂的手勢。掌櫃擦杯的手停了一停，眼神往你手指上一掃——這一瞬，他在心裡認你、還是把你當成了找錯門的外人？",
 							},
 						},
 						{
@@ -2714,11 +2714,11 @@ const VARIANTS: Dictionary = {
 		},
 		"tree": {
 			"root": {
-				"prompt": "枯草間插著無數斷劍，劍尖都指向北方。刀氣猶在，卻沒有殺意——像守護，而非威脅。你站在劍冢中央。",
+				"prompt": "風過枯草，無數斷劍從土裡斜插而出，發出極輕的嗡鳴。劍尖竟齊齊指向北方——那是將軍塚的方向，中原劍道的源頭。刀氣猶在，卻不見半分殺意，只像一群還沒走完路的人，把劍立在這裡，朝著去不成的遠方守望。",
 				"choices": [
 					{
 						"id": "pray",
-						"label": "向英靈默禱致意",
+						"label": "垂手默立，向滿冢英靈致意",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -2731,7 +2731,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "draw_blade",
-						"label": "拔取一柄斷劍承其志",
+						"label": "握住一柄斷劍，硬抽出土",
 						"kind_hint": "mixed",
 						"hide_badge": true,
 						"outcome": {
@@ -2780,15 +2780,15 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "leave",
-						"label": "不擾英靈，繞行",
+						"label": "抱拳一禮，不取分毫而去",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你向滿冢斷劍抱拳一禮，繞道而過。它們的方向，不是你的方向。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你向滿冢斷劍抱拳一禮，一把也沒碰。走出枯草地時，那片嗡鳴漸漸低了下去，像在點頭——它們守望的方向，終究不是你的方向。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_unfinished": {
-					"prompt": "劍鞘上刻著「未竟」二字——劍主臨終的心意：他知道自己走不到，盼後人替他走完。",
+					"prompt": "你撥開枯草，那柄劍的鞘上只刻了兩個字：「未竟」。筆畫深得像用盡了最後一口氣鑿進去的。劍主走到這裡便走不動了，他不怨、不咒，只把劍尖朝北一插，盼著某個後來的人——也許就是你——替他把那條路走完。",
 					"choices": [
 						{
 							"id": "carry_on",
@@ -2805,7 +2805,7 @@ const VARIANTS: Dictionary = {
 						},
 						{
 							"id": "take_scabbard_jade",
-							"label": "只取劍鞘上的玉飾",
+							"label": "撇開劍意，只摳走鞘上玉飾",
 							"kind_hint": "mixed",
 							"outcome": {
 								"kind": "mixed",
@@ -2846,11 +2846,11 @@ const VARIANTS: Dictionary = {
 		},
 		"tree": {
 			"root": {
-				"prompt": "草棚內藥材懸掛成排，老藥師目光精準地在你身上掃了一圈，未言先知。你開口求的是——",
+				"prompt": "推開草簾，滿棚藥香撲面，苦裡裹著一絲南疆才有的辛甜。一排排藥材懸成簾幕，角落坐著個苗疆老藥師，眼皮也沒抬，指尖卻已點了點你站立的方向——「左肩的舊傷，陰雨天疼吧。」他先你一步把話說了，像早等著你來。",
 				"choices": [
 					{
 						"id": "treat",
-						"label": "請他診治舊傷",
+						"label": "伸出手腕，請他診那道舊傷",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -2860,7 +2860,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "buy_battle_pill",
-						"label": "請他配一帖戰前藥",
+						"label": "掏出銅錢，求一帖臨陣救命藥",
 						"kind_hint": "mixed",
 						"requires": {"min_gold": 12, "has_potion_slot": true},
 						"outcome": {
@@ -2874,7 +2874,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "acupuncture_purge",
-						"label": "請他以針法替你斬除一道病招",
+						"label": "求他下針，挑掉一道礙根的招",
 						"kind_hint": "reward",
 						"requires": {"min_deck_size": 7},
 						"outcome": {
@@ -2903,26 +2903,26 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "inspect_shelves",
-						"label": "細看兩排藥材的擺法",
+						"label": "留意那兩排擺法迥異的藥材",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_shelves",
 					},
 					{
 						"id": "leave",
-						"label": "道謝離去",
+						"label": "拱手謝過，不勞他費神",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你向老藥師拱手道謝，退出草棚。藥香還黏在衣袖上，久久不散。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你向老藥師拱手謝過，退出草棚。他只在你身後淡淡丟了句：「左肩，記得避寒。」藥香黏在衣袖上，跟了你一路。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_shelves": {
-					"prompt": "靠門是中原藥理的「君臣佐使」，靠角落是苗疆「五行相生」——這位老藥師兼通兩派。角落還掛著一個繡著南疆圖騰的舊布包。",
+					"prompt": "你順著藥架看過去，越看越不對：靠門那排按中原「君臣佐使」分得規整，靠角落那排卻是苗疆「五行相生」的擺法，兩派藥理同居一棚。角落還掛著個褪色舊布包，繡的是南疆某個小村的圖騰——這老人年輕時，分明在苗疆待過很久。",
 					"choices": [
 						{
 							"id": "learn_pharmacology",
-							"label": "虛心請教兩派藥理",
+							"label": "執弟子禮，請他講透兩派藥理",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -2935,7 +2935,7 @@ const VARIANTS: Dictionary = {
 						},
 						{
 							"id": "steal_herb",
-							"label": "趁他轉身，順走一味稀藥",
+							"label": "趁他轉身，伸手摸走那味稀藥",
 							"kind_hint": "gamble",
 							"hide_badge": true,
 							"outcome": {
@@ -2950,7 +2950,7 @@ const VARIANTS: Dictionary = {
 										{"kind": "set_flag", "flag": "healer_grudge"},
 									],
 								},
-								"log": "你的手伸向那味稀藥——老藥師的目光，是不是真的沒在看你？",
+								"log": "你的手探向那味掛在最高處的稀藥，指尖剛勾住繩結——老藥師背對著你研藥的手，停了，又動了。他究竟是真沒瞧見，還是早把後路都算進了藥方裡？",
 							},
 						},
 					],
@@ -3314,7 +3314,7 @@ const VARIANTS: Dictionary = {
 		},
 		"tree": {
 			"root": {
-				"prompt": "狐面少女縮在洞窟角落，瑟瑟發抖，懇求你別傷害她的族民。她金色的瞳孔裡只有恐懼，沒有殺意。你的手按在劍柄上——",
+				"prompt": "洞窟陰冷，水滴聲一下一下敲在石上，深處卻夾著一縷壓抑的女子低泣。循聲走近，火光照出一個狐面半人身的少女縮在角落，金瞳裡盛滿恐懼，卻沒有半分殺意。她抱緊殘破的衣袖往石壁裡退：「別……別傷我的族人。」你的手按上了劍柄，又遲遲沒拔。",
 				"choices": [
 					{
 						"id": "spare",
@@ -3331,7 +3331,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "devour_pill",
-						"label": "奪取她的妖丹元神",
+						"label": "逼她交出妖丹，奪她元神",
 						"kind_hint": "punish",
 						"hide_badge": true,
 						"outcome": {
@@ -3346,7 +3346,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "interrogate",
-						"label": "逼問族藏下落",
+						"label": "沉下臉，逼問族藏下落",
 						"kind_hint": "gamble",
 						"outcome": {
 							"kind": "gamble",
@@ -3379,7 +3379,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "inspect_cave",
-						"label": "先觀察她身後的洞壁",
+						"label": "先看清她身後那面洞壁",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_tragedy",
@@ -3394,7 +3394,7 @@ const VARIANTS: Dictionary = {
 			},
 			"nodes": {
 				"node_tragedy": {
-					"prompt": "洞壁有陳舊血漬，腳邊散落一個被砸碎的木雕——是她族人的圖騰。這不是埋伏，是屠戮後的最後倖存者。",
+					"prompt": "火光往石壁一抬，你的心沉了下去：壁上一道道陳舊血漬已乾成黑褐，腳邊散著個被人砸碎的木雕——那是她族人的圖騰。這不是埋伏，這是一場屠戮過後的廢墟，而她，是唯一沒被殺乾淨的那一個。少女順著你的目光看去，抖得更厲害了。",
 					"choices": [
 						{
 							"id": "protect",
@@ -3412,7 +3412,7 @@ const VARIANTS: Dictionary = {
 						},
 						{
 							"id": "loot_remains",
-							"label": "搜刮族人遺物後離開",
+							"label": "在屍骸旁翻撿值錢遺物",
 							"kind_hint": "mixed",
 							"outcome": {
 								"kind": "mixed",
@@ -3449,17 +3449,17 @@ const VARIANTS: Dictionary = {
 		},
 		"tree": {
 			"root": {
-				"prompt": "蒙面黑影擦身而過，沉甸甸的包袱掉你腳邊。官差大喊：「站住！」周圍人潮如織，你只剩一個呼吸的時間。",
+				"prompt": "揚州街市叫賣聲震天，魚腥混著脂粉氣撲鼻。一個蒙面黑影貼著你肩膀竄過，「咚」地一聲，沉甸甸的包袱落在你腳邊。後頭一個年輕官差紅著臉追來，扯著嗓子喊：「站住——別動那包袱！」他眼裡比起捉賊，更像是怕回去沒法向府衙交差。你只剩一個呼吸的工夫。",
 				"choices": [
 					{
 						"id": "snatch_and_run",
-						"label": "收起就跑",
+						"label": "抄起包袱，撒腿就鑽巷子",
 						"kind_hint": "mixed",
 						"next": "node_flee",
 					},
 					{
 						"id": "hand_over",
-						"label": "拾起交給官差",
+						"label": "拾起包袱，迎上去還官差",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -3472,7 +3472,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "kick_away",
-						"label": "一腳踢開撇清",
+						"label": "一腳踢開包袱，兩手一攤",
 						"kind_hint": "neutral",
 						"outcome": {
 							"kind": "mixed",
@@ -3484,7 +3484,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "observe_chase",
-						"label": "細看蒙面人的足跡",
+						"label": "蹲下細認蒙面人留下的足跡",
 						"kind_hint": "battle",
 						"requires": {"observe_token": true},
 						"next": "node_chase",
@@ -3520,19 +3520,19 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "leave",
-						"label": "裝沒看見，徑直走過",
+						"label": "低頭裝沒看見，徑直走過",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你低頭快步穿過人群。官差從你身旁掠過，喧嘩在背後遠去。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你低頭快步穿過人群，腳尖差點絆上那包袱也沒回頭。年輕官差從你身旁急掠而過，呼喝聲很快被市聲淹沒——揚州城的麻煩，多得很，犯不著沾上一樁。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_flee": {
-					"prompt": "巷弄狹窄，呼喝聲越來越近。你必須決定怎麼甩開追兵。",
+					"prompt": "包袱一入手就沉，你拐進窄巷狂奔。身後那年輕官差竟咬得很緊，皮靴踏在青石上的聲音越追越近，還夾著一句近乎哀求的喊：「交出來，我不為難你！」前頭一個分岔——鑽人潮，還是上屋頂。",
 					"choices": [
 						{
 							"id": "into_crowd",
-							"label": "衝進人群",
+							"label": "貼緊包袱，鑽進攢動人潮",
 							"kind_hint": "gamble",
 							"outcome": {
 								"kind": "gamble",
@@ -3553,7 +3553,7 @@ const VARIANTS: Dictionary = {
 						},
 						{
 							"id": "rooftop",
-							"label": "爬上屋頂避追",
+							"label": "縱身上瓦，從屋脊上甩開他",
 							"kind_hint": "battle",
 							"outcome": {
 								"kind": "battle",
@@ -3576,11 +3576,11 @@ const VARIANTS: Dictionary = {
 					],
 				},
 				"node_chase": {
-					"prompt": "包袱沾血，黑影逃向暗巷。你決定追過去——這事不能就這樣不明不白。",
+					"prompt": "你撥開包袱一角，指尖沾到的不是塵土，是還沒乾透的血。那蒙面人不是尋常扒手——逃得太有章法，專往暗巷死角鑽。這趟若不追個明白，這口黑鍋遲早扣回自己頭上。你抬腳追了上去。",
 					"choices": [
 						{
 							"id": "interrogate",
-							"label": "攔下審問",
+							"label": "搶身攔在他去路上，喝問來歷",
 							"kind_hint": "battle",
 							"outcome": {
 								"kind": "battle",
@@ -3601,7 +3601,7 @@ const VARIANTS: Dictionary = {
 						},
 						{
 							"id": "let_him_go",
-							"label": "放他一馬",
+							"label": "收住腳步，放他一條生路",
 							"kind_hint": "gamble",
 							"outcome": {
 								"kind": "gamble",
@@ -3644,11 +3644,11 @@ const VARIANTS: Dictionary = {
 		},
 		"tree": {
 			"root": {
-				"prompt": "廟堂正中，一盞油燈無風自動，散著柔和金光。傳說此廟能超渡亡魂、喚回生機——但靈驗與否，取決於造訪者的真心。",
+				"prompt": "陳年香灰的氣味先滲出門縫。推門進去，廟堂空無一人，正中一盞油燈卻無風自動，火舌穩穩地立著，把斑駁的神像鍍上一層柔金。傳說這類古廟是天地節點，連著生死兩界，能超渡亡魂、喚回生機——可它靈不靈，全看跪在燈前的人，是不是真心。",
 				"choices": [
 					{
 						"id": "pray_revive",
-						"label": "上香叩拜，祈求生機",
+						"label": "上香叩首，為倒下的同伴祈命",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -3658,7 +3658,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "rest_pray",
-						"label": "在廟前靜坐調息",
+						"label": "在燈前盤膝，靜坐調息",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -3702,7 +3702,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "decipher_wall",
-						"label": "推敲廟牆上的武學銘文",
+						"label": "湊近廟牆，推敲那行武學銘文",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_inscription",
@@ -3730,19 +3730,19 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "leave",
-						"label": "合掌一禮，繼續趕路",
+						"label": "合掌一禮，不求不擾",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你向油燈合掌一禮，退出靈廟。那盞燈在你身後，依舊無風自動。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你向油燈合掌一禮，什麼也沒求，退出了靈廟。那盞燈在你身後依舊無風自動，火光不增不減——它不勉強人留下心願，也從不催促趕路的人。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_inscription": {
-					"prompt": "神像基座有極淺的水跡——有人在此跪拜時掉了淚，還沒乾。牆上銘文古奧，但你似乎能讀通其中一段。",
+					"prompt": "你湊近廟牆細辨，餘光卻先落在神像基座上——那裡有兩道極淺的水痕，還沒乾透，是不久前有人跪在這裡，淚一滴一滴掉下來留的。牆上的銘文古奧難讀，可那段心法的筆意，竟和地上那點淚一樣，讀著讀著就讓人胸口發熱。",
 					"choices": [
 						{
 							"id": "comprehend",
-							"label": "凝神參透銘文",
+							"label": "閉息凝神，參透這段銘文",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -3798,11 +3798,11 @@ const VARIANTS: Dictionary = {
 		},
 		"tree": {
 			"root": {
-				"prompt": "穿過桃花瘴，水月宮坐落蓮池中央，女媧神像四周白蓮盛開，靈氣升騰。這裡的靈氣純淨得不像人間。",
+				"prompt": "桃花瘴散開，眼前豁然一亮：水月宮浮在蓮池正中，白蓮無聲盛放，靈氣自水面緩緩升騰，涼得人心頭一靜。池畔那尊女媧神像低眉垂目，香火卻早斷了——黑苗血洗仙靈島後，這裡再無人煙。劫餘的聖地，只剩白蓮替它守著。",
 				"choices": [
 					{
 						"id": "drink_water",
-						"label": "掬一捧蓮池仙水服下",
+						"label": "俯身掬一捧蓮池仙水飲下",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -3815,7 +3815,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "meditate_wall",
-						"label": "參悟神像旁的心法殘篇",
+						"label": "駐足神像旁，參悟那篇心法殘篇",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -3840,22 +3840,22 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "read_steles",
-						"label": "細看神像基座的篆字",
+						"label": "蹲到神像基座前，細辨那行篆字",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_steles",
 					},
 					{
 						"id": "leave",
-						"label": "不擾聖地，靜靜離開",
+						"label": "不取一物，向聖地合掌而退",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你在女媧神像前合掌，悄悄退出水月宮。蓮香送了你一程。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你在女媧神像前合掌一禮，什麼也沒取，沿著蓮葉鋪成的水徑悄悄退出。身後白蓮輕輕一晃，蓮香一直送你到桃花瘴外——劫後的清淨，留給後來真正需要它的人。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_steles": {
-					"prompt": "基座刻著：「水德潤萬物，月光照孤魂，靈族不孤。」蓮池中央有一塊溫潤玉璧——對普通修者只是玉，對靈族卻是傳承信物。",
+					"prompt": "你拭去基座上的水霧，三行細篆漸漸清晰：「水德潤萬物，月光照孤魂，靈族不孤。」最後三字刻得格外用力，像是滅門前有人含淚立下的遺言。蓮池正中靜靜浮著一塊溫潤玉璧——在尋常修者眼裡只是塊好玉，唯有對得上血脈的人，才喚得動它。",
 					"choices": [
 						{
 							"id": "absorb_water_virtue",
@@ -3872,7 +3872,7 @@ const VARIANTS: Dictionary = {
 						},
 						{
 							"id": "grab_jade",
-							"label": "試圖強取那塊玉璧",
+							"label": "不管血脈對不對，伸手強取玉璧",
 							"kind_hint": "gamble",
 							"hide_badge": true,
 							"outcome": {
@@ -3911,7 +3911,7 @@ const VARIANTS: Dictionary = {
 		},
 		"tree": {
 			"root": {
-				"prompt": "山道旁飄來一縷幽甜的花香，濃得讓人腦子不清醒。霧中走出一個女子，笑意溫柔，衣袖間落著不知名的花瓣——一步一步，越來越近。",
+				"prompt": "山道轉角，一縷幽甜花香先纏上來，濃得讓人太陽穴發脹、念頭發黏。薄霧裡走出一個女子，笑意溫柔得近乎哀傷，衣袖一抖，落下幾片不知名的花瓣。她的目光卻不在你臉上——直直膠在你的喉間，像彩依那樣修了千年的妖也未必有的、一種空了的飢餓。她又近了一步。",
 				"choices": [
 					{
 						"id": "resist_incense",
@@ -3921,7 +3921,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "feign_charm",
-						"label": "假裝中招、偷術",
+						"label": "佯作著迷，反手偷她一縷術",
 						"kind_hint": "gamble",
 						"outcome": {
 							"kind": "gamble",
@@ -3941,7 +3941,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "observe_pity",
-						"label": "細看她眼底",
+						"label": "頂著花香，看進她空了的眼底",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_pity",
@@ -3983,7 +3983,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "flee",
-						"label": "拔腿就跑",
+						"label": "屏住氣，頭也不回衝出花霧",
 						"kind_hint": "mixed",
 						"outcome": {
 							"kind": "mixed",
@@ -3998,11 +3998,11 @@ const VARIANTS: Dictionary = {
 			},
 			"nodes": {
 				"node_resist": {
-					"prompt": "你咬破舌尖強撐清醒。霧散了一瞬——她指尖長著花瓣與骨爪交織的妖體，眼神空虛地盯著你的喉嚨。",
+					"prompt": "舌尖一痛，血腥味把昏沉沖開一線，迷香的霧也跟著淡了一瞬。就這一瞬你看清了：她「指尖」是花瓣與骨爪絞纏而成的妖體，溫柔的笑底下，那雙眼空得發慌，直勾勾鎖著你的咽喉——她不殺你，就活不下去。",
 					"choices": [
 						{
 							"id": "draw_sword",
-							"label": "拔劍直擊",
+							"label": "趁霧裂的一瞬，拔劍直取",
 							"kind_hint": "battle",
 							"outcome": {
 								"kind": "battle",
@@ -4024,7 +4024,7 @@ const VARIANTS: Dictionary = {
 						},
 						{
 							"id": "seal_censer",
-							"label": "點穴封住她腰間的香爐",
+							"label": "一指封死她腰間那只小香爐",
 							"kind_hint": "gamble",
 							"outcome": {
 								"kind": "gamble",
@@ -4045,11 +4045,11 @@ const VARIANTS: Dictionary = {
 					],
 				},
 				"node_pity": {
-					"prompt": "你細看她眼底——空虛的飢渴，不像出於本意，更像某個更深的東西在替她殺人。她或許也曾是普通女子。",
+					"prompt": "你迎著花香看進她眼底，那點空虛的飢渴底下，竟有一絲不甘——殺意不像出於本意，倒像有個更深、更冷的東西藏在她身後，借她的手取人性命。她曾經，多半也只是個會在山道採花的普通女子。她的唇動了動，沒出聲，像在求你，又像在求自己別動手。",
 					"choices": [
 						{
 							"id": "purify_qi",
-							"label": "渡她一縷清淨靈氣",
+							"label": "不拔劍，渡她一縷清淨靈氣",
 							"kind_hint": "reward",
 							"requires": {"max_power": 5},
 							"outcome": {
@@ -4063,7 +4063,7 @@ const VARIANTS: Dictionary = {
 						},
 						{
 							"id": "mercy_strike",
-							"label": "一劍超渡",
+							"label": "舉劍，給她一個乾淨的解脫",
 							"kind_hint": "battle",
 							"outcome": {
 								"kind": "battle",
@@ -4105,11 +4105,11 @@ const VARIANTS: Dictionary = {
 		},
 		"tree": {
 			"root": {
-				"prompt": "油頭粉面的採花賊擋住去路，目光輕薄。他不是高手，但腰桿挺得理直氣壯——背後多半有人撐腰。你打算怎麼辦？",
+				"prompt": "一股廉價脂粉味先飄過來，嗆得人皺眉。油頭粉面的採花賊斜倚在路口，目光輕薄地在你身上爬了一圈，咧嘴一笑，露出鑲金的牙。他身手鬆垮，分明不是高手，腰桿卻挺得理直氣壯——這副蘇州城少爺的做派，背後多半有富戶罩著。「小娘子，賞個臉？」",
 				"choices": [
 					{
 						"id": "beat",
-						"label": "狠狠教訓他一頓",
+						"label": "二話不說，把他揍趴在地",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -4122,7 +4122,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "shake_down",
-						"label": "逼他交出身上贓款",
+						"label": "揪住衣領，抖光他身上的贓款",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -4146,22 +4146,22 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "size_him_up",
-						"label": "先冷眼打量這個惡徒",
+						"label": "按住火氣，先把這廝看個透",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_backer",
 					},
 					{
 						"id": "leave",
-						"label": "懶得理會，繞道走",
+						"label": "連眼角都懶得給，繞道而行",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你連眼角都沒給他，逕自繞了過去。他在背後罵罵咧咧，卻不敢追上來。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你連眼角都沒分給他，逕自繞了過去。他在背後扯著嗓子罵了幾句難聽話，腳卻像釘在地上，到底不敢追上來——欺軟怕硬的東西，從來只敢對著背影叫囂。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_backer": {
-					"prompt": "他衣著華麗姿勢散亂，是被慣壞的某地少爺；腰間無器、鞋底磨損——逃跑能力極強。真正的麻煩，是他背後罩著他的富戶。",
+					"prompt": "你冷眼一掃，全看明白了：綢衫華貴卻姿勢散亂，是被嬌慣壞的某地少爺；腰間不佩兵器，鞋底卻磨得極薄——逃命的本事練得比誰都熟。揍他髒手、不揍憋屈，可真正棘手的，是他唾沫橫飛抬出來的那位「老爺」，背後罩著他的富戶。",
 					"choices": [
 						{
 							"id": "send_message",
@@ -4178,7 +4178,7 @@ const VARIANTS: Dictionary = {
 						},
 						{
 							"id": "force_confession",
-							"label": "打到他招出主子的名號",
+							"label": "逼他吐出背後主子的名號",
 							"kind_hint": "battle",
 							"outcome": {
 								"kind": "battle",
