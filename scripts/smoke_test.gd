@@ -275,6 +275,9 @@ func _initialize() -> void:
 	_test_balance_party(characters, bosses)
 	# 短征模式（IMPROVEMENT_PLAN P3-12）
 	_test_short_run_mode(characters)
+	# 機制型敵人試點（2026-06-11）：噬毒蛻化 + 業鏡照心被動
+	_test_absorb_poison(characters, enemies)
+	_test_enemy_passive_strength_on_skill(characters)
 	if _smoke_failures > 0:
 		push_error("[smoke] %d 個 _check() 失敗。以 quit(1) 結束。" % _smoke_failures)
 		print("SwordCard smoke test FAILED (%d check failures)." % _smoke_failures)
@@ -4210,6 +4213,50 @@ func _test_act_intro_seen_roundtrip(characters: Array[CharacterData]) -> void:
 	var old_restored: RunState = RunState.new()
 	_check(old_restored.from_dict(legacy, characters), "legacy save should load")
 	_check(old_restored.act_intro_seen == 0, "legacy save defaults act_intro_seen to 0")
+
+func _test_absorb_poison(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# 噬毒蛻化：吞噬自身全部蠱毒、每 2 層化 1 力量；無毒則無事
+	var bc: BattleController = BattleController.new()
+	var rs: RunState = RunState.new()
+	rs.init_for(characters[0])
+	bc.setup(rs, characters[0], enemies[0].clone())
+	var s: Dictionary = bc.state
+	s["enemy_poison"] = 7
+	s["enemy_strength"] = 0
+	bc.resolver._resolve_effect({"kind": "absorb_poison"}, s, true)
+	_check(int(s["enemy_poison"]) == 0, "absorb_poison should clear poison; got %d" % int(s["enemy_poison"]))
+	_check(int(s["enemy_strength"]) == 4, "7 poison -> ceil(7/2)=4 strength; got %d" % int(s["enemy_strength"]))
+	# 無毒：不變
+	bc.resolver._resolve_effect({"kind": "absorb_poison"}, s, true)
+	_check(int(s["enemy_strength"]) == 4, "no poison -> no strength gain; got %d" % int(s["enemy_strength"]))
+
+func _test_enemy_passive_strength_on_skill(characters: Array[CharacterData]) -> void:
+	# 業鏡照心：玩家每出一張技能牌，持有被動的敵人 +1 力量；攻擊牌不觸發
+	var boss: EnemyData = GameData.enemy_by_id("zhenyu_mingwang")
+	_check(boss != null and String(boss.passive.get("kind", "")) == "strength_on_player_skill",
+		"鎮獄明王 should have strength_on_player_skill passive")
+	var bc: BattleController = BattleController.new()
+	var rs: RunState = RunState.new()
+	rs.init_for(characters[0])
+	bc.setup(rs, characters[0], boss.clone())
+	bc.start_turn()
+	bc.state["energy"] = 10
+	# 開戰告示應已寫進 log
+	var announced: bool = false
+	for line: String in bc.battle_log:
+		if line.find("業鏡照心") >= 0:
+			announced = true
+	_check(announced, "passive label should be announced in battle log")
+	var skill_card: CardData = GameData.make_card("t_skill", "測試技能", "李逍遙", 1, "skill", "獲得 3 護體", [{"kind": "block", "amount": 3}])
+	var attack_card: CardData = GameData.make_card("t_atk", "測試攻擊", "李逍遙", 1, "attack", "造成 3 傷害", [{"kind": "damage", "amount": 3}])
+	bc.deck.hand.append(skill_card)
+	bc.deck.hand.append(attack_card)
+	var before: int = int(bc.state.get("enemy_strength", 0))
+	bc.play_card(skill_card)
+	_check(int(bc.state["enemy_strength"]) == before + 1, "skill play should grant +1 strength; got %d" % int(bc.state["enemy_strength"]))
+	var after_skill: int = int(bc.state["enemy_strength"])
+	bc.play_card(attack_card)
+	_check(int(bc.state["enemy_strength"]) == after_skill, "attack play should NOT grant strength; got %d" % int(bc.state["enemy_strength"]))
 
 func _test_short_run_mode(characters: Array[CharacterData]) -> void:
 	var rs: RunState = RunState.new()

@@ -22,6 +22,9 @@ extends Resource
 @export var ultimate_action: Dictionary = {} # 大招：每 ultimate_every 回合改放此招（空 = 無）
 @export var ultimate_every: int = 0          # 每 N 個自身回合放一次大招（0 = 無）
 @export var floats: bool = false             # 飄浮系（鬼火/劍靈等）：允許懸浮、腳底陰影縮小淡化
+# 敵方被動（機制型敵人，2026-06-11 試點）：{"kind": ..., "amount": ..., "label": 開戰告示文字}
+# 目前支援 kind："strength_on_player_skill"（玩家每出一張技能牌，此敵 +amount 力量）
+@export var passive: Dictionary = {}
 
 func clone() -> EnemyData:
 	var copy: EnemyData = EnemyData.new()
@@ -46,6 +49,7 @@ func clone() -> EnemyData:
 	copy.ultimate_action = ultimate_action.duplicate(true)
 	copy.ultimate_every = ultimate_every
 	copy.floats = floats
+	copy.passive = passive.duplicate(true)
 	return copy
 
 func to_dict() -> Dictionary:

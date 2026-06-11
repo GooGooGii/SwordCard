@@ -726,6 +726,17 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			# 漸怒：敵人累積攻擊力，往後每次出手傷害 +N（_enemy_hit_player / damage from_enemy 讀取）
 			state["enemy_strength"] = int(state.get("enemy_strength", 0)) + amount
 			log_lines.append("%s 怒氣高漲，攻擊力 +%d！" % [state.get("enemy_name", "敵人"), amount])
+		"absorb_poison":
+			# 噬毒蛻化（機制型敵人，2026-06-11）：吞噬自身全部蠱毒，每 2 層化 1 點力量。
+			# 毒流檔位閘——對牠疊毒反而餵養牠；counterplay 是改打直傷。無毒則無事發生。
+			var cur_poison: int = int(state.get("enemy_poison", 0))
+			if cur_poison > 0:
+				var gained: int = int(ceil(cur_poison / 2.0))
+				state["enemy_poison"] = 0
+				state["enemy_strength"] = int(state.get("enemy_strength", 0)) + gained
+				log_lines.append("%s 吞噬了 %d 層蠱毒，化作 %d 點力量！" % [state.get("enemy_name", "敵人"), cur_poison, gained])
+			else:
+				log_lines.append("%s 欲噬毒蛻化，卻無毒可噬。" % state.get("enemy_name", "敵人"))
 		"enemy_thorns":
 			# 反甲：敵人豎起尖刺，玩家近身攻擊它時受 N 反傷（單體 damage 路徑讀取）。跨回合保留。
 			state["enemy_thorns"] = int(state.get("enemy_thorns", 0)) + amount

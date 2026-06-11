@@ -1514,6 +1514,10 @@ static func _zhenyu_mingwang() -> EnemyData:
 		{"intent": "怒目摧魂 38", "effects": [{"kind": "damage", "amount": 38}]}
 	]
 	enemy.summon_pool = ["tower_wisp"]
+	# 機制型試點（懲罰型被動）：業鏡照心——玩家每打出一張「技能牌」，明王力量 +1。
+	# 龜縮疊盾餵養他、攻擊牌不觸發 → 同一副牌在這場被迫換打法（明王審判惰戰者）。
+	enemy.passive = {"kind": "strength_on_player_skill", "amount": 1,
+		"label": "業鏡照心：你每打出一張技能牌，鎮獄明王力量 +1"}
 	return enemy
 
 # Multi-Enemy Mode：召喚物 — 水妖觸手（拜月教主 phase 2 召出）
@@ -1633,6 +1637,10 @@ static func _xing_tian() -> EnemyData:
 		{"intent": "刑天戰盾 16", "effects": [{"kind": "block", "amount": 16}]},
 		{"intent": "狂暴橫掃 14 + 破綻 1", "effects": [{"kind": "damage", "amount": 14}, {"kind": "vulnerable", "amount": 1}]}
 	]
+	# 機制型試點（蓄力釋放）：每 3 回合「斷罪巨斧」34 重擊，意圖可預警 →
+	# 玩家要算準大招回合囤格擋或搶斬殺，戰鬥節奏不再是平鋪數值交換
+	enemy.ultimate_every = 3
+	enemy.ultimate_action = {"intent": "斷罪巨斧 34", "effects": [{"kind": "damage", "amount": 34}]}
 	return enemy
 
 static func _black_impermanence() -> EnemyData:
@@ -1942,6 +1950,9 @@ static func _five_eyed_demon() -> EnemyData:
 	enemy.actions = [
 		{"intent": "五眼邪光 16 + 破綻 1", "effects": [{"kind": "damage", "amount": 16}, {"kind": "vulnerable", "amount": 1}]},
 		{"intent": "五眼咒視 虛弱 2 + 破綻 2", "effects": [{"kind": "weak", "amount": 2}, {"kind": "vulnerable", "amount": 2}]},
+		# 機制型試點（狀態反轉）：吞噬自身蠱毒、每 2 層化 1 力量——毒流玩家的檔位閘：
+		# 對牠疊毒等於餵養牠，counterplay 是改打直傷（無毒時此招只剩 6 護體，等於空過）
+		{"intent": "噬毒蛻化", "effects": [{"kind": "absorb_poison"}, {"kind": "block", "amount": 6}]},
 		{"intent": "魔影重重 14", "effects": [{"kind": "block", "amount": 14}]}
 	]
 	return enemy
@@ -1985,7 +1996,7 @@ static func _jumping_frog() -> EnemyData:
 	enemy.portrait_scale = 0.8  # 小型：跳蛙
 	enemy.display_name = "跳跳蛙"
 	enemy.max_hp = 70
-	enemy.portrait_path = "res://assets/art/enemies/water_imp.png"
+	enemy.portrait_path = "res://assets/art/enemies/jumping_frog.png"
 	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "跳躍砸 12", "effects": [{"kind": "damage", "amount": 12}]},

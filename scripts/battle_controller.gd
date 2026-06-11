@@ -148,6 +148,11 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		if Ascension.is_boss_id(enemies[i].id):
 			active_idx = i
 			break
+	# 機制型敵人開戰告示：把被動規則寫進戰鬥 log（玩家第一眼就知道這場的「題目」）
+	for e: EnemyData in enemies:
+		var passive_label: String = String(e.passive.get("label", ""))
+		if not passive_label.is_empty():
+			add_log("【%s】%s" % [e.display_name, passive_label])
 	state = {
 		"players": players,
 		"active_player_index": clamp(run_state.active_character_index, 0, max(0, party_size - 1)),
@@ -757,6 +762,7 @@ func play_card(card: CardData) -> Dictionary:
 	_check_phase_transition()
 	_check_split()
 	_apply_card_play_passive(card)
+	_apply_enemy_passives_on_card(card)
 	_fire_relic_triggers("card_played", {
 		"card_type": card.card_type,
 		"card_cost": card.cost,
@@ -1355,6 +1361,26 @@ func _apply_stolen_item(item: Dictionary) -> void:
 					add_log("【飛龍探雲手】偷取失敗（藥品資料遺失）。")
 			else:
 				add_log("【飛龍探雲手】藥格已滿，選擇是否替換「%s」。" % item.get("display_name", "藥品"))
+
+# 機制型敵人被動（2026-06-11 試點）：strength_on_player_skill ——
+# 玩家每出一張「技能牌」，持有此被動的活敵 +N 力量（鎮獄明王「業鏡照心」）。
+# 龜縮疊盾餵養它、攻擊牌不觸發 → 懲罰拖延，逼玩家換打法。
+func _apply_enemy_passives_on_card(card: CardData) -> void:
+	if card.card_type != "skill":
+		return
+	var slots: Array = state.get("enemies", []) as Array
+	for i: int in range(enemies.size()):
+		var pas: Dictionary = enemies[i].passive
+		if String(pas.get("kind", "")) != "strength_on_player_skill":
+			continue
+		if i >= slots.size() or int((slots[i] as Dictionary).get("hp", 0)) <= 0:
+			continue
+		var amt: int = int(pas.get("amount", 1))
+		var slot: Dictionary = slots[i] as Dictionary
+		slot["strength"] = int(slot.get("strength", 0)) + amt
+		if i == _active_enemy_index():
+			state["enemy_strength"] = int(state.get("enemy_strength", 0)) + amt
+		add_log("%s 業鏡照心：力量 +%d！" % [String(slot.get("name", "敵人")), amt])
 
 func _apply_card_play_passive(card: CardData) -> void:
 	if character == null:
