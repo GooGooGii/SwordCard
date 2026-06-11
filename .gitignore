@@ -35,3 +35,9 @@ _ai_runs/
 
 # render-probe 暫存截圖
 _*.png
+
+# 暫存：smoke/輸出記錄
+smoke_out.txt
+imp.txt
+dump.txt
+noop.txt
