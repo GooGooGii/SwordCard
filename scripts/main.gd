@@ -4632,10 +4632,16 @@ func _animate_map_node(button: Button, selected: bool, selectable: bool, is_boss
 	target.pivot_offset = target.size * 0.5
 	# Boss 振幅稍大一點以強化壓迫感
 	var amplitude: float = 1.26 if is_boss else 1.20
-	var period: float = 0.55   # 單向動畫時長，整個呼吸週期 ≈ 1.1s（比舊版快一倍）
-	var pulse: Tween = create_tween().set_loops()
-	pulse.tween_property(target, "scale", Vector2(amplitude, amplitude), period).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	pulse.tween_property(target, "scale", Vector2.ONE, period).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	# 每個節點的週期略有差異（±15%）→ 即使一起開始也會逐漸錯開、永不重新同步。
+	var period: float = randf_range(0.47, 0.63)   # 單向動畫時長，呼吸週期 ≈ 0.94~1.26s
+	var captured_target: Control = target
+	# 隨機起跳延遲（0 ~ 一個完整週期）→ 節點不會同時放大縮小，視覺更自然。
+	get_tree().create_timer(randf() * period * 2.0).timeout.connect(func() -> void:
+		if captured_target == null or not is_instance_valid(captured_target):
+			return
+		var pulse: Tween = create_tween().set_loops()
+		pulse.tween_property(captured_target, "scale", Vector2(amplitude, amplitude), period).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		pulse.tween_property(captured_target, "scale", Vector2.ONE, period).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT))
 
 func _route_enemy_button(enemy: EnemyData, is_boss: bool = false, enemy_count: int = 1) -> Button:
 	var label_prefix: String = "Boss" if is_boss else "戰鬥"
