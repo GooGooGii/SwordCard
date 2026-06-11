@@ -537,6 +537,12 @@ birefnet-general）後選 birefnet——邊緣最乾淨、無灰色 halo、水�
 
 > 複核方式：`godot --headless --path . -s tools/contact_sheet.gd` 重新輸出 `_contact_*.png` 網格比對。
 
+### A-2. 敵人借圖名實不符（🔴 待補 1 張，2026-06-11 戰鬥畫面比對發現）
+
+| 敵人 ID | 顯示名 | 目前借用 | 問題 | 建議風格 |
+|---|---|---|---|---|
+| `jumping_frog` | 跳跳蛙 | `water_imp.png`（靈島水妖，藍色水靈造型） | 戰鬥中看起來是「水龍」，與蛙名完全對不上 | PAL1 鎖妖塔「跳跳蛙」：綠皮大蛙、後腿蓄力跳躍姿態，去背水墨，存 `assets/art/enemies/jumping_frog.png` 後把 `game_data.gd:1979` portrait_path 改回自身 id |
+
 ### B. 終幕結局頁變體圖（🟡 可選，低優先）
 `baiyue_lord` 擊敗即通關，計劃依 `event_flags` / 隊伍組成出 2–3 種結語（IMPROVEMENT_PLAN P1-3 ④）。
 基礎版共用 §11 的 `assets/art/story/baiyue_lord.png` 一張即可；
