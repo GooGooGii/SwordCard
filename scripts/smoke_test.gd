@@ -3343,6 +3343,18 @@ func _test_curse_catalog() -> void:
 	_check(CurseCatalog.is_curse(card))
 	# 未知 id 回傳 null（無 crash）
 	_check(CurseCatalog.make_card("nonexistent") == null)
+	# 去除規則：恰 2 張不可去除型（邪印 / 殘蠱），其餘可去除
+	var non_removable: Array[String] = []
+	for c2: Dictionary in all_curses:
+		if not bool(c2.get("removable", true)):
+			non_removable.append(String(c2["id"]))
+	_check(non_removable.size() == 2, "應恰有 2 張不可去除型詛咒，實得 %d：%s" % [non_removable.size(), str(non_removable)])
+	_check("xie_yin" in non_removable and "gu_du" in non_removable, "不可去除型應為 邪印/殘蠱，實得 %s" % str(non_removable))
+	_check(CurseCatalog.is_removable(CurseCatalog.make_card("yao_zhai")), "妖債應可去除")
+	_check(not CurseCatalog.is_removable(CurseCatalog.make_card("xie_yin")), "邪印應不可去除")
+	_check(not CurseCatalog.is_removable(CurseCatalog.make_card("gu_du")), "殘蠱應不可去除")
+	# 非詛咒卡不受此限（is_removable 回 true）
+	_check(CurseCatalog.is_removable(GameData.make_card("t", "test", "P", 1, "attack", "x", [{"kind": "damage", "amount": 5}])), "一般卡 is_removable 應為 true")
 
 func _test_curse_play_card_rejected(character: CharacterData, enemy: EnemyData) -> void:
 	# play_card 對 curse 直接拒絕、不消耗靈力

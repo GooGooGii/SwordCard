@@ -7217,10 +7217,21 @@ func _duplicate_summary_text(target_cards: Array) -> String:
 	return "重複：" + "，".join(parts)
 
 func _deck_view_card(card: CardData, mode: String = "view", count: int = 1) -> Control:
-	# P4：curse 不可選（remove / upgrade 都不行）
+	# P4：curse 移除規則 —— 商店削牌(shop_remove)可去除「可去除型」詛咒（邪印/殘蠱除外）；
+	# 事件移除(remove)與升級仍不可選 curse。
 	var is_curse: bool = CurseCatalog.is_curse(card)
-	var selectable: bool = (not is_curse) and (mode == "remove" or mode == "shop_remove" or ((mode == "upgrade" or mode == "shop_upgrade") and not card.upgraded))
+	var curse_removable: bool = is_curse and CurseCatalog.is_removable(card)
+	var selectable: bool = false
+	if mode == "shop_remove":
+		selectable = (not is_curse) or curse_removable
+	elif mode == "remove":
+		selectable = not is_curse
+	elif mode == "upgrade" or mode == "shop_upgrade":
+		selectable = (not is_curse) and (not card.upgraded)
 	var visually_enabled: bool = (mode != "upgrade" and mode != "shop_upgrade") or not card.upgraded
+	# 商店削牌：不可去除型詛咒灰掉，明示無法選取
+	if mode == "shop_remove" and is_curse and not curse_removable:
+		visually_enabled = false
 	# 升級畫面把卡片放大（隱藏角色名那行騰出的空間），其餘檢視/移除維持原尺寸
 	var is_upgrade_mode: bool = (mode == "upgrade" or mode == "shop_upgrade")
 	var card_dims: Vector2 = Vector2(196, 368) if is_upgrade_mode else Vector2(153, 287)

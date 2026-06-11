@@ -27,8 +27,9 @@ static func all() -> Array[Dictionary]:
 		{
 			"id": "xie_yin",
 			"display_name": "邪印",
-			"description": "拜月邪印纏身。回合開始時 +1 虛弱。",
+			"description": "拜月邪印纏身，凡俗手段無法抹去。回合開始時 +1 虛弱。",
 			"retention": {"trigger": "turn_start", "effects": [{"kind": "weak_self", "amount": 1}]},
+			"removable": false,  # 不可去除型（拜月神符之印、纏身難消）
 		},
 		{
 			"id": "tong_ji",
@@ -51,8 +52,9 @@ static func all() -> Array[Dictionary]:
 		{
 			"id": "gu_du",
 			"display_name": "殘蠱",
-			"description": "苗疆殘蠱未除。戰鬥開始時 +2 蠱毒。",
+			"description": "苗疆殘蠱入骨，難以剔除。戰鬥開始時 +2 蠱毒。",
 			"retention": {"trigger": "battle_start", "effects": [{"kind": "poison_self", "amount": 2}]},
+			"removable": false,  # 不可去除型（黑苗戰鎧之蠱、入骨難除）
 		},
 	]
 
@@ -61,6 +63,14 @@ static func by_id(curse_id: String) -> Dictionary:
 		if c["id"] == curse_id:
 			return c
 	return {}
+
+# 此詛咒是否可被去除（商店削牌服務 / 移除類效果）。預設可去除；
+# 標記 "removable": false 的為「不可去除型」（邪印 / 殘蠱）。
+static func is_removable(card: CardData) -> bool:
+	if not is_curse(card):
+		return true  # 非詛咒卡走原本移除規則，不受此限
+	var data: Dictionary = by_id(card.id)
+	return bool(data.get("removable", true))
 
 # 把 curse dict 轉成 CardData（card_type="curse"），可加入 deck
 static func make_card(curse_id: String) -> CardData:
