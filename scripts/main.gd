@@ -2277,7 +2277,7 @@ func _build_battle_scene() -> void:
 	_build_left_dock(bottom)
 	hand_row = HandFan.new()
 	hand_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hand_row.custom_minimum_size = Vector2(0, 260 if _battle_compact else 320)
+	hand_row.custom_minimum_size = Vector2(0, 278 if _battle_compact else 338)  # F3：容納放大卡
 	hand_row.hand_base_lift = 0.0 if _battle_compact else 40.0
 	bottom.add_child(hand_row)
 	_build_right_dock(bottom)
@@ -2286,7 +2286,7 @@ func _build_bench_widget(parent: HBoxContainer) -> void:
 	# 後排不再是一格格獨立的金邊盒子，而是去背肖像「斜向交疊」站在隊長身後，
 	# 偏暗往後退、最近的後援疊在最上層。手動定位 → 用 Control 當容器。
 	var holder: Control = Control.new()
-	holder.custom_minimum_size = Vector2(118, 0)
+	holder.custom_minimum_size = Vector2(140, 0)
 	holder.size_flags_horizontal = 0
 	holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	holder.clip_contents = false  # 允許肖像略微溢出右緣、疊向隊長
@@ -2311,7 +2311,7 @@ func _refresh_bench_strip() -> void:
 	if bench_indices.is_empty():
 		bench_strip.custom_minimum_size = Vector2(0, 0)
 		return
-	bench_strip.custom_minimum_size = Vector2(118, 0)
+	bench_strip.custom_minimum_size = Vector2(140, 0)
 	var n: int = bench_indices.size()
 	# 由「最遠」往「最近」加 child：先加的畫在底層（被後加的蓋住）。
 	# rank 0 = 最靠近隊長的第一後援（最大、最亮、最靠右下、畫最上層）。
@@ -2333,9 +2333,9 @@ func _bench_portrait(index: int, player_data: Dictionary, rank: int) -> Control:
 	var max_hp_v: int = int(player_data.get("max_hp", 1))
 	var alive: bool = hp > 0
 	# 尺寸 / 站位：front 96、每往後一階縮 16；後排往左上錯開製造交疊景深
-	var psize: float = max(64.0, 96.0 - rank * 16.0)
-	var off_x: float = 22.0 - rank * 14.0   # rank0 貼齊 holder 右緣、疊向隊長；後排往左退
-	var off_y: float = rank * 54.0          # 後排往上錯開，與前一個交疊約 40 px
+	var psize: float = max(86.0, 126.0 - rank * 14.0)  # F1：後排放大，比例不再懸殊
+	var off_x: float = 30.0 - rank * 18.0   # rank0 貼齊 holder 右緣、疊向隊長；後排往左退
+	var off_y: float = rank * 64.0          # 後排往上錯開，維持交疊景深
 	var wrap: Control = Control.new()
 	wrap.custom_minimum_size = Vector2(psize, psize)
 	wrap.size = Vector2(psize, psize)
@@ -2605,7 +2605,8 @@ func _build_player_widget(parent: HBoxContainer) -> void:
 	parent.add_child(col)
 	player_feedback_label = UIFactory.feedback_label()
 	col.add_child(_wrap_feedback_label(player_feedback_label))
-	var portrait_size: Vector2 = Vector2(190, 220) if _battle_compact else Vector2(260, 290)
+	# F1：玩家縮一階（190→176），拉近與 0.72 倍多敵的視覺比例
+	var portrait_size: Vector2 = Vector2(176, 206) if _battle_compact else Vector2(244, 272)
 	col.add_child(_portrait_with_block_badge(selected_character.portrait_path, portrait_size, true, true))
 	# Phase B2 重排（與敵欄一致）：HP 緊貼腳下 → chips → 名字+Lv 降級置底
 	player_hp_bar = UIFactory.hp_bar(ThemeColors.HP_FILL, ThemeColors.HP_BG_DARK)
@@ -2618,9 +2619,11 @@ func _build_player_widget(parent: HBoxContainer) -> void:
 	name_lv_row.add_theme_constant_override("separation", 8)
 	col.add_child(name_lv_row)
 	player_name_label = UIFactory.card_label(selected_character.display_name, 13 if _battle_compact else 15, Color("e8dcbe"), HORIZONTAL_ALIGNMENT_CENTER)
+	player_name_label.autowrap_mode = TextServer.AUTOWRAP_OFF  # HBox 擠壓下 wrap 會逐字直書
 	name_lv_row.add_child(player_name_label)
 	var active_lv: int = run_state.character_levels[run_state.active_character_index] if run_state.character_levels.size() > run_state.active_character_index else 1
 	player_level_label = UIFactory.card_label("Lv %d" % active_lv, 12, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	player_level_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	name_lv_row.add_child(player_level_label)
 
 func _build_enemy_row(parent: HBoxContainer) -> void:
@@ -2712,11 +2715,12 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	# 意圖（顯示於頭頂上）：icon 列在上、文字在下。icon 圖未補時自動 fallback 純文字徽章。
 	# 文字 label 直接掛在 col（取得全寬），避免被 HBox 擠到逐字直書。
 	var intent_size: int = 18 if (_battle_compact or total >= 2) else 20  # Phase B1：大字化
+	var icon_px: float = 26.0 if (_battle_compact or total >= 2) else 32.0  # Phase B1：大圖化
 	var intent_icon_row: HBoxContainer = HBoxContainer.new()
 	intent_icon_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	intent_icon_row.add_theme_constant_override("separation", 2)
+	intent_icon_row.custom_minimum_size = Vector2(0, icon_px)  # F2：icon 全隱藏時高度不塌縮
 	var intent_icons: Array = []
-	var icon_px: float = 26.0 if (_battle_compact or total >= 2) else 32.0  # Phase B1：大圖化
 	for _ii: int in range(3):
 		var ic: TextureRect = TextureRect.new()
 		ic.custom_minimum_size = Vector2(icon_px, icon_px)
@@ -8105,7 +8109,7 @@ func _update_poison_preview(bar: ProgressBar, hp: int, max_hp: int, poison: int)
 func _card_button(card: CardData) -> Button:
 	var shown_cost: int = battle.effective_card_cost(card)
 	var affordable: bool = int(battle.state["energy"]) >= shown_cost
-	var card_size: Vector2 = Vector2(120, 225) if _battle_compact else Vector2(140, 262)
+	var card_size: Vector2 = Vector2(134, 251) if _battle_compact else Vector2(152, 284)  # F3：卡片放大
 	# 還原：戰鬥手牌顯示完整效果描述（先前 P1-5 改一行摘要，使用者要求改回）
 	var button: Button = _make_card_button(card, shown_cost, card_size, affordable, true, battle.state, false)
 	button.disabled = not affordable
@@ -8213,7 +8217,7 @@ func _find_enemy_under_drag(global_pos: Vector2) -> int:
 func _is_position_outside_hand(global_pos: Vector2) -> bool:
 	if hand_row == null or not is_instance_valid(hand_row):
 		return false
-	var card_h: float = 173.0 if _battle_compact else 208.0
+	var card_h: float = 193.0 if _battle_compact else 219.0  # F3：跟卡片放大同步
 	var visual_card_top: float = hand_row.global_position.y + hand_row.size.y - card_h - hand_row.hand_base_lift
 	return global_pos.y < visual_card_top + card_h * 0.35
 
@@ -8356,9 +8360,9 @@ func _make_card_button(card: CardData, cost: int, size: Vector2, affordable: boo
 	#   標題名牌帶：y 45.6%~51.3%
 	#   描述卷軸文字安全區：x 16%~84%, y 59%~78%
 	#   左上靈力寶石 / 右上稀有度寶石。
-	var title_font_size: int = int(clamp(size.y * 0.045, 10, 20))
-	var type_font_size: int = int(clamp(size.y * 0.035, 9, 16))
-	var desc_font_size: int = int(clamp(size.y * 0.040, 10, 17))
+	var title_font_size: int = int(clamp(size.y * 0.048, 12, 21))
+	var type_font_size: int = int(clamp(size.y * 0.037, 10, 16))
+	var desc_font_size: int = int(clamp(size.y * 0.043, 12, 18))
 
 	var button: Button = Button.new()
 	button.text = ""
