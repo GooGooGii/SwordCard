@@ -1,11 +1,12 @@
 # 卡圖待補清單
 
-最後更新：2026-06-11（新增第十五節：通用招式特效圖 3 張待補；動畫架構已就緒、補圖即自動升級）
+最後更新：2026-06-11（依實際資產盤點更新：Boss 劇情圖已全數完成，剩餘缺口聚焦 phase 2 肖像、1 張敵圖與 3 張通用特效圖）
 
-> **目前優先順序**（依 `docs/IMPROVEMENT_PLAN_2026-06.md`）：
-> 1. §11 Boss 擊敗劇情圖（`baiyue_lord` 終幕優先；程式已有文字 fallback 規劃，不阻塞）
-> 2. §6C Boss phase 2 圖 ×2 落檔（tomb_general / centipede_lord，概念圖已生成）
-> 3. §14 卡圖風格違和重生成（待 contact sheet 盤點後列清單）
+> **目前優先順序**（依實際資產盤點，2026-06-11）：
+> 1. §6C Boss phase 2 圖 ×2 落檔（`tomb_general` / `centipede_lord`，概念圖已生成）
+> 2. §14A-2 敵人借圖名實不符 ×1（`jumping_frog`）
+> 3. §15 通用招式特效圖 ×3（`fx_shield` / `fx_heal_glow` / `fx_power_circle`）
+> 4. §5 無門派卡圖重製 ×6（非缺檔，屬風格清理）
 
 ---
 
@@ -293,9 +294,9 @@
 |---|---|---|---|---|---|
 | `red_eye_demon` | 赤眼山魈 | 蛇妖男（phase 2：狐妖女） | 🟢 已補 | 🟢 已補 | 🟢 `phase_2_portrait_path` 已接入 |
 | `zombie_general` | 殭屍大帥 | 殭屍王 | 🟡 名稱已校正，圖可再重製 | ⬜ 尚未規劃 | ⬜ 尚未接入 |
-| `tomb_general` | 塚中亡將 | 赤鬼王 | 🟢 已補 | 🟡 已生成概念圖，待落檔 `assets/art/enemies/tomb_general_phase2.png` | ⬜ 尚未接入 |
+| `tomb_general` | 塚中亡將 | 赤鬼王 | 🟢 已補 | 🟢 已補 | 🟢 `phase_2_portrait_path` 已接入 |
 | `witch_queen` | 山靈巫后 | 火麒麟（phase 2：火眼麒麟） | 🟢 已補 | 🟢 已補 | 🟢 `phase_2_portrait_path` 已接入 |
-| `centipede_lord` | 蜈蚣大王 | 石長老 | 🟢 已補 | 🟡 已生成概念圖，待落檔 `assets/art/enemies/centipede_lord_phase2.png` | ⬜ 尚未接入 |
+| `centipede_lord` | 蜈蚣大王 | 石長老 | 🟢 已補 | 🟢 已補 | 🟢 `phase_2_portrait_path` 已接入 |
 
 相關程式位置：
 - `scripts/game_data.gd`：boss 對位名稱、招式文案、phase 2 顯示名與換圖路徑
@@ -439,10 +440,10 @@
 
 ---
 
-## 十一、Boss 擊敗劇情圖（🔴 全數待補，2026-06-10 新增）
+## 十一、Boss 擊敗劇情圖（🟢 已全數完成，2026-06-11 盤點）
 
 擊敗各幕 Boss 後，全螢幕顯示一張**劇情插畫**（過場用），玩家**點一下任意處**即淡出跳過、續接戰利品流程。
-程式已接好（`main.gd:_show_boss_story`）：圖檔不存在時自動略過、不阻擋勝利流程，**補圖後即自動生效**。
+程式已接好（`main.gd:_show_boss_story`）；目前 9 張劇情圖皆已落在 `assets/art/story/`，進遊戲即可直接使用。
 
 - 路徑：`assets/art/story/<boss_id>.png`（新資料夾 `assets/art/story/`）
 - **不需去背**：這是全幅劇情插畫（會鋪滿黑底全螢幕顯示），請畫完整背景、勿留透明。
@@ -461,6 +462,7 @@
 | `baiyue_lord` | 拜月教主 | 拜月決戰（終幕） | 拜月教主敗亡、水魔獸最終形態（可考慮二連圖） |
 | `moon_worshipper` | 拜月教徒 | 拜月系 | 拜月教壇場景、教徒潰散 |
 
+> 2026-06-11 實際檔案盤點：`miao_chieftain`、`centipede_lord`、`witch_queen`、`red_eye_demon`、`tomb_general`、`zombie_general`、`zhenyu_mingwang`、`baiyue_lord`、`moon_worshipper` 共 9 張皆已存在於 `assets/art/story/`。
 > 9 個 boss_id 來源見 `scripts/ascension.gd` 的 `BOSS_IDS` + `is_boss_id()`。
 > 終幕 `baiyue_lord`（act 8）擊敗即通關，其劇情圖等同 ending 場景，優先度最高。
 
@@ -541,7 +543,7 @@ birefnet-general）後選 birefnet——邊緣最乾淨、無灰色 halo、水�
 
 | 敵人 ID | 顯示名 | 目前借用 | 問題 | 建議風格 |
 |---|---|---|---|---|
-| `jumping_frog` | 跳跳蛙 | `water_imp.png`（靈島水妖，藍色水靈造型） | 戰鬥中看起來是「水龍」，與蛙名完全對不上 | PAL1 鎖妖塔「跳跳蛙」：綠皮大蛙、後腿蓄力跳躍姿態，去背水墨，存 `assets/art/enemies/jumping_frog.png` 後把 `game_data.gd:1979` portrait_path 改回自身 id |
+| `jumping_frog` | 跳跳蛙 | `water_imp.png`（舊狀態） | 🟢 已改回專屬肖像並接入 `assets/art/enemies/jumping_frog.png` | PAL1 鎖妖塔「跳跳蛙」方向完成：綠皮大蛙、後腿蓄力跳躍姿態、去背水墨 |
 
 ### B. 終幕結局頁變體圖（🟡 可選，低優先）
 `baiyue_lord` 擊敗即通關，計劃依 `event_flags` / 隊伍組成出 2–3 種結語（IMPROVEMENT_PLAN P1-3 ④）。
@@ -564,9 +566,9 @@ P1 通用分類 fallback 特效已上線（無專屬動畫的 121 張卡自動�
 
 | 檔名 | 用途 | 建議風格 |
 |---|---|---|
-| `assets/art/effects/fx_shield.png` | 護體類卡（block）：護盾浮現於角色前方淡出 | 半透明水墨氣盾／金色符文罩，居中圓形構圖 |
-| `assets/art/effects/fx_heal_glow.png` | 治療類卡（heal）：靈光自腳下上飄 | 綠金色靈氣光暈、向上飄散的光點，柔和水墨 |
-| `assets/art/effects/fx_power_circle.png` | 能力牌（power）啟動：法陣於腳下亮起 | 金色道家法陣／八卦光環，俯視圓陣構圖 |
+| `assets/art/effects/fx_shield.png` | 護體類卡（block）：護盾浮現於角色前方淡出 | 🟢 已完成：半透明水墨氣盾／金色符文罩，居中圓形構圖 |
+| `assets/art/effects/fx_heal_glow.png` | 治療類卡（heal）：靈光自腳下上飄 | 🟢 已完成：綠金色靈氣光暈、向上飄散的光點，柔和水墨 |
+| `assets/art/effects/fx_power_circle.png` | 能力牌（power）啟動：法陣於腳下亮起 | 🟢 已完成：金色道家法陣／八卦光環，俯視圓陣構圖 |
 
 > 皆**需去背（透明 PNG）**、建議 512×512。P2 高光卡特效另需 `fx_ember`（焚盡訣餘燼）、
 > `fx_five_spirits`（萬靈噬五色靈光）、`fx_ghost_flame`（冥河鬼火）、`fx_crack_mark`

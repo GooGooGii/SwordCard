@@ -1215,6 +1215,7 @@ static func _centipede_lord() -> EnemyData:
 		]}
 	]
 	enemy.phase_2_display_name = "赤血毒焰"
+	enemy.phase_2_portrait_path = "res://assets/art/enemies/centipede_lord_phase2.png"
 	enemy.phase_2_actions = [
 		{"intent": "赤血烈掌 10x3", "effects": [
 			{"kind": "damage", "amount": 10},
@@ -1484,6 +1485,7 @@ static func _tomb_general() -> EnemyData:
 		{"intent": "血池妖氣 20", "effects": [{"kind": "block", "amount": 20}]},
 		{"intent": "飛岩術 14 + 14", "effects": [{"kind": "damage", "amount": 14}, {"kind": "damage", "amount": 14}]}
 	]
+	enemy.phase_2_portrait_path = "res://assets/art/enemies/tomb_general_phase2.png"
 	enemy.phase_2_actions = [
 		{"intent": "血魔神功 28 + 虛弱 1", "effects": [{"kind": "damage", "amount": 28}, {"kind": "weak", "amount": 1}]},
 		{"intent": "炎咒 22 + 破綻 2", "effects": [{"kind": "damage", "amount": 22}, {"kind": "vulnerable", "amount": 2}]},
