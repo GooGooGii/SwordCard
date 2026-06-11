@@ -40,24 +40,27 @@
 - 單體目標 = active 敵 wrap（沿用 `_animate_du_zhen_effect` 的 target 解析 pattern）。
 - 待補圖登錄於 `ART_TODO.md` 第十四節；PNG 放進 `assets/art/effects/` 即自動生效。
 
-## P2. 高光卡專屬特效（之後逐批，多數可複用現有圖）
+## P2. 高光卡專屬特效（🟢 2026-06-11 已實作；待補圖到位自動升級）
 
-| 優先 | 卡 | 構想 | 用圖 |
+| 卡 | 實作 | 用圖 | 狀態 |
 |---|---|---|---|
-| 1 | 焚盡訣 | 手牌逐張起火燒成灰燼飛向敵 | `fireball.png` 現有；可加 `fx_ember.png` 🔴 |
-| 2 | 銅錢鏢/亂雲連斬/鴛鴦雙劍/旋劍花舞 | 共用「N 連斬」吃 hits 參數 | `witch_blade_slash.png` 現有 |
-| 3 | 破軍劍/索命一劍/索魂十三劍 | 重劍蓄力突刺（共用、調色差異）| `gold_giant_sword.png` 現有 |
-| 4 | 萬靈噬 | 五色靈光匯聚再炸開 | `fx_five_spirits.png` 🔴 |
-| 5 | 冥河引渡/鬼火燎原 | 幽藍鬼火橫掃全場 | `fx_ghost_flame.png` 🔴 |
-| 6 | 蠱血噬心/毒入膏肓/萬蠱噬天 | 毒液聚爆 nova | `poison_explosion.png` 現有 |
-| 7 | 醉龍翻江/青煙竹影 | 醉拳酒氣 / 竹影節節 | `drunken_god.png`/`ink_dragon.png` 現有 |
-| 8 | 趁隙破勢 | 破綻標記碎裂 + 爆擊 | `fx_crack_mark.png` 🔴 |
+| 焚盡訣 | `_animate_fen_jin_effect`：火球自手牌區弧線飛向每隻活敵、命中爆燃 | `fireball.png` | 🟢 |
+| 銅錢鏢/亂雲連斬/鴛鴦雙劍/旋劍花舞/青煙竹影 | `_animate_multi_slash_effect`：N 連斬（吃 hits、左右鏡像交替；青煙帶竹綠 tint）| `witch_blade_slash.png` | 🟢 |
+| 破軍劍/索命一劍/索魂十三劍/趁隙破勢 | `_animate_heavy_sword_effect`：重劍蓄力急墜突刺（索魂/趁隙暗紅 tint）| `gold_giant_sword.png` | 🟢 |
+| 萬靈噬 | `_animate_wan_ling_shi_effect`：五色 tinted ink_slash 環攻每敵；`fx_five_spirits.png` 補圖後自動改用 | `ink_slash.png`（暫）/ `fx_five_spirits.png` 🔴 | 🟢（退化版）|
+| 冥河引渡/鬼火燎原 | `_animate_ghost_flame_effect`：幽藍鬼火由左至右逐敵爆燃；`fx_ghost_flame.png` 補圖後自動改用 | `poison_explosion.png` 幽藍 tint（暫）/ `fx_ghost_flame.png` 🔴 | 🟢（退化版）|
+| 蠱血噬心/毒入膏肓/萬蠱噬天 | `_animate_poison_nova_effect`：毒液聚小→爆大 | `poison_explosion.png` | 🟢 |
+| 醉龍翻江 | 共乘 `_animate_jiu_shen_effect`（酒神系）| `drunken_god.png` | 🟢 |
+| 水靈封印 | 共乘 `_animate_ice_effect`（水系）| `ice_spike.png` | 🟢 |
+
+> render_effects.gd 的 CARD_ANIM 已同步；`_card_anim_duration` 已登錄全部 >0.5s 新特效。
 
 ## P3. 既有特效打磨
-- `_card_anim_duration` 補全（目前只登錄萬劍訣 1.75s → 其他長動畫在「打死最後一敵」時會被結算畫面切尾巴）。
-- 單體特效逐支確認多敵時打「實際目標 wrap」而非寫死 active。
-- 雷系 8 張差異化微調（連珠/狂雷多段感）。
-- `render_effects.gd` 的 `CARD_ANIM` 表同步新特效（截圖工具依賴它）。
+- 🟢 `_card_anim_duration` 補全（新特效 7 組已登錄；修「打死最後一敵切尾巴」）。
+- 🟢 `render_effects.gd` 的 `CARD_ANIM` 表同步（P2 全部登錄）。
+- ⬜ 單體特效逐支確認多敵時打「實際目標 wrap」而非寫死 active（新特效已用 `_generic_fx_targets`；舊特效待巡）。
+- ⬜ 雷系 8 張差異化微調（連珠/狂雷多段感）。
+- ⬜ 實機抽查截圖（`render_effects.gd` 改 SHOTS 跑，非本機）。
 
 ## 不做
 - 全 181 張逐張專屬（投報率低，P1+P2 已達 90% 體感）。

@@ -3676,7 +3676,7 @@ func play_card(card: CardData, source_button: Button = null) -> void:
 			_animate_wan_li_kuang_effect(card)
 		"zl_leizhou", "zl_leiguang", "zl_wuleizhou", "zl_shenlei", "zl_tianlei", "zl_kuanglei", "zl_xiaoleizhou", "zl_lianzhuzhou":
 			_animate_lightning_effect(card)
-		"zl_xuanbing", "zl_fengxuebing", "zl_bingzhou":
+		"zl_xuanbing", "zl_fengxuebing", "zl_bingzhou", "zl_shuiyin":
 			_animate_ice_effect(card)
 		"zl_yanzhou", "zl_sanmeizhenhuo":
 			_animate_fire_effect(card)
@@ -3694,7 +3694,7 @@ func play_card(card: CardData, source_button: Button = null) -> void:
 			_animate_du_zhen_effect(card)
 		"anu_wuyuezhan", "anu_xuerenwu":
 			_animate_wu_yue_zhan_effect(card)
-		"lxy_jiushen":
+		"lxy_jiushen", "lxy_zuilong":
 			_animate_jiu_shen_effect(card)
 		"lxy_feilong":
 			_animate_fei_long_effect(card, result.get("stolen_item", {}) as Dictionary)
@@ -3718,6 +3718,19 @@ func play_card(card: CardData, source_button: Button = null) -> void:
 			_animate_confuse_effect(card)
 		"anu_guzhang", "anu_duwu", "anu_sanshigu":
 			_animate_poison_fog_effect(card)
+		# ── P2 高光卡專屬特效（docs/ANIM_PLAN.md）──
+		"lyr_tongqianbiao", "lyr_lianhuan", "lyr_shuangjianci", "lyr_xuanjian", "lxy_qingyan_zhuying":
+			_animate_multi_slash_effect(card)
+		"lyr_poqian", "lyr_juesha", "lyr_suohun", "cl_chenxi_poshi":
+			_animate_heavy_sword_effect(card)
+		"cl_fenjinjue":
+			_animate_fen_jin_effect(card)
+		"zl_wanlingshi":
+			_animate_wan_ling_shi_effect(card)
+		"anu_minghe_yindu", "anu_guihuo_liaoyuan":
+			_animate_ghost_flame_effect(card)
+		"anu_guxue_shixin", "anu_wangushitian", "anu_cuihua":
+			_animate_poison_nova_effect(card)
 		_:
 			# 沒有專屬特效的卡 → 通用分類 fallback（docs/ANIM_PLAN.md P1）
 			_play_generic_card_fx(card)
@@ -3858,10 +3871,29 @@ func _check_battle_end() -> bool:
 # 估算出牌特效動畫的總時長（秒）。只有明顯超過 BATTLE_END_DELAY 的需要登記，
 # 其餘回傳 0 → 結算沿用預設 0.8s 等待。改動畫時長時記得同步這裡。
 func _card_anim_duration(card: CardData) -> float:
+	# 打死最後一敵時，結算畫面會等這個秒數再切（避免長動畫被切尾巴）。
 	match card.id:
 		"lxy_wanjian", "lxy_wanjianguizong":
 			# 引劍升天 0.32s + 劍雨（最後一把 delay 0.75 + dur 0.4 + 淡出 0.14）
 			return 1.75
+		"cl_fenjinjue":
+			# 火球弧線（per-target stagger 0.14 + 飛行 0.38 + 爆燃 0.16）
+			return 1.2
+		"zl_wanlingshi":
+			# 五色靈光 ×5（stagger 0.09）+ 收尾 shake
+			return 1.0
+		"anu_minghe_yindu", "anu_guihuo_liaoyuan":
+			# 鬼火逐敵燎原（stagger 0.16 + 爆燃 0.4）
+			return 0.9
+		"lyr_tongqianbiao", "lyr_lianhuan", "lyr_shuangjianci", "lyr_xuanjian", "lxy_qingyan_zhuying":
+			# N 連斬（最多 5 段 × 0.13 + 收尾）
+			return 0.95
+		"lyr_poqian", "lyr_juesha", "lyr_suohun", "cl_chenxi_poshi":
+			# 重劍蓄力 0.34 + 突刺 0.14 + 淡出
+			return 0.8
+		"anu_guxue_shixin", "anu_wangushitian", "anu_cuihua":
+			# 毒液聚爆（聚 0.18 + 爆 0.24）
+			return 0.7
 		_:
 			return 0.0
 
@@ -11540,3 +11572,300 @@ func _spawn_rising_fx(tex: Texture2D, anchor: Control, rel_scale: Vector2, rise:
 	tween.finished.connect(func() -> void:
 		if is_instance_valid(fx):
 			fx.queue_free())
+
+# ════════════════════════════════════════════════════════════════════════════
+# P2 高光卡專屬特效（docs/ANIM_PLAN.md）— 全部複用既有特效圖；
+# 待補圖（fx_ghost_flame / fx_five_spirits）缺時退化為既有圖換色，補圖自動升級。
+# ════════════════════════════════════════════════════════════════════════════
+
+# N 連斬（銅錢鏢/亂雲連斬/鴛鴦雙劍/旋劍花舞/青煙竹影）：witch_blade_slash 連續斜劈，
+# 段數 = damage effect 的 hits 總和，左右鏡像交替、隨機偏移，每段命中 shake。
+func _animate_multi_slash_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var tex: Texture2D = UIFactory.load_texture("res://assets/art/effects/witch_blade_slash.png")
+	if tex == null:
+		return
+	var targets: Array[Dictionary] = _generic_fx_targets(false)
+	if targets.is_empty():
+		return
+	var wrap: Control = targets[0].get("wrap") as Control
+	if wrap == null or not is_instance_valid(wrap):
+		return
+	var hits: int = 0
+	for eff: Dictionary in card.effects:
+		if String(eff.get("kind", "")) == "damage":
+			hits += max(1, int(eff.get("hits", 1)))
+	hits = clampi(hits, 2, 5)
+	# 青煙竹影：竹綠 tint；其餘原色
+	var tint: Color = Color(0.85, 1.25, 0.9) if card.id == "lxy_qingyan_zhuying" else Color.WHITE
+	var s_size: Vector2 = Vector2(wrap.size.x, wrap.size.x) * 0.95
+	for k: int in range(hits):
+		var delay: float = k * 0.13
+		var slash: TextureRect = TextureRect.new()
+		slash.texture = tex
+		slash.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		slash.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		slash.size = s_size
+		slash.pivot_offset = s_size / 2.0
+		slash.flip_h = (k % 2 == 1)  # 左右交替劈
+		slash.global_position = wrap.global_position + wrap.size / 2.0 - s_size / 2.0 \
+			+ Vector2(randf_range(-18.0, 18.0), randf_range(-22.0, 14.0))
+		slash.rotation = deg_to_rad(randf_range(-18.0, 18.0))
+		slash.scale = Vector2(0.5, 0.5)
+		slash.modulate = Color(tint.r, tint.g, tint.b, 0.0)
+		slash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slash.z_index = 60
+		add_child(slash)
+		var tween: Tween = create_tween().set_parallel(true)
+		tween.tween_property(slash, "scale", Vector2(1.05, 1.05), 0.2).set_delay(delay)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(slash, "modulate:a", 1.0, 0.08).set_delay(delay)
+		tween.tween_property(slash, "modulate:a", 0.0, 0.12).set_delay(delay + 0.16)
+		var captured_wrap: Control = wrap
+		var captured_delay: float = delay
+		tween.finished.connect(func() -> void:
+			if is_instance_valid(slash):
+				slash.queue_free())
+		get_tree().create_timer(captured_delay + 0.14).timeout.connect(func() -> void:
+			if is_instance_valid(captured_wrap):
+				UIFactory.shake_node(captured_wrap, 5.0, 0.12))
+
+# 重劍蓄力突刺（破軍劍/索命一劍/索魂十三劍/趁隙破勢）：gold_giant_sword 自上方
+# 蓄勢半拍 → 急墜刺入目標，重 shake + flash。索魂/趁隙帶暗紅 tint（debuff payoff 色）。
+func _animate_heavy_sword_effect(card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var tex: Texture2D = UIFactory.load_texture("res://assets/art/effects/gold_giant_sword.png")
+	if tex == null:
+		return
+	var targets: Array[Dictionary] = _generic_fx_targets(false)
+	if targets.is_empty():
+		return
+	var wrap: Control = targets[0].get("wrap") as Control
+	if wrap == null or not is_instance_valid(wrap):
+		return
+	var tint: Color = Color(1.35, 0.75, 0.7) if (card.id == "lyr_suohun" or card.id == "cl_chenxi_poshi") else Color.WHITE
+	var s_size: Vector2 = Vector2(wrap.size.x * 0.62, wrap.size.x * 1.5)
+	var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
+	var sword: TextureRect = TextureRect.new()
+	sword.texture = tex
+	sword.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sword.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	sword.size = s_size
+	sword.pivot_offset = s_size / 2.0
+	sword.rotation = deg_to_rad(18.0)
+	var start_pos: Vector2 = target_center + Vector2(-40.0, -wrap.size.y * 1.15) - s_size / 2.0
+	sword.global_position = start_pos
+	sword.modulate = Color(tint.r, tint.g, tint.b, 0.0)
+	sword.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sword.z_index = 60
+	add_child(sword)
+	var tween: Tween = create_tween()
+	# 蓄力：浮現 + 微抬
+	tween.tween_property(sword, "modulate:a", 1.0, 0.16)
+	tween.parallel().tween_property(sword, "global_position:y", start_pos.y - 14.0, 0.18)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	# 急墜刺入
+	tween.tween_property(sword, "global_position", target_center + Vector2(0, 6.0) - s_size / 2.0, 0.14)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	var captured_wrap: Control = wrap
+	tween.tween_callback(func() -> void:
+		if is_instance_valid(captured_wrap):
+			UIFactory.shake_node(captured_wrap, 14.0, 0.3)
+			UIFactory.flash_node(captured_wrap, Color(1.6, 1.5, 1.3), 0.2))
+	tween.tween_property(sword, "modulate:a", 0.0, 0.18)
+	tween.finished.connect(func() -> void:
+		if is_instance_valid(sword):
+			sword.queue_free())
+
+# 焚盡訣：火球自手牌區弧線飛向每隻活敵、命中爆燃（scale 爆開 + 橘紅 flash）。
+func _animate_fen_jin_effect(_card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var tex: Texture2D = UIFactory.load_texture("res://assets/art/effects/fireball.png")
+	if tex == null:
+		return
+	var targets: Array[Dictionary] = _generic_fx_targets(true)
+	if targets.is_empty():
+		return
+	var view_size: Vector2 = get_viewport_rect().size
+	var hand_origin: Vector2 = Vector2(view_size.x * 0.5, view_size.y - 120.0)
+	for t_i: int in range(targets.size()):
+		var wrap: Control = targets[t_i].get("wrap") as Control
+		if wrap == null or not is_instance_valid(wrap):
+			continue
+		var delay: float = 0.12 + t_i * 0.14
+		var target_center: Vector2 = wrap.global_position + wrap.size / 2.0
+		var ball: TextureRect = TextureRect.new()
+		ball.texture = tex
+		ball.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		ball.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		var b_size: Vector2 = Vector2(70.0, 70.0)
+		ball.size = b_size
+		ball.pivot_offset = b_size / 2.0
+		ball.global_position = hand_origin - b_size / 2.0
+		ball.modulate = Color(1.2, 1.0, 0.8, 0.0)
+		ball.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		ball.z_index = 60
+		add_child(ball)
+		# 弧線：先到中繼高點再落向目標
+		var mid: Vector2 = (hand_origin + target_center) / 2.0 + Vector2(0, -130.0)
+		var tween: Tween = create_tween()
+		tween.tween_property(ball, "modulate:a", 1.0, 0.1).set_delay(delay)
+		tween.tween_property(ball, "global_position", mid - b_size / 2.0, 0.2)\
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		tween.tween_property(ball, "global_position", target_center - b_size / 2.0, 0.18)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		var captured_wrap: Control = wrap
+		tween.tween_callback(func() -> void:
+			if is_instance_valid(captured_wrap):
+				UIFactory.flash_node(captured_wrap, Color(1.7, 1.2, 0.7), 0.25)
+				UIFactory.shake_node(captured_wrap, 9.0, 0.22))
+		# 爆燃：放大 + 淡出
+		tween.tween_property(ball, "scale", Vector2(1.8, 1.8), 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.parallel().tween_property(ball, "modulate:a", 0.0, 0.16)
+		tween.finished.connect(func() -> void:
+			if is_instance_valid(ball):
+				ball.queue_free())
+
+# 萬靈噬：五色靈光（fx_five_spirits.png 補圖後自動使用）匯聚炸開；
+# 圖缺退化 = 五色 tinted ink_slash 對每隻敵連劈（水金火木土五靈色）。
+func _animate_wan_ling_shi_effect(_card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var targets: Array[Dictionary] = _generic_fx_targets(true)
+	if targets.is_empty():
+		return
+	var five_tex: Texture2D = UIFactory.load_texture("res://assets/art/effects/fx_five_spirits.png")
+	if five_tex != null:
+		for t_i: int in range(targets.size()):
+			var wrap0: Control = targets[t_i].get("wrap") as Control
+			if wrap0 != null and is_instance_valid(wrap0):
+				_spawn_rising_fx(five_tex, wrap0, Vector2(1.2, 1.2), 0.0, Color(1.1, 1.1, 1.1))
+				UIFactory.shake_node(wrap0, 8.0, 0.25)
+		return
+	var slash_tex: Texture2D = UIFactory.load_texture("res://assets/art/effects/ink_slash.png")
+	if slash_tex == null:
+		return
+	# 五靈色：水藍 / 金 / 火紅 / 木綠 / 土黃
+	var spirit_tints: Array[Color] = [Color(0.7, 1.0, 1.5), Color(1.4, 1.3, 0.8),
+		Color(1.5, 0.8, 0.7), Color(0.8, 1.4, 0.85), Color(1.25, 1.05, 0.7)]
+	for t_i: int in range(targets.size()):
+		var wrap: Control = targets[t_i].get("wrap") as Control
+		if wrap == null or not is_instance_valid(wrap):
+			continue
+		var s_size: Vector2 = Vector2(wrap.size.x, wrap.size.x)
+		for k: int in range(spirit_tints.size()):
+			var delay: float = t_i * 0.1 + k * 0.09
+			var tint: Color = spirit_tints[k]
+			var slash: TextureRect = TextureRect.new()
+			slash.texture = slash_tex
+			slash.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			slash.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			slash.size = s_size
+			slash.pivot_offset = s_size / 2.0
+			slash.global_position = wrap.global_position + wrap.size / 2.0 - s_size / 2.0
+			slash.rotation = deg_to_rad(-50.0 + 25.0 * k)  # 五道角度錯開、如五靈環攻
+			slash.scale = Vector2(0.5, 0.5)
+			slash.modulate = Color(tint.r, tint.g, tint.b, 0.0)
+			slash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			slash.z_index = 60
+			add_child(slash)
+			var tween: Tween = create_tween().set_parallel(true)
+			tween.tween_property(slash, "scale", Vector2(1.1, 1.1), 0.2).set_delay(delay)\
+				.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			tween.tween_property(slash, "modulate:a", 0.95, 0.08).set_delay(delay)
+			tween.tween_property(slash, "modulate:a", 0.0, 0.12).set_delay(delay + 0.15)
+			tween.finished.connect(func() -> void:
+				if is_instance_valid(slash):
+					slash.queue_free())
+		var captured_wrap: Control = wrap
+		get_tree().create_timer(t_i * 0.1 + 0.4).timeout.connect(func() -> void:
+			if is_instance_valid(captured_wrap):
+				UIFactory.shake_node(captured_wrap, 9.0, 0.25))
+
+# 冥河引渡 / 鬼火燎原：幽藍鬼火由左至右逐敵爆燃（fx_ghost_flame.png 補圖後自動使用；
+# 圖缺退化 = poison_explosion 幽藍 tint）。
+func _animate_ghost_flame_effect(_card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var tex: Texture2D = UIFactory.load_texture("res://assets/art/effects/fx_ghost_flame.png")
+	if tex == null:
+		tex = UIFactory.load_texture("res://assets/art/effects/poison_explosion.png")
+	if tex == null:
+		return
+	var targets: Array[Dictionary] = _generic_fx_targets(true)
+	for t_i: int in range(targets.size()):
+		var wrap: Control = targets[t_i].get("wrap") as Control
+		if wrap == null or not is_instance_valid(wrap):
+			continue
+		var delay: float = t_i * 0.16  # 由左至右燎原
+		var f_size: Vector2 = wrap.size * 1.05
+		var flame: TextureRect = TextureRect.new()
+		flame.texture = tex
+		flame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		flame.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		flame.size = f_size
+		flame.pivot_offset = f_size / 2.0
+		flame.global_position = wrap.global_position + wrap.size / 2.0 - f_size / 2.0 + Vector2(0, 16.0)
+		flame.modulate = Color(0.55, 0.85, 1.6, 0.0)  # 幽藍鬼火
+		flame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		flame.z_index = 60
+		add_child(flame)
+		var tween: Tween = create_tween().set_parallel(true)
+		tween.tween_property(flame, "scale", Vector2(1.35, 1.35), 0.34).set_delay(delay)\
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		tween.tween_property(flame, "global_position:y", flame.global_position.y - 26.0, 0.34).set_delay(delay)
+		tween.tween_property(flame, "modulate:a", 0.85, 0.12).set_delay(delay)
+		tween.tween_property(flame, "modulate:a", 0.0, 0.18).set_delay(delay + 0.22)
+		var captured_wrap: Control = wrap
+		tween.finished.connect(func() -> void:
+			if is_instance_valid(flame):
+				flame.queue_free()
+			if is_instance_valid(captured_wrap):
+				UIFactory.flash_node(captured_wrap, Color(0.7, 0.95, 1.5), 0.2)
+				UIFactory.shake_node(captured_wrap, 6.0, 0.18))
+
+# 毒液聚爆（蠱血噬心/萬蠱噬天/毒入膏肓）：poison_explosion 在目標身上由小聚大爆開。
+func _animate_poison_nova_effect(_card: CardData) -> void:
+	if battle == null or enemy_widgets.is_empty():
+		return
+	var tex: Texture2D = UIFactory.load_texture("res://assets/art/effects/poison_explosion.png")
+	if tex == null:
+		return
+	var targets: Array[Dictionary] = _generic_fx_targets(false)
+	if targets.is_empty():
+		return
+	var wrap: Control = targets[0].get("wrap") as Control
+	if wrap == null or not is_instance_valid(wrap):
+		return
+	var n_size: Vector2 = wrap.size * 1.2
+	var nova: TextureRect = TextureRect.new()
+	nova.texture = tex
+	nova.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	nova.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	nova.size = n_size
+	nova.pivot_offset = n_size / 2.0
+	nova.global_position = wrap.global_position + wrap.size / 2.0 - n_size / 2.0
+	nova.scale = Vector2(0.35, 0.35)
+	nova.modulate = Color(0.85, 1.3, 0.75, 0.0)
+	nova.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	nova.z_index = 60
+	add_child(nova)
+	var tween: Tween = create_tween()
+	# 聚：小幅浮現
+	tween.tween_property(nova, "modulate:a", 0.9, 0.18)
+	tween.parallel().tween_property(nova, "scale", Vector2(0.6, 0.6), 0.18)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	# 爆：放大 + 淡出
+	tween.tween_property(nova, "scale", Vector2(1.5, 1.5), 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(nova, "modulate:a", 0.0, 0.24)
+	var captured_wrap: Control = wrap
+	tween.tween_callback(func() -> void:
+		if is_instance_valid(captured_wrap):
+			UIFactory.flash_node(captured_wrap, Color(0.8, 1.4, 0.85), 0.25)
+			UIFactory.shake_node(captured_wrap, 8.0, 0.22))
+	tween.finished.connect(func() -> void:
+		if is_instance_valid(nova):
+			nova.queue_free())

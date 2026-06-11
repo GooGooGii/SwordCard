@@ -67,6 +67,19 @@ const CARD_ANIM := {
 	"anu_gushen": "_animate_gu_shen_effect",
 	"anu_mihun": "_animate_confuse_effect", "anu_guijiang": "_animate_confuse_effect", "anu_guwang": "_animate_confuse_effect",
 	"anu_guzhang": "_animate_poison_fog_effect", "anu_duwu": "_animate_poison_fog_effect", "anu_sanshigu": "_animate_poison_fog_effect",
+	# P2 高光卡（2026-06-11，docs/ANIM_PLAN.md）
+	"lyr_tongqianbiao": "_animate_multi_slash_effect", "lyr_lianhuan": "_animate_multi_slash_effect",
+	"lyr_shuangjianci": "_animate_multi_slash_effect", "lyr_xuanjian": "_animate_multi_slash_effect",
+	"lxy_qingyan_zhuying": "_animate_multi_slash_effect",
+	"lyr_poqian": "_animate_heavy_sword_effect", "lyr_juesha": "_animate_heavy_sword_effect",
+	"lyr_suohun": "_animate_heavy_sword_effect", "cl_chenxi_poshi": "_animate_heavy_sword_effect",
+	"cl_fenjinjue": "_animate_fen_jin_effect",
+	"zl_wanlingshi": "_animate_wan_ling_shi_effect",
+	"anu_minghe_yindu": "_animate_ghost_flame_effect", "anu_guihuo_liaoyuan": "_animate_ghost_flame_effect",
+	"anu_guxue_shixin": "_animate_poison_nova_effect", "anu_wangushitian": "_animate_poison_nova_effect",
+	"anu_cuihua": "_animate_poison_nova_effect",
+	"lxy_zuilong": "_animate_jiu_shen_effect",
+	"zl_shuiyin": "_animate_ice_effect",
 }
 
 var main: Node
