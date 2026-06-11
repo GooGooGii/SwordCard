@@ -3274,74 +3274,116 @@ func _show_use_potion_confirm(slot: int) -> void:
 	var potion: Dictionary = run_state.potions[slot]
 	var total_potions: int = run_state.potions.size()
 	var rarity_col: Color = PotionCatalog.rarity_color(potion)
-	var center_wrap: CenterContainer = CenterContainer.new()
-	center_wrap.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	center_wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	center_wrap.z_index = 300
-	add_child(center_wrap)
-	_potion_popup = center_wrap
-	var popup: PanelContainer = PanelContainer.new()
-	popup.add_theme_stylebox_override("panel", UIFactory.style_box(Color("0b111a", 0.96), rarity_col, 2, 10))
-	center_wrap.add_child(popup)
+	# 全螢幕遮罩（壓暗背景 + 點空白處關閉）
+	var overlay: Control = Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.z_index = 300
+	add_child(overlay)
+	_potion_popup = overlay
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0.02, 0.04, 0.07, 0.62)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	backdrop.gui_input.connect(func(ev: InputEvent) -> void:
+		if (ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed) \
+				or (ev is InputEventScreenTouch and (ev as InputEventScreenTouch).pressed):
+			_close_potion_popup())
+	overlay.add_child(backdrop)
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+	# 水墨宣紙面板：暖金邊（依稀有度上色）+ 柔影
+	var panel: PanelContainer = PanelContainer.new()
+	var panel_sb: StyleBoxFlat = UIFactory.style_box(Color("141b27", 0.97), rarity_col, 2, 16)
+	panel_sb.shadow_color = Color("000000", 0.5)
+	panel_sb.shadow_size = 10
+	panel_sb.shadow_offset = Vector2(0, 5)
+	panel.add_theme_stylebox_override("panel", panel_sb)
+	center.add_child(panel)
+	var margin: MarginContainer = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 26)
+	margin.add_theme_constant_override("margin_right", 26)
+	margin.add_theme_constant_override("margin_top", 22)
+	margin.add_theme_constant_override("margin_bottom", 22)
+	panel.add_child(margin)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 12)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	popup.add_child(box)
-	# 標題列：◀ 名稱 ▶（多瓶時可左右切換）
+	margin.add_child(box)
+	# 標題列：◀ 名稱 ▶（多瓶時可左右切換；圓形金邊鈕）
 	var title_row: HBoxContainer = HBoxContainer.new()
 	title_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	title_row.add_theme_constant_override("separation", 16)
+	title_row.add_theme_constant_override("separation", 14)
 	box.add_child(title_row)
 	if total_potions > 1:
-		var prev_btn: Button = _button("◀")
-		prev_btn.custom_minimum_size = Vector2(44, 44)
-		prev_btn.add_theme_font_size_override("font_size", 22)
-		prev_btn.pressed.connect(func() -> void: _show_use_potion_confirm((slot - 1 + total_potions) % total_potions))
-		title_row.add_child(prev_btn)
-	title_row.add_child(UIFactory.card_label(String(potion.get("display_name", "?")), 22, rarity_col, HORIZONTAL_ALIGNMENT_CENTER))
+		title_row.add_child(_potion_nav_button("◀", func() -> void: _show_use_potion_confirm((slot - 1 + total_potions) % total_potions)))
+	var name_lbl: Label = UIFactory.title_label(String(potion.get("display_name", "?")), 24)
+	name_lbl.add_theme_color_override("font_color", rarity_col)
+	title_row.add_child(name_lbl)
 	if total_potions > 1:
-		var next_btn: Button = _button("▶")
-		next_btn.custom_minimum_size = Vector2(44, 44)
-		next_btn.add_theme_font_size_override("font_size", 22)
-		next_btn.pressed.connect(func() -> void: _show_use_potion_confirm((slot + 1) % total_potions))
-		title_row.add_child(next_btn)
-	# 稀有度標籤 + 多瓶時的位置指示（i / n）
+		title_row.add_child(_potion_nav_button("▶", func() -> void: _show_use_potion_confirm((slot + 1) % total_potions)))
+	# 稀有度 + (i / n)
 	var rarity_text: String = "%s 藥草" % String(potion.get("rarity", "common")).capitalize()
 	if total_potions > 1:
-		rarity_text += "　(%d / %d)" % [slot + 1, total_potions]
-	box.add_child(UIFactory.card_label(rarity_text, 12, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-
-	# Icon
+		rarity_text += "　·　%d / %d" % [slot + 1, total_potions]
+	box.add_child(UIFactory.card_label(rarity_text, 13, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(UIFactory.ink_divider())
+	# 藥瓶圖：圓形宣紙底盤 + 稀有度微光
 	var art_path: String = "res://assets/art/potions/%s.png" % potion.get("id", "")
 	var texture: Texture2D = UIFactory.load_texture(art_path)
 	if texture != null:
+		var disc: PanelContainer = PanelContainer.new()
+		disc.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		var disc_sb: StyleBoxFlat = UIFactory.style_box(Color(rarity_col.r, rarity_col.g, rarity_col.b, 0.12), Color(rarity_col.r, rarity_col.g, rarity_col.b, 0.5), 1, 999)
+		disc_sb.content_margin_left = 14
+		disc_sb.content_margin_right = 14
+		disc_sb.content_margin_top = 14
+		disc_sb.content_margin_bottom = 14
+		disc.add_theme_stylebox_override("panel", disc_sb)
 		var rect: TextureRect = TextureRect.new()
 		rect.texture = texture
 		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		rect.custom_minimum_size = Vector2(72, 72)
-		rect.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		box.add_child(rect)
-
+		rect.custom_minimum_size = Vector2(96, 96)
+		disc.add_child(rect)
+		box.add_child(disc)
 	# 描述
-	var desc: Label = UIFactory.card_label(String(potion.get("description", "")), 14, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
+	var desc: Label = UIFactory.card_label(String(potion.get("description", "")), 15, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.custom_minimum_size = Vector2(360, 0)
+	desc.custom_minimum_size = Vector2(380, 0)
 	box.add_child(desc)
-	# 按鈕列
+	# 按鈕列：取消（中性）／使用（金色強調）
 	var btn_row: HBoxContainer = HBoxContainer.new()
-	btn_row.add_theme_constant_override("separation", 16)
+	btn_row.add_theme_constant_override("separation", 18)
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_child(btn_row)
 	var captured_slot: int = slot
-	var cancel_btn: Button = _button("取消")
+	var cancel_btn: Button = UIFactory.main_menu_button("取消", false, 46, 18)
+	cancel_btn.custom_minimum_size.x = 130
 	cancel_btn.pressed.connect(func() -> void: _close_potion_popup())
 	btn_row.add_child(cancel_btn)
-	var use_btn: Button = _button("使用")
+	var use_btn: Button = UIFactory.main_menu_button("使用", true, 46, 18)
+	use_btn.custom_minimum_size.x = 130
 	use_btn.pressed.connect(func() -> void:
 		_close_potion_popup()
 		_use_potion(captured_slot))
 	btn_row.add_child(use_btn)
+
+# 藥品彈窗的圓形金邊左右切換鈕
+func _potion_nav_button(glyph: String, on_press: Callable) -> Button:
+	var btn: Button = Button.new()
+	btn.text = glyph
+	btn.custom_minimum_size = Vector2(46, 46)
+	btn.add_theme_font_size_override("font_size", 22)
+	btn.add_theme_stylebox_override("normal", UIFactory.style_box(Color("1d2735", 0.95), Color("b89e63", 0.7), 1, 999))
+	btn.add_theme_stylebox_override("hover", UIFactory.style_box(Color("2a3850", 0.97), ThemeColors.ACCENT_GOLD, 2, 999))
+	btn.add_theme_stylebox_override("pressed", UIFactory.style_box(Color("141d2a", 0.98), ThemeColors.BORDER_GOLD, 2, 999))
+	btn.add_theme_color_override("font_color", Color("ecdfc2"))
+	btn.add_theme_color_override("font_hover_color", Color("fff3cf"))
+	btn.pressed.connect(on_press)
+	return btn
 
 func _discard_potion_prompt(slot: int) -> void:
 	if slot >= run_state.potions.size():
