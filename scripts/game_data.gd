@@ -385,7 +385,7 @@ static func _li_xiaoyao() -> CharacterData:
 		make_card("lxy_jianqi", "劍氣成牆", "李逍遙", 1, "skill", "獲得 8 點護體。", [{"kind": "block", "amount": 8}]),
 		make_card("lxy_linghuo", "靈火符", "李逍遙", 1, "attack", "造成 6 點傷害，施加 1 層破綻。", [{"kind": "damage", "amount": 6}, {"kind": "vulnerable", "amount": 1}], "uncommon"),
 		make_card("lxy_xiaoyao_you", "逍遙遊", "李逍遙", 0, "skill", "抽 1 張牌並回復 1 點靈力。", [{"kind": "draw", "amount": 1}, {"kind": "energy", "amount": 1}], "rare"),
-		make_card("lxy_jianzhen", "八方劍陣", "李逍遙", 2, "attack", "困敵於劍陣之中，造成 6 點傷害，使敵人暈眩（下回合無法行動）。", [{"kind": "damage", "amount": 6}, {"kind": "stun", "amount": 1}], "uncommon"),
+		make_card("lxy_jianzhen", "八方劍陣", "李逍遙", 2, "attack", "困敵於劍陣之中，造成 6 點傷害，有 50% 機率使敵人暈眩（下回合無法行動）。", [{"kind": "damage", "amount": 6}, {"kind": "stun", "amount": 1, "chance": 0.5}], "uncommon"),
 		make_card("lxy_liepo", "裂魄斬", "李逍遙", 1, "attack", "造成 10 點傷害，使敵人虛弱 1 層。", [{"kind": "damage", "amount": 10}, {"kind": "weak", "amount": 1}], "uncommon"),
 		make_card("lxy_qingfeng", "清風御劍", "李逍遙", 1, "skill", "獲得 5 點護體，抽 2 張牌。", [{"kind": "block", "amount": 5}, {"kind": "draw", "amount": 2}], "uncommon"),
 		make_card("lxy_jiulong", "九龍訣", "李逍遙", 3, "attack", "御劍三式如九龍出海，造成 12 點傷害三次。", [{"kind": "damage", "amount": 12, "hits": 3}], "rare"),
@@ -458,7 +458,7 @@ static func _zhao_linger() -> CharacterData:
 		make_card("zl_shuiling", "明鏡止水", "趙靈兒", 2, "skill", "回復 6 點生命並獲得 8 點護體。", [{"kind": "heal", "amount": 6}, {"kind": "block", "amount": 8}], "uncommon"),
 		make_card("zl_leiguang", "紫電連珠", "趙靈兒", 1, "attack", "雷光雙擊，造成 4 點傷害兩次，使敵人虛弱 1 層。", [{"kind": "damage", "amount": 4}, {"kind": "damage", "amount": 4}, {"kind": "weak", "amount": 1}]),
 		make_card("zl_lingxi", "靈息吐納", "趙靈兒", 1, "skill", "抽 2 張牌並回復 4 點生命。", [{"kind": "draw", "amount": 2}, {"kind": "heal", "amount": 4}], "uncommon"),
-		make_card("zl_shenlei", "神雷降世", "趙靈兒", 3, "attack", "天降神雷，造成 20 點傷害並使敵人暈眩（下回合無法行動）。", [{"kind": "damage", "amount": 20}, {"kind": "stun", "amount": 1}], "rare"),
+		make_card("zl_shenlei", "神雷降世", "趙靈兒", 3, "attack", "天降神雷，造成 20 點傷害，有 60% 機率使敵人暈眩（下回合無法行動）。", [{"kind": "damage", "amount": 20}, {"kind": "stun", "amount": 1, "chance": 0.6}], "rare"),
 		# PAL1 初登場新增（art 暫借既有卡片）
 		make_card("zl_jingang", "金剛咒", "趙靈兒", 1, "skill", "獲得 8 點護體（道家護身咒術）。", [{"kind": "block", "amount": 8}], "basic"),
 		make_card("zl_bingzhou", "冰咒", "趙靈兒", 1, "attack", "初級冰系仙術，造成 6 點傷害並使敵人虛弱 1 層。", [{"kind": "damage", "amount": 6}, {"kind": "weak", "amount": 1}], "basic"),
@@ -535,7 +535,7 @@ static func _lin_yueru() -> CharacterData:
 		# 反擊流（鳳鳴刀／Thorns）：被攻擊時反彈傷害給攻擊者（不衰減，跨回合）
 		make_card("lyr_fenghuan", "鳳鳴反擊", "林月如", 1, "power", "本場戰鬥獲得 3 點荊棘（被攻擊時反彈傷害給攻擊者）。", [{"kind": "thorns", "amount": 3}], "uncommon"),
 		make_card("lyr_yuehua", "月華護體", "林月如", 1, "skill", "獲得 6 點護體與 1 點荊棘。", [{"kind": "block", "amount": 6}, {"kind": "thorns", "amount": 1}], "uncommon"),
-		make_card("lyr_lielong", "烈龍衝擊", "林月如", 3, "attack", "烈龍衝撞，造成 24 點傷害並使敵人暈眩（下回合無法行動）。", [{"kind": "damage", "amount": 24}, {"kind": "stun", "amount": 1}], "rare"),
+		make_card("lyr_lielong", "烈龍衝擊", "林月如", 3, "attack", "烈龍衝撞，造成 24 點傷害，有 60% 機率使敵人暈眩（下回合無法行動）。", [{"kind": "damage", "amount": 24}, {"kind": "stun", "amount": 1, "chance": 0.6}], "rare"),
 		make_card("lyr_qijuejianqi", "七訣劍氣", "林月如", 1, "attack", "七訣劍氣縱橫，對全體敵人造成 9 點傷害並施加 1 層破綻，抽 1 張牌。", [{"kind": "damage_all", "amount": 9}, {"kind": "vulnerable_all", "amount": 1}, {"kind": "draw", "amount": 1}], "uncommon"),
 		make_card("lyr_tongqianbiao", "銅錢鏢", "林月如", 1, "attack", "擲出三枚銅錢鏢，造成 4 點傷害三次。", [{"kind": "damage", "amount": 4, "hits": 3}], "uncommon"),
 		make_card("lyr_wanlikuang", "萬里狂沙", "林月如", 2, "skill", "狂沙漫天，對全體敵人施加 3 層破綻，抽 1 張牌。", [{"kind": "vulnerable_all", "amount": 3}, {"kind": "draw", "amount": 1}], "rare"),

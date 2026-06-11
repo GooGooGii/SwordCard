@@ -273,16 +273,24 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				state["enemy_vulnerable"] = int(state["enemy_vulnerable"]) + amount
 				log_lines.append("敵人受到 %d 層破綻。" % amount)
 		"stun":
-			# 暈眩：接下來 amount 個回合無法行動
+			# 暈眩：接下來 amount 個回合無法行動。
+			# chance（預設 1.0=必定）< 1.0 時改為機率性——暈眩硬控太強，玩家卡改成賭一把。
+			var stun_chance: float = float(effect.get("chance", 1.0))
+			var stun_hit: bool = stun_chance >= 1.0 or randf() < stun_chance
 			if from_enemy:
 				if bool(state.get("player_stun_immune", false)):
 					log_lines.append("（金剛座）免疫暈眩。")
-				else:
+				elif stun_hit:
 					state["player_stunned"] = int(state.get("player_stunned", 0)) + amount
 					log_lines.append("你陷入暈眩，%d 回合無法行動！" % amount)
+				else:
+					log_lines.append("你穩住身形，未被打暈。")
 			else:
-				state["enemy_stunned"] = int(state.get("enemy_stunned", 0)) + amount
-				log_lines.append("敵人陷入暈眩，%d 回合無法行動！" % amount)
+				if stun_hit:
+					state["enemy_stunned"] = int(state.get("enemy_stunned", 0)) + amount
+					log_lines.append("敵人陷入暈眩，%d 回合無法行動！" % amount)
+				else:
+					log_lines.append("敵人抵住了攻勢，未被暈眩。")
 		"gamble_attack":
 			# 賭棍：擲骰比大小。莊家（敵）點數大 → 攻擊命中（amount 傷害）；否則願賭服輸給玩家 gold 銅錢。
 			var g_gold: int = int(effect.get("gold", 0))

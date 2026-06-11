@@ -155,6 +155,7 @@ func _initialize() -> void:
 	_test_damage_poison_bonus(characters[3], enemies[0])
 	_test_consume_debuff_damage(characters[1], enemies[0])
 	_test_soul_reap(characters[3], enemies[0], bosses[0])
+	_test_stun_chance(characters[0], enemies[0])
 	# 開流派 / 取捨型遺物 2026-06：狂戰護符(負值 passive) / 逍遙令(0費 payoff)
 	_test_archetype_relics(characters[0], enemies[0])
 	# 消耗流 archetype + build-enabler 藥品 2026-06
@@ -2287,6 +2288,31 @@ func _test_build_enabler_potions(character: CharacterData, enemy: EnemyData) -> 
 	bc.resolver.resolve_effects_list([{"kind": "free_turn"}], bc.state)
 	var pricey: CardData = GameData.make_card("test_pricey", "測試貴牌", character.id, 3, "skill", "", [{"kind": "block", "amount": 5}])
 	_check(bc.effective_card_cost(pricey) == 0, "混元丹: 3 費牌應變 0 費, got %d" % bc.effective_card_cost(pricey))
+
+func _test_stun_chance(character: CharacterData, enemy: EnemyData) -> void:
+	# chance 預設 1.0 → 必定暈眩（定身符等）；chance < 1.0 → 機率暈眩
+	var always_ok: bool = true
+	for _i: int in range(20):
+		var bc: BattleController = _make_multi_battle(character, [enemy])
+		bc.start_turn()
+		bc.state["enemy_stunned"] = 0
+		bc.resolver._resolve_effect({"kind": "stun", "amount": 1}, bc.state)
+		if int(bc.state["enemy_stunned"]) != 1:
+			always_ok = false
+	_check(always_ok, "stun 預設 chance=1.0 應必定暈眩")
+	var saw_stun: bool = false
+	var saw_miss: bool = false
+	for _j: int in range(60):
+		var bc2: BattleController = _make_multi_battle(character, [enemy])
+		bc2.start_turn()
+		bc2.state["enemy_stunned"] = 0
+		bc2.resolver._resolve_effect({"kind": "stun", "amount": 1, "chance": 0.5}, bc2.state)
+		if int(bc2.state["enemy_stunned"]) > 0:
+			saw_stun = true
+		else:
+			saw_miss = true
+	_check(saw_stun, "機率暈眩(0.5) 應有時命中")
+	_check(saw_miss, "機率暈眩(0.5) 應有時未命中")
 
 func _test_soul_reap(character: CharacterData, small_enemy: EnemyData, boss_enemy: EnemyData) -> void:
 	var eff: Dictionary = {"kind": "soul_reap", "chance": 0.2, "boss_effect_chance": 0.65, "boss_min": 1, "boss_max": 4}
