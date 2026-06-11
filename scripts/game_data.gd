@@ -90,6 +90,10 @@ static func _bee_cocoon() -> EnemyData:
 		{"intent": "結繭 12", "effects": [{"kind": "block", "amount": 12}]},
 		{"intent": "孵化毒針 8 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 8}, {"kind": "poison", "amount": 2}]}
 	]
+	# 機制（倒數計時）：出手 2 次後破繭狂化——act 1 的「教學版」計時敵，數字小但規則可見
+	enemy.passive = {"kind": "enrage_after", "turns": 2, "amount": 5,
+		"label": "破繭倒數：蜂蛹出手兩次後將孵化狂暴（力量 +5）",
+		"on_trigger": "破繭而出！力量 +5！"}
 	return enemy
 
 static func _leaf_sprite() -> EnemyData:
@@ -184,6 +188,10 @@ static func _conch_maiden() -> EnemyData:
 		{"intent": "纏絲 16", "effects": [{"kind": "damage", "amount": 16}]},
 		{"intent": "護鱗 13", "effects": [{"kind": "block", "amount": 13}]}
 	]
+	# 機制（蓄力釋放，act 8 雜兵）：每 3 回合「攝魂音波」16 + 虛弱 2
+	enemy.ultimate_every = 3
+	enemy.ultimate_action = {"intent": "攝魂音波 16 + 虛弱 2", "effects": [
+		{"kind": "damage", "amount": 16}, {"kind": "weak", "amount": 2}]}
 	return enemy
 
 static func _turtle_demon() -> EnemyData:
@@ -212,6 +220,9 @@ static func _gambler() -> EnemyData:
 		{"intent": "詐賭 11 + 破綻 1", "effects": [{"kind": "damage", "amount": 11}, {"kind": "vulnerable", "amount": 1}]},
 		{"intent": "油滑閃 10", "effects": [{"kind": "block", "amount": 10}]}
 	]
+	# 機制（蓄力釋放）：每 3 回合「孤注一擲」重壓——意圖預警，玩家提前佈防或搶殺
+	enemy.ultimate_every = 3
+	enemy.ultimate_action = {"intent": "孤注一擲 22", "effects": [{"kind": "damage", "amount": 22}]}
 	return enemy
 
 static func _lecher_thief() -> EnemyData:
@@ -1208,6 +1219,9 @@ static func _centipede_lord() -> EnemyData:
 			{"kind": "damage", "amount": 17},
 			{"kind": "poison", "amount": 4}
 		]},
+		# 機制（狀態反轉，act 7 boss・蠱毒之王）：吞噬自身蠱毒每 2 層化 1 力量——
+		# 毒流到苗疆撞上「毒物剋星」，無毒時此招≈只剩護體
+		{"intent": "百毒歸宗", "effects": [{"kind": "absorb_poison"}, {"kind": "block", "amount": 8}]},
 		{"intent": "黑苗軍陣 18", "effects": [{"kind": "block", "amount": 18}]},
 		{"intent": "攝魂咒 24 + 虛弱 1", "effects": [
 			{"kind": "damage", "amount": 24},
@@ -1266,6 +1280,9 @@ static func _witch_queen() -> EnemyData:
 		]},
 		{"intent": "地火護身 22", "effects": [{"kind": "block", "amount": 22}]}
 	]
+	# 機制（蓄力釋放，act 5 boss）：每 4 回合「炎獄吐息」30，預警可見
+	enemy.ultimate_every = 4
+	enemy.ultimate_action = {"intent": "炎獄吐息 30", "effects": [{"kind": "damage", "amount": 30}]}
 	return enemy
 
 static func _zombie_soldier() -> EnemyData:
@@ -1394,6 +1411,11 @@ static func _zombie_general() -> EnemyData:
 		{"intent": "屍甲護衛 16", "effects": [{"kind": "block", "amount": 16}]},
 		{"intent": "千年寒氣 14 + 虛弱 2", "effects": [{"kind": "damage", "amount": 14}, {"kind": "weak", "amount": 2}]}
 	]
+	# 機制（倒數計時，act 3 boss 主場）：屍變——出手 4 次後力量 +8。
+	# 開戰即告示，整場變成「在屍變前打出多少血線」的賽跑，不能慢慢磨
+	enemy.passive = {"kind": "enrage_after", "turns": 4, "amount": 8,
+		"label": "屍變倒數：殭屍王出手四次後屍變（力量 +8）",
+		"on_trigger": "屍變！邪氣暴漲，力量 +8！"}
 	enemy.phase_2_actions = [
 		{"intent": "殭屍狂咒 24", "effects": [{"kind": "damage", "amount": 24}]},
 		{"intent": "殭咒縛身 妖債", "effects": [{"kind": "gain_curse_player", "curse_id": "yao_zhai"}]},
@@ -1419,6 +1441,11 @@ static func _baiyue_lord() -> EnemyData:
 		{"intent": "邪印烙身", "effects": [{"kind": "gain_curse_player", "curse_id": "xie_yin"}]},
 		{"intent": "邪神降世 26", "effects": [{"kind": "damage", "amount": 26}]}
 	]
+	# 機制（蓄力＋吸血，終幕 boss）：每 4 回合「攝魂奪魄」24 傷＋自療 12——
+	# 拖戰會被他補回去，逼玩家在大招週期間建立斬殺節奏
+	enemy.ultimate_every = 4
+	enemy.ultimate_action = {"intent": "攝魂奪魄 24 + 自療 12", "effects": [
+		{"kind": "damage", "amount": 24}, {"kind": "enemy_heal", "amount": 12}]}
 	# Phase 2：召出水魔獸（PAL1 原作終局妖獸）
 	enemy.phase_2_display_name = "水魔獸"
 	enemy.phase_2_portrait_path = "res://assets/art/enemies/baiyue_lord_phase2.png"
@@ -1447,6 +1474,10 @@ static func _miao_chieftain() -> EnemyData:
 		{"intent": "擒拿 14 + 虛弱 2", "effects": [{"kind": "damage", "amount": 14}, {"kind": "weak", "amount": 2}]},
 		{"intent": "黑苗結界 18", "effects": [{"kind": "block", "amount": 18}]}
 	]
+	# 機制（護持光環，act 2 boss 三體戰）：頭領活著時苗兵每回合 +4 護體——
+	# 「先清小兵」的習慣打法被收稅，集火頭領 vs 先拔小兵成為真選擇
+	enemy.passive = {"kind": "ally_block_aura", "amount": 4,
+		"label": "頭領號令：黑苗頭領在場時，其他敵人每回合 +4 護體"}
 	enemy.phase_2_actions = [
 		{"intent": "血洗狂攻 27 + 虛弱 1", "effects": [{"kind": "damage", "amount": 27}, {"kind": "weak", "amount": 1}]},
 		{"intent": "攝魂蠱 蠱毒 7 + 破綻 2", "effects": [{"kind": "poison", "amount": 7}, {"kind": "vulnerable", "amount": 2}]},
@@ -1485,6 +1516,9 @@ static func _tomb_general() -> EnemyData:
 		{"intent": "血池妖氣 20", "effects": [{"kind": "block", "amount": 20}]},
 		{"intent": "飛岩術 14 + 14", "effects": [{"kind": "damage", "amount": 14}, {"kind": "damage", "amount": 14}]}
 	]
+	# 機制（蓄力釋放，act 4 boss）：每 4 回合「赤鬼大斬」28 重擊，預警可見
+	enemy.ultimate_every = 4
+	enemy.ultimate_action = {"intent": "赤鬼大斬 28", "effects": [{"kind": "damage", "amount": 28}]}
 	enemy.phase_2_portrait_path = "res://assets/art/enemies/tomb_general_phase2.png"
 	enemy.phase_2_actions = [
 		{"intent": "血魔神功 28 + 虛弱 1", "effects": [{"kind": "damage", "amount": 28}, {"kind": "weak", "amount": 1}]},
@@ -1730,6 +1764,10 @@ static func _man_eating_flower() -> EnemyData:
 		{"intent": "花藤護甲 18", "effects": [{"kind": "block", "amount": 18}]},
 		{"intent": "消化液 10 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 10}, {"kind": "poison", "amount": 2}]}
 	]
+	# 機制（倒數計時）：血食漸飽 → 狂化。act 2/7 的計時敵
+	enemy.passive = {"kind": "enrage_after", "turns": 3, "amount": 4,
+		"label": "血食倒數：食人花出手三次後血食狂化（力量 +4）",
+		"on_trigger": "血食狂化！力量 +4！"}
 	return enemy
 
 static func _gourd_sage() -> EnemyData:
@@ -1759,6 +1797,9 @@ static func _puppet_girl() -> EnemyData:
 		{"intent": "替身草偶 14", "effects": [{"kind": "block", "amount": 14}]},
 		{"intent": "降蠱 蠱毒 3", "effects": [{"kind": "poison", "amount": 3}]}
 	]
+	# 機制（護持光環，act 7/8 群戰）：傀儡絲線護持同伴——先殺傀儡女成為集火題
+	enemy.passive = {"kind": "ally_block_aura", "amount": 4,
+		"label": "傀儡絲線：傀儡女在場時，其他敵人每回合 +4 護體"}
 	return enemy
 
 static func _green_snake() -> EnemyData:

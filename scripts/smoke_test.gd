@@ -278,6 +278,9 @@ func _initialize() -> void:
 	# 機制型敵人試點（2026-06-11）：噬毒蛻化 + 業鏡照心被動
 	_test_absorb_poison(characters, enemies)
 	_test_enemy_passive_strength_on_skill(characters)
+	# 機制型敵人全幕鋪開：倒數狂化 + 護持光環
+	_test_enemy_passive_enrage_after(characters)
+	_test_enemy_passive_ally_block_aura(characters)
 	if _smoke_failures > 0:
 		push_error("[smoke] %d 個 _check() 失敗。以 quit(1) 結束。" % _smoke_failures)
 		print("SwordCard smoke test FAILED (%d check failures)." % _smoke_failures)
@@ -1259,10 +1262,12 @@ const BALANCE_BASELINES_MID: Dictionary = {
 	# 2026-06-11 出牌 AI 升級（隨機 → BattlePolicy 斬殺/集火/格擋/毒引爆/debuff時序）：
 	# 全層 baseline 重置。li 37→27（policy 先鋪引擎、限時下 tempo 微降）、lin 40→97
 	# （反擊 passive＋格擋時機被聰明打法放大——中段平衡新 outlier，見 BALANCE_REPORT §七）。
+	# 2026-06-11 機制敵全幕鋪開：石長老新增「百毒歸宗」（吞毒化力）= 毒流檔位閘，
+	# anu 83→73（正中設計目標：毒流終於有剋星戰；policy 照疊毒餵 boss，真人可繞）。
 	"li_xiaoyao": 27,
 	"zhao_linger": 27,
 	"lin_yueru": 97,
-	"anu": 83
+	"anu": 73
 }
 # 全升級起始牌組 vs 山賊頭目。升級應嚴格 >= 基礎勝率，預期全 100%。
 const BALANCE_BASELINES_UPGRADED: Dictionary = {
@@ -1279,10 +1284,11 @@ const BALANCE_BASELINES_MID_UPGRADED: Dictionary = {
 	# 2026-06 李 passive 改版（前 3 回合折扣）：li 80→100（故意調整，升級組+折扣即穩過）。
 	# 2026-06-11 BattlePolicy 重置：全升級組＋聰明打法 → 4 角全飽和 100（本層退化為
 	# 純 regression 上界警報，雙向靈敏度遺失；細靈敏度看 MID / LEVELED 層）。
+	# 2026-06-11 石長老「百毒歸宗」後 anu 100→83（毒流檔位閘，本層恢復對 anu 的靈敏度）。
 	"li_xiaoyao": 100,
 	"zhao_linger": 100,
 	"lin_yueru": 100,
-	"anu": 100
+	"anu": 83
 }
 
 # 分級成長 baseline：每幕 boss 對應一個玩家等級（推測自實際 run 經驗值累積）。
@@ -4257,6 +4263,57 @@ func _test_enemy_passive_strength_on_skill(characters: Array[CharacterData]) -> 
 	var after_skill: int = int(bc.state["enemy_strength"])
 	bc.play_card(attack_card)
 	_check(int(bc.state["enemy_strength"]) == after_skill, "attack play should NOT grant strength; got %d" % int(bc.state["enemy_strength"]))
+
+func _test_enemy_passive_enrage_after(characters: Array[CharacterData]) -> void:
+	# 倒數狂化：出手滿 N 次後一次性 +amount 力量，只觸發一次
+	var cocoon: EnemyData = GameData.enemy_by_id("bee_cocoon")
+	_check(cocoon != null and String(cocoon.passive.get("kind", "")) == "enrage_after",
+		"蜂蛹 should have enrage_after passive")
+	var bc: BattleController = BattleController.new()
+	var rs: RunState = RunState.new()
+	rs.init_for(characters[0])
+	bc.setup(rs, characters[0], cocoon.clone())
+	var turns_needed: int = int(cocoon.passive.get("turns", 2))
+	var amount: int = int(cocoon.passive.get("amount", 5))
+	# 模擬 N 個敵方回合（出手次數累計在 resolve_enemy_phase 內）
+	for t: int in range(turns_needed + 2):
+		bc.start_turn()
+		if bc.is_battle_over():
+			break
+		bc.resolve_enemy_phase(bc.begin_enemy_phase())
+	var slot: Dictionary = (bc.state["enemies"] as Array)[0] as Dictionary
+	_check(bool(slot.get("enraged", false)), "cocoon should be enraged after %d turns" % turns_needed)
+	_check(int(slot.get("strength", 0)) == amount, "enrage grants +%d strength exactly once; got %d" % [amount, int(slot.get("strength", 0))])
+
+func _test_enemy_passive_ally_block_aura(characters: Array[CharacterData]) -> void:
+	# 護持光環：持有者活著時其他活敵每回合 +N 護體；持有者死後光環消失
+	var chief: EnemyData = GameData.enemy_by_id("miao_chieftain")
+	_check(chief != null and String(chief.passive.get("kind", "")) == "ally_block_aura",
+		"黑苗頭領 should have ally_block_aura passive")
+	var soldier: EnemyData = GameData.enemy_by_id("miao_soldier")
+	var bc: BattleController = BattleController.new()
+	var rs: RunState = RunState.new()
+	rs.init_for(characters[0])
+	bc.setup(rs, characters[0], ([chief.clone(), soldier.clone(), soldier.clone()] as Array))
+	bc.start_turn()
+	var slots: Array = bc.state["enemies"] as Array
+	var aura: int = int(chief.passive.get("amount", 4))
+	var s1_before: int = int((slots[1] as Dictionary).get("block", 0))
+	bc.resolve_enemy_phase(bc.begin_enemy_phase())
+	# 光環在敵方回合開始發放：士兵應比「自己招式的護體」多拿 aura（士兵首招若非 block 即 = aura）
+	var s1_after: int = int((slots[1] as Dictionary).get("block", 0))
+	_check(s1_after >= s1_before + aura, "soldier should gain aura block; before %d after %d" % [s1_before, s1_after])
+	# 殺掉頭領 → 下一輪光環不再發放（士兵自己招式可能加 block，改驗 log 次數）
+	(slots[0] as Dictionary)["hp"] = 0
+	if bc._active_enemy_index() == 0:
+		bc._sync_active_enemy_to_state()
+	bc.start_turn()
+	bc.resolve_enemy_phase(bc.begin_enemy_phase())
+	var aura_logs: int = 0
+	for line: String in bc.battle_log:
+		if line.find("護持戰陣") >= 0:
+			aura_logs += 1
+	_check(aura_logs == 1, "aura should fire exactly once (before chief died); got %d logs" % aura_logs)
 
 func _test_short_run_mode(characters: Array[CharacterData]) -> void:
 	var rs: RunState = RunState.new()

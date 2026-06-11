@@ -952,6 +952,7 @@ func begin_enemy_phase() -> Array[Dictionary]:
 	# turn_end 遺物：保留「非直傷」效果（雷震子破綻、紫府符/雪魂符護體治療、引魂燈施毒、
 	# 屍王符令施毒+回血、玄武魂護體保留）。直傷型（朱雀火/白虎牙/兩個神器）已改在 start_turn 結算。
 	_fire_relic_triggers("turn_end")
+	_apply_enemy_phase_passives()
 	# 五雷轟頂的雷傷（end_turn_damage）已移至 start_turn（玩家回合開始）結算，此處不再扣血。
 	if deck != null:
 		deck.discard_hand()
@@ -1361,6 +1362,44 @@ func _apply_stolen_item(item: Dictionary) -> void:
 					add_log("【飛龍探雲手】偷取失敗（藥品資料遺失）。")
 			else:
 				add_log("【飛龍探雲手】藥格已滿，選擇是否替換「%s」。" % item.get("display_name", "藥品"))
+
+# 機制型敵人被動（敵方回合開始結算，2026-06-11 全幕鋪開）：
+# - enrage_after {turns, amount}：倒數狂化——出手滿 N 次後一次性 +amount 力量
+#   （蜂蛹孵化/殭屍王屍變/赤鬼王怨念沸騰）。意圖告示靠開戰 log + 狂化時 log。
+# - ally_block_aura {amount}：護持光環——持有者活著時，其他活敵每回合 +amount 護體
+#   （黑苗頭領號令/傀儡女絲線）。counterplay：先殺光環源，集火順序成為題目。
+func _apply_enemy_phase_passives() -> void:
+	var slots: Array = state.get("enemies", []) as Array
+	for i: int in range(enemies.size()):
+		if i >= slots.size():
+			break
+		var slot: Dictionary = slots[i] as Dictionary
+		if int(slot.get("hp", 0)) <= 0:
+			continue
+		var pas: Dictionary = enemies[i].passive
+		match String(pas.get("kind", "")):
+			"enrage_after":
+				if not bool(slot.get("enraged", false)) and enemy_action_indices[i] >= int(pas.get("turns", 3)):
+					var amt: int = int(pas.get("amount", 5))
+					slot["enraged"] = true
+					slot["strength"] = int(slot.get("strength", 0)) + amt
+					if i == _active_enemy_index():
+						state["enemy_strength"] = int(state.get("enemy_strength", 0)) + amt
+					add_log("%s %s" % [String(slot.get("name", "敵人")), String(pas.get("on_trigger", "狂化了！力量 +%d！" % amt))])
+			"ally_block_aura":
+				var aura: int = int(pas.get("amount", 4))
+				var shielded: int = 0
+				for j: int in range(slots.size()):
+					if j == i:
+						continue
+					var ally: Dictionary = slots[j] as Dictionary
+					if int(ally.get("hp", 0)) <= 0:
+						continue
+					ally["block"] = int(ally.get("block", 0)) + aura
+					shielded += 1
+				if shielded > 0:
+					_sync_active_enemy_to_state()
+					add_log("%s 護持戰陣：其他敵人各 +%d 護體。" % [String(slot.get("name", "敵人")), aura])
 
 # 機制型敵人被動（2026-06-11 試點）：strength_on_player_skill ——
 # 玩家每出一張「技能牌」，持有此被動的活敵 +N 力量（鎮獄明王「業鏡照心」）。
