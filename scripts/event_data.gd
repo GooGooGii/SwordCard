@@ -32,11 +32,11 @@ const VARIANTS: Dictionary = {
 		# + smoke test 走訪用，舊扁平 schema 仍是 runtime fallback。
 		"tree": {
 			"root": {
-				"prompt": "山壁後一眼清泉，水氣溫潤。你蹲下身——",
+				"prompt": "水聲是先到的，隔著一面山壁，淙淙地敲。繞過去，一眼清泉嵌在石窩裡，水面平得像一塊未琢的鏡，倒映著你風塵僕僕的臉。水氣溫潤撲面，喉頭忽然發緊——這一路，你已經很久沒有喝過一口乾淨的水了。",
 				"choices": [
 					{
 						"id": "drink",
-						"label": "掬水而飲",
+						"label": "掬一捧，痛快喝下",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -44,25 +44,25 @@ const VARIANTS: Dictionary = {
 								{"kind": "heal", "amount": 12},
 								{"kind": "next_battle_buff", "effects": [{"kind": "energy", "amount": 1}]},
 							],
-							"log": "清冽入喉，靈氣自丹田緩緩升起。下一場戰鬥開場將多 1 點靈力。",
+							"log": "清冽順著喉頭一路涼到底，連日的疲乏像被水沖開的泥。你長長吐出一口氣，丹田裡有一縷暖意自己升了起來——下一場交手，你的氣會比平時更足。",
 						},
 					},
 					{
 						"id": "bathe",
-						"label": "入水沐浴",
+						"label": "卸甲入水，洗去一身風塵",
 						"kind_hint": "mixed",
 						"next": "node_bathe",
 					},
 					{
 						"id": "observe_pool",
-						"label": "觀察泉底",
+						"label": "屏息凝神，細看泉底",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_observe",
 					},
 					{
 						"id": "lxy_meditate",
-						"label": "以「以身合水」打坐",
+						"label": "（李逍遙）學師父的樣子，臨水打坐",
 						"kind_hint": "reward",
 						"requires": {"character": ["li_xiaoyao"]},
 						"outcome": {
@@ -71,12 +71,12 @@ const VARIANTS: Dictionary = {
 								{"kind": "permanent_power", "amount": 1},
 								{"kind": "heal", "amount": 10},
 							],
-							"log": "逍遙想起師父的話，泉水的靈氣順著經脈走了一圈。",
+							"log": "酒劍仙說過：「水不爭，所以無物能傷。」當時逍遙只當醉話。此刻盤膝臨泉，水聲一圈圈漫過耳朵，那句醉話忽然在經脈裡走通了——他睜眼時，握劍的手穩了一分，往後都是。",
 						},
 					},
 					{
 						"id": "siphon_spring_spirit",
-						"label": "強取泉靈精華",
+						"label": "以劍逼泉，強取泉靈精華",
 						"kind_hint": "punish",
 						"outcome": {
 							"kind": "punish",
@@ -85,12 +85,12 @@ const VARIANTS: Dictionary = {
 								{"kind": "damage", "amount": 8},
 								{"kind": "gain_curse", "curse_id": "yao_zhai"},
 							],
-							"log": "你把劍鋒插入泉眼，向泉靈索取精華。泉水猛然翻湧，一股冰冷的呵斥順著劍身灌入你的經脈——你勉強拔出劍，掌心發白。泉靈雖被你拿走了一點什麼，也在你身上留下了印記。",
+							"log": "劍尖入水的剎那，整眼泉像被踩了尾巴的活物猛地一縮。冰冷的呵斥順著劍身灌進經脈，你咬牙撐住，硬是從翻湧的水心扯出一縷精純靈韻。拔劍退開，掌心發白——拿是拿到了，但水面再不映你的影子。山野有靈，這筆債記下了。",
 						},
 					},
 					{
 						"id": "bandit_ambush",
-						"label": "察覺上次盯上你的人摸到了泉邊",
+						"label": "水面倒影裡，多了一個不該在的人",
 						"kind_hint": "battle",
 						"requires": {"event_flag": "marked_by_bandits"},
 						"outcome": {
@@ -106,24 +106,24 @@ const VARIANTS: Dictionary = {
 									{"kind": "gold", "amount": -20},
 								],
 							},
-							"log": "泉水的倒影裡多了個人影——是你在酒館打聽消息時，悄悄轉過頭來的那隻耳朵。他循著風聲找了上來，刀已出鞘。看來這筆帳，得在這眼清泉邊算清。",
+							"log": "你沒有回頭，只是看著水面——倒影裡那人躡步而來，刀已出半鞘。是酒館裡那隻悄悄轉過來的耳朵，一路跟到了這眼泉邊。山靜，水清，正好算帳。",
 						},
 					},
 					{
 						"id": "leave",
-						"label": "離去",
+						"label": "向泉水拱手，不擾此地清修",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你向泉水拱手，繼續前行。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你掬起一捧水洗了把臉，向泉眼拱了拱手。轉身走出幾步，水聲還跟著你，像是送客，又像是道別。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_bathe": {
-					"prompt": "水深及腰，你閉眼浸入——感到水底有什麼在動。",
+					"prompt": "你解下兵刃放在伸手可及的石上，緩緩沒入水中。水深及腰，涼意貼著皮膚收緊又鬆開，連日的瘀傷在水裡輕輕發燙。就在你閉眼的瞬間——水底深處，有什麼東西碰了碰你的腳踝。很輕，像試探。",
 					"choices": [
 						{
 							"id": "relax",
-							"label": "繼續放鬆",
+							"label": "不動，把自己交給這眼泉",
 							"kind_hint": "gamble",
 							"outcome": {
 								"kind": "gamble",
@@ -138,12 +138,12 @@ const VARIANTS: Dictionary = {
 										{"kind": "gold", "amount": -8},
 									],
 								},
-								"log": "你閉眼放鬆，把自己交給泉靈。",
+								"log": "你聽見自己的心跳沉進水聲裡，那個輕輕的觸碰繞著你游了一圈，又一圈——是福是禍，全看泉靈今日的心情了。",
 							},
 						},
 						{
 							"id": "alert",
-							"label": "立刻起身警戒",
+							"label": "按住石上的兵刃，緩緩起身",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -151,17 +151,17 @@ const VARIANTS: Dictionary = {
 									{"kind": "heal", "amount": 6},
 									{"kind": "next_battle_buff", "effects": [{"kind": "block", "amount": 5}]},
 								],
-								"log": "你及時起身，泉靈也識相不再試探。",
+								"log": "你的手指剛碰到劍柄，腳踝邊那絲流動便倏地退了。水面盪開一圈淺笑似的漣漪——泉靈識趣，你也識趣。彼此留了體面，你帶著一身警醒上岸，這份警醒會替你擋下一陣。",
 							},
 						},
 					],
 				},
 				"node_observe": {
-					"prompt": "水底沉著一塊磨平的玉，刻著上古符紋。",
+					"prompt": "你沉下呼吸，目光一寸寸推開水光。泉底鋪著圓潤的卵石，其中一塊不是石——是玉，磨得極平，刻著半枚你不認得的上古符紋，像被人鄭重地沉在這裡，又像在等誰來撿。",
 					"choices": [
 						{
 							"id": "take_jade",
-							"label": "取玉",
+							"label": "探手入水，取那塊玉",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -169,12 +169,12 @@ const VARIANTS: Dictionary = {
 									{"kind": "gain_relic_pool", "pool": "common"},
 									{"kind": "gold", "amount": 5},
 								],
-								"log": "玉入手心，溫潤微熱。",
+								"log": "指尖破開水面，涼意直竄手肘。那塊玉像是等了很久，輕輕一托便離了泉底，入掌溫潤微熱，彷彿還帶著誰的體溫。水面合攏，倒影裡你的身後，似乎有什麼悄悄退開了。",
 							},
 						},
 						{
 							"id": "leave_jade",
-							"label": "留下不取",
+							"label": "看清楚了，但讓它留在原處",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -182,7 +182,7 @@ const VARIANTS: Dictionary = {
 									{"kind": "heal", "amount": 8},
 									{"kind": "power", "amount": 1},
 								],
-								"log": "你把玉留在泉底，泉靈在心中低語一句感謝。",
+								"log": "有些東西沉在水底，是有人託付給水的。你收回手，向泉心微微頷首。水聲忽然軟了一拍，一縷暖意逆著指尖游上來——泉靈記下了你的分寸，這份回禮，比玉重。",
 							},
 						},
 					],
@@ -212,11 +212,11 @@ const VARIANTS: Dictionary = {
 		# Batch A 凍結設計（docs/EVENT_BRANCHING.md §7）
 		"tree": {
 			"root": {
-				"prompt": "破舊符匣半埋土中，靈光未散。鎖鏈鏽蝕，但禁制尚在。",
+				"prompt": "先是一點微光，在路旁草根下一明一滅，像誰沒掐熄的香頭。撥開浮土，一只符匣半埋其中，鎖鏈鏽成了暗紅色，匣上禁制卻還醒著，隔著木蓋一下一下地搏動——像心跳，也像在數你站了多久。",
 				"choices": [
 					{
 						"id": "force_open",
-						"label": "強拆禁制取物",
+						"label": "扯斷鏽鏈，硬撬開它",
 						"kind_hint": "gamble",
 						"outcome": {
 							"kind": "gamble",
@@ -231,12 +231,12 @@ const VARIANTS: Dictionary = {
 									{"kind": "gain_curse", "curse_id": "xie_yin"},
 								],
 							},
-							"log": "你伸手抓向鎖鏈——",
+							"log": "鏽鏈在你掌中應聲而斷，鏽末簌簌落了一地。匣裡的靈光猛地一漲，照得你滿手通明——是遺贈還是反噬，全看留物之人當年封進去的，是善意還是脾氣。",
 						},
 					},
 					{
 						"id": "slow_unfold",
-						"label": "順著符紋緩拆",
+						"label": "順著符紋，一道道緩解",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -244,19 +244,19 @@ const VARIANTS: Dictionary = {
 								{"kind": "next_battle_buff", "effects": [{"kind": "block", "amount": 5}]},
 								{"kind": "heal", "amount": 6},
 							],
-							"log": "符匣在你手中慢慢解開，溫熱的靈氣裹住你的傷口。",
+							"log": "你指尖壓著符紋，循它的筆順一道一道往回退，像替人解一個打了多年的結。禁制鬆開的剎那，一縷溫熱靈氣裹上你的傷處，不聲不響待了片刻——往後幾步路，你身上像多披了一層看不見的軟甲。",
 						},
 					},
 					{
 						"id": "observe_runes",
-						"label": "觀察符紋",
+						"label": "凝神細讀匣上符紋",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_inspect",
 					},
 					{
 						"id": "zhao_lineage",
-						"label": "以靈族文字辨識來歷",
+						"label": "（趙靈兒）以靈族古文讀它來歷",
 						"kind_hint": "reward",
 						"requires": {"character": ["zhao_linger"]},
 						"outcome": {
@@ -265,24 +265,24 @@ const VARIANTS: Dictionary = {
 								{"kind": "permanent_power", "amount": 1},
 								{"kind": "max_hp", "amount": 3},
 							],
-							"log": "靈兒讀出符匣是上代修者的遺贈，溫熱沿指尖流入。",
+							"log": "靈兒指尖撫過符紋，輕聲讀了出來——筆意竟與水月宮的靈族古文同源，是上代修者留給後來人的遺贈。讀到落款那一筆，匣中溫熱湧上指尖，像隔著歲月被誰托了一下手。她直起身時，眉目間多了一分沉靜的力氣。",
 						},
 					},
 					{
 						"id": "leave",
-						"label": "不動，離去",
+						"label": "向匣拱手，不取分外之物",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你向符匣輕輕拱手，繼續上路。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你把浮土撥回去，蓋住那點微光，向符匣拱了拱手。走出十幾步回頭看，草根下的光已斂了，像一句沒說出口的話，留給下一個有緣人。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_inspect": {
-					"prompt": "符紋背面有極淡字跡：『貪者反噬』。",
+					"prompt": "你屏住呼吸，目光順著符紋一路推到匣底，鏽鏈的陰影裡浮出四個極淡的字：「貪者反噬」。字跡端正，不像恫嚇，倒像一個認真的人留下的最後一句囑咐。",
 					"choices": [
 						{
 							"id": "take_potion_only",
-							"label": "只取藥包不動符",
+							"label": "依囑取藥，不碰符紋分毫",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -290,12 +290,12 @@ const VARIANTS: Dictionary = {
 									{"kind": "gain_potion"},
 									{"kind": "gold", "amount": 8},
 								],
-								"log": "你只取走藥包，符紋繼續沉睡。",
+								"log": "你雙手捧出匣角的藥包，自始至終不讓指尖掠過符紋半分。匣中靈光安安靜靜看著你做完這一切，臨了輕輕一閃，像點了個頭。藥香透紙而出——是好藥。",
 							},
 						},
 						{
 							"id": "erase_warning",
-							"label": "抹除『貪者反噬』四字後再開",
+							"label": "抹去那四字囑咐，開匣取法",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -303,7 +303,7 @@ const VARIANTS: Dictionary = {
 									{"kind": "permanent_power", "amount": 1},
 									{"kind": "gain_card_pool", "pool": "uncommon"},
 								],
-								"log": "四字隨指輕抹散去，符匣應聲而開。",
+								"log": "四個字在你指腹下化作符灰，簌簌散盡。匣蓋應聲而啟，靈光湧出，在你掌紋裡烙下一道術法的輪廓——陌生，卻意外貼合你的手。只是往後夜靜時，你偶爾會想起那句被你親手抹掉的囑咐。",
 							},
 						},
 					],
@@ -332,11 +332,11 @@ const VARIANTS: Dictionary = {
 		# Batch A 凍結設計（docs/EVENT_BRANCHING.md §8）
 		"tree": {
 			"root": {
-				"prompt": "石壁間浮現微光，前人留下的靈痕，無戰意只有純粹的存在感。",
+				"prompt": "暮色裡的山道靜得只剩你的腳步聲，一拐彎，石壁間忽然浮出一片微光，淡得像水裡化開的月。那不是火，也不是磷——是前人留下的靈痕，無聲無息，卻有一種沉沉的存在感，彷彿有人在石壁裡等了很多年，等一個肯停下來的人。",
 				"choices": [
 					{
 						"id": "stand_quietly",
-						"label": "趨前靜立感應",
+						"label": "走近三步，靜立感應",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -344,12 +344,12 @@ const VARIANTS: Dictionary = {
 								{"kind": "heal", "amount": 8},
 								{"kind": "permanent_power", "amount": 1},
 							],
-							"log": "靈痕的溫度在心口慢慢散開。",
+							"log": "你在光前站定，什麼也不做，只把呼吸放慢。靈痕的溫度便一寸寸漫過來，先是掌心，再是心口，像爐邊烤暖的舊棉衣。離開時你的步子穩了，往後也一直穩著——有些東西留下來了。",
 						},
 					},
 					{
 						"id": "siphon",
-						"label": "試圖汲取靈痕",
+						"label": "張掌按進光暈，汲它入體",
 						"kind_hint": "gamble",
 						"outcome": {
 							"kind": "gamble",
@@ -364,25 +364,25 @@ const VARIANTS: Dictionary = {
 									{"kind": "next_battle_buff", "effects": [{"kind": "weak", "amount": 1}]},
 								],
 							},
-							"log": "你伸手往光暈中央按下——",
+							"log": "你張開五指，往光暈正中按下去。光在你掌下劇烈地明滅，像被驚醒的人猛然睜眼——它在掂你，掂你這雙手，配不配。",
 						},
 					},
 					{
 						"id": "meditate",
-						"label": "在靈痕前打坐悟法",
+						"label": "盤膝坐下，臨痕悟法",
 						"kind_hint": "reward",
 						"next": "node_meditate",
 					},
 					{
 						"id": "observe_origin",
-						"label": "觀察光痕來歷",
+						"label": "細辨這縷光的來歷",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_origin",
 					},
 					{
 						"id": "lin_salute",
-						"label": "以林家堡禮數行劍致敬",
+						"label": "（林月如）以林家堡劍禮致敬",
 						"kind_hint": "reward",
 						"requires": {"character": ["lin_yueru"]},
 						"outcome": {
@@ -391,12 +391,12 @@ const VARIANTS: Dictionary = {
 								{"kind": "gain_card_pool", "pool": "character"},
 								{"kind": "heal", "amount": 4},
 							],
-							"log": "月如的劍意與壁上殘光共鳴，前輩似乎滿意地點了點頭。",
+							"log": "月如退半步，劍交左手，行的是林家堡晚輩參見前輩的全禮。劍尖垂地的剎那，壁上殘光倏然大亮，與她的劍意疊在一處錚然一鳴——像父親林天南喂招時那一聲「好」。她收劍入鞘，掌心多了一式新的領會。",
 						},
 					},
 					{
 						"id": "force_inherit",
-						"label": "強行將殘光納入丹田",
+						"label": "不請自取，強納殘光入丹田",
 						"kind_hint": "punish",
 						"outcome": {
 							"kind": "punish",
@@ -410,19 +410,19 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "leave",
-						"label": "離去",
+						"label": "低頭一禮，趕路要緊",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你向石壁低頭一禮，繼續上路。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你向石壁低頭一禮，轉身下山。走出很遠回頭望，那點微光還亮著，不增不減——它等的或許不是你，你也不必是它等的人。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_meditate": {
-					"prompt": "閉目片刻，靈光在識海中組成一段心法殘篇。",
+					"prompt": "你盤膝坐定，山風從耳邊退開，靈光順著眉心緩緩流入識海，在黑暗裡一筆一畫，組成一段殘缺的心法。字句斷在最要緊處——剩下的，要你自己接。",
 					"choices": [
 						{
 							"id": "ascend",
-							"label": "跟隨心法升華某招",
+							"label": "順著殘篇，把一招練透",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -430,12 +430,12 @@ const VARIANTS: Dictionary = {
 									{"kind": "upgrade_random"},
 									{"kind": "heal", "amount": 4},
 								],
-								"log": "識海一震，那道招式自行重組。",
+								"log": "你照著殘篇行氣，行到斷句處，掌中那道熟悉的招式忽然自己動了——多年的滯澀一夕貫通，識海輕輕一震。睜眼時日頭已斜，你把那一招在掌心又走了一遍：是了，就是這樣。",
 							},
 						},
 						{
 							"id": "memorize",
-							"label": "把心法純粹記下不練",
+							"label": "只記不練，原樣收進心底",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -443,17 +443,17 @@ const VARIANTS: Dictionary = {
 									{"kind": "gain_card_pool", "pool": "common"},
 									{"kind": "gold", "amount": 5},
 								],
-								"log": "你只是記住，不去動。心法在你掌中安靜得像一隻入睡的小獸。",
+								"log": "你逐字把殘篇默誦三遍，不行氣、不催勁，讓它安安靜靜躺進記憶。起身時，石縫裡一枚前人留下的銅錢硌了你的腳——像在獎勵你的不貪。心法在你心底睡著，總有用得上的一天。",
 							},
 						},
 					],
 				},
 				"node_origin": {
-					"prompt": "光痕的氣息與你熟悉的東西呼應——這位前輩，或與你有源頭關係。",
+					"prompt": "你湊近細看，光痕深處的氣息竟與你一路修行的路數隱隱呼應——這位坐化在山壁裡的前輩，與你的師承怕是同出一源。山道往下，正通著一座塌了半邊的山神廟，香火斷了，靈痕卻留在這裡。",
 					"choices": [
 						{
 							"id": "kneel",
-							"label": "跪拜致意",
+							"label": "整衣斂容，叩首三拜",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -461,7 +461,7 @@ const VARIANTS: Dictionary = {
 									{"kind": "permanent_power", "amount": 2},
 									{"kind": "max_hp", "amount": 3},
 								],
-								"log": "你深深一拜，光暈為你停留片刻才再次隱回石壁。",
+								"log": "你拂去衣上塵土，朝石壁端端正正拜了三拜。第三拜起身時，光暈離壁而出，繞你一周，像長輩端詳遠道而來的後生。它隱回石壁前，在你眉心輕輕一點——那一點暖，往後一直在。",
 							},
 						},
 						{
@@ -473,7 +473,7 @@ const VARIANTS: Dictionary = {
 								"effects": [
 									{"kind": "next_battle_buff", "effects": [{"kind": "block", "amount": 8}]},
 								],
-								"log": "你抱拳致謝，沒有收下這份贈與。光暈卻悄悄替你護了一段路。",
+								"log": "你抱拳道了聲謝——同源歸同源，情不能白受，說罷繞行而過。走出半里，山風忽然繞著你轉了個圈才散。前輩到底不肯讓你空手：往前這一段路，有什麼在替你擋著。",
 							},
 						},
 					],
@@ -502,11 +502,11 @@ const VARIANTS: Dictionary = {
 		# Batch A 凍結設計（docs/EVENT_BRANCHING.md §9）
 		"tree": {
 			"root": {
-				"prompt": "倒塌的木箱半埋落葉，鎖鏈鏽蝕但機關未解。",
+				"prompt": "落葉堆裡先露出一角鐵鏽色，撥開來，是一只半埋的木箱，鎖鏈鏽得發黑，箱身卻紋絲未腐。指尖才碰上箱蓋，裡頭便傳來一聲極細的「喀」——機關還活著，像將軍塚裡那些埋了百年仍會咬人的暗扣。",
 				"choices": [
 					{
 						"id": "pry",
-						"label": "直接撬開",
+						"label": "抽刀挑鎖，硬撬開它",
 						"kind_hint": "gamble",
 						"outcome": {
 							"kind": "gamble",
@@ -521,12 +521,12 @@ const VARIANTS: Dictionary = {
 									{"kind": "gold", "amount": 5},
 								],
 							},
-							"log": "你一刀挑開鎖扣——",
+							"log": "你刀尖一沉，整條鎖鏈應聲繃斷。箱蓋彈起的剎那，一縷陳年的暗香混著鐵鏽味撲面而來——箱裡的東西，和箱裡的毒針，在這一刻同時醒了。",
 						},
 					},
 					{
 						"id": "careful",
-						"label": "用劍鞘小心觸發機關",
+						"label": "以劍鞘代手，遠遠引動機關",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -534,19 +534,19 @@ const VARIANTS: Dictionary = {
 								{"kind": "gold", "amount": 15},
 								{"kind": "gain_potion"},
 							],
-							"log": "鎖扣應聲而開，毒針只挑斷了劍鞘上一根線。",
+							"log": "你退開半步，用劍鞘遠遠壓下鎖扣。「噗」的一聲輕響，毒針釘進劍鞘，只挑斷了一根縫線。箱中銅錢成串，還臥著一只油紙裹好的藥瓶——前主人收拾得很體面。",
 						},
 					},
 					{
 						"id": "observe_trap",
-						"label": "觀察機關",
+						"label": "貼耳細聽機關的咬合",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_trap",
 					},
 					{
 						"id": "anu_disarm",
-						"label": "以骨針反向解蠱毒機關",
+						"label": "（阿奴）以骨針反解毒機關",
 						"kind_hint": "reward",
 						"requires": {"character": ["anu"]},
 						"outcome": {
@@ -556,24 +556,24 @@ const VARIANTS: Dictionary = {
 								{"kind": "gain_potion"},
 								{"kind": "permanent_power", "amount": 1},
 							],
-							"log": "阿奴認出毒針配方是苗疆親戚的手筆，骨針一挑，毒針反封自身。",
+							"log": "阿奴鼻尖一動就笑了——毒針上抹的配方，是苗疆寨子裡老人們的手筆，她閉著眼都認得。骨針逆著機簧輕輕一挑，毒針乖乖反扣回鞘，像被喊了名字的蟲。她翻開箱蓋，順手把那點毒粉也刮走了：好東西，不能浪費。",
 						},
 					},
 					{
 						"id": "leave",
-						"label": "離去",
+						"label": "掂掂分量，放它繼續埋著",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你掂了掂這個箱子，覺得不如不開。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你蹲下掂了掂箱子，又把落葉撥回去蓋好。有些箱子鎖了百年，自有它的道理——你拍拍手上的土，把這份好奇留在原地。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_trap": {
-					"prompt": "金屬絲在箱蓋下繃緊——這是毒針機關，但設計者留了給識者的旁路。",
+					"prompt": "你把耳朵貼近箱蓋，屏息聽機簧的咬合——一根極細的金屬絲在蓋下繃著，連著毒針。可繃法不對：設計的人故意在絲的另一頭留了鬆口，是給識貨之人的旁路。",
 					"choices": [
 						{
 							"id": "bypass",
-							"label": "走旁路安全開鎖",
+							"label": "循那道鬆口，無聲開鎖",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -582,12 +582,12 @@ const VARIANTS: Dictionary = {
 									{"kind": "gain_card_pool", "pool": "uncommon"},
 									{"kind": "heal", "amount": 5},
 								],
-								"log": "你順著旁路解開鎖扣，毒針從另一側無聲彈過。",
+								"log": "你指尖捻著金屬絲的鬆口，輕輕一送，毒針從另一側無聲彈空。箱蓋開時連灰都沒驚起。箱底功法殘卷與碎銀齊整疊放——設計機關的人，等的就是你這樣的手。",
 							},
 						},
 						{
 							"id": "trigger_grab",
-							"label": "故意觸發毒針後翻箱",
+							"label": "伸臂硬吃一針，搶先翻箱",
 							"kind_hint": "mixed",
 							"outcome": {
 								"kind": "mixed",
@@ -596,7 +596,7 @@ const VARIANTS: Dictionary = {
 									{"kind": "gain_relic_pool", "pool": "common"},
 									{"kind": "gold", "amount": 10},
 								],
-								"log": "你受了毒針一刺，但箱底壓著一件不打眼的好物。",
+								"log": "毒針扎進小臂的剎那，你已經把箱底掀了個遍。麻意順著手肘往上爬，你咬牙把那件不打眼的舊物揣進懷裡，才坐下運氣逼毒。疼是真疼——但值。",
 							},
 						},
 					],
@@ -625,11 +625,11 @@ const VARIANTS: Dictionary = {
 		# Batch A 凍結設計（docs/EVENT_BRANCHING.md §10）
 		"tree": {
 			"root": {
-				"prompt": "古老祭壇上一具尚未化盡的骨殖，靈氣濃郁。蜷縮坐化之姿，旁有三朵乾枯小白花。",
+				"prompt": "林間忽然安靜下來，連蟲鳴都歇了。前方一座古老祭壇爬滿藤蔓，壇上端坐著一具尚未化盡的骨殖——雙手抱於胸前，是修者坐化之姿。骨前擺著三朵乾枯的小白花，靈氣濃得壓住了風：他走了很久，卻還有人記得。",
 				"choices": [
 					{
 						"id": "venerate",
-						"label": "虔誠供奉 + 行禮",
+						"label": "焚香拜祭，執晚輩之禮",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -637,12 +637,12 @@ const VARIANTS: Dictionary = {
 								{"kind": "heal", "amount": 10},
 								{"kind": "permanent_power", "amount": 1},
 							],
-							"log": "先靈似乎輕輕點了個頭。",
+							"log": "你拾了一束山花替換壇上的乾枝，俯身行了個全禮。起身時，骨殖周圍的靈氣輕輕一蕩，像有人隔著歲月點了個頭。下山的路上，你的傷口不疼了，腳步也比來時沉穩。",
 						},
 					},
 					{
 						"id": "extract_bone",
-						"label": "取走骨殖殘片煉化",
+						"label": "掰下一節指骨，攜走煉化",
 						"kind_hint": "mixed",
 						"outcome": {
 							"kind": "mixed",
@@ -650,19 +650,19 @@ const VARIANTS: Dictionary = {
 								{"kind": "max_hp", "amount": -3},
 								{"kind": "permanent_power", "amount": 3},
 							],
-							"log": "你感到先靈在你體內留下了一道無形的眼神，從此每次出手，他都看著。",
+							"log": "你伸手掰下一節指骨，入手的剎那，林間的靜變成了另一種靜——被注視的靜。那縷意志沒有阻止你，只是從此跟著你：每次出手，他都看著。你說不清這是傳承，還是討債。",
 						},
 					},
 					{
 						"id": "observe_legacy",
-						"label": "觀察骨殖姿勢",
+						"label": "細看這位前輩坐化的姿勢",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_legacy",
 					},
 					{
 						"id": "lin_lineage",
-						"label": "以林家堡弟子禮認師",
+						"label": "（林月如）行林家弟子禮認師",
 						"kind_hint": "reward",
 						"requires": {"character": ["lin_yueru"]},
 						"outcome": {
@@ -671,24 +671,24 @@ const VARIANTS: Dictionary = {
 								{"kind": "gain_card_pool", "pool": "character"},
 								{"kind": "permanent_power", "amount": 1},
 							],
-							"log": "月如跪下時聽見了一個從未見過的聲音輕喚她的名字，那是父親也未曾提起的師伯。",
+							"log": "月如解下佩劍橫於膝前，行的是林家堡弟子拜師的大禮。額頭觸地的一瞬，一個從未聽過的聲音在識海裡輕喚她的名字——是父親林天南也未曾提起的師伯。聲音教了她半式劍訣便散了，像怕多留一刻會捨不得。",
 						},
 					},
 					{
 						"id": "leave",
-						"label": "不打擾，繞行",
+						"label": "斂聲屏息，繞壇而行",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你向骨殖低頭一禮，繼續上路。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你向骨殖低頭一禮，貼著祭壇邊緣輕輕繞了過去，不讓鞋底碾響一片枯葉。走遠了回頭看，三朵乾花在壇上微微晃——像揮手，也像目送。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_legacy": {
-					"prompt": "骨殖周圍刻有極小的字：『接得住者，即吾傳人』。",
+					"prompt": "你繞著骨殖細看，那蜷縮的坐姿不是痛苦，是把最後一口氣護在胸前的鄭重。壇沿內側刻著一行極小的字，指腹拂過才顯：「接得住者，即吾傳人。」",
 					"choices": [
 						{
 							"id": "kneel_accept",
-							"label": "跪受傳承",
+							"label": "雙膝落地，接下這份傳承",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -696,12 +696,12 @@ const VARIANTS: Dictionary = {
 									{"kind": "gain_card_pool", "pool": "rare"},
 									{"kind": "permanent_power", "amount": 2},
 								],
-								"log": "你跪下接住這份傳承，胸口微微一熱。",
+								"log": "你跪下的剎那，骨殖中那縷意志傾身而出，沉沉壓進你的胸口——像接住一柄遞了百年的劍。熱意自心口散向四肢，有什麼從此長在你的招式裡。你向骨殖叩首：「前輩，接住了。」",
 							},
 						},
 						{
 							"id": "decline_take_flowers",
-							"label": "婉拒，只取走三朵乾花作念想",
+							"label": "婉拒傳承，只帶走三朵乾花",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -710,7 +710,7 @@ const VARIANTS: Dictionary = {
 									{"kind": "heal", "amount": 8},
 									{"kind": "max_hp", "amount": 2},
 								],
-								"log": "你把三朵乾花輕輕收進胸口的暗袋。",
+								"log": "你向骨殖搖了搖頭，說自己的路要自己走，只把那三朵乾花輕輕收進胸口的暗袋。轉身時，一縷暖意追上來貼著你的傷處——前輩不收回禮，這份念想，他折成了別的東西還你。",
 							},
 						},
 					],
@@ -739,34 +739,34 @@ const VARIANTS: Dictionary = {
 		# Batch A 凍結設計（docs/EVENT_BRANCHING.md §11）
 		"tree": {
 			"root": {
-				"prompt": "竹笠下白髮垂胸的老者煮著粗茶。他抬眼掃過你，不發一語。",
+				"prompt": "茶香先一步攔住了你——粗茶，火氣很足，混著松枝燒裂的味道。道旁石上，一位竹笠下白髮垂胸的老者守著一只小泥爐，看你走來只是抬眼，又低頭撥火，不發一語。那一眼很短，卻像把你連人帶劍都稱過了。",
 				"choices": [
 					{
 						"id": "seek_teaching",
-						"label": "拱手求教",
+						"label": "上前拱手，誠心求教",
 						"kind_hint": "reward",
 						"next": "node_teach",
 					},
 					{
 						"id": "silent_sit",
-						"label": "沉默對坐",
+						"label": "不發一語，在他對面坐下",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
 							"effects": [{"kind": "permanent_power", "amount": 2}],
-							"log": "老者最後只說了一句：「你的劍會找到答案。」",
+							"log": "你坐了一炷香，他添了三次水，誰都沒開口。起身告辭時，老者忽然頭也不抬地說：「你的劍會找到答案。」就這一句，卻在你往後每次出手時隱隱作響。",
 						},
 					},
 					{
 						"id": "observe_master",
-						"label": "觀察老者來歷",
+						"label": "細看他煮茶的手法",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_recognize",
 					},
 					{
 						"id": "lxy_uncle",
-						"label": "問師父下落",
+						"label": "（李逍遙）打聽師父的下落",
 						"kind_hint": "reward",
 						"requires": {"character": ["li_xiaoyao"]},
 						"outcome": {
@@ -775,12 +775,12 @@ const VARIANTS: Dictionary = {
 								{"kind": "gain_card_pool", "pool": "character"},
 								{"kind": "heal", "amount": 10},
 							],
-							"log": "老者眯眼笑了：「酒劍仙啊……他欠我三壺酒，你見著了替我討。」",
+							"log": "逍遙試探著提起師父，老者眯眼笑了：「酒劍仙啊……他欠我三壺酒，你見著了替我討。」說罷拈葉貼上逍遙的傷口，又口授了半式劍訣——說是抵那三壺酒的利錢。茶喝完，傷也好得七七八八。",
 						},
 					},
 					{
 						"id": "demand_destiny",
-						"label": "強求一道天命",
+						"label": "跪地不起，強求一道天命",
 						"kind_hint": "punish",
 						"outcome": {
 							"kind": "punish",
@@ -794,19 +794,19 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "leave",
-						"label": "離去",
+						"label": "討一碗茶，喝完便走",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你向老者拱手，繼續上路。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你討了一碗粗茶，蹲在爐邊喝完，向老者拱手作別。走出十幾丈回頭，石上空空——爐、茶、人都不在了，只有舌根那點回甘，證明你沒做夢。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_teach": {
-					"prompt": "老者放下茶杯，慢慢說：『我能教你三樣，你只能挑一樣。』",
+					"prompt": "老者放下茶杯，竟真的開了口，聲音像爐底的炭，又暗又穩：「我能教你三樣——療傷、煉招、去雜念。只能挑一樣，挑了就不能反悔。」爐火劈啪一響，他等著你。",
 					"choices": [
 						{
 							"id": "heal_lesson",
-							"label": "求療傷之術",
+							"label": "求一帖療傷的本事",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -814,7 +814,7 @@ const VARIANTS: Dictionary = {
 									{"kind": "heal", "amount": 18},
 									{"kind": "max_hp", "amount": 2},
 								],
-								"log": "老者拈起草葉一貼，涼意透入。",
+								"log": "老者拈起三片不知名的草葉，在掌心揉碎了往你傷處一貼。涼意透骨而入，疼處像被慢慢熨平。他順手把剩下的藥渣抖進你手心：「記住這味道，往後自己找得到。」",
 							},
 						},
 						{
@@ -827,7 +827,7 @@ const VARIANTS: Dictionary = {
 									{"kind": "upgrade_random"},
 									{"kind": "permanent_power", "amount": 1},
 								],
-								"log": "老者只說了半句話，你便悟透了剩下那半句。",
+								"log": "老者讓你把最熟的一招打給他看，看完只說了半句話。你便在那半句裡悟透了剩下那半句——那道招式從此不同了，不是更強，而是更真，像終於去掉了最後一層假。",
 							},
 						},
 						{
@@ -840,17 +840,17 @@ const VARIANTS: Dictionary = {
 									{"kind": "lose_card"},
 									{"kind": "heal", "amount": 5},
 								],
-								"log": "老者將你心頭一道雜念投入爐火，煙散無痕。",
+								"log": "老者盯著你看了半晌，伸兩指在你眉心一點：「就是它了。」一道你練了很久、其實一直在拖累你的念頭，隨指尖被拈了出來，投入爐火，煙散無痕。你忽然輕了。",
 							},
 						},
 					],
 				},
 				"node_recognize": {
-					"prompt": "你細看老者煮茶的動作——精準到像練過幾十年的招式。他是高人。",
+					"prompt": "你盯著他煮茶的手——提壺、注水、收腕，每個動作都準得像練了幾十年的劍招，半分不多，半分不少。這不是山野閒人，是把一身驚人的功夫，收進一壺粗茶裡的高人。",
 					"choices": [
 						{
 							"id": "apprentice",
-							"label": "拜為一日之師",
+							"label": "撩衣下拜，拜一日之師",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -859,7 +859,7 @@ const VARIANTS: Dictionary = {
 									{"kind": "permanent_power", "amount": 1},
 									{"kind": "next_battle_buff", "effects": [{"kind": "energy", "amount": 1}]},
 								],
-								"log": "老者收下你這一拜，把一道罕見的心法說與你聽。",
+								"log": "你撩衣下拜，口稱「一日之師」。老者沒攔，受了這一拜，便把一道罕見的心法掰開揉碎了說與你聽，連你問到第三層他都不嫌煩。臨別他擺擺手：「拜過就算，路自己走。」",
 							},
 						},
 						{
@@ -872,7 +872,7 @@ const VARIANTS: Dictionary = {
 									{"kind": "gold", "amount": -10},
 									{"kind": "heal", "amount": 6},
 								],
-								"log": "老者收下酒，向你抬了抬竹笠。你回頭時，他已不在那裡。",
+								"log": "你把行囊裡那壺捨不得喝的好酒擱在爐邊，沒說話，只抬手一揖。老者向你抬了抬竹笠，算是受了。你回頭時，石上已空——酒不在，人也不在，唯獨你的傷口輕快了許多。",
 							},
 						},
 					],
@@ -900,11 +900,11 @@ const VARIANTS: Dictionary = {
 		# Batch A 凍結設計（docs/EVENT_BRANCHING.md §12）
 		"tree": {
 			"root": {
-				"prompt": "夜色凝在潭面，倒映出比山更深的星辰。傳說潭水能洗去俗血，也能引出舊傷。",
+				"prompt": "夜露落在肩上時，你才發現林子盡頭藏著一泓水潭。夜色凝在潭面，倒映的星辰比山還深，潭心一輪月，竟比天上那輪更圓更亮。水氣沁涼撲面——傳說這樣的潭水能洗去俗血，也能引出你以為早好了的舊傷。",
 				"choices": [
 					{
 						"id": "bathe",
-						"label": "沐月療養",
+						"label": "解衣入潭，沐月療傷",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -912,12 +912,12 @@ const VARIANTS: Dictionary = {
 								{"kind": "heal", "amount": 15},
 								{"kind": "max_hp", "amount": 2},
 							],
-							"log": "月光滲入水中，你的舊傷如紙浸軟、輕輕化開。",
+							"log": "你緩緩沒入潭中，月光貼著水面漫過你的肩。舊傷如紙浸軟、輕輕化開，連那些你早不去想的暗痛也一併浮出，散在銀白的水裡。上岸時你覺得自己輕了，往後也會一直輕一點。",
 						},
 					},
 					{
 						"id": "drink",
-						"label": "仰天飲一口潭水",
+						"label": "掬潭心月影，仰頭飲下",
 						"kind_hint": "gamble",
 						"outcome": {
 							"kind": "gamble",
@@ -932,19 +932,19 @@ const VARIANTS: Dictionary = {
 									{"kind": "damage", "amount": 4},
 								],
 							},
-							"log": "潭水有兩面——對著光是淨化，對著陰是引誘。",
+							"log": "你掬起那輪水中月，連光帶水一飲而盡。涼意墜進丹田，像吞下一枚會呼吸的月亮——潭水有兩面，對著光是淨化，對著陰是引誘，此刻它正在你腹中決定翻向哪一面。",
 						},
 					},
 					{
 						"id": "observe_moons",
-						"label": "觀察潭中倒影",
+						"label": "屏息細看潭中那輪月",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_double_moon",
 					},
 					{
 						"id": "zhao_lineage",
-						"label": "以靈族水德沐浴歸宗",
+						"label": "（趙靈兒）以靈族水德沐浴歸宗",
 						"kind_hint": "reward",
 						"requires": {"character": ["zhao_linger"]},
 						"outcome": {
@@ -954,7 +954,7 @@ const VARIANTS: Dictionary = {
 								{"kind": "max_hp", "amount": 5},
 								{"kind": "gain_card_pool", "pool": "character"},
 							],
-							"log": "靈兒踏入潭中，月光把水映成銀白，那一刻她聽見了母親的聲音。",
+							"log": "靈兒赤足踏入潭中，水紋自她足尖一圈圈盪開，竟自動讓出一條銀亮的路。月光把水映成仙靈島水月宮的顏色，那一刻她聽見了母親的聲音，很輕，像隔著水喚她的乳名。她在潭心站了很久，出水時眼眶是熱的，渾身的傷卻都好了。",
 						},
 					},
 					{
@@ -973,15 +973,15 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "leave",
-						"label": "離去",
+						"label": "向潭拱手，不擾雙月清輝",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你向潭面拱了拱手，留下這份古意給下一個有緣人。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你向潭面拱了拱手，把這份古意原樣留下。轉身入林，月光送你一程，在你肩頭停了停才退回水面——下一個有緣人來時，潭水還是滿的。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_double_moon": {
-					"prompt": "水中映出的不是天上那輪，是更古老更圓滿的雙月——某個失落仙派的修行之地。",
+					"prompt": "你屏息看了半晌，終於確定——水中那輪月不是天上的倒影，是另一輪更古老、更圓滿的月。雙月之潭，中原幾近絕跡，傳說是某個失落仙派的修行地，潭底的靜，是他們留下的。",
 					"choices": [
 						{
 							"id": "twin_moon_seal",
@@ -993,7 +993,7 @@ const VARIANTS: Dictionary = {
 									{"kind": "gain_relic_pool", "pool": "uncommon"},
 									{"kind": "heal", "amount": 5},
 								],
-								"log": "雙月之印在你眉心一點即逝，留下一件不屬於這個時代的物事。",
+								"log": "你對著雙月合掌起念，兩輪月光在你眉心交疊成一點印記，一觸即逝。退開時，潭邊石上多了一件不屬於這個時代的物事，靜靜等你拾起——像是仙派隔著歲月遞來的回禮。",
 							},
 						},
 						{
@@ -1006,7 +1006,7 @@ const VARIANTS: Dictionary = {
 									{"kind": "permanent_power", "amount": 1},
 									{"kind": "heal", "amount": 8},
 								],
-								"log": "你坐到月偏才起身，雙腳發麻，胸中卻異常清明。",
+								"log": "你在潭邊坐定，不取、不問、不擾，陪著那輪古月走完它的夜。月偏西時你起身，雙腳發麻，胸中卻異常清明——有些功夫不是練來的，是這樣坐出來的。",
 							},
 						},
 					],
@@ -1035,17 +1035,17 @@ const VARIANTS: Dictionary = {
 		# Batch B 凍結設計（docs/EVENT_BRANCHING.md §13）
 		"tree": {
 			"root": {
-				"prompt": "山神泥像剝落大半，神龕底壓著一道暗紅符紙，墨色仍鮮。",
+				"prompt": "廟門半塌，風從屋脊的破洞灌進來，捲著一股陳年的香灰味。山神泥像剝落大半，露出裡頭發黑的草胎，像極了餘杭山道上那些荒了的小廟。唯獨神龕底壓著一道暗紅符紙，墨色仍鮮——這座廟死了很多年，這道符卻是活的。",
 				"choices": [
 					{
 						"id": "tear_seal",
-						"label": "撕下符紙",
+						"label": "伸手撕下那道暗紅符",
 						"kind_hint": "mixed",
 						"next": "node_seal",
 					},
 					{
 						"id": "search_shrine",
-						"label": "翻找神龕底",
+						"label": "撥開香灰，翻找神龕底",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -1053,19 +1053,19 @@ const VARIANTS: Dictionary = {
 								{"kind": "gold", "amount": 18},
 								{"kind": "gain_potion"},
 							],
-							"log": "你從神龕底拖出半個布包，裡面是行旅人留下的乾糧與藥草。",
+							"log": "你撥開積了厚厚一層的香灰，從神龕底拖出半個布包——乾糧、藥草，還有幾枚用油紙包好的銅錢，是某個行旅人寄放的家當。你猶豫了一下，留下乾糧，只取走了能救命的。",
 						},
 					},
 					{
 						"id": "observe_recent",
-						"label": "觀察符紙痕跡",
+						"label": "細查符紙上的新鮮痕跡",
 						"kind_hint": "battle",
 						"requires": {"observe_token": true},
 						"next": "node_recent",
 					},
 					{
 						"id": "anu_purify",
-						"label": "以蠱術反解殘符",
+						"label": "（阿奴）以蠱術反解殘符",
 						"kind_hint": "reward",
 						"requires": {"character": ["anu"]},
 						"outcome": {
@@ -1075,24 +1075,24 @@ const VARIANTS: Dictionary = {
 								{"kind": "permanent_power", "amount": 1},
 								{"kind": "heal", "amount": 5},
 							],
-							"log": "阿奴用骨針反向書寫，符紙無聲化灰，邪意盡散。",
+							"log": "阿奴蹲在符前，骨針蘸著指尖一點血，逆著符上筆順一路倒寫回去——苗疆解蠱就是這個理，路怎麼走來，就怎麼送回去。符紙無聲化灰，邪意盡散，灰裡竟還剩一小瓶沒被汙到的好藥。她拈起來晃了晃，笑了。",
 						},
 					},
 					{
 						"id": "leave",
-						"label": "退出廟外",
+						"label": "心頭發毛，退出廟門",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你決定不淌這趟渾水，退出廟門。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你後退著跨出門檻，目光始終沒離開那道符。廟外日頭正好，背上的涼意卻過了半里地才散——有些渾水，不淌是對的。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_seal": {
-					"prompt": "符紙在指間發燙，墨字緩緩浮起——這不只是裝飾。",
+					"prompt": "符紙離龕的剎那在你指間發起燙來，暗紅的墨字一個個浮出紙面，緩緩蠕動——這不是裝飾，是還在生效的封印，而你剛剛親手揭了它。",
 					"choices": [
 						{
 							"id": "burn",
-							"label": "燒掉破除",
+							"label": "就地引火，燒了它",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -1100,12 +1100,12 @@ const VARIANTS: Dictionary = {
 									{"kind": "permanent_power", "amount": 1},
 									{"kind": "gold", "amount": 8},
 								],
-								"log": "符紙化為一縷青煙，廟中突然安靜了下來。",
+								"log": "你火摺子一抖，符紙蜷成一團暗紅的灰。火光熄滅的瞬間，整座廟忽然安靜下來——是那種多年不曾有過的、乾乾淨淨的靜。泥像剝落的臉上，彷彿鬆了一口氣。",
 							},
 						},
 						{
 							"id": "keep",
-							"label": "收入囊中",
+							"label": "把這燙手的東西收進懷裡",
 							"kind_hint": "mixed",
 							"outcome": {
 								"kind": "mixed",
@@ -1113,17 +1113,17 @@ const VARIANTS: Dictionary = {
 									{"kind": "gain_curse", "curse_id": "xie_yin"},
 									{"kind": "gain_card_pool", "pool": "evil"},
 								],
-								"log": "符紙在你懷裡發出極輕的脈動，像有什麼在低聲笑你的選擇。",
+								"log": "你把發燙的符紙折好，貼身收進懷裡。它在你胸口發出極輕的脈動，一下，又一下，像有什麼隔著布料貼著你的心跳，低聲笑你的選擇。往後夜深，它偶爾還會熱起來。",
 							},
 						},
 					],
 				},
 				"node_recent": {
-					"prompt": "符紙背面有極淡指印，是個剛入門的修者。你決定等他回來。",
+					"prompt": "你細看符背——指印極淡，按得遲疑，是個剛入門的修者，而且香灰上的腳印朝外，人走了不久，多半還會回來。你吹熄火摺，在樑影裡找了個看得見門口的位置。",
 					"choices": [
 						{
 							"id": "ambush",
-							"label": "守株待兔",
+							"label": "藏身樑後，等他回來",
 							"kind_hint": "battle",
 							"outcome": {
 								"kind": "battle",
@@ -1139,7 +1139,7 @@ const VARIANTS: Dictionary = {
 										{"kind": "gold", "amount": -10},
 									],
 								},
-								"log": "你藏身樑後。半個時辰後，廟門咿呀一聲——",
+								"log": "你伏在樑後，聽著自己的呼吸一點點放慢。半個時辰後，廟門咿呀一聲被推開——進來的卻不是什麼後輩修者。那道符鎮著的東西，順著被撕動的封印，先一步回了家。",
 							},
 						},
 					],
@@ -1373,7 +1373,7 @@ const VARIANTS: Dictionary = {
 		# Batch B 凍結設計（docs/EVENT_BRANCHING.md §14）
 		"tree": {
 			"root": {
-				"prompt": "神龕角落藏一個小布包，香爐裡還有一炷未滅的香。",
+				"prompt": "風捲著破爛的供品紙屑打了個旋。壇身低矮，不是拜月教那種高聳嗜血的祭壇，是尋常人求平安的小香火——香爐裡竟還有一炷未滅的香，細細一線青煙直直地立著。灰燼底下，隱約壓著字跡。",
 				"choices": [
 					{
 						"id": "incense_silence",
@@ -1385,12 +1385,12 @@ const VARIANTS: Dictionary = {
 								{"kind": "heal_party", "amount": 6},
 								{"kind": "permanent_power", "amount": 1},
 							],
-							"log": "香煙繞身，全隊體內一陣溫熱。",
+							"log": "你續上一炷香，退後一步靜立。青煙繞身一周，全隊的傷處都泛起一陣溫熱，像被誰用掌心捂過。七十年的善念積在這裡，今天終於又有人來領。",
 						},
 					},
 					{
 						"id": "take_bundle",
-						"label": "取走布包離開",
+						"label": "抄起布包，頭也不回地走",
 						"kind_hint": "mixed",
 						"outcome": {
 							"kind": "mixed",
@@ -1399,19 +1399,19 @@ const VARIANTS: Dictionary = {
 								{"kind": "gold", "amount": 10},
 								{"kind": "next_battle_buff", "effects": [{"kind": "weak", "amount": 1}]},
 							],
-							"log": "你拿走布包。離開時，背上有一道淡淡的視線跟了你幾步。",
+							"log": "你把布包塞進行囊，快步走下壇階。背上有一道淡淡的視線跟了你幾步，不怒，只是失望——東西是死人的，這份失望卻活得很久，下次拔刀時你會想起它。",
 						},
 					},
 					{
 						"id": "observe_inscription",
-						"label": "觀察神龕底刻字",
+						"label": "俯身辨認神龕底的刻字",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_inscription",
 					},
 					{
 						"id": "disturb_incense",
-						"label": "擾動香爐召喚守靈",
+						"label": "踢翻香爐，看看誰會出來",
 						"kind_hint": "battle",
 						"outcome": {
 							"kind": "battle",
@@ -1427,12 +1427,12 @@ const VARIANTS: Dictionary = {
 									{"kind": "max_hp", "amount": -2},
 								],
 							},
-							"log": "香爐應聲而倒，一道劍光自神龕之後直撲你面門——",
+							"log": "香爐應聲而倒，香灰潑了滿地。青煙猛地一束，一道劍光自神龕之後直撲你面門——守了七十年的東西被你親手喊醒了，它很不高興。",
 						},
 					},
 					{
 						"id": "zhao_superdu",
-						"label": "以靈族超渡禮為母子兩魂解結",
+						"label": "（趙靈兒）以靈族禮超渡母子兩魂",
 						"kind_hint": "reward",
 						"requires": {"character": ["zhao_linger"]},
 						"outcome": {
@@ -1441,12 +1441,12 @@ const VARIANTS: Dictionary = {
 								{"kind": "gain_card_pool", "pool": "character"},
 								{"kind": "heal_party", "amount": 10},
 							],
-							"log": "靈兒念完最後一句咒文，香煙化作一個輕薄的人形，向她拱手散去。",
+							"log": "靈兒跪坐壇前，以靈族古禮輕聲誦咒，一句一句，替那位等了七十年的母親把話說完。咒文落盡，香煙化作一個輕薄的人形，向她深深拱手，散在風裡。壇上忽然暖了，像久別的家。",
 						},
 					},
 					{
 						"id": "lowhp_old_remedy",
-						"label": "重傷垂危，急服香灰下那帖無名古方",
+						"label": "顧不得了，抓起古方就嚥",
 						"kind_hint": "gamble",
 						"hide_badge": true,
 						"requires": {"hp_below": 0.4},
@@ -1467,15 +1467,15 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "leave",
-						"label": "離去",
+						"label": "上一炷香，作別趕路",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你在祭壇前一禮，繼續上路。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你在壇前上了一炷香，深深一禮。走下壇階時風停了一瞬，那縷青煙筆直地送你到路口——平安兩個字，前人求過的，如今也分你一點。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_inscription": {
-					"prompt": "神龕底刻著『願後來者亦能在此片刻平靜』。香灰下還有一封七十年前的母親留言。",
+					"prompt": "你拂開積灰，神龕底一行小字漸漸清晰：「願後來者，亦能在此片刻平靜。」字痕旁壓著一封信，紙脆得一碰即碎——是七十年前，一位母親求孩子平安歸來的留言，沒有寫完。",
 					"choices": [
 						{
 							"id": "finish_letter",
@@ -1488,7 +1488,7 @@ const VARIANTS: Dictionary = {
 									{"kind": "heal", "amount": 12},
 									{"kind": "permanent_power", "amount": 1},
 								],
-								"log": "你輕聲念完那封信，香爐中的火苗安靜地搖了一下。",
+								"log": "你捧著那封脆黃的信，輕聲把沒寫完的話替她念完——「願吾兒平安，歸來食一碗熱飯。」香爐中的火苗安靜地搖了一下，像有人應了。你起身時，胸口那點舊疼不見了。",
 							},
 						},
 						{
@@ -1500,7 +1500,7 @@ const VARIANTS: Dictionary = {
 								"effects": [
 									{"kind": "gain_relic_pool", "pool": "common"},
 								],
-								"log": "你只是將信折好放回原處。離開時，神龕底似乎多了一件給有緣人的小物。",
+								"log": "你把信照原樣折好，壓回香灰底下，沒有念，也沒有帶走——有些話只屬於寫的人和等的人。離開時，神龕底多了一件小物，靜靜朝著你，是替她守了七十年的回禮。",
 							},
 						},
 					],
@@ -1528,11 +1528,11 @@ const VARIANTS: Dictionary = {
 		# Batch B 凍結設計（docs/EVENT_BRANCHING.md §15）
 		"tree": {
 			"root": {
-				"prompt": "乾涸血土上插著無數殘旌，風過時像有人低鳴。",
+				"prompt": "風還沒到，低鳴先到了——滿地殘旌在乾涸的血土上獵獵作響，像無數人壓著嗓子說話。斷戟與鏽甲半埋土中，沉得像將軍塚裡的陪葬。你每走一步，腳底都傳來一種說不清的重，彷彿土裡有什麼，正隔著千年看你。",
 				"choices": [
 					{
 						"id": "pickup_banner",
-						"label": "撿起旌旗碎片祭英靈",
+						"label": "拾起殘旌，俯首祭英靈",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -1540,12 +1540,12 @@ const VARIANTS: Dictionary = {
 								{"kind": "permanent_power", "amount": 2},
 								{"kind": "heal", "amount": 5},
 							],
-							"log": "千年的鐵血沿著你的手腕緩緩流入心口。",
+							"log": "你拾起一角殘旌，拂去血土，朝四野俯首三拜。風忽然靜了，千年的鐵血沿著你的手腕緩緩流入心口，沉甸甸地落定——那是他們最後沒能打出去的力氣，從今往後，由你的手替他們打。",
 						},
 					},
 					{
 						"id": "summon_souls",
-						"label": "試圖喚醒亡靈聽其遺言",
+						"label": "焚旌喚魂，聽他們的遺言",
 						"kind_hint": "battle",
 						"outcome": {
 							"kind": "battle",
@@ -1561,19 +1561,19 @@ const VARIANTS: Dictionary = {
 									{"kind": "gain_curse", "curse_id": "jiu_zui"},
 								],
 							},
-							"log": "你大喝一聲祭起殘旌——一個披甲身影自土中升起。",
+							"log": "你祭起殘旌大喝一聲，聲音滾過空蕩的戰場。血土無聲裂開，一個披甲身影緩緩升起，斷劍橫胸——他沒有遺言，他只認得一件事：來者，先過我這一劍。",
 						},
 					},
 					{
 						"id": "observe_unfinished",
-						"label": "觀察殘劍刻字",
+						"label": "蹲下細看那柄斷劍",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_unfinished",
 					},
 					{
 						"id": "lin_lineage",
-						"label": "辨認旌旗為林家堡歷代遺名",
+						"label": "（林月如）辨認旌旗上的家名",
 						"kind_hint": "reward",
 						"requires": {"character": ["lin_yueru"]},
 						"outcome": {
@@ -1582,7 +1582,7 @@ const VARIANTS: Dictionary = {
 								{"kind": "gain_card_pool", "pool": "character"},
 								{"kind": "permanent_power", "amount": 2},
 							],
-							"log": "月如在父親提過的那柄劍前跪下，雙手取劍——一道前輩劍意流入她心中。",
+							"log": "月如一面面辨過殘旌，指尖忽然停住——褪色的紋章，是林家堡《古戰史》裡記過的先人遺名。她在父親提過的那柄劍前跪下，雙手捧劍過眉。一道蒼老的劍意流入她心中，像隔著幾代人，摸了摸她的頭。",
 						},
 					},
 					{
@@ -1601,7 +1601,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "lowhp_last_stand",
-						"label": "重傷之下，效古人作最後死戰之姿",
+						"label": "拖著傷軀，擺出死戰之姿",
 						"kind_hint": "gamble",
 						"hide_badge": true,
 						"requires": {"hp_below": 0.4},
@@ -1622,7 +1622,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "wraith_duel",
-						"label": "與遺地之鬼對搏奪魂",
+						"label": "拔劍直指土心，搦鬼一戰",
 						"kind_hint": "battle",
 						"outcome": {
 							"kind": "battle",
@@ -1638,24 +1638,24 @@ const VARIANTS: Dictionary = {
 									{"kind": "max_hp", "amount": -3},
 								],
 							},
-							"log": "你拔劍直指土心。地底有什麼回應了你——",
+							"log": "你劍尖直指土心，朗聲搦戰。地底沉默了三息，然後整片戰場的低鳴驟然止住——有什麼東西應了你，正從千年的血土深處，一寸一寸地上來。",
 						},
 					},
 					{
 						"id": "leave",
-						"label": "默禮離去",
+						"label": "整衣默禮，繞道而行",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你向戰場深深一禮，繼續上路。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你整了整衣甲，向滿地殘旌深深一禮，繞著戰場的邊緣走了過去。低鳴一路跟著你，到戰場盡頭忽然齊齊一靜——像是受了禮，也還了禮。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_unfinished": {
-					"prompt": "某柄斷劍刻著『未竟』二字——劍主臨終的遺願。",
+					"prompt": "你蹲下身，撥開半埋的土——是一柄從中折斷的劍，劍身上深深刻著兩個字：「未竟」。刻痕是用劍尖劃的，最後一筆拖得極長，是劍主嚥氣前，用盡最後力氣留下的。",
 					"choices": [
 						{
 							"id": "carry_will",
-							"label": "拾起斷劍承志",
+							"label": "拾起斷劍，接下這份未竟",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -1663,12 +1663,12 @@ const VARIANTS: Dictionary = {
 									{"kind": "gain_card_pool", "pool": "rare"},
 									{"kind": "max_hp", "amount": 3},
 								],
-								"log": "你把斷劍別在腰間，許了一個無聲的諾言。",
+								"log": "你把斷劍從土裡請出來，拭淨，別在腰間。金屬貼著腰側微微發熱，像認了主。你對著空蕩的戰場低聲許了一個諾言——「未竟」二字，從今天起有人接著寫。",
 							},
 						},
 						{
 							"id": "incense_for_him",
-							"label": "為他補插一柱香",
+							"label": "堆土為壇，為他補一炷香",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -1676,7 +1676,7 @@ const VARIANTS: Dictionary = {
 									{"kind": "gain_relic_pool", "pool": "uncommon"},
 									{"kind": "heal", "amount": 8},
 								],
-								"log": "香煙繞著斷劍打了一個圈，最後落在你的肩頭。",
+								"log": "你在斷劍前堆了個小小的土壇，點起隨身的香。香煙繞著斷劍打了一個圈，又一個圈，最後輕輕落在你的肩頭，像一只告別的手。你起身時，掌中多了一件他留下的物事。",
 							},
 						},
 					],
@@ -1714,11 +1714,11 @@ const VARIANTS: Dictionary = {
 		# Batch B 凍結設計（docs/EVENT_BRANCHING.md §16）
 		"tree": {
 			"root": {
-				"prompt": "青石台上爐子還燒著，藥香混著焦味。爐口殘留半粒未完成的丹。",
+				"prompt": "藥香先勾住你，再走近些，又混進一股焦苦。青石台上一座丹爐還燒著，爐火無人看顧，卻燒得不急不徐。爐口擱著半粒未完成的丹，紫潤的成色竟有幾分像傳聞中水月宮的紫金丹——只是主人不見了，灰裡壓著一張字跡模糊的藥方。",
 				"choices": [
 					{
 						"id": "swallow_half_pill",
-						"label": "服下半粒丹",
+						"label": "拈起半粒丹，仰頭嚥下",
 						"kind_hint": "gamble",
 						"outcome": {
 							"kind": "gamble",
@@ -1733,25 +1733,25 @@ const VARIANTS: Dictionary = {
 									{"kind": "gain_curse", "curse_id": "jiu_zui"},
 								],
 							},
-							"log": "你嚥下半粒丹——",
+							"log": "丹入喉的瞬間先是甜，緊接著一股藥力在腹中炸開，順著經脈亂竄——這丹只煉了一半，剩下那一半的火候，現在要在你身體裡補完。是補是劫，看你的底子。",
 						},
 					},
 					{
 						"id": "complete_refine",
-						"label": "嘗試完成煉丹",
+						"label": "接手爐火，替他把丹煉完",
 						"kind_hint": "battle",
 						"next": "node_refine",
 					},
 					{
 						"id": "observe_secret",
-						"label": "觀察爐口殘氣",
+						"label": "湊近爐口，細嗅那股焦味",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_secret",
 					},
 					{
 						"id": "anu_refit",
-						"label": "辨認九味藥配方為苗疆配伍",
+						"label": "（阿奴）細嗅九味藥的配伍",
 						"kind_hint": "reward",
 						"requires": {"character": ["anu"]},
 						"outcome": {
@@ -1761,24 +1761,24 @@ const VARIANTS: Dictionary = {
 								{"kind": "gain_potion"},
 								{"kind": "gain_card_pool", "pool": "character"},
 							],
-							"log": "阿奴聞出最關鍵那兩味是南疆毒草，重新配比，一爐成丹。",
+							"log": "阿奴閉眼逐縷分辨藥香，鼻尖一動：「這兩味，是我們苗疆的毒草嘛。」配伍的關竅一通，她挽起袖子重調火候，添藥、收火，一氣呵成——爐蓋掀開，丹香撲面，一爐成丹。她得意地把丹瓶拋給你：「接好。」",
 						},
 					},
 					{
 						"id": "leave",
-						"label": "不碰，離去",
+						"label": "退開三步，不沾這爐丹",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你深吸一口藥香，繼續上路。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你深深吸了一口藥香，當作此行的便宜，退出了爐房。無主的爐火還在燒，燒給誰看不知道——有些便宜，聞聞就夠了。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_refine": {
-					"prompt": "你照爐壁上的『煉魂篇』殘卷補火——焰光突起，爐底似有什麼被驚動。",
+					"prompt": "你捲起袖子接手爐火，照著爐壁上「煉魂篇」殘卷的火訣一路補火。焰光忽然拔高，由橙轉青——爐底深處有什麼被驚動了，正貼著爐壁緩緩遊走。",
 					"choices": [
 						{
 							"id": "push_fire",
-							"label": "強行續火",
+							"label": "咬牙催火，逼它現形",
 							"kind_hint": "battle",
 							"outcome": {
 								"kind": "battle",
@@ -1795,12 +1795,12 @@ const VARIANTS: Dictionary = {
 										{"kind": "max_hp", "amount": -2},
 									],
 								},
-								"log": "爐中一縷火靈幻化現形！",
+								"log": "你不退反進，火訣連催，爐焰轟然立起一人多高。火光深處一聲嬌笑，一縷火靈幻化現形，眉目如畫，眼底卻全是火——丹是它的，爐是它的，你算什麼？",
 							},
 						},
 						{
 							"id": "pull_back",
-							"label": "退火收功",
+							"label": "見勢不對，退火收功",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -1808,17 +1808,17 @@ const VARIANTS: Dictionary = {
 									{"kind": "gain_potion"},
 									{"kind": "permanent_power", "amount": 1},
 								],
-								"log": "你迅速抽手，火靈未及成形便沉回爐底，留下一粒成丹。",
+								"log": "你迅速撤手收功，焰光一矮，那道貼著爐壁遊走的東西未及成形，便沉回爐底去了。爐火復歸平穩，爐心靜靜躺著一粒剛剛成形的丹——見好就收，本身就是火候。",
 							},
 						},
 					],
 				},
 				"node_secret": {
-					"prompt": "前主人嘗試的是『以己為材』的煉魂之術，他可能沒走出這裡。",
+					"prompt": "你湊近爐口，那股焦味裡有一絲不該有的東西——人氣。爐壁「煉魂篇」殘卷寫得明白：前主人煉的是「以己為材」的煉魂之術。爐還燒著，人沒有走出這裡。",
 					"choices": [
 						{
 							"id": "collect_remains",
-							"label": "收殮前主人遺物",
+							"label": "收殮遺物，替他收場",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -1826,7 +1826,7 @@ const VARIANTS: Dictionary = {
 									{"kind": "gain_relic_pool", "pool": "uncommon"},
 									{"kind": "max_hp", "amount": 3},
 								],
-								"log": "你在爐邊找到一塊未化盡的骨片，鄭重地收了起來。",
+								"log": "你在爐邊的灰裡找到一塊未化盡的骨片，用乾淨的布裹了三層，鄭重收進行囊。不管他求的是什麼，總算有人替他收了場。爐火在你身後輕輕一矮，像鬆了一口氣。",
 							},
 						},
 						{
@@ -1839,7 +1839,7 @@ const VARIANTS: Dictionary = {
 									{"kind": "lose_card"},
 									{"kind": "permanent_power", "amount": 1},
 								],
-								"log": "殘卷化為紙灰，你心中某道執念也跟著鬆動。",
+								"log": "你把「煉魂篇」殘卷從爐壁上整片撕下，投進爐火。紙灰打著旋升起來，你心中某道攥了很久的執念，也跟著一同鬆動、脫落——這條邪路，到此為止，不傳了。",
 							},
 						},
 					],
@@ -1869,11 +1869,11 @@ const VARIANTS: Dictionary = {
 		# Batch B 凍結設計（docs/EVENT_BRANCHING.md §17）
 		"tree": {
 			"root": {
-				"prompt": "霧林深處樹影晃動，有什麼在彼端注視著你。",
+				"prompt": "霧先漫過腳踝，再漫過刀柄，濃得像仙靈島外那座困過無數人的迷陣。樹影在霧中緩緩晃動，明明無風。有什麼在彼端注視著你——看不見，但你的後頸知道。奇怪的是，越往深處走，你的心跳反而越清晰、越有力。",
 				"choices": [
 					{
 						"id": "quick_cross",
-						"label": "加快腳步穿越",
+						"label": "壓低身形，搶快穿過去",
 						"kind_hint": "gamble",
 						"outcome": {
 							"kind": "gamble",
@@ -1887,12 +1887,12 @@ const VARIANTS: Dictionary = {
 									{"kind": "damage", "amount": 4},
 								],
 							},
-							"log": "你壓低身形快步穿越，霧中目光緊隨——",
+							"log": "你壓低身形，揀著樹影的縫隙快步穿行，霧中那些目光緊緊跟著你的背——它們在等你跑出破綻，一個趔趄、一聲喘，都算。",
 						},
 					},
 					{
 						"id": "brave_charge",
-						"label": "借膽硬闖",
+						"label": "拔刃直入，朝那目光闖去",
 						"kind_hint": "battle",
 						"outcome": {
 							"kind": "battle",
@@ -1908,19 +1908,19 @@ const VARIANTS: Dictionary = {
 									{"kind": "gain_curse", "curse_id": "gu_du"},
 								],
 							},
-							"log": "霧中浮出一隻金瞳狐影撲來——",
+							"log": "你拔出兵刃，不挑路，直直朝那道注視走過去。霧忽然向兩旁讓開——一隻金瞳狐影自霧心浮出，姿態慵懶，眼裡卻全是算計：敢闖進來的，不是膽子大，就是肉好吃。",
 						},
 					},
 					{
 						"id": "observe_directions",
-						"label": "觀察霧中眼睛分佈",
+						"label": "屏息分辨霧中每雙眼睛",
 						"kind_hint": "reward",
 						"requires": {"observe_token": true},
 						"next": "node_directions",
 					},
 					{
 						"id": "lxy_sword_guide",
-						"label": "以劍靈感應指路",
+						"label": "（李逍遙）請劍靈感應指路",
 						"kind_hint": "reward",
 						"requires": {"character": ["li_xiaoyao"]},
 						"outcome": {
@@ -1929,7 +1929,7 @@ const VARIANTS: Dictionary = {
 								{"kind": "gain_card_pool", "pool": "character"},
 								{"kind": "heal", "amount": 8},
 							],
-							"log": "「往這邊走。」劍靈在他腦中冷冷地說，「別再亂晃了你。」",
+							"log": "逍遙握緊劍柄小聲商量：「老夥計，幫個忙唄。」劍身嗡了一聲。「往這邊走。」劍靈在他腦中冷冷地說，「別再亂晃了你。」一路被數落著出了霧林，傷口倒是被劍氣順手收拾妥當——嘴硬心軟，說的就是它。",
 						},
 					},
 					{
@@ -1948,7 +1948,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "lowhp_feign_corpse",
-						"label": "重傷難行，索性裝死誘那雙眼睛靠近",
+						"label": "索性伏倒裝死，誘它靠近",
 						"kind_hint": "gamble",
 						"hide_badge": true,
 						"requires": {"hp_below": 0.4},
@@ -1983,19 +1983,19 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "leave",
-						"label": "退回原路",
+						"label": "按下好奇，原路退出去",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你決定不冒險，從原路退出霧林。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你倒退著走出霧界，直到後頸那道注視鬆開，才轉身快步離去。霧林在你身後合攏，像一張沒等到獵物的網——不冒這個險，不丟人。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_directions": {
-					"prompt": "北方氣息平和、南方一棵老樹高處有捕食者。你看清了。",
+					"prompt": "你站定屏息，把霧中每一雙眼睛分開來聽。多數是遠遠飄過的好奇，不傷人；唯獨南面一棵老樹高處，懸著一雙紋絲不動的眼，呼吸壓得極淺——那是會撲下來的。北面，氣息乾淨。",
 					"choices": [
 						{
 							"id": "north_safe",
-							"label": "走北線安全脫困",
+							"label": "取北線，繞開那雙眼睛",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -2003,12 +2003,12 @@ const VARIANTS: Dictionary = {
 									{"kind": "heal", "amount": 10},
 									{"kind": "gold", "amount": 8},
 								],
-								"log": "你沿著北線走出霧林。陽光重新落到肩上。",
+								"log": "你貼著北線的樹根輕步而行，霧一路稀薄下去，最後一步跨出林緣，陽光重新落到肩上，曬得人想嘆氣。林口草叢裡還躺著前人失落的錢囊——識路的人，總有路費。",
 							},
 						},
 						{
 							"id": "south_ambush",
-							"label": "走南線伏擊那隻怪物",
+							"label": "摸向南線，反伏擊那捕食者",
 							"kind_hint": "battle",
 							"outcome": {
 								"kind": "battle",
@@ -2024,7 +2024,7 @@ const VARIANTS: Dictionary = {
 										{"kind": "max_hp", "amount": -3},
 									],
 								},
-								"log": "你繞到老樹下方，第一劍刺向那雙黃眼——",
+								"log": "既然看清了它，先手就是你的。你繞到老樹背風的下方，足尖借力，第一劍直刺那雙黃眼——獵人與獵物，今天換個位置坐坐。",
 							},
 						},
 					],
@@ -2061,11 +2061,11 @@ const VARIANTS: Dictionary = {
 		# Batch B 凍結設計（docs/EVENT_BRANCHING.md §18）
 		"tree": {
 			"root": {
-				"prompt": "地上符紋雖褪色，踩上仍有微微震動——這位仙人未走，只是入定。",
+				"prompt": "腳掌落下的剎那，你感到地面在極輕地顫——像呼吸。低頭看，褪色的符紋鋪滿整片石坪，一圈一圈收向中央，古老得像試煉窟最底層的陣法。仙人遺址。可這震動不是殘響，是還沒停下的修行：他沒有走，只是入定得太深。",
 				"choices": [
 					{
 						"id": "accept_legacy",
-						"label": "跪受傳承",
+						"label": "跪入符紋中央，靜受傳承",
 						"kind_hint": "reward",
 						"outcome": {
 							"kind": "reward",
@@ -2074,12 +2074,12 @@ const VARIANTS: Dictionary = {
 								{"kind": "max_hp", "amount": 3},
 								{"kind": "gain_card_pool", "pool": "rare"},
 							],
-							"log": "你跪在符紋中央，一道古老的意念輕拂你的眉心。",
+							"log": "你跪在符紋中央，把呼吸放到最輕。許久，一道古老的意念自地底升起，輕拂你的眉心，像翻一頁書那樣翻過了你的一生，然後在某一頁停下，添了幾筆。你起身時，那幾筆已長在你身上。",
 						},
 					},
 					{
 						"id": "invade_inner",
-						"label": "闖入內陣強奪法",
+						"label": "踏破符紋，闖內陣奪法",
 						"kind_hint": "battle",
 						"outcome": {
 							"kind": "battle",
@@ -2095,7 +2095,7 @@ const VARIANTS: Dictionary = {
 									{"kind": "max_hp", "amount": -5},
 								],
 							},
-							"log": "守陣餘魂自地下浮起——",
+							"log": "你一腳踏碎外圈符紋，朝陣心直闖。地底的震動驟然一亂，像沉睡之人被踩了手——守陣的餘魂自地下浮起，無面無目，卻通身都是被冒犯的怒意。",
 						},
 					},
 					{
@@ -2107,7 +2107,7 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "lxy_resonance",
-						"label": "以「仙風雲體術」入陣共鳴",
+						"label": "（李逍遙）以仙風雲體術共鳴",
 						"kind_hint": "reward",
 						"requires": {"character": ["li_xiaoyao"]},
 						"outcome": {
@@ -2117,12 +2117,12 @@ const VARIANTS: Dictionary = {
 								{"kind": "permanent_power", "amount": 2},
 								{"kind": "max_hp", "amount": 3},
 							],
-							"log": "符紋認出他的血脈，把一道精煉版的招式直接刻進他的識海。",
+							"log": "逍遙依稀記得師父教的「仙風雲體術」起手，半信半疑地踏進陣中比劃起來。符紋忽然逐圈亮起——它認得這路數，認得他血脈裡那點劍仙之氣。一道精煉過的招式直接刻進他的識海，像前輩替後生把舊劍磨亮了還回來。",
 						},
 					},
 					{
 						"id": "power_resonance",
-						"label": "以一身凝練的殺伐之意與古仙共振",
+						"label": "放出滿身殺意，與古仙共振",
 						"kind_hint": "reward",
 						"requires": {"deck_archetype": ["power"]},
 						"outcome": {
@@ -2135,19 +2135,19 @@ const VARIANTS: Dictionary = {
 					},
 					{
 						"id": "leave",
-						"label": "默禮繞行",
+						"label": "斂步默禮，繞陣而行",
 						"kind_hint": "neutral",
-						"outcome": {"kind": "neutral", "effects": [], "log": "你不打擾這位前輩的修行，繞道而過。"},
+						"outcome": {"kind": "neutral", "effects": [], "log": "你退到符紋之外，朝陣心默默一禮，貼著遺址的邊緣繞了過去。腳底那道呼吸般的震動送了你一程才淡去——修行人不擾修行人，這是道上最老的規矩。"},
 					},
 				],
 			},
 			"nodes": {
 				"node_meditation": {
-					"prompt": "震動的頻率呼應你的呼吸——這位仙人此刻在以一種你不懂的方式『仍在修行』。",
+					"prompt": "你閉上眼，把注意力沉到腳底——震動有節律，一長，一短，竟與你的呼吸隱隱呼應。這位仙人入定千年，此刻仍在以一種你不懂的方式修行，而你正站在他的吐納之間。",
 					"choices": [
 						{
 							"id": "sync_breath",
-							"label": "同步呼吸感悟",
+							"label": "調勻氣息，與他同頻吐納",
 							"kind_hint": "reward",
 							"outcome": {
 								"kind": "reward",
@@ -2156,7 +2156,7 @@ const VARIANTS: Dictionary = {
 									{"kind": "permanent_power", "amount": 1},
 									{"kind": "heal", "amount": 8},
 								],
-								"log": "你閉目調息與符紋同頻，某道招式自行重組。",
+								"log": "你調勻呼吸，一寸寸貼上那個古老的節律。合上的剎那，識海輕輕一震，某道招式自行拆開、重組，比你自己練十年拆得更乾淨。睜眼時天色已換，你的傷口也在那一吸一吐間養好了大半。",
 							},
 						},
 						{
@@ -2169,7 +2169,7 @@ const VARIANTS: Dictionary = {
 									{"kind": "gain_relic_pool", "pool": "uncommon"},
 									{"kind": "gold", "amount": 15},
 								],
-								"log": "你只取走最外圍那塊不影響陣勢的玉，留下深拜一禮。",
+								"log": "你看準最外圍那塊已脫離陣勢的刻紋玉，雙手請起，朝陣心深深一拜。震動沒有變化——他不在意，或者，這本就是留給看得懂分寸之人的。玉入懷中微溫，像一聲不出口的「拿去吧」。",
 							},
 						},
 					],
