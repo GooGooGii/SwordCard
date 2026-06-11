@@ -26,7 +26,7 @@ var enemy_feedback_label: Label
 var end_turn_button: Button
 var player_hp_bar: ProgressBar
 var player_hp_value: Label
-var player_status_line: Label
+var player_status_line: HBoxContainer  # Phase B3：狀態 chips 橫排
 var player_name_label: Label
 var player_level_label: Label
 var player_block_badge: BlockBadge
@@ -37,7 +37,7 @@ var bench_strip: Control  # 後排「站位」容器（手動定位，斜向交�
 var _switch_tween: Tween = null  # 切換角色的淡出/淡入動畫，防止重疊
 var enemy_hp_bar: ProgressBar
 var enemy_hp_value: Label
-var enemy_status_line: Label
+var enemy_status_line: HBoxContainer  # Phase B3：狀態 chips 橫排
 var enemy_name_label: Label
 var enemy_block_badge: BlockBadge
 var enemy_portrait_wrap: Control
@@ -2603,17 +2603,21 @@ func _build_player_widget(parent: HBoxContainer) -> void:
 	col.add_child(_wrap_feedback_label(player_feedback_label))
 	var portrait_size: Vector2 = Vector2(190, 220) if _battle_compact else Vector2(260, 290)
 	col.add_child(_portrait_with_block_badge(selected_character.portrait_path, portrait_size, true, true))
-	player_name_label = UIFactory.card_label(selected_character.display_name, 14 if _battle_compact else 18, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
-	col.add_child(player_name_label)
-	var active_lv: int = run_state.character_levels[run_state.active_character_index] if run_state.character_levels.size() > run_state.active_character_index else 1
-	player_level_label = UIFactory.card_label("Lv %d" % active_lv, 12, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-	col.add_child(player_level_label)
+	# Phase B2 重排（與敵欄一致）：HP 緊貼腳下 → chips → 名字+Lv 降級置底
 	player_hp_bar = UIFactory.hp_bar(ThemeColors.HP_FILL, ThemeColors.HP_BG_DARK)
 	player_hp_value = UIFactory.card_label("", 11 if _battle_compact else 13, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(_hp_bar_with_overlay(player_hp_bar, player_hp_value))
-	player_status_line = UIFactory.card_label("", 18 if _battle_compact else 20, Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
-	player_status_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	player_status_line = UIFactory.status_chip_row(22.0 if _battle_compact else 24.0)
 	col.add_child(player_status_line)
+	var name_lv_row: HBoxContainer = HBoxContainer.new()
+	name_lv_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	name_lv_row.add_theme_constant_override("separation", 8)
+	col.add_child(name_lv_row)
+	player_name_label = UIFactory.card_label(selected_character.display_name, 13 if _battle_compact else 15, Color("e8dcbe"), HORIZONTAL_ALIGNMENT_CENTER)
+	name_lv_row.add_child(player_name_label)
+	var active_lv: int = run_state.character_levels[run_state.active_character_index] if run_state.character_levels.size() > run_state.active_character_index else 1
+	player_level_label = UIFactory.card_label("Lv %d" % active_lv, 12, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	name_lv_row.add_child(player_level_label)
 
 func _build_enemy_row(parent: HBoxContainer) -> void:
 	# Multi-Enemy 模式：水平 row 排列 1–3 敵；singular alias 自動指向 active 敵
@@ -2703,12 +2707,12 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	col.add_child(_wrap_feedback_label(feedback_label))
 	# 意圖（顯示於頭頂上）：icon 列在上、文字在下。icon 圖未補時自動 fallback 純文字徽章。
 	# 文字 label 直接掛在 col（取得全寬），避免被 HBox 擠到逐字直書。
-	var intent_size: int = 10 if (_battle_compact or total >= 2) else 12
+	var intent_size: int = 18 if (_battle_compact or total >= 2) else 20  # Phase B1：大字化
 	var intent_icon_row: HBoxContainer = HBoxContainer.new()
 	intent_icon_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	intent_icon_row.add_theme_constant_override("separation", 2)
 	var intent_icons: Array = []
-	var icon_px: float = 16.0 if (_battle_compact or total >= 2) else 22.0
+	var icon_px: float = 26.0 if (_battle_compact or total >= 2) else 32.0  # Phase B1：大圖化
 	for _ii: int in range(3):
 		var ic: TextureRect = TextureRect.new()
 		ic.custom_minimum_size = Vector2(icon_px, icon_px)
@@ -2754,23 +2758,21 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 			if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
 				_on_enemy_portrait_clicked(captured_idx))
 	col.add_child(wrap)
-	# Name label
-	var name_label: Label = UIFactory.card_label(String(slot["name"]),
-		12 if (_battle_compact or total >= 2) else 16,
-		Color("ffd9a3"), HORIZONTAL_ALIGNMENT_CENTER)
-	col.add_child(name_label)
-	# HP bar
+	# Phase B2 重排：HP 條緊貼 portrait 腳下（StS 語法）→ chips → 名字降級置底。
+	# HP bar（緊貼地面線）
 	var hp_bar: ProgressBar = UIFactory.hp_bar(ThemeColors.HP_FILL, ThemeColors.HP_BG_DARK)
 	var hp_value: Label = UIFactory.card_label("",
 		12 if (_battle_compact or total >= 2) else 14,
 		ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(_hp_bar_with_overlay(hp_bar, hp_value))
-	# Status line（蠱毒 / 虛弱 / 破綻 等）：字級再放大，戰鬥中更易讀
-	var status_line: Label = UIFactory.card_label("",
-		18 if (_battle_compact or total >= 2) else 20,
-		Color("e8c97c"), HORIZONTAL_ALIGNMENT_CENTER)
-	status_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# Phase B3 狀態 chips：圓底色塊＋符號＋數字 橫排（取代直書文字）
+	var status_line: HBoxContainer = UIFactory.status_chip_row(20.0 if (_battle_compact or total >= 2) else 24.0)
 	col.add_child(status_line)
+	# Name label（資訊降級：小字、淡色、置底——威脅資訊優先於名字）
+	var name_label: Label = UIFactory.card_label(String(slot["name"]),
+		11 if (_battle_compact or total >= 2) else 13,
+		Color("c9b896", 0.85), HORIZONTAL_ALIGNMENT_CENTER)
+	col.add_child(name_label)
 	return {
 		"root": col,
 		"wrap": wrap,
@@ -2827,14 +2829,22 @@ func _refresh_enemy_widgets() -> void:
 		var hp_bar: ProgressBar = w["hp_bar"]
 		var hp_value: Label = w["hp_value"]
 		var block_badge: BlockBadge = w["block_badge"]
-		var status_line: Label = w["status_line"]
+		var status_line: HBoxContainer = w["status_line"]
 		var wrap: Control = w["wrap"]
 		if name_label != null and is_instance_valid(name_label):
 			name_label.text = String(slot["name"])
 		_refresh_combatant_hp(hp_bar, hp_value, int(slot["hp"]), int(slot["max_hp"]))
 		_update_poison_preview(hp_bar, int(slot["hp"]), int(slot["max_hp"]), int(slot["poison"]))
 		block_badge.set_amount(int(slot["block"]))
-		status_line.text = UIFactory.status_summary(int(slot["poison"]), int(slot["weak"]), int(slot["vulnerable"]))
+		UIFactory.fill_status_chips(status_line, [
+			{"kind": "poison", "value": int(slot["poison"])},
+			{"kind": "weak", "value": int(slot["weak"])},
+			{"kind": "vulnerable", "value": int(slot["vulnerable"])},
+			{"kind": "stun", "value": int(slot.get("stunned", 0))},
+			{"kind": "silence", "value": int(slot.get("silenced", 0))},
+			{"kind": "berserk", "value": int(slot.get("berserk", 0))},
+			{"kind": "power", "value": int(slot.get("strength", 0))},
+		], 20.0 if (_battle_compact or enemy_widgets.size() >= 2) else 24.0)
 		
 		var intent_label: Label = w.get("intent_label")
 		if intent_label != null and is_instance_valid(intent_label):
@@ -2887,9 +2897,13 @@ func _refresh_enemy_widgets() -> void:
 					elif dealt < int(pred["raw"]):
 						damage_text = " 實受%d" % dealt
 					else:
-						damage_text = " %d點" % dealt
+						damage_text = " %d" % dealt
 				if shown_icon:
-					intent_label.text = "%s%s" % [intent_name, damage_text]
+					# Phase B1：icon 已表類別 → 只顯示大數字（傷害紅字、招式名移除）。
+					# 招式名細節留給點擊敵人 portrait 的既有互動。
+					intent_label.text = damage_text.strip_edges()
+					intent_label.add_theme_color_override("font_color",
+						Color("ff8a76") if not damage_text.is_empty() else ThemeColors.HIGHLIGHT_GOLD)
 				else:
 					intent_label.text = "%s %s%s" % [badge_str, intent_name, damage_text]
 		
@@ -7930,15 +7944,15 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 	if player_block_badge != null and is_instance_valid(player_block_badge):
 		player_block_badge.set_amount(int(battle.state["player_block"]))
 	if player_status_line != null and is_instance_valid(player_status_line):
-		# 攻擊力（含奇遇累積、戰鬥內增益）顯示在最前；其後接毒/虛弱/破綻
-		var status_parts: Array[String] = []
-		var atk_bonus: int = int(battle.state["player_power"])
-		if atk_bonus != 0:
-			status_parts.append("攻擊 %+d" % atk_bonus)
-		var debuff_text: String = UIFactory.status_summary(int(battle.state["player_poison"]), int(battle.state["player_weak"]), int(battle.state["player_vulnerable"]))
-		if debuff_text != "":
-			status_parts.append(debuff_text)
-		player_status_line.text = "   ".join(status_parts)
+		# Phase B3：攻擊增益在前、其後毒/弱/破/暈 → 統一 chips
+		UIFactory.fill_status_chips(player_status_line, [
+			{"kind": "power", "value": int(battle.state["player_power"])},
+			{"kind": "poison", "value": int(battle.state["player_poison"])},
+			{"kind": "weak", "value": int(battle.state["player_weak"])},
+			{"kind": "vulnerable", "value": int(battle.state["player_vulnerable"])},
+			{"kind": "stun", "value": int(battle.state.get("player_stun", 0))},
+			{"kind": "thorns", "value": int(battle.state.get("player_thorns", 0))},
+		], 22.0 if _battle_compact else 24.0)
 	_refresh_bench_strip()
 	# Multi-Enemy: 迭代更新每個敵人的 widget（active 高亮、死敵 dim、HP/block/status）
 	_refresh_enemy_widgets()

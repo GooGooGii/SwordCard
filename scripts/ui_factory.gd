@@ -215,6 +215,63 @@ static func ground_portrait(rect: TextureRect) -> void:
 	var content_center_x: float = content_left + content_w * 0.5
 	rect.position = Vector2(box.x * 0.5 - content_center_x * s, box.y - content_bottom * s)
 
+# ── 狀態 chips（BATTLE_UI_POLISH Phase B3）────────────────────────────────
+# 取代直書文字狀態列：圓底色塊＋符號＋數字，橫排一眼可掃。純程式繪製、無需美術。
+const STATUS_CHIP_DEFS: Dictionary = {
+	"power":      {"symbol": "攻", "color": Color("c8a23c")},
+	"poison":     {"symbol": "毒", "color": Color("4e7d46")},
+	"weak":       {"symbol": "弱", "color": Color("4a6c9b")},
+	"vulnerable": {"symbol": "破", "color": Color("b06a3a")},
+	"stun":       {"symbol": "暈", "color": Color("7b5ea7")},
+	"silence":    {"symbol": "禁", "color": Color("6d5a8e")},
+	"berserk":    {"symbol": "狂", "color": Color("a04545")},
+	"thorns":     {"symbol": "刺", "color": Color("8a7a4d")},
+}
+
+static func status_chip(kind: String, value: int, chip_px: float = 24.0) -> Control:
+	var define: Dictionary = STATUS_CHIP_DEFS.get(kind, {"symbol": "?", "color": Color("777777")}) as Dictionary
+	var col: Color = define["color"]
+	var c: Control = Control.new()
+	c.custom_minimum_size = Vector2(chip_px + 10, chip_px)
+	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	c.draw.connect(func() -> void:
+		c.draw_circle(Vector2(chip_px * 0.5, chip_px * 0.5), chip_px * 0.5, Color(col.r, col.g, col.b, 0.92))
+		c.draw_circle(Vector2(chip_px * 0.5, chip_px * 0.5), chip_px * 0.5, Color(0, 0, 0, 0.45), false, 1.5))
+	var sym: Label = card_label(String(define["symbol"]), int(chip_px * 0.55), Color("fff4dc"), HORIZONTAL_ALIGNMENT_CENTER)
+	sym.size = Vector2(chip_px, chip_px)
+	sym.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	sym.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.6))
+	sym.add_theme_constant_override("outline_size", 2)
+	sym.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	c.add_child(sym)
+	var num: Label = card_label(("%+d" % value) if kind == "power" else str(value), int(chip_px * 0.6), Color("ffe9b0"), HORIZONTAL_ALIGNMENT_LEFT)
+	num.position = Vector2(chip_px + 1, chip_px * 0.12)
+	num.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
+	num.add_theme_constant_override("outline_size", 3)
+	num.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	c.add_child(num)
+	return c
+
+# 重填一整排 chips。stats = [{"kind": "poison", "value": 3}, ...]，value 0 的自動略過。
+static func fill_status_chips(row: HBoxContainer, stats: Array, chip_px: float = 24.0) -> void:
+	if row == null or not is_instance_valid(row):
+		return
+	for child: Node in row.get_children():
+		child.queue_free()
+	for s_v: Variant in stats:
+		var s: Dictionary = s_v as Dictionary
+		if int(s.get("value", 0)) == 0:
+			continue
+		row.add_child(status_chip(String(s.get("kind", "")), int(s["value"]), chip_px))
+
+static func status_chip_row(chip_px: float = 24.0) -> HBoxContainer:
+	var row: HBoxContainer = HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 6)
+	row.custom_minimum_size = Vector2(0, chip_px)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return row
+
 # 戰鬥單位腳底橢圓陰影（BATTLE_UI_POLISH Phase A1）：純程式繪製、無需美術。
 # width = 陰影寬（建議 portrait box 寬 ×0.55）。掛在 portrait 同 wrap、底部貼地面線；
 # 飄浮系（floats=true）→ 陰影縮小 70%、更淡（「人浮影留地」語法）。
