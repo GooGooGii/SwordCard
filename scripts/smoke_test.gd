@@ -112,6 +112,7 @@ func _initialize() -> void:
 	_test_revive_effect(characters, enemies[0])
 	_test_map_generator_reachability(enemies, bosses)
 	_test_map_encounter_groups(enemies, bosses)
+	_test_map_shop_rules(enemies, bosses)
 	_test_predict_enemy_damage_matches_resolver()
 	_test_intent_display()
 	_test_requires_enemy_target()
@@ -1077,6 +1078,41 @@ func _test_map_encounter_groups(enemies: Array[EnemyData], bosses: Array[EnemyDa
 			found_multi = true
 			break
 	_check(found_multi, "act 4 never generated multi-enemy encounter in 100 tries")
+
+func _test_map_shop_rules(enemies: Array[EnemyData], bosses: Array[EnemyData]) -> void:
+	# 商店規則：1) 無 shop→shop 串連 2) 每張地圖至少 2 個商店 3) 奇遇可能是行腳商人
+	var found_merchant: bool = false
+	for trial: int in range(40):
+		seed(trial * 2417 + 13)
+		var choices: Array[Array] = MapGenerator.generate(enemies, bosses, [], 1 + trial % 8)
+		# 規則 2：至少 MIN_SHOPS_PER_MAP 個商店
+		var shop_count: int = 0
+		for row_v: Variant in choices:
+			for node_v: Variant in (row_v as Array):
+				var node: Dictionary = node_v as Dictionary
+				if String(node.get("type", "")) == "shop":
+					shop_count += 1
+				elif String(node.get("type", "")) == "event":
+					if bool(node.get("merchant_event", false)):
+						found_merchant = true
+						_check(node.has("black_market"), "trial %d: merchant event missing black_market flag" % trial)
+		_check(shop_count >= MapGenerator.MIN_SHOPS_PER_MAP,
+			"trial %d: map has %d shops (< %d)" % [trial, shop_count, MapGenerator.MIN_SHOPS_PER_MAP])
+		# 規則 1：任一 shop 的 connects 不得指向下一列的 shop
+		for row_index: int in range(choices.size() - 1):
+			var row: Array = choices[row_index]
+			var next_row: Array = choices[row_index + 1]
+			for node_v2: Variant in row:
+				var node2: Dictionary = node_v2 as Dictionary
+				if String(node2.get("type", "")) != "shop":
+					continue
+				for j_v: Variant in (node2.get("connects", []) as Array):
+					var j: int = int(j_v)
+					if j >= 0 and j < next_row.size():
+						_check(String((next_row[j] as Dictionary).get("type", "")) != "shop",
+							"trial %d row %d: shop→shop 串連" % [trial, row_index])
+	# 規則 3：40 張圖中至少出現一次行腳商人（機率 0.18/事件節點，幾乎必中）
+	_check(found_merchant, "40 張地圖中從未出現行腳商人奇遇（merchant_event）")
 
 func _test_requires_enemy_target() -> void:
 	# 純傷害

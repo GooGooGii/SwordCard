@@ -493,6 +493,8 @@ func _serialize_choices() -> Array:
 				node_out["event_variant"] = node_data["event_variant"]
 			if node_data.has("black_market"):
 				node_out["black_market"] = node_data["black_market"]
+			if node_data.has("merchant_event"):
+				node_out["merchant_event"] = node_data["merchant_event"]
 			# 敵人以 id 序列化（讀檔用 GameData.enemy_by_id 重建完整模板，
 			# 避免 to_dict 漏 summon_pool 等欄位）。boss = 單數 enemy；戰鬥 = 複數 enemies。
 			if node_data.has("enemy") and node_data["enemy"] is EnemyData:
@@ -533,6 +535,8 @@ func _deserialize_choices(rows_in: Array, act_for_fallback: int = 1, map_seed_fo
 				node_out["event_variant"] = String(node_data["event_variant"])
 			if node_data.has("black_market"):
 				node_out["black_market"] = bool(node_data["black_market"])
+			if node_data.has("merchant_event"):
+				node_out["merchant_event"] = bool(node_data["merchant_event"])
 			# boss 單敵：新版用 enemy_id；舊版相容 enemy（完整 dict）
 			if node_data.has("enemy_id"):
 				var be: EnemyData = GameData.enemy_by_id(String(node_data["enemy_id"]))

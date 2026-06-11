@@ -2150,8 +2150,12 @@ func choose_route_node(node_data: Dictionary, target_row: int = -1) -> void:
 	if node_type == "rest":
 		resolve_rest_node()
 	elif node_type == "event":
-		run_state.current_event_variant = String(node_data.get("event_variant", "shrine"))
-		show_event_node()
+		# 行腳商人：地圖顯示奇遇，走進去其實是商店（MapGenerator 規則 3）
+		if bool(node_data.get("merchant_event", false)):
+			open_shop_node(bool(node_data.get("black_market", false)))
+		else:
+			run_state.current_event_variant = String(node_data.get("event_variant", "shrine"))
+			show_event_node()
 	elif node_type == "shop":
 		open_shop_node(bool(node_data.get("black_market", false)))
 	elif node_type == "boss":

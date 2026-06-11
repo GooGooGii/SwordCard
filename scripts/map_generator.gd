@@ -13,6 +13,8 @@ const MALE_ONLY_VARIANTS: Array[String] = ["flower_spirit"]
 const FEMALE_CHARACTER_IDS: Array[String] = ["zhao_linger", "lin_yueru", "anu"]
 const MALE_CHARACTER_IDS: Array[String] = ["li_xiaoyao"]
 const BLACK_SHOP_CHANCE: float = 0.25
+const MIN_SHOPS_PER_MAP: int = 2       # 每張地圖至少要有的商店節點數
+const MERCHANT_EVENT_CHANCE: float = 0.18  # 奇遇節點其實是行腳商人（進入後開商店）的機率
 # 每幕普通戰鬥節點的敵人數量加權表。count 為從 pool 中抽取的敵人數。
 const ACT_ENCOUNTERS: Dictionary = {
 	1: [{"count": 1, "weight": 4}, {"count": 2, "weight": 1}],
@@ -133,7 +135,82 @@ static func generate(normal_enemies: Array[EnemyData], bosses: Array[EnemyData],
 		boss_row.append({"type": "boss", "enemy": chosen_boss.clone(), "index": 0, "connects": []})
 		choices.append(boss_row)
 	_add_random_map_connections(choices)
+	_enforce_shop_rules(choices, event_pool)
 	return choices
+
+# 商店規則（連線建立後執行）：
+# 1. 不要兩個商店節點串連（前後列有直接連線）→ 下游商店降級為奇遇。
+# 2. 每張地圖至少 MIN_SHOPS_PER_MAP 個商店 → 不足時把 battle/event 節點轉成商店
+#    （避開與既有商店相鄰的位置，維持規則 1）。
+static func _enforce_shop_rules(choices: Array[Array], event_pool: Array[String]) -> void:
+	# 規則 1：拆掉 shop→shop 串連
+	for row_index: int in range(choices.size() - 1):
+		var row: Array = choices[row_index]
+		var next_row: Array = choices[row_index + 1]
+		for node_v: Variant in row:
+			var node: Dictionary = node_v as Dictionary
+			if String(node.get("type", "")) != "shop":
+				continue
+			for j_v: Variant in (node["connects"] as Array):
+				var j: int = int(j_v)
+				if j < 0 or j >= next_row.size():
+					continue
+				var nxt: Dictionary = next_row[j] as Dictionary
+				if String(nxt.get("type", "")) == "shop":
+					nxt["type"] = "event"
+					nxt.erase("black_market")
+					nxt["event_variant"] = _pick_event_variant(event_pool)
+	# 規則 2：補足最少商店數
+	var shop_count: int = 0
+	for row_v: Variant in choices:
+		for node_v2: Variant in (row_v as Array):
+			if String((node_v2 as Dictionary).get("type", "")) == "shop":
+				shop_count += 1
+	if shop_count >= MIN_SHOPS_PER_MAP:
+		return
+	var candidates: Array = []  # [row_index, node_index]
+	for row_index2: int in range(1, choices.size()):  # 第一列維持全戰鬥
+		var row2: Array = choices[row_index2]
+		for ni: int in range(row2.size()):
+			var t: String = String((row2[ni] as Dictionary).get("type", ""))
+			if t == "battle" or t == "event":
+				candidates.append([row_index2, ni])
+	candidates.shuffle()
+	while shop_count < MIN_SHOPS_PER_MAP and not candidates.is_empty():
+		var pick: Array = candidates.pop_back() as Array
+		var r_i: int = int(pick[0])
+		var n_i: int = int(pick[1])
+		if _adjacent_to_shop(choices, r_i, n_i):
+			continue  # 轉了會跟既有商店串連 → 換下一個候選
+		var node2: Dictionary = (choices[r_i] as Array)[n_i] as Dictionary
+		node2["type"] = "shop"
+		node2.erase("enemies")
+		node2.erase("is_elite")
+		node2.erase("event_variant")
+		node2.erase("merchant_event")
+		node2["black_market"] = randf() < BLACK_SHOP_CHANCE
+		shop_count += 1
+
+# 該位置若轉成商店，是否會與既有商店「串連」（上一列有商店連入、或本節點連出到商店）
+static func _adjacent_to_shop(choices: Array[Array], row_index: int, node_index: int) -> bool:
+	var node: Dictionary = (choices[row_index] as Array)[node_index] as Dictionary
+	# 連出：本節點 connects 指到的下一列節點
+	if row_index + 1 < choices.size():
+		var next_row: Array = choices[row_index + 1]
+		for j_v: Variant in (node.get("connects", []) as Array):
+			var j: int = int(j_v)
+			if j >= 0 and j < next_row.size() and String((next_row[j] as Dictionary).get("type", "")) == "shop":
+				return true
+	# 連入：上一列任一商店的 connects 含本節點
+	if row_index - 1 >= 0:
+		for prev_v: Variant in (choices[row_index - 1] as Array):
+			var prev: Dictionary = prev_v as Dictionary
+			if String(prev.get("type", "")) != "shop":
+				continue
+			for j_v2: Variant in (prev.get("connects", []) as Array):
+				if int(j_v2) == node_index:
+					return true
+	return false
 
 static func _build_row_types(row_index: int, total_rows: int, row_size: int) -> Array[String]:
 	var node_types: Array[String] = []
@@ -206,6 +283,11 @@ static func _make_map_node(node_type: String, node_index: int, normal_enemies: A
 		node_data["is_elite"] = true
 	elif node_type == "event":
 		node_data["event_variant"] = _pick_event_variant(event_pool)
+		# 規則 3：奇遇節點有機率其實是「行腳商人」——地圖上仍顯示奇遇，
+		# 走進去才發現是商店（驚喜性質；不計入最少商店數、不受串連限制）。
+		if randf() < MERCHANT_EVENT_CHANCE:
+			node_data["merchant_event"] = true
+			node_data["black_market"] = randf() < BLACK_SHOP_CHANCE
 	elif node_type == "shop":
 		node_data["black_market"] = randf() < BLACK_SHOP_CHANCE
 	return node_data
