@@ -2152,8 +2152,11 @@ func choose_route_node(node_data: Dictionary, target_row: int = -1) -> void:
 	if node_type == "rest":
 		resolve_rest_node()
 	elif node_type == "event":
-		# 行腳商人：地圖顯示奇遇，走進去其實是商店（MapGenerator 規則 3）
-		if bool(node_data.get("merchant_event", false)):
+		# 埋伏（StS 風）：地圖顯示奇遇，走進去殺機陡起、直接開戰（MapGenerator 暗路 b）
+		if bool(node_data.get("ambush_event", false)) and node_data.has("enemies"):
+			start_next_battle(node_data["enemies"] as Array)
+		# 行腳商人：地圖顯示奇遇，走進去其實是商店（MapGenerator 暗路 a）
+		elif bool(node_data.get("merchant_event", false)):
 			open_shop_node(bool(node_data.get("black_market", false)))
 		else:
 			run_state.current_event_variant = String(node_data.get("event_variant", "shrine"))
@@ -5101,16 +5104,14 @@ func _show_event_tree_node(node_id: String) -> void:
 	for choice_v: Variant in visible_choices:
 		var choice: Dictionary = choice_v as Dictionary
 		var label: String = String(choice.get("label", choice.get("id", "?")))
-		var kind: String = EventRunner.leaf_kind(choice)
-		var badge: Dictionary = EventRunner.badge_for_kind(kind)
-		var badge_text: String = String(badge.get("text", ""))
-		# Event Redesign：hide_badge 的選項刻意隱藏「機緣/風險」徽章，做成「不知後果」的神秘選項。
-		if bool(choice.get("hide_badge", false)):
-			badge_text = "❔ 未知"
+		# 全藏（2026-06）：不再顯示「結果分類」徽章（機緣/賭運/戰鬥/取捨/風險）與彩條色，
+		# 讓玩家靠劇情文字判斷、保留未知感。只保留「成本/門檻」這類非劇透的必要資訊。
+		# leaf_kind 仍在 EventRunner 內部運作（gamble 結算等），只是不在選項上洩漏。
+		var badge_text: String = ""
 		var requires: Dictionary = choice.get("requires", {}) as Dictionary
 		if bool(requires.get("observe_token", false)):
-			badge_text = ("%s · 耗 1 觀察" % badge_text) if not badge_text.is_empty() else "耗 1 觀察"
-		list.add_child(_event_choice_row(label, badge_text, kind,
+			badge_text = "耗 1 觀察"
+		list.add_child(_event_choice_row(label, badge_text, "hidden",
 			func() -> void: _on_event_tree_choice_selected(choice)))
 
 func _build_event_context() -> Dictionary:
@@ -5858,6 +5859,7 @@ func _event_kind_color(kind: String) -> Color:
 		"battle": return Color("4a6480")   # 深藍（戰鬥）
 		"gamble": return Color("d88838")   # 橘（賭運）
 		"mixed":  return Color("8a8576")   # 灰（取捨）
+		"hidden": return Color("c8b46f", 0.5)  # 全藏：統一中性金（不洩漏分類）
 		_:        return Color("6a6760", 0.55)  # neutral：淡灰
 
 func _make_event_illustration_banner(variant: String, max_width: int, banner_height: int) -> Control:
