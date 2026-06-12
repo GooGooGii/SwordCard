@@ -266,7 +266,9 @@ function renderBattle() {
     c.appendChild(intentEl(en));
     const img = h("img", "portrait");
     img.src = `assets/enemies/${en.img}.png`;
-    img.style.transform = `scaleX(-1) scale(${Math.min(en.scale, 1.15)})`;
+    // 原圖已面向左（朝玩家）的不翻；其餘翻轉面向玩家
+    const flip = en.def.facingLeft ? "" : "scaleX(-1) ";
+    img.style.transform = `${flip}scale(${Math.min(en.scale, 1.15)})`;
     if (en.def.tint) img.style.filter = en.def.tint;
     c.appendChild(img);
     const nameRow = h("div", "cname", en.name);
@@ -305,14 +307,13 @@ function renderBattle() {
       renderBattle();
       clearTimeout(ui.endConfirmTimer);
       ui.endConfirmTimer = setTimeout(() => {
-        if (ui.endConfirm && !battle.over) { ui.endConfirm = false; endTurn(); afterAction(); }
+        if (ui.endConfirm && !battle.over) { ui.endConfirm = false; doEndTurn(); }
       }, 1500);
       return;
     }
     ui.endConfirm = false;
     clearTimeout(ui.endConfirmTimer);
-    endTurn();
-    afterAction();
+    doEndTurn();
   };
   s.appendChild(endBtn);
 
@@ -330,12 +331,17 @@ function renderBattle() {
   s.appendChild(log);
   log.scrollTop = log.scrollHeight;
 
-  // 手牌
+  // 手牌（扇形排列，對齊 hand_fan.gd 的弧線感）
   const hand = h("div", "hand-area");
+  const n = battle.hand.length;
+  const mid = (n - 1) / 2;
   battle.hand.forEach((inst, idx) => {
     const view = cardView(inst);
     const cost = effectiveCost(view);
     const el = cardEl(view, { costOverride: cost });
+    const off = idx - mid;
+    el.style.setProperty("--rot", `${off * 4}deg`);
+    el.style.setProperty("--ty", `${off * off * 3.5}px`);
     if (cost > battle.energy) el.classList.add("unaffordable");
     if (ui.selectedCard === idx) el.classList.add("selected");
     el.onclick = (ev) => { ev.stopPropagation(); onCardClick(idx); };
@@ -447,7 +453,7 @@ function onCardClick(idx) {
     return;
   }
   const tgt = battle.enemies.indexOf(aliveEnemies()[0]);
-  if (playCard(idx, tgt)) afterAction();
+  playWithAnim(idx, tgt);
 }
 
 function onEnemyClick(idx) {
@@ -455,7 +461,59 @@ function onEnemyClick(idx) {
   if (battle.enemies[idx].hp <= 0) return;
   const cardIdx = ui.selectedCard;
   ui.selectedCard = -1;
-  if (playCard(cardIdx, idx)) afterAction();
+  playWithAnim(cardIdx, idx);
+}
+
+// 出牌動畫：卡片殘影從手牌飛向目標 + 攻擊卡玩家突進
+function playWithAnim(handIdx, targetIdx) {
+  const inst = battle.hand[handIdx];
+  if (!inst) return false;
+  const view = cardView(inst);
+  const srcEl = document.querySelectorAll(".hand-area .card")[handIdx];
+  const srcRect = srcEl ? srcEl.getBoundingClientRect() : null;
+  const isAtk = view.t === "attack";
+  const targetsEnemy = needsTarget(view) || view.fx.some((e) => e.k.includes("_all") && e.k !== "heal_party");
+  if (!playCard(handIdx, targetIdx)) return false;
+  afterAction();
+  if (srcRect) {
+    const ghost = cardEl(view);
+    ghost.classList.add("card-ghost");
+    ghost.style.left = `${srcRect.left}px`;
+    ghost.style.top = `${srcRect.top}px`;
+    document.body.appendChild(ghost);
+    const tgtEl = targetsEnemy
+      ? (document.getElementById(`enemy-${targetIdx}`) || document.getElementById("player-combatant"))
+      : document.getElementById("player-combatant");
+    const tgtRect = tgtEl ? tgtEl.getBoundingClientRect() : null;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (tgtRect) {
+        ghost.style.left = `${tgtRect.left + tgtRect.width / 2 - 70}px`;
+        ghost.style.top = `${tgtRect.top + tgtRect.height * 0.25}px`;
+      }
+      ghost.style.transform = "scale(.3) rotate(10deg)";
+      ghost.style.opacity = "0";
+    }));
+    setTimeout(() => ghost.remove(), 440);
+  }
+  if (isAtk) {
+    const pEl = document.getElementById("player-combatant");
+    if (pEl) { pEl.classList.add("lunge-r"); setTimeout(() => pEl.classList.remove("lunge-r"), 380); }
+  }
+  return true;
+}
+
+// 敵人回合：逐隻向左撲擊的突進動畫
+function doEndTurn() {
+  const actors = battle.enemies.map((e, i) => (e.hp > 0 && e.stun <= 0 ? i : -1)).filter((i) => i >= 0);
+  endTurn();
+  afterAction();
+  actors.forEach((i, k) => setTimeout(() => {
+    const el = document.getElementById(`enemy-${i}`);
+    if (el && !el.classList.contains("dead")) {
+      el.classList.add("lunge-l");
+      setTimeout(() => el.classList.remove("lunge-l"), 380);
+    }
+  }, 120 + k * 220));
 }
 
 function afterAction() {

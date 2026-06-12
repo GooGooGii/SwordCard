@@ -206,7 +206,7 @@ const COLORLESS_POOL = ["cl_xunjiezhan", "cl_hanfengjue", "cl_hushenjue", "cl_qi
 // actions: {intent, fx:[{k,a,...}]}；img 為 assets/enemies/ 檔名
 const ENEMIES = {
   bandit: {
-    id: "bandit", name: "山賊頭目", hp: 70, img: "bandit",
+    id: "bandit", name: "山賊頭目", hp: 70, img: "bandit", facingLeft: true,
     actions: [
       { intent: "劈砍", fx: [{ k: "damage", a: 15 }] },
       { intent: "防守", fx: [{ k: "block", a: 10 }] },
@@ -214,7 +214,7 @@ const ENEMIES = {
     ],
   },
   beast: {
-    id: "beast", name: "山林妖獸", hp: 80, img: "beast", scale: 1.1,
+    id: "beast", name: "山林妖獸", hp: 80, img: "beast", scale: 1.1, facingLeft: true,
     actions: [
       { intent: "撕咬", fx: [{ k: "damage", a: 17 }] },
       { intent: "怒吼", fx: [{ k: "damage", a: 12 }] },
@@ -222,7 +222,7 @@ const ENEMIES = {
     ],
   },
   thief: {
-    id: "thief", name: "小偷", hp: 62, img: "thief",
+    id: "thief", name: "小偷", hp: 62, img: "thief", facingLeft: true,
     actions: [
       { intent: "探雲手", fx: [{ k: "damage", a: 8 }] },
       { intent: "防守", fx: [{ k: "block", a: 7 }] },
@@ -230,7 +230,7 @@ const ENEMIES = {
     ],
   },
   wild_bee: {
-    id: "wild_bee", name: "十里坡野蜂", hp: 48, img: "wild_bee", scale: 0.78,
+    id: "wild_bee", name: "十里坡野蜂", hp: 48, img: "wild_bee", scale: 0.78, facingLeft: true,
     actions: [
       { intent: "螫刺", fx: [{ k: "damage", a: 8 }] },
       { intent: "亂舞", fx: [{ k: "damage", a: 6 }, { k: "weak", a: 1 }] },
@@ -238,7 +238,7 @@ const ENEMIES = {
     ],
   },
   bee_cocoon: {
-    id: "bee_cocoon", name: "蜂蛹", hp: 30, img: "bee_cocoon", scale: 0.72,
+    id: "bee_cocoon", name: "蜂蛹", hp: 30, img: "bee_cocoon", scale: 0.72, facingLeft: true,
     passive: { kind: "enrage_after", turns: 2, a: 5, label: "破繭倒數：出手兩次後狂暴（力量 +5）" },
     actions: [
       { intent: "蠕動撞", fx: [{ k: "damage", a: 6 }] },
@@ -255,28 +255,28 @@ const ENEMIES = {
     ],
   },
   viper: {
-    id: "viper", name: "毒蛇", hp: 42, img: "serpent_demon", scale: 0.85,
+    id: "viper", name: "毒蛇", hp: 42, img: "serpent_demon", scale: 0.85, facingLeft: true,
     actions: [
       { intent: "毒牙穿甲（無視護體）", fx: [{ k: "damage", a: 7, pierce: true }, { k: "poison", a: 2 }] },
       { intent: "盤繞", fx: [{ k: "block", a: 6 }] },
     ],
   },
   green_snake: {
-    id: "green_snake", name: "綠松蛇", hp: 44, img: "serpent_demon", scale: 0.85, tint: "hue-rotate(95deg) saturate(.8)",
+    id: "green_snake", name: "綠松蛇", hp: 44, img: "serpent_demon", scale: 0.85, facingLeft: true, tint: "hue-rotate(95deg) saturate(.8)",
     actions: [
       { intent: "毒咬", fx: [{ k: "damage", a: 4 }, { k: "poison", a: 1 }] },
       { intent: "纏繞", fx: [{ k: "block", a: 6 }] },
     ],
   },
   grass_spider: {
-    id: "grass_spider", name: "草蛛", hp: 38, img: "wild_bee", scale: 0.82, tint: "hue-rotate(-60deg) brightness(.85)",
+    id: "grass_spider", name: "草蛛", hp: 38, img: "wild_bee", scale: 0.82, facingLeft: true, tint: "hue-rotate(-60deg) brightness(.85)",
     actions: [
       { intent: "吐絲", fx: [{ k: "damage", a: 5 }, { k: "weak", a: 1 }] },
       { intent: "棘網", fx: [{ k: "block", a: 5 }, { k: "enemy_thorns", a: 3 }] },
     ],
   },
   lantern_ghost: {
-    id: "lantern_ghost", name: "燈籠怪", hp: 40, img: "grave_fire", scale: 0.85,
+    id: "lantern_ghost", name: "燈籠怪", hp: 40, img: "grave_fire", scale: 0.85, facingLeft: true,
     actions: [
       { intent: "燈火", fx: [{ k: "damage", a: 6 }] },
       { intent: "熱浪", fx: [{ k: "damage", a: 5 }, { k: "vulnerable", a: 1 }] },
@@ -284,7 +284,7 @@ const ENEMIES = {
     ],
   },
   red_eye_demon: {
-    id: "red_eye_demon", name: "蛇妖男", hp: 95, img: "red_eye_demon", scale: 1.25, isBoss: true,
+    id: "red_eye_demon", name: "蛇妖男", hp: 95, img: "red_eye_demon", scale: 1.25, facingLeft: true, isBoss: true,
     actions: [
       { intent: "妖蛇噬咬", fx: [{ k: "damage", a: 14 }, { k: "poison", a: 2 }] },
       { intent: "蛇息纏身", fx: [{ k: "weak", a: 2 }] },

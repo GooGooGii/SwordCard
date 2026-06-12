@@ -180,8 +180,12 @@ body {
   overflow: hidden; flex-shrink: 0;
   box-shadow: 0 4px 10px rgba(0,0,0,.6);
 }
-.card:hover { transform: translateY(-46px) scale(1.32); z-index: 30; margin: 0 26px; }
-.card.selected { transform: translateY(-34px) scale(1.18); z-index: 25; border-color: var(--gold-bright); box-shadow: 0 0 18px rgba(232,217,160,.7); }
+/* 扇形：每張卡帶 --rot/--ty（由 ui.js 依手牌位置計算），hover 時拉直放大 */
+.hand-area .card { transform: rotate(var(--rot, 0deg)) translateY(var(--ty, 0px)); transform-origin: 50% 130%; }
+.hand-area .card:hover { transform: rotate(0deg) translateY(-52px) scale(1.32); z-index: 30; margin: 0 26px; }
+.hand-area .card.selected { transform: rotate(0deg) translateY(-38px) scale(1.18); z-index: 25; }
+.card:hover { z-index: 30; }
+.card.selected { border-color: var(--gold-bright); box-shadow: 0 0 18px rgba(232,217,160,.7); }
 .card.unaffordable { filter: grayscale(.7) brightness(.6); }
 .card .art {
   position: absolute; inset: 0; width: 100%; height: 100%;
@@ -283,6 +287,17 @@ body {
 @keyframes floatup { 0% { opacity: 1; transform: translateY(0);} 100% { opacity: 0; transform: translateY(-56px);} }
 .shake { animation: shake .3s; }
 @keyframes shake { 0%,100% { transform: translateX(0);} 25% { transform: translateX(-9px);} 75% { transform: translateX(9px);} }
+/* 攻擊突進：玩家向右衝、敵人向左撲 */
+.lunge-r { animation: lungeR .34s ease-out; }
+@keyframes lungeR { 0% { transform: translateX(0);} 32% { transform: translateX(54px);} 100% { transform: translateX(0);} }
+.lunge-l { animation: lungeL .34s ease-out; }
+@keyframes lungeL { 0% { transform: translateX(0);} 32% { transform: translateX(-54px);} 100% { transform: translateX(0);} }
+/* 出牌飛行殘影 */
+.card-ghost {
+  position: fixed; z-index: 60; pointer-events: none; margin: 0 !important;
+  transition: left .36s cubic-bezier(.45,0,.75,.45), top .36s cubic-bezier(.45,0,.75,.45),
+              transform .36s ease-in, opacity .36s ease-in;
+}
 
 /* ── overlay（獎勵/事件/商店/休息）── */
 .overlay {
