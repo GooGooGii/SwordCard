@@ -247,7 +247,7 @@ const ENEMIES = {
     ],
   },
   leaf_sprite: {
-    id: "leaf_sprite", name: "綠葉小妖", hp: 26, img: "leaf_sprite", scale: 0.78,
+    id: "leaf_sprite", name: "綠葉小妖", hp: 26, img: "leaf_sprite", scale: 0.78, facingLeft: true,
     actions: [
       { intent: "葉刃", fx: [{ k: "damage", a: 8 }] },
       { intent: "孢子", fx: [{ k: "poison", a: 2 }] },
@@ -484,6 +484,60 @@ const CARD_ELEMENT = {
 };
 for (const cid of Object.keys(CARD_ELEMENT)) {
   if (CARDS[cid]) CARDS[cid].el = CARD_ELEMENT[cid];
+}
+
+// ── 角色姿態圖（重用 assets/art/battle_characters）──
+const CHAR_POSE_PREFIX = { li: "li_xiaoyao", zhao: "zhao_linger", lin: "lin_yueru", anu: "anu" };
+function posePath(charId, pose) {
+  const v2 = charId === "zhao" ? "_v2" : "";
+  return `assets/chars/${CHAR_POSE_PREFIX[charId]}_${pose}${v2}.png`;
+}
+
+// ── 出招特效（重用 assets/art/effects 的 17 張特效圖）──
+// motion: projectile=玩家飛向目標 / drop=目標上空落下 / burst=目標原地爆開 /
+//         slash=目標處斜揮 / self=自身昇起光效
+const CARD_VFX = {
+  lxy_jiushen: { img: "drunken_god", motion: "burst" },
+  lxy_zuilong: { img: "drunken_god", motion: "burst" },
+  lxy_feilong: { img: "stealing_hand", motion: "projectile" },
+  lxy_wanjian: { img: "blue_flying_sword", motion: "projectile" },
+  lxy_wanjianguizong: { img: "blue_flying_sword", motion: "projectile" },
+  lxy_jianqizonghen: { img: "blue_flying_sword", motion: "projectile" },
+  lxy_tianjian: { img: "gold_giant_sword", motion: "drop" },
+  lxy_xiaoyao_shenjian: { img: "gold_giant_sword", motion: "drop" },
+  lxy_jiulong: { img: "ink_dragon", motion: "projectile" },
+  lxy_qingyan_zhuying: { img: "ink_dragon", motion: "projectile" },
+  zl_diliebeng: { img: "mountain_stone", motion: "drop" },
+  lyr_zhanlong: { img: "ink_dragon", motion: "projectile" },
+  lyr_lielong: { img: "ink_dragon", motion: "projectile" },
+  anu_yufeng: { img: "toxic_bee", motion: "projectile" },
+  anu_duzhen: { img: "poison_needle", motion: "projectile" },
+  anu_lianduzhen: { img: "poison_needle", motion: "projectile" },
+  anu_baozhagu: { img: "poison_explosion", motion: "burst" },
+  anu_minghe_yindu: { img: "serpent_shadow", motion: "projectile" },
+  anu_guihuo_liaoyuan: { img: "poison_explosion", motion: "burst" },
+  anu_wuyuezhan: { img: "witch_blade_slash", motion: "slash" },
+  anu_xuerenwu: { img: "witch_blade_slash", motion: "slash" },
+};
+function vfxFor(view) {
+  if (CARD_VFX[view.cid]) return CARD_VFX[view.cid];
+  if (view.t === "attack" || view.fx.some((e) => e.k.startsWith("damage"))) {
+    if (view.el === "fire") return { img: "fireball", motion: "projectile" };
+    if (view.el === "thunder") return { img: "lightning_strike", motion: "drop" };
+    if (view.el === "water") return { img: "ice_spike", motion: "projectile" };
+    if (view.el === "wind") return { img: "ink_slash", motion: "slash" };
+    if (view.el === "earth") return { img: "mountain_stone", motion: "drop" };
+    if (view.o === "li") return { img: "blue_flying_sword", motion: "projectile" };
+    if (view.o === "anu") return { img: "poison_needle", motion: "projectile" };
+    return { img: "ink_slash", motion: "slash" };
+  }
+  const kinds = view.fx.map((e) => e.k);
+  if (kinds.some((k) => k.startsWith("poison"))) return { img: "toxic_bee", motion: "projectile" };
+  if (kinds.includes("block") || kinds.includes("block_multiply") || kinds.includes("thorns")) return { img: "fx_shield", motion: "self" };
+  if (kinds.includes("heal")) return { img: "fx_heal_glow", motion: "self" };
+  if (view.t === "power") return { img: "fx_power_circle", motion: "self" };
+  if (kinds.some((k) => k.startsWith("weak") || k.startsWith("vulnerable"))) return { img: "ink_slash", motion: "slash" };
+  return { img: "fx_power_circle", motion: "self" };
 }
 
 // 敵人「畏」屬性（act 1）

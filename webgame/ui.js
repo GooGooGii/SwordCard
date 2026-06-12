@@ -7,6 +7,8 @@ const NODE_NAMES = { battle: "戰鬥", elite: "精英", event: "奇遇", rest: "
 const TYPE_NAMES = { attack: "攻擊", skill: "技能", power: "能力" };
 
 let ui = { screen: "menu", selectedCard: -1, shop: null, pendingRewards: null, rewardNodeType: null };
+// ?slow=1 → 動畫放慢 6 倍（給截圖驗證動畫用）
+const SLOWMO = new URLSearchParams(location.search).has("slow") ? 6 : 1;
 
 function h(tag, cls, html) {
   const el = document.createElement(tag);
@@ -249,7 +251,7 @@ function renderBattle() {
   const pc = h("div", "combatant");
   pc.id = "player-combatant";
   const pImg = h("img", "portrait");
-  pImg.src = `assets/portraits/${ch.id === "li" ? "li_xiaoyao" : ch.id === "zhao" ? "zhao_linger" : ch.id === "lin" ? "lin_yueru" : "anu"}.png`;
+  pImg.src = playerPoseSrc();
   pc.appendChild(pImg);
   pc.appendChild(h("div", "cname", ch.name));
   pc.appendChild(playerHpBar());
@@ -292,10 +294,18 @@ function renderBattle() {
   // HUD
   const hud = h("div", "battle-hud");
   hud.appendChild(h("div", "energy-orb", `${battle.energy}<span style="font-size:13px">/${battle.maxEnergy}</span>`));
-  const drawInfo = h("div", "pile-info", `抽牌堆 ${battle.draw.length}`);
-  const discInfo = h("div", "pile-info", `棄牌堆 ${battle.discard.length}`);
+  // 牌堆可點開檢視（對齊 Godot 版 deck pile views）
+  const drawInfo = h("div", "pile-info", `抽牌堆 ${battle.draw.length} ▲`);
+  drawInfo.onclick = () => showPileOverlay("抽牌堆（順序已隱藏）", battle.draw, true);
+  const discInfo = h("div", "pile-info", `棄牌堆 ${battle.discard.length} ▲`);
+  discInfo.onclick = () => showPileOverlay("棄牌堆", battle.discard, false);
   hud.appendChild(drawInfo);
   hud.appendChild(discInfo);
+  if (battle.exhausted.length) {
+    const exInfo = h("div", "pile-info", `消耗區 ${battle.exhausted.length} ▲`);
+    exInfo.onclick = () => showPileOverlay("消耗區", battle.exhausted, false);
+    hud.appendChild(exInfo);
+  }
   s.appendChild(hud);
 
   const endBtn = h("button", "btn primary end-turn", ui.endConfirm ? `再按確認 · 剩 ${battle.energy} 靈力` : "結束回合");
@@ -325,11 +335,6 @@ function renderBattle() {
   }
 
   s.appendChild(h("div", "turn-banner", `第 ${battle.turn} 回合${battle.isBossFight ? " · 頭目戰" : ""}`));
-
-  const log = h("div", "battle-log");
-  log.innerHTML = battle.log.slice(-14).map((m) => `<div>${m}</div>`).join("");
-  s.appendChild(log);
-  log.scrollTop = log.scrollHeight;
 
   // 手牌（扇形排列，對齊 hand_fan.gd 的弧線感）
   const hand = h("div", "hand-area");
@@ -464,7 +469,115 @@ function onEnemyClick(idx) {
   playWithAnim(cardIdx, idx);
 }
 
-// 出牌動畫：卡片殘影從手牌飛向目標 + 攻擊卡玩家突進
+// ════════ 姿態 / 特效 / 回饋 ════════
+function playerPoseSrc() {
+  const p = battle && battle.player;
+  if (p && p.hp <= 0) return posePath(run.charId, "downed");
+  const low = p && p.hp <= p.maxHp * 0.3;
+  return posePath(run.charId, low ? "low_hp" : "idle");
+}
+
+function setPlayerPose(pose, dur) {
+  const img = document.querySelector("#player-combatant img.portrait");
+  if (!img) return;
+  img.src = posePath(run.charId, pose);
+  clearTimeout(ui.poseTimer);
+  ui.poseTimer = setTimeout(() => {
+    const im2 = document.querySelector("#player-combatant img.portrait");
+    if (im2) im2.src = playerPoseSrc();
+  }, dur * SLOWMO);
+}
+
+// 特效圖動畫（Web Animations API）：targetEls 為命中對象（可多個）
+function spawnVfx(vfx, targetEls, fromEl) {
+  if (!vfx) return;
+  const D = (ms) => ms * SLOWMO;
+  targetEls.forEach((tgt, i) => {
+    if (!tgt) return;
+    const img = h("img", "vfx");
+    img.src = `assets/effects/${vfx.img}.png`;
+    document.body.appendChild(img);
+    const tr = tgt.getBoundingClientRect();
+    const cx = tr.left + tr.width / 2, cy = tr.top + tr.height * 0.45;
+    let anim;
+    if (vfx.motion === "projectile" && fromEl) {
+      const fr = fromEl.getBoundingClientRect();
+      const sx = fr.right - 60, sy = fr.top + fr.height * 0.35;
+      img.style.cssText += `left:${sx}px;top:${sy}px;width:160px`;
+      const ang = Math.atan2(cy - sy, cx - sx) * 180 / Math.PI;
+      anim = img.animate([
+        { transform: `rotate(${ang}deg) scale(.6)`, opacity: 0.1 },
+        { opacity: 1, offset: 0.25 },
+        { transform: `translate(${cx - sx - 60}px, ${cy - sy}px) rotate(${ang}deg) scale(1.05)`, opacity: 1 },
+      ], { duration: D(380 + i * 60), easing: "cubic-bezier(.45,0,.85,.6)" });
+    } else if (vfx.motion === "drop") {
+      img.style.cssText += `left:${cx - 80}px;top:${cy - 260}px;width:160px`;
+      anim = img.animate([
+        { transform: "translateY(0) scale(.8)", opacity: 0 },
+        { opacity: 1, offset: 0.3 },
+        { transform: "translateY(180px) scale(1.1)", opacity: 1, offset: 0.85 },
+        { transform: "translateY(190px) scale(1.15)", opacity: 0 },
+      ], { duration: D(460 + i * 60), easing: "cubic-bezier(.5,0,.9,.5)" });
+    } else if (vfx.motion === "slash") {
+      img.style.cssText += `left:${cx - 90}px;top:${cy - 90}px;width:180px`;
+      anim = img.animate([
+        { transform: "rotate(-24deg) translate(-46px,-36px) scale(.7)", opacity: 0 },
+        { opacity: 1, offset: 0.3 },
+        { transform: "rotate(6deg) translate(40px,32px) scale(1.1)", opacity: 0.95, offset: 0.8 },
+        { transform: "rotate(10deg) translate(52px,40px) scale(1.1)", opacity: 0 },
+      ], { duration: D(360 + i * 50), easing: "ease-out" });
+    } else if (vfx.motion === "burst") {
+      img.style.cssText += `left:${cx - 95}px;top:${cy - 95}px;width:190px`;
+      anim = img.animate([
+        { transform: "scale(.35)", opacity: 0 },
+        { transform: "scale(1.0)", opacity: 1, offset: 0.45 },
+        { transform: "scale(1.35)", opacity: 0 },
+      ], { duration: D(480 + i * 60), easing: "ease-out" });
+    } else { // self：自身光效昇起
+      img.style.cssText += `left:${cx - 85}px;top:${tr.top + tr.height * 0.25}px;width:170px`;
+      anim = img.animate([
+        { transform: "translateY(26px) scale(.8)", opacity: 0 },
+        { transform: "translateY(0) scale(1)", opacity: 0.95, offset: 0.5 },
+        { transform: "translateY(-30px) scale(1.08)", opacity: 0 },
+      ], { duration: D(560), easing: "ease-out" });
+    }
+    anim.onfinish = () => img.remove();
+    window._vfxSpawned = (window._vfxSpawned || 0) + 1;
+  });
+}
+
+// 戰鬥回饋 ticker（取代右上 log）：顯示最近行動文字，淡出
+function showFeedback(lines) {
+  if (!lines.length) return;
+  document.querySelectorAll(".feedback-ticker").forEach((e) => e.remove());
+  const t = h("div", "feedback-ticker", lines.slice(-3).map((m) => `<div>${m}</div>`).join(""));
+  const scr = app.querySelector(".screen");
+  (scr || document.body).appendChild(t);
+  setTimeout(() => { t.style.opacity = "0"; }, 1600 * SLOWMO);
+  setTimeout(() => t.remove(), 2400 * SLOWMO);
+}
+
+function showPileOverlay(title, insts, sorted) {
+  const list = sorted ? [...insts].sort((a, b) => CARDS[a.cid].n.localeCompare(CARDS[b.cid].n)) : insts;
+  const ov = h("div", "overlay");
+  const panel = h("div", "panel");
+  panel.appendChild(h("h2", "", `${title}（${insts.length} 張）`));
+  const grid = h("div", "deck-grid");
+  for (const inst of list) {
+    const el = cardEl(cardView(inst));
+    el.style.margin = "0";
+    grid.appendChild(el);
+  }
+  panel.appendChild(grid);
+  const back = h("button", "btn small", "關閉");
+  back.style.marginTop = "14px";
+  back.onclick = () => ov.remove();
+  panel.appendChild(back);
+  ov.appendChild(panel);
+  app.appendChild(ov);
+}
+
+// 出牌動畫：卡片殘影飛向目標 + 角色姿態 + 出招特效
 function playWithAnim(handIdx, targetIdx) {
   const inst = battle.hand[handIdx];
   if (!inst) return false;
@@ -472,9 +585,14 @@ function playWithAnim(handIdx, targetIdx) {
   const srcEl = document.querySelectorAll(".hand-area .card")[handIdx];
   const srcRect = srcEl ? srcEl.getBoundingClientRect() : null;
   const isAtk = view.t === "attack";
-  const targetsEnemy = needsTarget(view) || view.fx.some((e) => e.k.includes("_all") && e.k !== "heal_party");
+  const targetsEnemy = needsTarget(view) || view.fx.some((e) => e.k.startsWith("damage") || e.k.endsWith("_all"));
+  const hitsAll = view.fx.some((e) => e.k.endsWith("_all"));
+  const logLen = battle.log.length;
   if (!playCard(handIdx, targetIdx)) return false;
   afterAction();
+  showFeedback(battle.log.slice(logLen));
+  const pEl = document.getElementById("player-combatant");
+  // 卡片殘影
   if (srcRect) {
     const ghost = cardEl(view);
     ghost.classList.add("card-ghost");
@@ -482,8 +600,8 @@ function playWithAnim(handIdx, targetIdx) {
     ghost.style.top = `${srcRect.top}px`;
     document.body.appendChild(ghost);
     const tgtEl = targetsEnemy
-      ? (document.getElementById(`enemy-${targetIdx}`) || document.getElementById("player-combatant"))
-      : document.getElementById("player-combatant");
+      ? (document.getElementById(`enemy-${targetIdx}`) || pEl)
+      : pEl;
     const tgtRect = tgtEl ? tgtEl.getBoundingClientRect() : null;
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (tgtRect) {
@@ -493,27 +611,38 @@ function playWithAnim(handIdx, targetIdx) {
       ghost.style.transform = "scale(.3) rotate(10deg)";
       ghost.style.opacity = "0";
     }));
-    setTimeout(() => ghost.remove(), 440);
+    setTimeout(() => ghost.remove(), 440 * SLOWMO);
   }
-  if (isAtk) {
-    const pEl = document.getElementById("player-combatant");
-    if (pEl) { pEl.classList.add("lunge-r"); setTimeout(() => pEl.classList.remove("lunge-r"), 380); }
-  }
+  // 姿態：攻擊 / 格擋 / 施法
+  const kinds = view.fx.map((e) => e.k);
+  if (isAtk) setPlayerPose("attack", 520);
+  else if (kinds.includes("block") || kinds.includes("block_multiply")) setPlayerPose("block", 520);
+  else setPlayerPose("cast", 520);
+  // 突進 + 特效
+  if (isAtk && pEl) { pEl.classList.add("lunge-r"); setTimeout(() => pEl.classList.remove("lunge-r"), 380 * SLOWMO); }
+  const vfx = vfxFor(view);
+  let vfxTargets;
+  if (vfx.motion === "self" || !targetsEnemy) vfxTargets = [pEl];
+  else if (hitsAll) vfxTargets = battle.enemies.map((e, i) => document.getElementById(`enemy-${i}`)).filter(Boolean);
+  else vfxTargets = [document.getElementById(`enemy-${targetIdx}`)];
+  setTimeout(() => spawnVfx(vfx, vfxTargets, pEl), 120 * SLOWMO);
   return true;
 }
 
-// 敵人回合：逐隻向左撲擊的突進動畫
+// 敵人回合：逐隻向左撲擊的突進動畫 + 行動回饋
 function doEndTurn() {
   const actors = battle.enemies.map((e, i) => (e.hp > 0 && e.stun <= 0 ? i : -1)).filter((i) => i >= 0);
+  const logLen = battle.log.length;
   endTurn();
   afterAction();
+  showFeedback(battle.log.slice(logLen));
   actors.forEach((i, k) => setTimeout(() => {
     const el = document.getElementById(`enemy-${i}`);
     if (el && !el.classList.contains("dead")) {
       el.classList.add("lunge-l");
-      setTimeout(() => el.classList.remove("lunge-l"), 380);
+      setTimeout(() => el.classList.remove("lunge-l"), 380 * SLOWMO);
     }
-  }, 120 + k * 220));
+  }, (120 + k * 220) * SLOWMO));
 }
 
 function afterAction() {
