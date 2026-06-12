@@ -219,10 +219,16 @@ static func _build_row_types(row_index: int, total_rows: int, row_size: int) -> 
 	if row_index == 0:
 		return node_types
 
+	# 強制戰鬥列：每 3 列有一列（%3==1）整列皆戰鬥，任何路徑都繞不過去。
+	# 搭配 rest 列（%3==0）→ 節奏成「戰鬥 / 事件 / 休息」循環，事件不再霸佔多數列，
+	# 也杜絕「專挑事件節點直奔 Boss、只打一兩場」的走法。
+	if row_index % 3 == 1:
+		return node_types
+
 	var special_budget: int = 1
-	if row_size >= 4:
+	if row_size >= 5:
 		special_budget += 1
-	if row_size >= 6 or (row_size >= 5 and randf() < 0.55):
+	if row_size >= 6 and randf() < 0.35:
 		special_budget += 1
 	if row_index >= total_rows - 2:
 		special_budget = max(1, special_budget - 1)
