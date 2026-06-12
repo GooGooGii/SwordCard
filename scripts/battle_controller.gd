@@ -642,7 +642,8 @@ func start_turn() -> Dictionary:
 	if int(state.get("block_per_turn", 0)) > 0:
 		state["player_block"] = int(state["player_block"]) + int(state["block_per_turn"])
 		add_log("靈光普照：獲得 %d 護體。" % int(state["block_per_turn"]))
-	state["enemy_block"] = 0
+	# 敵人護體不在玩家回合開始清（那會在玩家攻擊前就把敵人剛防的護體抹掉、使敵人防守白費）。
+	# 改在 begin_enemy_phase（敵人自己回合開始）清 → StS 規則：護體在「擁有者回合開始」清空。
 	state["pending_draw"] = 0
 	state["lin_block_used"] = false
 	# 2026-06 平衡：李逍遙折扣改「戰鬥前 3 回合，每回合第一張攻擊 -1 費」
@@ -969,6 +970,12 @@ func _check_combo_strike() -> void:
 func begin_enemy_phase() -> Array[Dictionary]:
 	# Multi-Enemy 模式：每隻活敵各預備一招，回傳陣列（死敵 = empty dict）
 	# 1v1 退化情況：array size == 1
+	# StS 規則：護體在「擁有者回合開始」清空。敵人回合（此處）開始先清掉所有敵人上一輪殘留的
+	# 護體，再由下方 passives（護持戰陣 aura）/ 各敵 block 招式補上新護體 → 新護體會留到玩家下回合、
+	# 真正擋住玩家攻擊（修正：原本在 start_turn 清，導致敵人剛防的護體在玩家攻擊前就被抹掉、防守白費）。
+	for clr_slot_v: Variant in (state["enemies"] as Array):
+		(clr_slot_v as Dictionary)["block"] = 0
+	state["enemy_block"] = 0
 	# turn_end 遺物：保留「非直傷」效果（雷震子破綻、紫府符/雪魂符護體治療、引魂燈施毒、
 	# 屍王符令施毒+回血、玄武魂護體保留）。直傷型（朱雀火/白虎牙/兩個神器）已改在 start_turn 結算。
 	_fire_relic_triggers("turn_end")

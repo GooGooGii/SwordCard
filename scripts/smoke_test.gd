@@ -283,6 +283,7 @@ func _initialize() -> void:
 	# 機制型敵人全幕鋪開：倒數狂化 + 護持光環
 	_test_enemy_passive_enrage_after(characters)
 	_test_enemy_passive_ally_block_aura(characters)
+	_test_enemy_block_persists_to_player_turn(characters)
 	if _smoke_failures > 0:
 		push_error("[smoke] %d 個 _check() 失敗。以 quit(1) 結束。" % _smoke_failures)
 		print("SwordCard smoke test FAILED (%d check failures)." % _smoke_failures)
@@ -1378,9 +1379,14 @@ const BALANCE_BASELINES_LEVELED: Dictionary = {
 	# 五雷咒 16→18 / 風雪冰天 12→14 / 泰山 18→20 / 狂雷 20→22 → Lv10 60→77、Lv20 30→37。
 	# （試過 Lv14 加萬靈噬 payoff 進軌：單體 boss 稀釋懲罰>synergy、Lv15 90→77，已回滾；
 	#   阿奴開場毒 5→4 二度驗證無效，維持 5。）
-	"li_xiaoyao":  {5: 100, 10: 97,  15: 100, 20: 90},
-	"zhao_linger": {5: 100, 10: 77,  15: 90,  20: 37},
-	"lin_yueru":   {5: 100, 10: 100, 15: 93,  20: 50},
+	# 2026-06-13 敵人護體修正（bug fix）：敵人在自己回合獲得的護體原本在玩家 start_turn 就被清掉、
+	# 防守完全失效。修正後護體會留到玩家回合真正擋傷。影響面集中在「會防守」的 boss——
+	# 鎮獄明王（金剛法相 22 / 明王金身 26）Lv15 對戰大幅變難：李 100→77、趙 90→50、林 93→63；
+	# 阿奴維持 100%（蠱毒繞過護體，天然剋制龜盾型 boss，設計如預期）。其餘 boss（黑苗頭領/赤鬼王/
+	# 拜月教主）不靠護體 → 幾乎不變。此為正確化的故意調整（敵人本就該能防守）。
+	"li_xiaoyao":  {5: 100, 10: 97,  15: 77,  20: 93},
+	"zhao_linger": {5: 100, 10: 83,  15: 50,  20: 37},
+	"lin_yueru":   {5: 100, 10: 100, 15: 63,  20: 50},
 	"anu":         {5: 100, 10: 100, 15: 100, 20: 100},
 }
 
@@ -4373,6 +4379,34 @@ func _test_enemy_passive_ally_block_aura(characters: Array[CharacterData]) -> vo
 		if line.find("護持戰陣") >= 0:
 			aura_logs += 1
 	_check(aura_logs == 1, "aura should fire exactly once (before chief died); got %d logs" % aura_logs)
+
+func _test_enemy_block_persists_to_player_turn(characters: Array[CharacterData]) -> void:
+	# 回歸守門：敵人在自己回合獲得的護體，必須留到玩家下一回合、真正擋住玩家攻擊。
+	# （bug：原本在玩家 start_turn 清敵人護體，導致敵人剛防的護體在玩家攻擊前就被抹掉、防守白費）
+	var blocker: EnemyData = EnemyData.new()
+	blocker.id = "test_blocker"
+	blocker.display_name = "測試守衛"
+	blocker.max_hp = 80
+	blocker.actions = [{"intent": "守 20", "effects": [{"kind": "block", "amount": 20}]}]
+	var bc: BattleController = BattleController.new()
+	var rs: RunState = RunState.new()
+	rs.init_for(characters[0])
+	bc.setup(rs, characters[0], ([blocker] as Array))
+	bc.start_turn()  # 玩家回合 1
+	bc.resolve_enemy_phase(bc.begin_enemy_phase())  # 敵人防守，獲得 20 護體
+	_check(int(bc.state["enemy_block"]) == 20, "enemy should have 20 block after defending; got %d" % int(bc.state["enemy_block"]))
+	bc.start_turn()  # 玩家回合 2 — 護體不可被清掉
+	_check(int(bc.state["enemy_block"]) == 20, "enemy block must persist into player turn; got %d" % int(bc.state["enemy_block"]))
+	var hp_before: int = int(bc.state["enemy_hp"])
+	# 中性化玩家傷害修正，讓「12 傷打進 20 護體」結果可預測
+	bc.state["player_power"] = 0
+	bc.state["player_weak"] = 0
+	bc.state["damage_out_bonus"] = 0
+	bc.state["enemy_vulnerable"] = 0
+	bc.state["next_attack_mult"] = 1
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 12}, bc.state, false)  # 玩家攻擊 12
+	_check(int(bc.state["enemy_block"]) == 8, "12 dmg into 20 block → 8 block left; got %d" % int(bc.state["enemy_block"]))
+	_check(int(bc.state["enemy_hp"]) == hp_before, "block should absorb all 12 dmg, hp unchanged; got %d/%d" % [int(bc.state["enemy_hp"]), hp_before])
 
 func _test_short_run_mode(characters: Array[CharacterData]) -> void:
 	var rs: RunState = RunState.new()
