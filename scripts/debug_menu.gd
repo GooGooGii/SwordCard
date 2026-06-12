@@ -8,6 +8,10 @@ signal add_relic_requested
 signal add_potion_requested
 signal jump_to_boss_requested
 signal toggle_test_mode_requested
+signal regenerate_map_requested
+signal prev_act_requested
+signal next_act_requested
+signal battle_picker_requested
 signal close_requested
 
 var test_mode_enabled: bool = false
@@ -49,13 +53,21 @@ func _build() -> void:
 	box.add_theme_constant_override("separation", 10)
 	panel.add_child(box)
 	box.add_child(UIFactory.title_label("Debug Menu", 22))
+	# ── 工程模式（測試專用）──────────────────────────────────
+	_test_mode_button = _add_action(box, _test_mode_label(), func() -> void: toggle_test_mode_requested.emit())
+	_add_hint(box, "ON：任點地圖節點 + 無限銅錢")
+	_add_action(box, "🗺 重生地圖（重抽本幕）", func() -> void: regenerate_map_requested.emit())
+	_add_action(box, "◀ 上一幕", func() -> void: prev_act_requested.emit())
+	_add_action(box, "下一幕 ▶", func() -> void: next_act_requested.emit())
+	_add_action(box, "⚔ 戰鬥測試台（任選敵人開打）", func() -> void: battle_picker_requested.emit())
+	box.add_child(UIFactory.ink_divider())
+	# ── 單次快捷 ────────────────────────────────────────────
 	_add_action(box, "+100 Gold", func() -> void: gold_bonus_requested.emit())
 	_add_action(box, "Full Heal", func() -> void: full_heal_requested.emit())
 	_add_action(box, "Add Random Card", func() -> void: add_card_requested.emit())
 	_add_action(box, "Add Random Relic", func() -> void: add_relic_requested.emit())
 	_add_action(box, "Add Random Potion", func() -> void: add_potion_requested.emit())
 	_add_action(box, "Jump to Boss", func() -> void: jump_to_boss_requested.emit())
-	_test_mode_button = _add_action(box, _test_mode_label(), func() -> void: toggle_test_mode_requested.emit())
 	_add_action(box, "Close (F1)", func() -> void: close_requested.emit())
 
 func set_test_mode(enabled: bool) -> void:
@@ -64,7 +76,15 @@ func set_test_mode(enabled: bool) -> void:
 		_test_mode_button.text = _test_mode_label()
 
 func _test_mode_label() -> String:
-	return "Test Mode: ON (任意點地圖)" if test_mode_enabled else "Test Mode: OFF"
+	return "工程模式：ON ✅" if test_mode_enabled else "工程模式：OFF"
+
+func _add_hint(parent: VBoxContainer, text: String) -> void:
+	var lbl: Label = Label.new()
+	lbl.text = text
+	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.add_theme_color_override("font_color", ThemeColors.TEXT_DIM)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	parent.add_child(lbl)
 
 func _add_action(parent: VBoxContainer, text: String, on_press: Callable) -> Button:
 	var btn: Button = Button.new()
