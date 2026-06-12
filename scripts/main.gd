@@ -339,6 +339,10 @@ func _build_debug_menu() -> void:
 	debug_menu.add_potion_requested.connect(_dbg_add_potion)
 	debug_menu.jump_to_boss_requested.connect(_dbg_jump_to_boss)
 	debug_menu.toggle_test_mode_requested.connect(_dbg_toggle_test_mode)
+	debug_menu.regenerate_map_requested.connect(_dbg_regenerate_map)
+	debug_menu.prev_act_requested.connect(func() -> void: _dbg_change_act(-1))
+	debug_menu.next_act_requested.connect(func() -> void: _dbg_change_act(1))
+	debug_menu.battle_picker_requested.connect(_dbg_open_battle_picker)
 	debug_menu.close_requested.connect(func() -> void: debug_menu.visible = false)
 
 func _toggle_debug_menu() -> void:
@@ -423,9 +427,113 @@ func _dbg_toggle_test_mode() -> void:
 	if debug_menu != null:
 		debug_menu.set_test_mode(dbg_test_mode)
 	debug_menu.visible = false
-	print("[DEBUG] test mode = %s" % dbg_test_mode)
+	_apply_infinite_gold()
+	print("[DEBUG] 工程模式 = %s" % dbg_test_mode)
 	if run_state != null and not run_state.encounter_choices.is_empty():
 		show_progress_screen()
+
+const DBG_INFINITE_GOLD: int = 999999
+
+# 工程模式無限銅錢：開啟時把 gold 灌滿；在地圖/商店刷新點重複呼叫即可在花費後自動回填。
+func _apply_infinite_gold() -> void:
+	if dbg_test_mode and run_state != null and run_state.gold < DBG_INFINITE_GOLD:
+		run_state.gold = DBG_INFINITE_GOLD
+
+func _dbg_regenerate_map() -> void:
+	if run_state == null or run_state.characters.is_empty():
+		return
+	run_state.chosen_map_path.clear()
+	run_state.encounter_index = 0
+	run_state.current_shop_node_index = -1
+	run_state.encounter_choices = _make_encounter_choices()
+	debug_menu.visible = false
+	show_progress_screen()
+	print("[DEBUG] 重生地圖（第 %d 幕）" % run_state.act)
+
+func _dbg_change_act(delta: int) -> void:
+	if run_state == null or run_state.characters.is_empty():
+		return
+	var new_act: int = clampi(run_state.act + delta, 1, run_state.final_act())
+	if new_act == run_state.act:
+		print("[DEBUG] 已在邊界幕（%d），不變動" % run_state.act)
+		return
+	run_state.act = new_act
+	run_state.chosen_map_path.clear()
+	run_state.encounter_index = 0
+	run_state.current_shop_node_index = -1
+	run_state.encounter_choices = _make_encounter_choices()
+	debug_menu.visible = false
+	show_progress_screen()
+	print("[DEBUG] 切到第 %d 幕" % run_state.act)
+
+func _dbg_open_battle_picker() -> void:
+	if run_state == null or run_state.characters.is_empty():
+		return
+	debug_menu.visible = false
+	show_debug_battle_picker()
+
+# 工程模式「戰鬥測試台」：任選敵人 / Boss / 召喚物 / 本幕遭遇組，立即開打驗 bug。
+func show_debug_battle_picker() -> void:
+	_set_background("res://assets/art/event_bg.png")
+	_clear_root()
+	_show_title_bar()
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	root.add_child(scroll)
+	var box: VBoxContainer = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(box)
+	box.add_child(_title("⚔ 戰鬥測試台（第 %d 幕）" % run_state.act, 30))
+	var hint: Label = UIFactory.paragraph("點任一敵人立即開打。Boss 走完整 boss 流程。")
+	box.add_child(hint)
+	var back_btn: Button = _button("← 返回地圖")
+	back_btn.pressed.connect(func() -> void: show_progress_screen())
+	box.add_child(back_btn)
+	# 本幕真實遭遇組（多敵權重表）
+	box.add_child(UIFactory.ink_divider())
+	box.add_child(_title("本幕遭遇組", 20))
+	var group_btn: Button = _button("🎲 隨機生成本幕遭遇組（1–3 敵）")
+	group_btn.pressed.connect(func() -> void:
+		var pool: Array[EnemyData] = GameData.enemies_for_act(run_state.act)
+		start_next_battle(MapGenerator.choose_enemies_for_act(run_state.act, pool)))
+	box.add_child(group_btn)
+	# 本幕 Boss
+	box.add_child(UIFactory.ink_divider())
+	box.add_child(_title("本幕 Boss", 20))
+	box.add_child(_dbg_enemy_grid([GameData.boss_for_act(run_state.act)]))
+	box.add_child(_title("全部 Boss", 18))
+	box.add_child(_dbg_enemy_grid(GameData.bosses()))
+	# 一般敵
+	box.add_child(UIFactory.ink_divider())
+	box.add_child(_title("一般敵", 20))
+	box.add_child(_dbg_enemy_grid(GameData.enemies()))
+	# 召喚物
+	box.add_child(UIFactory.ink_divider())
+	box.add_child(_title("召喚物", 20))
+	box.add_child(_dbg_enemy_grid(GameData.minions()))
+
+func _dbg_enemy_grid(enemies: Array[EnemyData]) -> GridContainer:
+	var grid: GridContainer = GridContainer.new()
+	grid.columns = 4
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 6)
+	for e: EnemyData in enemies:
+		if e == null:
+			continue
+		var captured: EnemyData = e
+		var btn: Button = Button.new()
+		btn.text = "%s (HP %d)" % [e.display_name, e.max_hp]
+		btn.custom_minimum_size = Vector2(230, 40)
+		btn.add_theme_font_size_override("font_size", 14)
+		btn.add_theme_color_override("font_color", ThemeColors.TEXT_LIGHT)
+		btn.add_theme_stylebox_override("normal", UIFactory.style_box(ThemeColors.PANEL_NAVY, ThemeColors.BORDER_GOLD, 1, 6))
+		btn.add_theme_stylebox_override("hover", UIFactory.style_box(ThemeColors.PANEL_NAVY_HOV, ThemeColors.ACCENT_GOLD, 2, 6))
+		btn.add_theme_stylebox_override("pressed", UIFactory.style_box(ThemeColors.PANEL_NAVY_PRS, ThemeColors.BORDER_GOLD, 1, 6))
+		btn.pressed.connect(func() -> void: start_next_battle(captured))
+		grid.add_child(btn)
+	return grid
 
 func _on_resume_requested() -> void:
 	pause_menu.close()
@@ -1579,6 +1687,7 @@ func _show_boon_rewards_popup(rewards: Array[Dictionary], on_close: Callable) ->
 	popup.popup_centered()
 
 func show_progress_screen() -> void:
+	_apply_infinite_gold()  # 工程模式：每次回地圖回填銅錢
 	_maybe_show_act_intro()  # 每幕首次進地圖：開場字卡（旗標隨下一行 save 持久化）
 	SaveManager.save(run_state)
 	_play_bgm("map_act%d" % max(1, run_state.act))
@@ -6385,6 +6494,7 @@ func open_shop_node(is_black_shop: bool) -> void:
 	show_shop_node()
 
 func show_shop_node() -> void:
+	_apply_infinite_gold()  # 工程模式：進商店回填銅錢
 	_shop_ui_refs = []
 	_play_bgm("shop")
 	_set_background("res://assets/art/event_bg.png")
@@ -6477,6 +6587,7 @@ func _make_non_button_scroll_transparent(node: Node) -> void:
 		_make_non_button_scroll_transparent(child)
 
 func _refresh_shop_ui_states() -> void:
+	_apply_infinite_gold()  # 工程模式：購買後回填銅錢
 	_refresh_title_bar()
 	for ref: Dictionary in _shop_ui_refs:
 		var type: String = ref.get("type", "")
