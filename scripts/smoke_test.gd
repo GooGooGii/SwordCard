@@ -124,6 +124,7 @@ func _initialize() -> void:
 	_test_boss_phase_transition(bosses)
 	_test_boss_successor()
 	_test_event_variety()
+	_test_event_resolved_guard(characters)
 	_test_revive_event(characters)
 	_test_map_seed_determinism(enemies, bosses)
 	_test_elite_generation(enemies, bosses)
@@ -998,6 +999,25 @@ func _test_boss_successor() -> void:
 	bc.set_active_enemy(1)
 	bc.play_card(GameData.make_card("succ_test2", "斬", "P", 0, "attack", "造成 99 點傷害。", [{"kind": "damage", "amount": 99}]))
 	_check(bc.is_victory(), "battle won after both snake and fox dead")
+
+func _test_event_resolved_guard(characters: Array[CharacterData]) -> void:
+	# 事件 save-scum 守衛：resolved_event_index 持久化 + 舊存檔 default -1。
+	var rs: RunState = RunState.new()
+	rs.init_for(characters[0])
+	_check(rs.resolved_event_index == -1, "fresh run resolved_event_index should be -1")
+	rs.encounter_index = 4
+	rs.resolved_event_index = 4   # 模擬「第 4 格事件已結算發獎」
+	var restored: RunState = RunState.new()
+	_check(restored.from_dict(rs.to_dict(), characters), "round-trip with resolved_event_index should load")
+	_check(restored.resolved_event_index == 4, "resolved_event_index should survive round-trip, got %d" % restored.resolved_event_index)
+	# 守衛條件：resolved_event_index == encounter_index → 該事件已領、不可重進
+	_check(restored.resolved_event_index == restored.encounter_index, "guard should fire when indices match")
+	# 舊存檔無此欄位 → default -1（不會誤擋第一次進的事件）
+	var old_save: Dictionary = rs.to_dict()
+	old_save.erase("resolved_event_index")
+	var legacy: RunState = RunState.new()
+	_check(legacy.from_dict(old_save, characters), "old save without resolved_event_index should load")
+	_check(legacy.resolved_event_index == -1, "missing resolved_event_index should default to -1, got %d" % legacy.resolved_event_index)
 
 func _test_event_variety() -> void:
 	# 至少 10 種 event variant、每種都有合理的欄位

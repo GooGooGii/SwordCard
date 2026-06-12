@@ -29,6 +29,11 @@ var current_shop_node_index: int = -1      # 已開出貨架的 encounter_index�
 var shop_remove_used: bool = false         # 本商店削牌服務是否用過
 var shop_upgrade_used: bool = false        # 本商店強化服務是否用過
 var current_event_variant: String = "shrine"
+# 已「結算發獎」的事件 encounter_index；-1 = 尚未結算。仿 current_shop_node_index 守衛模式：
+# 防 save-scum——獎勵在 _show_event_outcome 顯示前就套進 run_state，但 encounter_index 要等
+# 結算對話框關閉的 callback 才 +1；玩家若在這空檔回主選單存檔再讀回，會重進同一事件重複領獎。
+# 記下「這格已領過」後，show_event_node 入口直接推進、不再讓重選。純加欄位，舊存檔 default -1。
+var resolved_event_index: int = -1
 var relics: Array[RelicData] = []
 var potions: Array[Dictionary] = []   # max MAX_POTION_SLOTS 元素，每個是 PotionCatalog 的一筆
 var ascension_level: int = 0
@@ -164,6 +169,7 @@ func init_for(chars: Variant) -> void:
 	shop_remove_used = false
 	shop_upgrade_used = false
 	current_event_variant = "shrine"
+	resolved_event_index = -1
 	relics.clear()
 	potions.clear()
 	observe_tokens = OBSERVE_TOKEN_START
@@ -287,6 +293,7 @@ func to_dict() -> Dictionary:
 		"shop_remove_used": shop_remove_used,
 		"shop_upgrade_used": shop_upgrade_used,
 		"current_event_variant": current_event_variant,
+		"resolved_event_index": resolved_event_index,
 		"relics": relics_data,
 		"potions": potions.duplicate(),
 		"ascension_level": ascension_level,
@@ -382,6 +389,7 @@ func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> 
 	shop_remove_used = bool(data.get("shop_remove_used", false))
 	shop_upgrade_used = bool(data.get("shop_upgrade_used", false))
 	current_event_variant = String(data.get("current_event_variant", "shrine"))
+	resolved_event_index = int(data.get("resolved_event_index", -1))
 	relics.clear()
 	for relic_data: Variant in (data.get("relics", []) as Array):
 		if relic_data is Dictionary:

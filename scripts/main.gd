@@ -5028,6 +5028,12 @@ func resolve_rest_heal() -> void:
 	advance_non_battle_node()
 
 func show_event_node(sub_stage: String = "") -> void:
+	# Save-scum 守衛：若這格事件已在前次（讀檔前）結算發過獎、只是 encounter_index 還沒推進，
+	# 直接推進、不讓重進重領。只在「節點進入點」擋（sub_stage 空 = 從地圖點進來）；事件內部的
+	# 子階段導覽不受影響（旗標僅在終局 _show_event_outcome 才設、子導覽都發生在那之前）。
+	if run_state != null and run_state.resolved_event_index == run_state.encounter_index:
+		advance_non_battle_node()
+		return
 	_play_bgm("event")
 	# Event Branching P2：若此 variant 有新版 tree schema，走 tree path（_show_event_tree_node）
 	# 否則 fallback 舊扁平 schema（原 sub_stage 分支邏輯）
@@ -5310,8 +5316,9 @@ func _resolve_event_tree_outcome(outcome: Dictionary) -> void:
 			if log_text.is_empty():
 				start_event_tree_battle(enemy_id, hp_mult, v_effects, d_effects)
 			else:
+				# 非終局：獎勵在戰後才發（victory_effects），不可提早標記已領獎。
 				_show_event_outcome(log_text, func() -> void:
-					start_event_tree_battle(enemy_id, hp_mult, v_effects, d_effects))
+					start_event_tree_battle(enemy_id, hp_mult, v_effects, d_effects), "", false)
 		_:
 			# reward / punish / mixed / neutral：直接跑 effects
 			var effects2: Array = outcome.get("effects", []) as Array
@@ -5689,7 +5696,12 @@ func _get_event_outcome(event_data: Dictionary, key: String) -> String:
 			return String(per_char[key])
 	return String((event_data.get("outcomes", {}) as Dictionary).get(key, ""))
 
-func _show_event_outcome(text: String, on_continue: Callable, variant: String = "") -> void:
+func _show_event_outcome(text: String, on_continue: Callable, variant: String = "", consumes_node: bool = true) -> void:
+	# consumes_node=true（預設）：這是「獎勵已發完、接著就推進」的終局結算 → 標記此事件節點已領獎，
+	#   防 save-scum 重進重領（見 RunState.resolved_event_index）。consumes_node=false 用於「後續還有
+	#   畫面才真正給獎」的非終局結算（gain_card 選牌前只扣 HP、事件戰鬥獎勵在戰後），不可提早標記。
+	if consumes_node and run_state != null:
+		run_state.resolved_event_index = run_state.encounter_index
 	# 結算面板：寬版（720px）、上方擺事件插圖小圖（160px banner）、
 	# 文字以 typewriter（~40 字/秒）緩出，繼續按鈕首次點擊跳過 typewriter、
 	# 第二次才真正關閉。沒插圖的事件 fallback 為只有文字。
@@ -6043,7 +6055,9 @@ func resolve_event_gain_card(hp_cost: int = 6) -> void:
 	var ev: Dictionary = EventData.for_variant(run_state.current_event_variant)
 	var outcome: String = _get_event_outcome(ev, "gain_card")
 	if not outcome.is_empty():
-		_show_event_outcome(outcome, func() -> void: show_event_card_reward(hp_cost))
+		# 非終局：此處只扣了 HP 成本、卡片要到 show_event_card_reward 選牌才入手，不可提早標記已領獎，
+		# 否則玩家付了 HP、reload 後會被守衛直接跳過選牌、白白損血。
+		_show_event_outcome(outcome, func() -> void: show_event_card_reward(hp_cost), "", false)
 	else:
 		show_event_card_reward(hp_cost)
 
@@ -7238,6 +7252,7 @@ func show_act_complete() -> void:
 	run_state.act = completed_act + 1
 	run_state.encounter_index = 0
 	run_state.current_shop_node_index = -1  # encounter_index 重置，商店標記也要清，否則新幕同索引商店不重抽
+	run_state.resolved_event_index = -1     # 同理：事件已領獎標記也要清，否則新幕同索引事件被守衛誤跳過
 	run_state.chosen_map_path.clear()
 	run_state.encounter_choices = _make_encounter_choices()
 	SaveManager.save(run_state)
