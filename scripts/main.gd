@@ -2719,7 +2719,11 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	col.add_theme_constant_override("separation", 2 if _battle_compact else 4)
 	# 浮動 feedback label（傷害數字、狀態提示）
 	var feedback_label: Label = UIFactory.feedback_label()
-	col.add_child(_wrap_feedback_label(feedback_label))
+	var feedback_wrap: Control = _wrap_feedback_label(feedback_label)
+	# 頭頂浮字（feedback / 意圖）要蓋在肖像之上：高瘦肖像（如劍冢靈影）經 ground_portrait
+	# 寬度受限縮放後會「往上溢出」wrap 頂、蓋住意圖紅字。拉高 z_index 確保浮字永遠可見。
+	feedback_wrap.z_index = 6
+	col.add_child(feedback_wrap)
 	# 意圖（顯示於頭頂上）：icon 列在上、文字在下。icon 圖未補時自動 fallback 純文字徽章。
 	# 文字 label 直接掛在 col（取得全寬），避免被 HBox 擠到逐字直書。
 	var intent_size: int = 18 if (_battle_compact or total >= 2) else 20  # Phase B1：大字化
@@ -2728,6 +2732,7 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	intent_icon_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	intent_icon_row.add_theme_constant_override("separation", 2)
 	intent_icon_row.custom_minimum_size = Vector2(0, icon_px)  # F2：icon 全隱藏時高度不塌縮
+	intent_icon_row.z_index = 6  # 蓋在肖像之上（高瘦肖像會往上溢出蓋住意圖）
 	var intent_icons: Array = []
 	for _ii: int in range(3):
 		var ic: TextureRect = TextureRect.new()
@@ -2741,6 +2746,9 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	col.add_child(intent_icon_row)
 	var intent_label: Label = UIFactory.card_label("",
 		intent_size, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	intent_label.z_index = 6  # 蓋在肖像之上
+	intent_label.add_theme_color_override("font_outline_color", Color("1b150f", 0.9))
+	intent_label.add_theme_constant_override("outline_size", 4)  # 疊在肖像上仍清晰
 	col.add_child(intent_label)
 	# portrait wrap（含 block badge）
 	# 版面只保留 layout_size（封頂在基準高度）；肖像照 portrait_size 全尺寸繪製、
@@ -2898,22 +2906,20 @@ func _refresh_enemy_widgets() -> void:
 					intent_name = CardFormat.strip_trailing_number(intent_name)  # 去名稱尾數，改用淨傷
 					var temp_state: Dictionary = battle.state.duplicate()
 					temp_state["enemy_weak"] = int(slot.get("weak", 0))
+					# 只顯示該敵的攻擊值：清掉玩家側修正（護體 / 破綻 / 減傷），
+					# 不再自動減去護體顯示「實受X(擋Y)」（仍反映敵人自身虛弱降低的攻擊）
+					temp_state["player_block"] = 0
+					temp_state["player_vulnerable"] = 0
+					temp_state["damage_taken_reduction"] = 0
 					var pred: Dictionary = CardFormat.predict_enemy_damage(action, temp_state)
-					var dealt: int = int(pred["dealt"])
-					var blocked: int = int(pred["blocked"])
+					var atk: int = int(pred["dealt"])
 					var hits: int = int(pred.get("hits", 1))
 					var per_hit: int = int(pred.get("per_hit", 0))
 					if hits > 1 and per_hit >= 0:
-						# 多段攻擊：顯示 每段×段數（仿 STS 5×3），有擋再附淨傷
+						# 多段攻擊：顯示 每段×段數（仿 STS 5×3）
 						damage_text = " %d×%d" % [per_hit, hits]
-						if blocked > 0:
-							damage_text += "(實受%d)" % dealt
-					elif blocked > 0:
-						damage_text = " 實受%d(擋%d)" % [dealt, blocked]
-					elif dealt < int(pred["raw"]):
-						damage_text = " 實受%d" % dealt
 					else:
-						damage_text = " %d" % dealt
+						damage_text = " %d" % atk
 				if shown_icon:
 					# Phase B1：icon 已表類別 → 只顯示大數字（傷害紅字、招式名移除）。
 					# 招式名細節留給點擊敵人 portrait 的既有互動。
