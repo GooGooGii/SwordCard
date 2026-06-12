@@ -2,8 +2,11 @@ class_name HandFan
 extends Control
 
 # Phase D1（BATTLE_UI_POLISH）：扇形感對齊 StS。
-# 2026-06-11 回調：1250/34° 讓邊卡下沉超出畫面底緣（實機回報），半徑回拉、總角收斂。
-const ARC_RADIUS: float = 1450.0
+# 卡片無獨立 x 座標——全部置中，相鄰卡的水平間距完全由「繞下方 ARC_RADIUS 旋轉」產生：
+#   間距 ≈ ARC_RADIUS × sin(ANGLE_PER_CARD_DEG)。外側卡下沉 ≈ ARC_RADIUS × (1-cos(總角/2))。
+# 2026-06-12 回調：1450 時間距 ~126px > 卡寬 134，幾乎不重疊（實機回報手牌太散、外側卡描述被底緣切掉）。
+#   縮到 950 → 間距 ~83px（重疊 ~38%，比 StS 略疏、實機回報要再分開一點）＋ 外側卡下沉 49→33px，扇形傾斜角度不變。
+const ARC_RADIUS: float = 950.0
 const MAX_TOTAL_ANGLE_DEG: float = 30.0
 const ANGLE_PER_CARD_DEG: float = 5.0
 const HOVER_LIFT: float = 56.0
