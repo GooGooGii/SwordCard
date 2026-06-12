@@ -15,18 +15,27 @@ function h(tag, cls, html) {
   return el;
 }
 
-// ════════ 卡片 DOM ════════
+// ════════ 卡片 DOM（重製版：滿幅插圖 + 直書卡名 + 印章 + 屬性章）════════
+const SEAL_CHARS = { attack: "攻", skill: "技", power: "能" };
 function cardEl(view, opts) {
   const el = h("div", `card t-${view.t} r-${view.r}${opts && opts.big ? " bigger" : ""}`);
-  const cost = opts && opts.costOverride !== undefined ? opts.costOverride : view.c;
-  el.appendChild(h("div", "cost", String(cost)));
   const img = h("img", "art");
   img.src = `assets/cards/${view.cid}.png`;
   img.onerror = () => { img.style.display = "none"; };
   el.appendChild(img);
-  el.appendChild(h("div", `name${view.up ? " upgraded" : ""}`, view.n));
-  el.appendChild(h("div", "typeline", `${TYPE_NAMES[view.t] || view.t} · ${view.r === "rare" ? "稀有" : view.r === "uncommon" ? "精良" : "基礎"}`));
+  const cost = opts && opts.costOverride !== undefined ? opts.costOverride : view.c;
+  el.appendChild(h("div", "cost", String(cost)));
+  if (view.el && ELEMENTS[view.el]) {
+    const badge = h("div", "el-badge", ELEMENTS[view.el].n);
+    badge.style.background = ELEMENTS[view.el].c;
+    badge.title = `${ELEMENTS[view.el].n}屬性：剋制畏${ELEMENTS[view.el].n}的敵人（傷害 ×1.5）`;
+    el.appendChild(badge);
+  }
+  el.appendChild(h("div", `vname${view.up ? " upgraded" : ""}`, view.n));
   el.appendChild(h("div", "desc", view.desc));
+  const seal = h("div", "seal", SEAL_CHARS[view.t] || "卡");
+  seal.title = `${TYPE_NAMES[view.t]} · ${view.r === "rare" ? "稀有" : view.r === "uncommon" ? "精良" : "基礎"}`;
+  el.appendChild(seal);
   return el;
 }
 
@@ -112,22 +121,69 @@ function renderCharSelect() {
   app.appendChild(s);
 }
 
-// ════════ 地圖 ════════
+// ════════ 山水卷軸地圖：橫向手卷，左起餘杭、右至妖窟（boss）════════
+const COL_W = 150;
+function nodePos(l, i, count, innerH) {
+  // 沿卷軸蜿蜒的路徑：x 依層推進、y 以正弦擺動 + 同層節點上下展開
+  const x = 110 + l * COL_W;
+  const mid = innerH * 0.52 + Math.sin(l * 1.15) * innerH * 0.1;
+  const spread = innerH * 0.26;
+  const y = count === 1 ? mid : mid + (i - (count - 1) / 2) * spread;
+  return [x, Math.max(innerH * 0.14, Math.min(innerH * 0.88, y))];
+}
+
 function renderMap() {
   ui.screen = "map";
   app.innerHTML = "";
   const s = h("div", "screen");
-  s.style.backgroundImage = "url(assets/bg/map_bg_ink.png)";
-  s.appendChild(h("div", "scrim"));
+  s.style.background = "#171410";
   s.appendChild(topbar(true));
-  const wrap = h("div", "map-wrap");
+  const wrap = h("div", "scroll-wrap");
+  const inner = h("div", "scroll-inner");
+  const totalW = 110 + run.map.length * COL_W + 130;
+  inner.style.width = `${totalW}px`;
+  inner.appendChild(h("div", "scroll-title", "餘杭行旅圖"));
+
   const reach = reachableNodes().map(([l, i]) => `${l},${i}`);
-  // 由下往上畫（boss 在最上）
-  for (let l = run.map.length - 1; l >= 0; l--) {
-    const row = h("div", "map-row");
+  s.appendChild(wrap);
+  wrap.appendChild(inner);
+  app.appendChild(s); // 先掛上去才量得到高度
+  const innerH = wrap.clientHeight || 600;
+  inner.style.height = "100%";
+
+  // 墨線路徑（SVG）：畫所有相鄰層可走的邊
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "scroll-edges");
+  svg.setAttribute("width", totalW);
+  svg.setAttribute("height", innerH);
+  for (let l = 0; l < run.map.length - 1; l++) {
+    const cur = run.map[l], nxt = run.map[l + 1];
+    for (let i = 0; i < cur.length; i++) {
+      for (let j = 0; j < nxt.length; j++) {
+        if (nxt.length > 1 && Math.abs(j - i) > 1) continue;
+        const [x1, y1] = nodePos(l, i, cur.length, innerH);
+        const [x2, y2] = nodePos(l + 1, j, nxt.length, innerH);
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        const mx = (x1 + x2) / 2;
+        path.setAttribute("d", `M${x1} ${y1} C${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`);
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", "rgba(40,32,20,.55)");
+        path.setAttribute("stroke-width", "2.5");
+        path.setAttribute("stroke-dasharray", "1 7");
+        path.setAttribute("stroke-linecap", "round");
+        svg.appendChild(path);
+      }
+    }
+  }
+  inner.appendChild(svg);
+
+  for (let l = 0; l < run.map.length; l++) {
     for (let i = 0; i < run.map[l].length; i++) {
       const node = run.map[l][i];
-      const el = h("div", "map-node", NODE_ICONS[node.type]);
+      const [x, y] = nodePos(l, i, run.map[l].length, innerH);
+      const el = h("div", `map-node${node.type === "boss" ? " boss-node" : ""}`, NODE_ICONS[node.type]);
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
       el.appendChild(h("div", "nlabel", NODE_NAMES[node.type]));
       if (node.done) el.classList.add("done");
       if (l === run.layer && i === run.nodeIdx) el.classList.add("current");
@@ -135,12 +191,12 @@ function renderMap() {
         el.classList.add("reachable");
         el.onclick = () => enterNode(l, i);
       }
-      row.appendChild(el);
+      inner.appendChild(el);
     }
-    wrap.appendChild(row);
   }
-  s.appendChild(wrap);
-  app.appendChild(s);
+  // 視窗捲到目前位置附近
+  const focusL = Math.max(0, run.layer);
+  wrap.scrollLeft = Math.max(0, 110 + focusL * COL_W - wrap.clientWidth * 0.35);
 }
 
 function enterNode(l, i) {
@@ -155,17 +211,20 @@ function enterNode(l, i) {
       const tier = l <= 2 ? "easy" : l <= 5 ? "mid" : "hard";
       startBattle(pick(ENCOUNTERS[tier]));
       ui.rewardNodeType = "battle";
+      ui.selectedCard = -1;
       renderBattle();
       break;
     }
     case "elite":
       startBattle([pick(ENCOUNTERS.elitePool)], { elite: true });
       ui.rewardNodeType = "elite";
+      ui.selectedCard = -1;
       renderBattle();
       break;
     case "boss":
       startBattle([ENCOUNTERS.boss], { boss: true });
       ui.rewardNodeType = "boss";
+      ui.selectedCard = -1;
       renderBattle();
       break;
     case "event": renderEvent(pick(EVENTS)); break;
@@ -178,7 +237,6 @@ function enterNode(l, i) {
 // ════════ 戰鬥 ════════
 function renderBattle() {
   ui.screen = "battle";
-  ui.selectedCard = -1;
   app.innerHTML = "";
   const s = h("div", "screen");
   s.style.backgroundImage = "url(assets/bg/battle_bg_act_1.png)";
@@ -209,8 +267,18 @@ function renderBattle() {
     const img = h("img", "portrait");
     img.src = `assets/enemies/${en.img}.png`;
     img.style.transform = `scaleX(-1) scale(${Math.min(en.scale, 1.15)})`;
+    if (en.def.tint) img.style.filter = en.def.tint;
     c.appendChild(img);
-    c.appendChild(h("div", "cname", en.name));
+    const nameRow = h("div", "cname", en.name);
+    const wel = weakElOf(en);
+    if (wel && ELEMENTS[wel]) {
+      const chip = h("span", "weak-chip", ` 畏${ELEMENTS[wel].n}`);
+      chip.style.color = ELEMENTS[wel].c;
+      chip.style.marginLeft = "6px";
+      chip.title = `以${ELEMENTS[wel].n}屬性攻擊可造成 1.5 倍傷害`;
+      nameRow.appendChild(chip);
+    }
+    c.appendChild(nameRow);
     c.appendChild(enemyHpBar(en));
     c.appendChild(enemyStatusRow(en));
     c.onclick = () => onEnemyClick(idx);
@@ -228,9 +296,32 @@ function renderBattle() {
   hud.appendChild(discInfo);
   s.appendChild(hud);
 
-  const endBtn = h("button", "btn primary end-turn", "結束回合");
-  endBtn.onclick = () => { endTurn(); afterAction(); };
+  const endBtn = h("button", "btn primary end-turn", ui.endConfirm ? `再按確認 · 剩 ${battle.energy} 靈力` : "結束回合");
+  endBtn.onclick = () => {
+    // 還有靈力且有可打的卡 → 第一下先確認（對齊 Godot 版防呆）
+    const hasPlayable = battle.hand.some((inst) => effectiveCost(cardView(inst)) <= battle.energy);
+    if (!ui.endConfirm && battle.energy > 0 && hasPlayable) {
+      ui.endConfirm = true;
+      renderBattle();
+      clearTimeout(ui.endConfirmTimer);
+      ui.endConfirmTimer = setTimeout(() => {
+        if (ui.endConfirm && !battle.over) { ui.endConfirm = false; endTurn(); afterAction(); }
+      }, 1500);
+      return;
+    }
+    ui.endConfirm = false;
+    clearTimeout(ui.endConfirmTimer);
+    endTurn();
+    afterAction();
+  };
   s.appendChild(endBtn);
+
+  // Boss 定場詩
+  if (battle.isBossFight && battle.turn <= 2) {
+    s.appendChild(h("div", "boss-poem", battle.enemies[0].phased
+      ? "狐裘換骨月無光，魅影重重欲斷腸"
+      : "青鱗蔽月妖風起，雷火照山蛇影寒"));
+  }
 
   s.appendChild(h("div", "turn-banner", `第 ${battle.turn} 回合${battle.isBossFight ? " · 頭目戰" : ""}`));
 
@@ -337,6 +428,8 @@ function intentEl(en) {
   const dmg = predictIntentDamage(en);
   let txt = `意圖：${act.intent}`;
   if (dmg > 0) txt += ` <span class="dmg">${dmg}</span>`;
+  const blk = act.fx.filter((e) => e.k === "block").reduce((s, e) => s + e.a, 0);
+  if (blk > 0) txt += ` <span style="color:var(--block-blue)">防${blk}</span>`;
   if (en.def.passive && !en.enraged) {
     txt += `<br><span style="color:var(--text-muted);font-size:11px">${en.def.passive.label}</span>`;
   }
@@ -366,7 +459,32 @@ function onEnemyClick(idx) {
 }
 
 function afterAction() {
+  ui.endConfirm = false;
+  ui.selectedCard = -1;
+  const events = battle.events.splice(0);
   renderBattle();
+  // 浮動數字 + 受擊震動（事件在結算時收集、渲染後依序播放）
+  events.forEach((ev, i) => {
+    setTimeout(() => {
+      const anchor = ev.who === "p"
+        ? document.getElementById("player-combatant")
+        : document.getElementById(`enemy-${ev.who}`);
+      if (!anchor) return;
+      const r = anchor.getBoundingClientRect();
+      const pop = h("div", `popup-num ${ev.t === "heal" ? "heal" : ev.t === "block" ? "blk" : ev.t === "crit" ? "crit" : "dmg"}`);
+      pop.textContent = ev.t === "crit" ? `剋！-${ev.n}` : ev.t === "dmg" ? `-${ev.n}` : `+${ev.n}`;
+      pop.style.left = `${r.left + r.width * (0.3 + Math.random() * 0.4)}px`;
+      pop.style.top = `${r.top + r.height * 0.3}px`;
+      document.body.appendChild(pop);
+      window._popupsSpawned = (window._popupsSpawned || 0) + 1;
+      setTimeout(() => pop.remove(), 950);
+      if (ev.t === "dmg" || ev.t === "crit") {
+        anchor.classList.remove("shake");
+        void anchor.offsetWidth; // 重觸發動畫
+        anchor.classList.add("shake");
+      }
+    }, i * 140);
+  });
 }
 
 function showBattleResult() {

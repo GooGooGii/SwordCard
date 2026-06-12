@@ -78,21 +78,45 @@ body {
 .char-card .style { color: var(--text-dim); font-size: 13px; line-height: 1.6; margin-top: 6px; min-height: 62px; }
 .char-card .passive { color: var(--unc-cyan); font-size: 12px; line-height: 1.5; margin-top: 6px; }
 
-/* ── 地圖 ── */
-.map-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; width: 100%; z-index: 1; overflow-y: auto; padding: 16px 0 30px; }
-.map-row { display: flex; gap: 56px; margin: 9px 0; }
-.map-node {
-  width: 58px; height: 58px; border-radius: 50%;
-  background: var(--panel-navy); border: 2px solid var(--text-muted);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 24px; cursor: default; position: relative; transition: all .15s;
+/* ── 山水卷軸地圖：橫向手卷，由右(起點)往左是傳統卷軸方向，但遊戲習慣左→右行旅 ── */
+.scroll-wrap {
+  flex: 1; width: 100%; z-index: 1; overflow-x: auto; overflow-y: hidden;
+  position: relative;
 }
-.map-node.reachable { border-color: var(--gold); cursor: pointer; box-shadow: 0 0 14px rgba(200,180,111,.45); animation: breathe 1.6s infinite; }
-.map-node.reachable:hover { transform: scale(1.18); }
+.scroll-inner {
+  position: relative; height: 100%;
+  background: url(assets/bg/map_bg_ink.png) repeat-x center / auto 100%;
+}
+.scroll-inner::after { /* 卷軸上下裝裱邊 */
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  box-shadow: inset 0 18px 24px -12px rgba(20,12,4,.9), inset 0 -18px 24px -12px rgba(20,12,4,.9);
+}
+.scroll-edges { position: absolute; inset: 0; pointer-events: none; }
+.map-node {
+  position: absolute; width: 60px; height: 60px; border-radius: 50%;
+  background: radial-gradient(rgba(34,30,22,.95), rgba(18,16,12,.95));
+  border: 2px solid #6b6353;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; cursor: default; transition: transform .15s;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 3px 8px rgba(0,0,0,.6);
+}
+.map-node.reachable { border-color: var(--gold); cursor: pointer; animation: breathe 1.6s infinite; }
+.map-node.reachable:hover { transform: translate(-50%, -50%) scale(1.18); }
 .map-node.done { opacity: .35; }
-.map-node.current { border-color: var(--gold-bright); background: #3a3422; }
-.map-node .nlabel { position: absolute; bottom: -18px; font-size: 11px; color: var(--text-dim); white-space: nowrap; }
-@keyframes breathe { 0%,100% { box-shadow: 0 0 8px rgba(200,180,111,.3);} 50% { box-shadow: 0 0 18px rgba(200,180,111,.65);} }
+.map-node.current { border-color: var(--gold-bright); background: radial-gradient(#4a4226, #211d12); }
+.map-node.boss-node { width: 78px; height: 78px; font-size: 34px; border-width: 3px; }
+.map-node .nlabel {
+  position: absolute; bottom: -21px; font-size: 12px; color: #d8cfb8; white-space: nowrap;
+  text-shadow: 0 0 4px #000, 1px 1px 2px #000;
+}
+.scroll-title {
+  position: absolute; top: 18px; left: 26px; z-index: 2;
+  writing-mode: vertical-rl; font-size: 25px; letter-spacing: 9px;
+  color: #3a3226; font-weight: 700; pointer-events: none;
+  text-shadow: 0 0 6px rgba(244,236,214,.6);
+}
+@keyframes breathe { 0%,100% { box-shadow: 0 0 8px rgba(200,180,111,.3);} 50% { box-shadow: 0 0 20px rgba(200,180,111,.7);} }
 
 /* ── 頂部狀態列 ── */
 .topbar {
@@ -145,37 +169,67 @@ body {
 /* 手牌 */
 .hand-area {
   width: 100%; min-height: 215px; display: flex; justify-content: center; align-items: flex-end;
-  padding-bottom: 10px; z-index: 4; position: relative;
+  padding: 0 170px 10px 90px; z-index: 4; position: relative;
+  box-sizing: border-box;
 }
+/* 卡面（重製版）：滿幅插圖 + 右側直書卡名 + 左下印章 + 屬性章 */
 .card {
-  width: 138px; height: 196px; border-radius: 9px; position: relative;
-  border: 2px solid var(--text-muted); background: var(--panel-navy);
+  width: 140px; height: 200px; border-radius: 8px; position: relative;
+  border: 2px solid #5a5546; background: #14161e;
   margin: 0 -16px; transition: transform .12s, margin .12s; cursor: pointer;
-  display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
+  overflow: hidden; flex-shrink: 0;
   box-shadow: 0 4px 10px rgba(0,0,0,.6);
 }
 .card:hover { transform: translateY(-46px) scale(1.32); z-index: 30; margin: 0 26px; }
 .card.selected { transform: translateY(-34px) scale(1.18); z-index: 25; border-color: var(--gold-bright); box-shadow: 0 0 18px rgba(232,217,160,.7); }
 .card.unaffordable { filter: grayscale(.7) brightness(.6); }
+.card .art {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: center top;
+}
 .card .cost {
-  position: absolute; top: 4px; left: 4px; width: 26px; height: 26px; border-radius: 50%;
+  position: absolute; top: 5px; left: 5px; width: 27px; height: 27px; border-radius: 50%;
   background: radial-gradient(#5a7fc8, #283a66); border: 1px solid var(--gold);
   display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700;
-  z-index: 2; color: #fff;
+  z-index: 3; color: #fff; text-shadow: 1px 1px 1px #000;
 }
-.card .art { width: 100%; height: 88px; object-fit: cover; object-position: top; }
-.card .name { text-align: center; font-size: 14px; color: var(--gold-bright); padding: 2px 4px 0; letter-spacing: 1px; }
-.card .name.upgraded { color: #ffe98a; }
-.card .typeline { text-align: center; font-size: 10px; color: var(--text-muted); }
-.card .desc { flex: 1; font-size: 11px; color: var(--text-light); padding: 3px 7px; line-height: 1.45; overflow: hidden; }
-.card.t-attack { background: linear-gradient(var(--panel-navy), #33201e); }
-.card.t-skill { background: linear-gradient(var(--panel-navy), #1e3324); }
-.card.t-power { background: linear-gradient(var(--panel-navy), #2a2040); }
+.card .el-badge {
+  position: absolute; top: 35px; left: 8px; width: 21px; height: 21px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff; z-index: 3;
+  border: 1px solid rgba(255,255,255,.5); text-shadow: 1px 1px 1px #000;
+}
+/* 直書卡名放左緣：手牌重疊是右卡壓左卡，左緣資訊鏈（費用→屬性→名）永遠可見 */
+.card .vname {
+  position: absolute; top: 60px; left: 7px; z-index: 3;
+  writing-mode: vertical-rl; letter-spacing: 3px;
+  font-size: 14px; font-weight: 700; color: var(--gold-bright);
+  background: linear-gradient(rgba(10,10,14,.8), rgba(10,10,14,.6));
+  border: 1px solid var(--gold-dim); border-radius: 4px;
+  padding: 6px 2px; max-height: 92px; overflow: hidden;
+  text-shadow: 1px 1px 2px #000;
+}
+.card .vname.upgraded { color: #ffe98a; }
+.card .desc {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+  font-size: 11px; color: var(--text-light); padding: 5px 26px 6px 8px;
+  line-height: 1.45; min-height: 46px;
+  background: linear-gradient(transparent, rgba(8,9,13,.9) 26%);
+  display: flex; align-items: flex-end;
+}
+.card .seal {
+  position: absolute; right: 5px; bottom: 5px; z-index: 3;
+  width: 21px; height: 21px; border-radius: 3px;
+  background: #8c2f27; color: #f3e3cf; border: 1px solid #c0584a;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  box-shadow: inset 0 0 3px rgba(0,0,0,.5);
+}
 .card.r-rare { border-color: var(--rare-purple); }
+.card.r-rare .seal { background: #5e3d8c; border-color: #9a78c8; }
 .card.r-uncommon { border-color: var(--unc-cyan); }
-.card.bigger { width: 175px; height: 248px; margin: 0 8px; }
-.card.bigger .art { height: 115px; }
-.card.bigger .name { font-size: 17px; }
+.card.bigger { width: 178px; height: 252px; margin: 0 8px; }
+.card.bigger .vname { font-size: 18px; max-height: 175px; }
 .card.bigger .desc { font-size: 13px; }
 .card.bigger:hover { transform: translateY(-8px) scale(1.05); }
 
@@ -214,6 +268,18 @@ body {
 .popup-num.dmg { color: #ff6b5e; }
 .popup-num.heal { color: #8fe07a; }
 .popup-num.blk { color: var(--block-blue); }
+.popup-num.crit { color: #ffd34d; font-size: 34px; }
+.weak-chip {
+  font-size: 11px; padding: 1px 8px; border-radius: 9px;
+  background: rgba(0,0,0,.6); border: 1px solid currentColor; font-weight: 700;
+}
+.boss-poem {
+  position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
+  z-index: 5; color: #e8dcc0; font-size: 16px; letter-spacing: 5px;
+  background: rgba(10,11,15,.6); padding: 6px 26px; border-radius: 4px;
+  border-top: 1px solid var(--gold-dim); border-bottom: 1px solid var(--gold-dim);
+  white-space: nowrap; pointer-events: none;
+}
 @keyframes floatup { 0% { opacity: 1; transform: translateY(0);} 100% { opacity: 0; transform: translateY(-56px);} }
 .shake { animation: shake .3s; }
 @keyframes shake { 0%,100% { transform: translateX(0);} 25% { transform: translateX(-9px);} 75% { transform: translateX(9px);} }

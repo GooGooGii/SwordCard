@@ -129,7 +129,7 @@ function startBattle(enemyIds, opts) {
     },
     energy: 3, maxEnergy: 3,
     draw: shuffle(run.deck.map((i) => ({ ...i }))), discard: [], hand: [], exhausted: [],
-    turn: 0, log: [], over: false, won: false,
+    turn: 0, log: [], events: [], over: false, won: false,
     firstAttackPlayed: false, linCounterUsed: false,
     goldStolen: 0,
   };
@@ -146,6 +146,11 @@ function startBattle(enemyIds, opts) {
 }
 
 function blog(msg) { battle.log.push(msg); if (battle.log.length > 60) battle.log.shift(); }
+// 戰鬥事件（UI 浮動數字/震動用）：{t:'dmg'|'heal'|'block'|'crit', who:'p'|敵 index, n:數值}
+function emit(t, who, n) { if (battle) battle.events.push({ t, who, n }); }
+function weakElOf(en) {
+  return en.phased && en.def.phase2 ? (en.def.phase2.weakEl || null) : (en.def.weakEl || null);
+}
 
 function drawCards(n) {
   for (let i = 0; i < n; i++) {
@@ -193,7 +198,7 @@ function effectiveCost(view) {
   let cost = view.c;
   if (view.t === "attack" && !battle.firstAttackPlayed) {
     const passive = CHARACTERS[run.charId].passive;
-    if (passive.kind === "first_attack_cost" && battle.turn <= 3) cost -= 1;
+    if (passive.kind === "first_attack_cost") cost -= 1;
     if (hasRelic("chunjun")) cost -= 1;
   }
   return Math.max(0, cost);
@@ -203,6 +208,7 @@ function gainBlock(n) {
   const p = battle.player;
   n += p.selfBlockBonus;
   p.block += n;
+  emit("block", "p", n);
   // 林月如被動：每回合第一次獲得護體 → 反擊
   const passive = CHARACTERS[run.charId].passive;
   if (passive.kind === "first_block_counter" && !battle.linCounterUsed) {
@@ -221,22 +227,26 @@ function dealRawDamageToEnemy(en, dmg) {
   const blocked = Math.min(en.block, dmg);
   en.block -= blocked;
   en.hp -= dmg - blocked;
+  emit("dmg", battle.enemies.indexOf(en), dmg);
   checkPhase(en);
 }
 
-// 玩家攻擊單段傷害計算
-function attackDamage(base, en, isAttackCard) {
+// 玩家攻擊單段傷害計算（el：卡片屬性，剋制敵人「畏」屬性 ×1.5）
+function attackDamage(base, en, isAttackCard, el) {
   const p = battle.player;
   let d = base + p.power + (isAttackCard && hasRelic("liehuoling") ? 1 : 0);
   if (p.nextAttackMult > 0 && isAttackCard) d *= p.nextAttackMult;
   if (p.weak > 0) d = Math.floor(d * 0.75);
   if (en.vuln > 0) d = Math.floor(d * 1.5);
+  if (el && weakElOf(en) === el) d = Math.floor(d * 1.5);
   return d;
 }
 
 function hitEnemy(en, base, opts) {
-  // opts: {isAttackCard, pierce, raw}
-  const dmg = opts && opts.raw ? base : attackDamage(base, en, opts && opts.isAttackCard);
+  // opts: {isAttackCard, pierce, raw, el}
+  const el = opts && opts.el;
+  const isCrit = !!(el && weakElOf(en) === el);
+  const dmg = opts && opts.raw ? base : attackDamage(base, en, opts && opts.isAttackCard, el);
   let remain = dmg;
   if (!(opts && opts.pierce)) {
     const blocked = Math.min(en.block, remain);
@@ -244,6 +254,7 @@ function hitEnemy(en, base, opts) {
     remain -= blocked;
   }
   en.hp -= remain;
+  emit(isCrit ? "crit" : "dmg", battle.enemies.indexOf(en), dmg);
   // 五毒淬刃：攻擊無護體敵人每段 +1 毒
   if (opts && opts.isAttackCard && battle.player.poisonOnAttack > 0 && en.block === 0 && en.hp > 0) {
     en.poison += battle.player.poisonOnAttack;
@@ -291,7 +302,7 @@ function playCard(handIdx, targetIdx) {
         const hits = e.hits || 1;
         for (let h = 0; h < hits; h++) {
           if (target.hp <= 0) break;
-          const d = hitEnemy(target, e.a, { isAttackCard: isAtk, pierce: e.pierce });
+          const d = hitEnemy(target, e.a, { isAttackCard: isAtk, pierce: e.pierce, el: view.el });
           blog(`${view.n} → ${target.name} 受 ${d} 點傷害`);
         }
         if (isAtk) consumedMult = true;
@@ -306,7 +317,7 @@ function playCard(handIdx, targetIdx) {
         const hits = e.hits || 1;
         for (let h = 0; h < hits; h++) {
           for (const en of aliveEnemies()) {
-            const d = hitEnemy(en, e.a, { isAttackCard: isAtk });
+            const d = hitEnemy(en, e.a, { isAttackCard: isAtk, el: view.el });
             blog(`${view.n} → ${en.name} 受 ${d} 點傷害`);
           }
         }
@@ -317,7 +328,7 @@ function playCard(handIdx, targetIdx) {
         const times = battle.energy;
         battle.energy = 0;
         for (let i = 0; i < times; i++) {
-          for (const en of aliveEnemies()) hitEnemy(en, e.a, { isAttackCard: isAtk });
+          for (const en of aliveEnemies()) hitEnemy(en, e.a, { isAttackCard: isAtk, el: view.el });
         }
         blog(`${view.n} 耗盡 ${times} 點靈力，全體敵人共受 ${times} 輪 ${e.a} 點傷害`);
         if (isAtk) consumedMult = true;
@@ -325,7 +336,7 @@ function playCard(handIdx, targetIdx) {
       }
       case "damage_debuff_bonus": {
         const bonus = (target.weak + target.vuln) * e.per;
-        const d = hitEnemy(target, e.a + bonus, { isAttackCard: isAtk });
+        const d = hitEnemy(target, e.a + bonus, { isAttackCard: isAtk, el: view.el });
         blog(`${view.n} → ${target.name} 受 ${d} 點傷害（debuff 加成 +${bonus}）`);
         consumedMult = true;
         break;
@@ -333,7 +344,7 @@ function playCard(handIdx, targetIdx) {
       case "damage_debuff_bonus_all": {
         for (const en of aliveEnemies()) {
           const bonus = (en.weak + en.vuln) * e.per;
-          const d = hitEnemy(en, e.a + bonus, { isAttackCard: isAtk });
+          const d = hitEnemy(en, e.a + bonus, { isAttackCard: isAtk, el: view.el });
           blog(`${view.n} → ${en.name} 受 ${d} 點傷害`);
         }
         consumedMult = true;
@@ -341,7 +352,7 @@ function playCard(handIdx, targetIdx) {
       }
       case "damage_poison_bonus": {
         const bonus = target.poison * e.per;
-        const d = hitEnemy(target, e.a + bonus, { isAttackCard: isAtk });
+        const d = hitEnemy(target, e.a + bonus, { isAttackCard: isAtk, el: view.el });
         blog(`${view.n} → ${target.name} 受 ${d} 點傷害（蠱毒加成 +${bonus}）`);
         consumedMult = true;
         break;
@@ -361,7 +372,7 @@ function playCard(handIdx, targetIdx) {
         break;
       case "block": gainBlock(e.a); break;
       case "block_multiply": p.block *= e.a; blog(`護體翻倍 → ${p.block}`); break;
-      case "heal": p.hp = Math.min(p.maxHp, p.hp + e.a); break;
+      case "heal": p.hp = Math.min(p.maxHp, p.hp + e.a); emit("heal", "p", e.a); break;
       case "draw": drawCards(e.a); break;
       case "energy": battle.energy += e.a; break;
       case "self_damage": damagePlayer(e.a, { raw: true }); break;
@@ -453,6 +464,7 @@ function damagePlayer(dmg, opts) {
     // pierce：無視護體
   }
   p.hp -= remain;
+  emit("dmg", "p", remain);
   return remain;
 }
 

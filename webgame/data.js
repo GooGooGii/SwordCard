@@ -156,7 +156,7 @@ C("cl_yunchou", "運籌帷幄", "cl", 0, "skill", "rare", [{ k: "draw", a: 3 }],
 const CHARACTERS = {
   li: {
     id: "li", name: "李逍遙", hp: 74, style: "劍仙風流——御劍連擊、偷取與酒神系高風險高傷害。",
-    passive: { kind: "first_attack_cost", label: "戰鬥前 3 回合，每回合第一張攻擊牌費用 -1" },
+    passive: { kind: "first_attack_cost", label: "御劍隨心：每回合第一張攻擊牌費用 -1" },
     starter: ["lxy_yujian", "lxy_yujian", "lxy_yujian", "lxy_qiliao", "lxy_linghuo", "lxy_bingxin",
       "lxy_feilong", "lxy_jianqi", "lxy_jianqi", "lxy_wanjian", "lxy_xianfeng", "lxy_zuimeng"],
     pool: ["lxy_tianshi", "lxy_jiushen", "lxy_qingfeng", "lxy_jiulong", "lxy_zuilong", "lxy_liepo",
@@ -166,7 +166,7 @@ const CHARACTERS = {
   },
   zhao: {
     id: "zhao", name: "趙靈兒", hp: 68, style: "五靈仙術——治療、護盾、群體削弱與長戰持續。",
-    passive: { kind: "battle_start_power", a: 3, label: "靈台啟明：每場戰鬥開始攻擊提升 3" },
+    passive: { kind: "battle_start_power", a: 2, label: "靈台啟明：每場戰鬥開始攻擊提升 2" },
     starter: ["zl_leizhou", "zl_leizhou", "zl_leizhou", "zl_guanyin", "zl_guanyin", "zl_jingang",
       "zl_bingzhou", "zl_yanzhou", "zl_bingxin", "zl_wuqi", "zl_tianlei", "zl_huanyu"],
     pool: ["zl_xuanbing", "zl_mengshe", "zl_fengling", "zl_lingguang", "zl_nvwa", "zl_shuiling",
@@ -262,14 +262,14 @@ const ENEMIES = {
     ],
   },
   green_snake: {
-    id: "green_snake", name: "綠松蛇", hp: 44, img: "serpent_demon", scale: 0.85,
+    id: "green_snake", name: "綠松蛇", hp: 44, img: "serpent_demon", scale: 0.85, tint: "hue-rotate(95deg) saturate(.8)",
     actions: [
       { intent: "毒咬", fx: [{ k: "damage", a: 4 }, { k: "poison", a: 1 }] },
       { intent: "纏繞", fx: [{ k: "block", a: 6 }] },
     ],
   },
   grass_spider: {
-    id: "grass_spider", name: "草蛛", hp: 38, img: "wild_bee", scale: 0.82,
+    id: "grass_spider", name: "草蛛", hp: 38, img: "wild_bee", scale: 0.82, tint: "hue-rotate(-60deg) brightness(.85)",
     actions: [
       { intent: "吐絲", fx: [{ k: "damage", a: 5 }, { k: "weak", a: 1 }] },
       { intent: "棘網", fx: [{ k: "block", a: 5 }, { k: "enemy_thorns", a: 3 }] },
@@ -448,10 +448,53 @@ function cardView(inst) {
   return {
     uid: inst.uid, cid: inst.cid, up: !!inst.up,
     n: base.n + (inst.up ? "+" : ""), o: base.o, c: cost, t: base.t, r: base.r,
-    fx, ex: base.ex, desc: cardDesc({ ...base, fx, ex: base.ex }),
+    el: base.el || null, fx, ex: base.ex, desc: cardDesc({ ...base, fx, ex: base.ex }),
   };
 }
 
 const SINGLE_TARGET_KINDS = new Set(["damage", "poison", "weak", "vulnerable", "stun",
   "poison_multiply", "damage_debuff_bonus", "damage_poison_bonus"]);
 function needsTarget(view) { return view.fx.some((e) => SINGLE_TARGET_KINDS.has(e.k)); }
+
+// ── 五靈相剋（webgame 重製新系統）──
+// 仙術攻擊卡帶 水/火/雷/風/土 屬性；敵人可有「畏」屬性，被剋制屬性擊中傷害 ×1.5。
+// 屬性對照 PAL1 正史：一陽指=陽火、萬里狂沙=土、鬼火燎原=火、冥河引渡=水。
+const ELEMENTS = {
+  fire: { n: "火", c: "#e0743f" },
+  thunder: { n: "雷", c: "#b388e0" },
+  water: { n: "水", c: "#6fa8c8" },
+  wind: { n: "風", c: "#7fc8a0" },
+  earth: { n: "土", c: "#c8a06f" },
+};
+const CARD_ELEMENT = {
+  // 李逍遙：符法與酒系帶屬性，御劍本體保持無屬性物理
+  lxy_linghuo: "fire", lxy_tianshi: "thunder", lxy_jiushen: "fire", lxy_zuilong: "water",
+  // 趙靈兒：五靈仙術全系
+  zl_leizhou: "thunder", zl_tianlei: "thunder", zl_leiguang: "thunder", zl_shenlei: "thunder",
+  zl_kuanglei: "thunder", zl_wuleizhou: "thunder", zl_lianzhuzhou: "thunder", zl_xiaoleizhou: "thunder",
+  zl_wuleihongding: "thunder",
+  zl_bingzhou: "water", zl_xuanbing: "water", zl_fengxuebing: "water", zl_shuiling: "water",
+  zl_yanzhou: "fire", zl_sanmeizhenhuo: "fire",
+  zl_diliebeng: "earth", zl_xuanfengzhou: "wind",
+  // 林月如：劍氣化風 + PAL1 正史屬性招
+  lyr_qijianzhi: "wind", lyr_qijuejianqi: "wind", lyr_yiyang: "fire", lyr_lielong: "fire",
+  lyr_zhanlong: "thunder", lyr_wanlikuang: "earth",
+  // 阿奴：苗疆邪術的火與冥水、御蜂乘風
+  anu_yufeng: "wind", anu_yanshazhou: "fire", anu_guihuo_liaoyuan: "fire", anu_minghe_yindu: "water",
+};
+for (const cid of Object.keys(CARD_ELEMENT)) {
+  if (CARDS[cid]) CARDS[cid].el = CARD_ELEMENT[cid];
+}
+
+// 敵人「畏」屬性（act 1）
+const ENEMY_WEAKNESS = {
+  beast: "fire", bee_cocoon: "fire", leaf_sprite: "fire", grass_spider: "fire",
+  wild_bee: "water", lantern_ghost: "water",
+  viper: "wind", green_snake: "wind",
+};
+for (const eid of Object.keys(ENEMY_WEAKNESS)) {
+  if (ENEMIES[eid]) ENEMIES[eid].weakEl = ENEMY_WEAKNESS[eid];
+}
+// Boss：蛇妖男畏雷，變身狐妖女後改畏水（玩家要中途換武器）
+ENEMIES.red_eye_demon.weakEl = "thunder";
+ENEMIES.red_eye_demon.phase2.weakEl = "water";
