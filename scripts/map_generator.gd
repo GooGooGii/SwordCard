@@ -14,7 +14,8 @@ const FEMALE_CHARACTER_IDS: Array[String] = ["zhao_linger", "lin_yueru", "anu"]
 const MALE_CHARACTER_IDS: Array[String] = ["li_xiaoyao"]
 const BLACK_SHOP_CHANCE: float = 0.25
 const MIN_SHOPS_PER_MAP: int = 2       # 每張地圖至少要有的商店節點數
-const MERCHANT_EVENT_CHANCE: float = 0.18  # 奇遇節點其實是行腳商人（進入後開商店）的機率
+const MERCHANT_EVENT_CHANCE: float = 0.12  # 奇遇節點其實是行腳商人（進入後開商店）的機率
+const AMBUSH_EVENT_CHANCE: float = 0.22  # 奇遇節點其實是埋伏（進入後直接開戰，StS 風）的機率；與行腳商人互斥
 # 每幕普通戰鬥節點的敵人數量加權表。count 為從 pool 中抽取的敵人數。
 const ACT_ENCOUNTERS: Dictionary = {
 	1: [{"count": 1, "weight": 4}, {"count": 2, "weight": 1}],
@@ -188,6 +189,7 @@ static func _enforce_shop_rules(choices: Array[Array], event_pool: Array[String]
 		node2.erase("is_elite")
 		node2.erase("event_variant")
 		node2.erase("merchant_event")
+		node2.erase("ambush_event")
 		node2["black_market"] = randf() < BLACK_SHOP_CHANCE
 		shop_count += 1
 
@@ -219,16 +221,15 @@ static func _build_row_types(row_index: int, total_rows: int, row_size: int) -> 
 	if row_index == 0:
 		return node_types
 
-	# 強制戰鬥列：每 3 列有一列（%3==1）整列皆戰鬥，任何路徑都繞不過去。
-	# 搭配 rest 列（%3==0）→ 節奏成「戰鬥 / 事件 / 休息」循環，事件不再霸佔多數列，
-	# 也杜絕「專挑事件節點直奔 Boss、只打一兩場」的走法。
-	if row_index % 3 == 1:
+	# 強制戰鬥列：每 4 列一條（%4==1）整列皆戰鬥，任何路徑都繞不過去——保底戰鬥、
+	# 杜絕「專挑事件直奔 Boss 只打一兩場」。比每 3 列稀疏，留更多列給事件。
+	if row_index % 4 == 1:
 		return node_types
 
 	var special_budget: int = 1
-	if row_size >= 5:
+	if row_size >= 4:
 		special_budget += 1
-	if row_size >= 6 and randf() < 0.35:
+	if row_size >= 6 and randf() < 0.45:
 		special_budget += 1
 	if row_index >= total_rows - 2:
 		special_budget = max(1, special_budget - 1)
@@ -238,16 +239,18 @@ static func _build_row_types(row_index: int, total_rows: int, row_size: int) -> 
 		insert_slots.append(slot)
 	insert_slots.shuffle()
 
+	# primary special：每 4 列一次休息（%4==3），其餘列以事件為主。
+	# 次要 / 額外 special 用「事件加權池」，讓事件節點明顯變多（符合「事件再多一些」），
+	# 部分事件再透過 ambush_event/merchant_event 暗路變戰鬥或商店。
 	var special_types: Array[String] = []
-	special_types.append("rest" if row_index % 3 == 0 else "event")
+	special_types.append("rest" if row_index % 4 == 3 else "event")
+	var weighted_pool: Array[String] = ["event", "event", "shop", "rest"]
 	if special_budget >= 2:
-		var secondary_pool: Array[String] = SECONDARY_SPECIAL_TYPES.duplicate()
-		secondary_pool.shuffle()
-		special_types.append(secondary_pool[0])
+		weighted_pool.shuffle()
+		special_types.append(weighted_pool[0])
 	if special_budget >= 3:
-		var extra_pool: Array[String] = EXTRA_SPECIAL_TYPES.duplicate()
-		extra_pool.shuffle()
-		special_types.append(extra_pool[0])
+		weighted_pool.shuffle()
+		special_types.append(weighted_pool[0])
 
 	var applied_specials: int = min(special_budget, min(special_types.size(), insert_slots.size()))
 	for special_index: int in range(applied_specials):
@@ -289,11 +292,19 @@ static func _make_map_node(node_type: String, node_index: int, normal_enemies: A
 		node_data["is_elite"] = true
 	elif node_type == "event":
 		node_data["event_variant"] = _pick_event_variant(event_pool)
-		# 規則 3：奇遇節點有機率其實是「行腳商人」——地圖上仍顯示奇遇，
-		# 走進去才發現是商店（驚喜性質；不計入最少商店數、不受串連限制）。
-		if randf() < MERCHANT_EVENT_CHANCE:
+		# 奇遇節點的兩條暗路（地圖上都只顯示通用「奇遇」、外觀無異，故有驚喜）：
+		# (a) 行腳商人：走進去其實是商店（規則 3）。
+		# (b) 埋伏（StS 風）：走進去殺機陡起、直接開戰。預捲該幕敵人組。
+		# 兩者互斥；埋伏需確實捲到敵人才成立（pool 空則退回普通奇遇）。
+		var secret_roll: float = randf()
+		if secret_roll < MERCHANT_EVENT_CHANCE:
 			node_data["merchant_event"] = true
 			node_data["black_market"] = randf() < BLACK_SHOP_CHANCE
+		elif secret_roll < MERCHANT_EVENT_CHANCE + AMBUSH_EVENT_CHANCE:
+			var ambush_enemies: Array[EnemyData] = choose_enemies_for_act(act, normal_enemies)
+			if not ambush_enemies.is_empty():
+				node_data["ambush_event"] = true
+				node_data["enemies"] = ambush_enemies
 	elif node_type == "shop":
 		node_data["black_market"] = randf() < BLACK_SHOP_CHANCE
 	return node_data
