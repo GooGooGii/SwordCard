@@ -2714,7 +2714,7 @@ const VARIANTS: Dictionary = {
 		},
 		"tree": {
 			"root": {
-				"prompt": "風過枯草，無數斷劍從土裡斜插而出，發出極輕的嗡鳴。劍尖竟齊齊指向北方——那是將軍塚的方向，中原劍道的源頭。刀氣猶在，卻不見半分殺意，只像一群還沒走完路的人，把劍立在這裡，朝著去不成的遠方守望。",
+				"prompt": "風過枯草，無數斷劍從土裡斜插而出，發出極輕的嗡鳴。劍尖竟齊齊指向北方——將軍塚的方向，中原劍道的源頭。刀氣猶在，卻不見半分殺意，只像一群還沒走完路的人，把劍立在這裡，朝著去不成的遠方守望。冢的最深處，一柄鞘上刻著「未竟」二字的斷劍，比其餘的劍嗡鳴得更急。",
 				"choices": [
 					{
 						"id": "pray",
@@ -2726,56 +2726,13 @@ const VARIANTS: Dictionary = {
 								{"kind": "permanent_power", "amount": 1},
 								{"kind": "heal", "amount": 6},
 							],
-							"log": "你在劍冢間默立。英靈的意志順著劍身傳入，不多不少，剛好填滿你招式裡的一道空隙。",
+							"log": "你在劍冢間默立良久。千百道沉默的意志順著劍身滲入，不多不少，剛好填滿你招式裡的一道空隙。它們沒有挽留你，也沒有囑託——有些路，本就只能各走各的。",
 						},
 					},
 					{
-						"id": "draw_blade",
-						"label": "握住一柄斷劍，硬抽出土",
-						"kind_hint": "mixed",
-						"hide_badge": true,
-						"outcome": {
-							"kind": "mixed",
-							"effects": [
-								{"kind": "gain_card_pool", "pool": "character"},
-								{"kind": "damage", "amount": 5},
-							],
-							"log": "你握住一柄斷劍向上一抽——殘存的劍氣割破了你的掌心，一套陌生劍法卻順著血流進了記憶。劍冢少了一把劍，你欠了它一條命的份量。",
-						},
-					},
-					{
-						"id": "blade_resonance",
-						"label": "以滿身劍意與劍冢共鳴",
-						"kind_hint": "reward",
-						"requires": {"deck_archetype": ["attack"]},
-						"outcome": {
-							"kind": "reward",
-							"effects": [
-								{"kind": "permanent_power", "amount": 3},
-							],
-							"log": "你拔劍出鞘，與滿冢斷劍遙遙一引。千百道劍意應聲共鳴，像是認出了同道——它們把畢生的鋒芒，分了一縷給你。",
-						},
-					},
-					{
-						"id": "lin_inherit",
-						"label": "（林月如）認林家堡遺名，跪取家傳劍",
-						"kind_hint": "reward",
-						"requires": {"character": ["lin_yueru"], "not_event_flag": "lin_tomb_heir"},
-						"outcome": {
-							"kind": "reward",
-							"effects": [
-								{"kind": "gain_card_pool", "pool": "character"},
-								{"kind": "permanent_power", "amount": 2},
-								{"kind": "set_flag", "flag": "lin_tomb_heir"},
-							],
-							"log": "月如認出斷劍上好幾個姓氏——都是林家堡的歷代遺名。她在父親提過的那柄劍前跪下取劍，一道只有山莊弟子能承的劍意，流入了心中。",
-						},
-					},
-					{
-						"id": "read_unfinished",
-						"label": "細看那柄刻著「未竟」的劍",
-						"kind_hint": "reward",
-						"requires": {"observe_token": true},
+						"id": "seek_unfinished",
+						"label": "走向那柄嗡鳴不止的「未竟」之劍",
+						"kind_hint": "neutral",
 						"next": "node_unfinished",
 					},
 					{
@@ -2788,32 +2745,88 @@ const VARIANTS: Dictionary = {
 			},
 			"nodes": {
 				"node_unfinished": {
-					"prompt": "你撥開枯草，那柄劍的鞘上只刻了兩個字：「未竟」。筆畫深得像用盡了最後一口氣鑿進去的。劍主走到這裡便走不動了，他不怨、不咒，只把劍尖朝北一插，盼著某個後來的人——也許就是你——替他把那條路走完。",
+					"prompt": "你撥開枯草蹲下。劍鞘上只刻了兩字：「未竟」，筆畫深得像用盡最後一口氣鑿進去的。你伸手才及劍柄，半空忽然凝起一道半透明的劍影——是這滿冢劍意所聚的劍靈，橫劍擋在你與那柄斷劍之間，無聲卻分明地宣告：想接他未竟的志，先證明你接得起。",
 					"choices": [
 						{
-							"id": "carry_on",
-							"label": "立誓替他走完，取劍上路",
-							"kind_hint": "reward",
+							"id": "accept_trial",
+							"label": "拔劍應戰，向劍靈證明你配得上",
+							"kind_hint": "battle",
 							"outcome": {
-								"kind": "reward",
-								"effects": [
-									{"kind": "gain_card_pool", "pool": "character"},
-									{"kind": "max_hp", "amount": 3},
-								],
-								"log": "你握緊那柄「未竟」之劍，輕聲應了一句：「我替你走。」劍身一震，像是卸下了百年的重，把全部托付給了你。",
+								"kind": "battle",
+								"battle": {
+									"enemy_id": "trial_swordshade",
+									"enemy_hp_mult": 1.0,
+									"victory_effects": [
+										{"kind": "set_flag", "flag": "tomb_trial_passed"},
+										{"kind": "heal", "amount": 6},
+									],
+									"defeat_effects": [
+										{"kind": "permanent_power", "amount": -1},
+									],
+									"next_on_victory": "node_inheritance",
+								},
+								"log": "你不退反進，拔劍迎上那道劍影。劍靈似乎笑了——它要的本就是這一步。冢中千百柄斷劍同時嗡鳴，為這一場試煉作證。",
 							},
 						},
 						{
 							"id": "take_scabbard_jade",
-							"label": "撇開劍意，只摳走鞘上玉飾",
+							"label": "避開劍影，只摳走鞘上那塊玉飾",
 							"kind_hint": "mixed",
+							"hide_badge": true,
 							"outcome": {
 								"kind": "mixed",
 								"effects": [
 									{"kind": "gain_relic_pool", "pool": "uncommon"},
 									{"kind": "permanent_power", "amount": -1},
 								],
-								"log": "你摳下劍鞘上那塊玉飾揣進懷裡。劍冢的劍意忽然冷淡了——它認得貪心，也記得貪心的人。",
+								"log": "你側身讓過劍影，伸指摳下劍鞘上那塊玉飾揣進懷裡。劍靈沒有追擊，只是緩緩散去——它認得貪心，也記得貪心的人。玉飾入手冰涼，你卻莫名不敢回頭。",
+							},
+						},
+						{
+							"id": "bow_out",
+							"label": "自知火候未到，鄭重一禮退開",
+							"kind_hint": "reward",
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "heal", "amount": 8},
+								],
+								"log": "你收手，退後一步，向劍靈與那柄斷劍鄭重一禮。劍影微微側鋒，算是還禮。知進退，本也是劍者的一課——你帶著這份清明離開，心境沉靜了幾分。",
+							},
+						},
+					],
+				},
+				"node_inheritance": {
+					"prompt": "劍靈的鋒芒一寸寸斂去，化作一縷暖光融入「未竟」之劍。它認可了你。那柄斷劍的嗡鳴轉為溫潤，鞘上「未竟」二字微微發亮——百年前那位劍主沒能走完的路，此刻正把它的全部，朝你敞開。",
+					"choices": [
+						{
+							"id": "carry_on",
+							"label": "握劍立誓：「我替你走完。」",
+							"kind_hint": "reward",
+							"requires": {"event_flag": "tomb_trial_passed"},
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "gain_card_pool", "pool": "character"},
+									{"kind": "max_hp", "amount": 4},
+									{"kind": "permanent_power", "amount": 2},
+								],
+								"log": "你握緊那柄「未竟」之劍，輕聲應了一句：「我替你走。」劍身一震，像是卸下了百年的重，把畢生的劍法與那未竟的執念，盡數托付給了你。從今往後，你的劍裡多了一個人的份量。",
+							},
+						},
+						{
+							"id": "lin_inherit",
+							"label": "（林月如）認出這是林家堡遺劍，跪取家傳",
+							"kind_hint": "reward",
+							"requires": {"character": ["lin_yueru"], "event_flag": "tomb_trial_passed", "not_event_flag": "lin_tomb_heir"},
+							"outcome": {
+								"kind": "reward",
+								"effects": [
+									{"kind": "gain_card_pool", "pool": "character"},
+									{"kind": "permanent_power", "amount": 3},
+									{"kind": "set_flag", "flag": "lin_tomb_heir"},
+								],
+								"log": "通過試煉的剎那，月如才看清「未竟」鞘上那行小字——是林家堡某位早逝的先輩。父親林天南說過：「劍冢不是墓，是接力的起點。」她紅著眼跪下取劍，一道只有林家堡血脈能承的劍意奔流入心。這一回，換她替他走完。",
 							},
 						},
 					],

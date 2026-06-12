@@ -56,3 +56,64 @@
 1. 改完一批 → `godot --headless --path . -s scripts/smoke_test.gd`（樹結構測試把關）。
 2. `render_event.gd` 抽 1–2 個事件實機截圖，確認長文不破版（單欄可捲動版面已支援）。
 3. commit message 用 `feat(events): 文本重寫 — <事件清單>`。
+
+## 六、任務式深樹（2026-06，仙劍任務分支風）
+
+> 目標：把事件從「點 1-2 下就結束」升級成「**像仙劍的一段小任務**」——層層推進、
+> 用物品/戰鬥/旗標當鑰匙、選錯就此打住、選對的才接續，最後給有記憶點的結局。
+> 引擎已全面支援（遞迴無限深度 + 下列 gating + 戰後續劇情），這是**純資料**工作。
+
+### 6.1 深度與寬度
+- **深度 2~5 層自由**，依事件份量：環境小事件留 2 層（明快）；人物/戰鬥事件 3-4 層；
+  名場面（彩依/唐鈺/酒劍仙/婉兒/比武招親）與稀有事件（蜀山秘府）4-5 層。
+- **每層 2~3 個選項**（防樹爆炸）。root 現在常有 5-6 個平鋪選項 → 收斂成 2-3 個入口，
+  角色/物品限定選項**下放**到對應分支的中間層（不必擠在 root）。
+- **節點數預算**：窄而深、非滿樹。一條主線 + 偶爾岔路。4 層事件約 4-7 個 `node_`。
+
+### 6.2 不是每個選項都接下一層（核心！）
+- **死路選項**：多數選項就是「結算即止」——給獎勵（reward）、懲罰（punish）或取捨（mixed）後**結束事件**。
+  寫法＝該 choice 直接帶 `outcome`（無 `next`）。這是讓事件不無聊的關鍵：拿了東西/打完架不一定能繼續。
+- **推進選項**：只有「選對的」帶 `next`（或戰鬥的 `next_on_victory`）才往下一層。
+- 一個節點通常：**1 條推進 + 1-2 條死路**。死路也要有記憶點，不是懲罰玩家。
+
+### 6.3 鑰匙：用 `requires` gating 選項（仙劍「需要某物/某條件」）
+choice 的 `requires`（全部 AND），不符就**不顯示**該選項：
+- `has_relic`: String/Array — 持有某遺物才能選（如持龍泉劍 → 解鎖劍冢傳承）
+- `has_potion`: true/String/Array — 持有藥品（true=任一；id=指定，如「有解毒散才能救他」）
+- `character`: Array — 角色限定高光（下放到中間層）
+- `event_flag` / `not_event_flag`: 旗標（**含本事件戰鬥剛掉的任務道具**，見 6.4）
+- `hp_below` / `hp_above` / `min_gold` / `deck_archetype` / `min_act` / `observe_token` 等
+> 命中 gate 的選項要給**專屬獎勵或專屬劇情**，讓「湊齊條件」有回報。
+
+### 6.4 戰鬥當關卡 + 掉任務道具解鎖後續（`next_on_victory`）
+battle outcome 新增兩個可選欄位，達成「打幾場才接續劇情」：
+```gdscript
+"outcome": {
+    "kind": "battle",
+    "battle": {
+        "enemy_id": "trial_swordshade", "enemy_hp_mult": 1.0,
+        "victory_effects": [
+            {"kind": "set_flag", "flag": "tomb_trial_passed"},   # 掉「任務道具」(旗標)
+            {"kind": "heal", "amount": 6},
+        ],
+        "defeat_effects": [{"kind": "gold", "amount": -15}],
+        "next_on_victory": "node_inheritance",   # 勝利後重進此節點接續劇情（非空才接續）
+        "next_on_defeat": "node_retreat",          # 可選；省略則戰敗結束事件
+    },
+    "log": "劍靈擋在你面前——「想取此劍，先過我這關。」",
+}
+```
+- 勝利 → 跑 `victory_effects`（可 set_flag 當任務道具）→ 重進 `next_on_victory` 節點，
+  該節點的選項可用 `requires.event_flag` 檢查剛掉的旗標 → 真正解鎖傳承/真相。
+- 省略 `next_on_victory` → 維持舊行為（戰鬥結束即結束事件）。
+- **典型任務鏈**：root 探查 → 戰鬥(掉旗標) → 旗標解鎖的抉擇 → 結局。三戰也行（戰鬥節點串戰鬥節點）。
+
+### 6.5 機制守恆原則
+- 加層**不等於**加總獎勵。一條完整路徑的總獎勵，與原本 2 層版本相當（深路徑因「玩對了」可略高，
+  但不可每層都白送）。獎勵集中在**葉節點**與「通過考驗」的節點；中間推進選項多為敘事，少給或不給。
+- 戰鬥的 `victory_effects` 是「過關獎」，要對應該戰難度，別灌水。
+
+### 6.6 範本
+見 `event_data.gd` 的 **`sword_tomb`（劍冢英靈）**：root（致意死路 / 探究未竟之劍→深入 / 離去）→
+劍靈試煉戰（掉 `tomb_trial_passed` 旗標）→ 旗標解鎖的「承志傳承」節點（含林月如家傳分支）。
+完整示範死路、戰鬥關卡、旗標解鎖、角色 gating。
