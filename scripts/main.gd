@@ -2479,6 +2479,8 @@ func _on_phase_transitioned(new_name: String) -> void:
 	UIFactory.shake_node(enemy_portrait_wrap, 22.0, 0.55)
 	UIFactory.flash_node(enemy_portrait_wrap, Color(0.7, 1.1, 2.4), 0.55)
 	# 2. 肖像膨脹回縮（覺醒感）+ 中段點換 texture（若 boss 有設 phase_2_portrait_path）
+	# pivot 設在腳底中心：膨脹時往上/外長（氣勢上升），而非預設左上 pivot 的「往下沉」
+	enemy_portrait_wrap.pivot_offset = Vector2(enemy_portrait_wrap.size.x * 0.5, enemy_portrait_wrap.size.y)
 	var tween: Tween = enemy_portrait_wrap.create_tween()
 	tween.tween_property(enemy_portrait_wrap, "scale", Vector2(1.22, 1.22), 0.20) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -6961,6 +6963,8 @@ func _show_shop_buy_confirm_overlay(card: CardData, price: int) -> void:
 	var big: Button = _make_card_button(card, card.cost, Vector2(224, 418), true, true)
 	big.disabled = true
 	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# VBox 子元素預設水平 FILL，會被較寬的兄弟（價格文字列）撐寬，卡套 STRETCH_SCALE 跟著拉變形。
+	big.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	col.add_child(big)
 	var price_lbl: Label = UIFactory.card_label("價格：%d 銅錢   （持有 %d）" % [price, run_state.gold], 18, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(price_lbl)
@@ -7614,8 +7618,10 @@ func _show_remove_confirm_overlay(card: CardData, on_confirm: Callable) -> void:
 	var big: Button = _make_card_button(card, card.cost, Vector2(224, 418), true, true)
 	big.disabled = true
 	big.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# VBox 子元素預設水平 FILL，會被較寬的兄弟（標題文字列）撐寬，卡套 STRETCH_SCALE 跟著拉變形。
+	big.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	col.add_child(big)
-	
+
 	# 確認 / 取消
 	var btn_row: HBoxContainer = HBoxContainer.new()
 	btn_row.add_theme_constant_override("separation", 16)
