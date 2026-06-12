@@ -601,6 +601,24 @@ func _check_split() -> void:
 				break
 			spawn_enemy(e.split_into)
 
+# 接續 boss（隱龍窟雙妖正史）：某敵死亡且設有 successor 時，滿血召出接續者。
+# 在傷害結算後跑（與 split 並列）。successor 滿血登場 → is_victory 此時為 false，
+# 戰鬥續打到接續者也倒下。每隻只接續一次（dead slot 標記 successor_done）。
+func _check_successors() -> void:
+	_sync_state_to_active_enemy()
+	for i: int in range(enemies.size()):
+		var e: EnemyData = enemies[i]
+		if e.successor.is_empty():
+			continue
+		var slot: Dictionary = state["enemies"][i] as Dictionary
+		if bool(slot.get("successor_done", false)):
+			continue
+		if int(slot["hp"]) > 0:
+			continue  # 還沒死
+		slot["successor_done"] = true
+		add_log("%s 倒下，%s 現身接續！" % [_enemy_display_name_for(i), GameData.enemy_by_id(e.successor).display_name if GameData.enemy_by_id(e.successor) != null else e.successor])
+		spawn_enemy(e.successor, false)  # 接續 boss 非召喚物：照常掉落
+
 func effective_card_cost(card: CardData) -> int:
 	if bool(state.get("free_cards_this_turn", false)):
 		return 0  # 混元丹：本回合所有牌 0 費
@@ -668,6 +686,7 @@ func start_turn() -> Dictionary:
 			add_log("五雷轟頂：回合開始對全體敵人降下 %d 點雷傷！" % ts_dmg)
 	_sync_active_enemy_to_state()  # slot→alias 刷新顯示
 	_process_corpse_poison()       # 屍蠱：回合開始直傷打死的中毒敵殘餘毒轉移
+	_check_successors()             # 接續 boss：回合開始蠱毒 tick 打死蛇妖男 → 狐妖女登場
 	_check_active_enemy_death()     # active 敵被打死 → 換到下一個活敵
 	_sync_state_to_active()
 	if is_battle_over():            # 回合開始的傷害可能直接清場 → 勝利
@@ -761,6 +780,7 @@ func play_card(card: CardData) -> Dictionary:
 		_apply_stolen_item(steal)
 	_check_phase_transition()
 	_check_split()
+	_check_successors()  # 接續 boss：蛇妖男死 → 狐妖女登場（搶在 is_victory 判定之前）
 	_apply_card_play_passive(card)
 	_apply_enemy_passives_on_card(card)
 	_fire_relic_triggers("card_played", {
@@ -1118,7 +1138,7 @@ func _process_pending_summons(caster_idx: int) -> void:
 	state["pending_summons"] = []
 
 # 召喚新敵到戰場。回傳成功與否；戰場 >= MAX_ENEMIES_PER_BATTLE 或 id 未知 → false
-func spawn_enemy(enemy_id: String) -> bool:
+func spawn_enemy(enemy_id: String, mark_summoned: bool = true) -> bool:
 	if enemies.size() >= MAX_ENEMIES_PER_BATTLE:
 		add_log("戰場已滿，召喚未成。")
 		return false
@@ -1127,7 +1147,8 @@ func spawn_enemy(enemy_id: String) -> bool:
 		push_warning("BattleController.spawn_enemy: unknown enemy id '%s'" % enemy_id)
 		return false
 	var clone: EnemyData = template.clone()
-	clone.is_summoned = true
+	# mark_summoned=false：接續 boss（如狐妖女）視為正規 boss，照常掉落 / 計入獎勵
+	clone.is_summoned = mark_summoned
 	enemies.append(clone)
 	enemy_action_indices.append(0)
 	enemy_phased.append(false)

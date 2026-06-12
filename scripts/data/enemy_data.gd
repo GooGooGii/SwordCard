@@ -25,6 +25,9 @@ extends Resource
 # 敵方被動（機制型敵人，2026-06-11 試點）：{"kind": ..., "amount": ..., "label": 開戰告示文字}
 # 目前支援 kind："strength_on_player_skill"（玩家每出一張技能牌，此敵 +amount 力量）
 @export var passive: Dictionary = {}
+# 接續 boss（隱龍窟雙妖正史）：此敵死亡時，滿血召出 successor 指定的敵人接續打。
+# 空 = 無接續。與 phase_2（半血同隻變身）互斥——接續是「兩隻分別打」。
+@export var successor: String = ""
 
 func clone() -> EnemyData:
 	var copy: EnemyData = EnemyData.new()
@@ -50,6 +53,7 @@ func clone() -> EnemyData:
 	copy.ultimate_every = ultimate_every
 	copy.floats = floats
 	copy.passive = passive.duplicate(true)
+	copy.successor = successor
 	return copy
 
 func to_dict() -> Dictionary:

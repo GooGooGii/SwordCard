@@ -30,24 +30,18 @@ func _run() -> void:
 	await _wait(20)
 	_dump("phase1")
 	# 直接把 boss 打到剛好過半門檻下，end_turn 觸發 phase 檢查
-	for r in range(8):
-		var slot: Dictionary = main.battle.state["enemies"][0]
-		slot["hp"] = 40  # 95 max，<50% 觸發 phase2
-		main.battle.state["enemy_hp"] = 40
-		# 出一張卡推進結算 + phase 檢查
-		var played := false
-		for card in main.battle.deck.hand:
-			if main.battle.effective_card_cost(card) <= int(main.battle.state["energy"]):
-				main.play_card(card, null)
-				played = true
-				break
-		await _wait(30)
-		_dump("r%d_after_play" % r)
-		if main.battle.enemy_phased[0]:
-			await _wait(20)
-			_dump("phase2_settled")
+	# 一刀斬殺蛇妖 → 狐妖女接續登場
+	var slot: Dictionary = main.battle.state["enemies"][0]
+	slot["hp"] = 5
+	main.battle.state["enemy_hp"] = 5
+	main.battle.state["energy"] = 99
+	for card in main.battle.deck.hand:
+		if CardFormat.action_has_damage({"effects": card.effects}):
+			main.play_card(card, null)
 			break
-		main.end_player_turn()
-		await _wait(60)
+	await _wait(40)
+	print("[boss] enemies now = %d" % (main.battle.state["enemies"] as Array).size())
+	get_root().get_texture().get_image().save_png("res://_boss_succession.png")
+	print("[boss] saved _boss_succession.png")
 	print("[boss] done")
 	quit(0)

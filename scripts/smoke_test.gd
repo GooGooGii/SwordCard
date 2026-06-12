@@ -122,6 +122,7 @@ func _initialize() -> void:
 	_test_artifact_boss_coverage()
 	_test_ascension_persistence_and_modifiers()
 	_test_boss_phase_transition(bosses)
+	_test_boss_successor()
 	_test_event_variety()
 	_test_revive_event(characters)
 	_test_map_seed_determinism(enemies, bosses)
@@ -934,10 +935,10 @@ func _test_ascension_persistence_and_modifiers() -> void:
 	_check(int(dmg_bc.state["player_hp"]) == 85, "enemy_damage_mult 1.5: 10 dmg ->15 (100->85), got %d" % int(dmg_bc.state["player_hp"]))
 
 func _test_boss_phase_transition(bosses: Array[EnemyData]) -> void:
-	# 三個 boss 都該有 phase_2_actions 設定；damage 跌破 50% 後 phased 變 true
+	# 每個 boss 都該有「第二階段機制」——phase_2 變身 或 successor 接續（隱龍窟雙妖）。
 	for boss: EnemyData in bosses:
-		_check(not boss.phase_2_actions.is_empty(),
-			"boss %s should have phase_2_actions defined" % boss.id)
+		_check(not boss.phase_2_actions.is_empty() or not boss.successor.is_empty(),
+			"boss %s should have phase_2_actions or a successor" % boss.id)
 	# 真實流程模擬：手工把 boss HP 打到 49%，下一張卡觸發 _check_phase_transition
 	var characters: Array[CharacterData] = GameData.characters()
 	var run_state: RunState = RunState.new()
@@ -959,6 +960,44 @@ func _test_boss_phase_transition(bosses: Array[EnemyData]) -> void:
 		phase_2_intents.append(String(action.get("intent", "")))
 	_check(String(next_action.get("intent", "")) in phase_2_intents,
 		"after phase, next_enemy_action should pick from phase_2_actions")
+
+func _test_boss_successor() -> void:
+	# 隱龍窟雙妖：蛇妖男（red_eye_demon）死 → 狐妖女（fox_demon）滿血接續登場
+	var snake: EnemyData = GameData.enemy_by_id("red_eye_demon")
+	_check(snake != null and snake.successor == "fox_demon",
+		"red_eye_demon should have successor=fox_demon")
+	_check(snake.phase_2_actions.is_empty(),
+		"red_eye_demon should NOT use phase_2 anymore (succession replaces it)")
+	var fox: EnemyData = GameData.enemy_by_id("fox_demon")
+	_check(fox != null and fox.display_name == "狐妖女", "fox_demon should be registered")
+	# 真實流程：單挑蛇妖、打死 → 戰場應變成兩隻（蛇屍 + 狐妖女滿血），未勝
+	var characters: Array[CharacterData] = GameData.characters()
+	var rs: RunState = RunState.new()
+	rs.init_for(characters[0])
+	var bc: BattleController = BattleController.new()
+	bc.setup(rs, characters[0], snake.clone())
+	_check((bc.state["enemies"] as Array).size() == 1, "battle starts with snake only")
+	bc.state["energy"] = 99
+	# 一刀斬殺蛇妖
+	var slot: Dictionary = bc.state["enemies"][0]
+	slot["hp"] = 5
+	bc.state["enemy_hp"] = 5
+	var kill: CardData = GameData.make_card("succ_test", "斬", "P", 0, "attack", "造成 99 點傷害。", [{"kind": "damage", "amount": 99}])
+	bc.play_card(kill)
+	var slots: Array = bc.state["enemies"] as Array
+	_check(slots.size() == 2, "after snake death, fox should spawn (enemies=%d)" % slots.size())
+	_check(int((slots[0] as Dictionary)["hp"]) <= 0, "snake corpse remains at 0 hp")
+	var fox_slot: Dictionary = slots[1] as Dictionary
+	_check(String(fox_slot["id"]) == "fox_demon" and int(fox_slot["hp"]) == int(fox_slot["max_hp"]),
+		"fox spawns at full hp")
+	_check(not bc.is_victory(), "battle not won until fox also dies")
+	# 接續者不應被標記為召喚物（要照常掉落）
+	_check(not bc.enemies[1].is_summoned, "successor boss should not be flagged is_summoned")
+	# 斬殺狐妖 → 全滅 → 勝利
+	fox_slot["hp"] = 3
+	bc.set_active_enemy(1)
+	bc.play_card(GameData.make_card("succ_test2", "斬", "P", 0, "attack", "造成 99 點傷害。", [{"kind": "damage", "amount": 99}]))
+	_check(bc.is_victory(), "battle won after both snake and fox dead")
 
 func _test_event_variety() -> void:
 	# 至少 10 種 event variant、每種都有合理的欄位

@@ -345,7 +345,7 @@ static func bosses() -> Array[EnemyData]:
 
 # Multi-Enemy Mode：召喚物（minions）— 由 boss 召喚出來的弱化版敵人
 static func minions() -> Array[EnemyData]:
-	return [_water_tentacle(), _red_eye_imp(), _zombie_thrall(), _centipede_brood(), _tower_wisp(), _miao_soldier()]
+	return [_water_tentacle(), _red_eye_imp(), _zombie_thrall(), _centipede_brood(), _tower_wisp(), _miao_soldier(), _fox_demon()]
 
 # 統一 id → EnemyData 查表，給 BattleController.spawn_enemy 與其他系統用
 static func enemy_by_id(id: String) -> EnemyData:
@@ -1403,9 +1403,21 @@ static func _red_eye_demon() -> EnemyData:
 		{"intent": "尾掃 17 + 破綻 1", "effects": [{"kind": "damage", "amount": 17}, {"kind": "vulnerable", "amount": 1}]},
 		{"intent": "盤身絞殺 10+10", "effects": [{"kind": "damage", "amount": 10}, {"kind": "damage", "amount": 10}]}
 	]
-	enemy.phase_2_display_name = "狐妖女"
-	enemy.phase_2_portrait_path = "res://assets/art/enemies/red_eye_demon_phase2.png"
-	enemy.phase_2_actions = [
+	# 隱龍窟正史：蛇妖男與狐妖女是兩隻接續的妖（不是同隻半血變身）。
+	# 擊殺蛇妖男 → 狐妖女滿血登場接續打。
+	enemy.successor = "fox_demon"
+	return enemy
+
+# 狐妖女（隱龍窟雙妖之二）：蛇妖男死後接續登場的第二隻 boss。
+static func _fox_demon() -> EnemyData:
+	var enemy: EnemyData = EnemyData.new()
+	enemy.id = "fox_demon"
+	enemy.portrait_scale = 1.25  # boss：狐妖女
+	enemy.display_name = "狐妖女"
+	enemy.max_hp = 90
+	enemy.portrait_path = "res://assets/art/enemies/red_eye_demon_phase2.png"
+	enemy.default_facing_left = true
+	enemy.actions = [
 		{"intent": "狐火魅襲 21 + 虛弱 1", "effects": [{"kind": "damage", "amount": 21}, {"kind": "weak", "amount": 1}]},
 		{"intent": "妖狐幻爪 26", "effects": [{"kind": "damage", "amount": 26}]},
 		{"intent": "魅香 蠱毒 4 + 破綻 2", "effects": [{"kind": "poison", "amount": 4}, {"kind": "vulnerable", "amount": 2}]},
