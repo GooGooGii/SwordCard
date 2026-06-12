@@ -5245,6 +5245,7 @@ func _build_event_context() -> Dictionary:
 	var act_n: int = 1
 	var free_slots: int = 0
 	var flags: Dictionary = {}
+	var potion_ids: Array = []
 	if run_state != null:
 		arch = run_state.deck_archetype()
 		if run_state.max_hp > 0:
@@ -5252,6 +5253,8 @@ func _build_event_context() -> Dictionary:
 		act_n = run_state.act
 		free_slots = max(0, run_state.effective_potion_slots() - run_state.potions.size())
 		flags = run_state.event_flags
+		for p_v: Variant in run_state.potions:
+			potion_ids.append(String((p_v as Dictionary).get("id", "")))
 	return EventRunner.build_context(
 		active_char_id,
 		run_state.gold if run_state != null else 0,
@@ -5264,6 +5267,7 @@ func _build_event_context() -> Dictionary:
 		act_n,
 		free_slots,
 		flags,
+		potion_ids,
 	)
 
 func _on_event_tree_choice_selected(choice: Dictionary) -> void:
@@ -5312,13 +5316,16 @@ func _resolve_event_tree_outcome(outcome: Dictionary) -> void:
 			var hp_mult: float = float(battle_dict.get("enemy_hp_mult", 1.0))
 			var v_effects: Array = battle_dict.get("victory_effects", []) as Array
 			var d_effects: Array = battle_dict.get("defeat_effects", []) as Array
+			# 戰後續劇情（仙劍任務式）：next_on_victory/defeat 非空 → 戰鬥結束重進該節點
+			var nov: String = String(battle_dict.get("next_on_victory", ""))
+			var nod: String = String(battle_dict.get("next_on_defeat", ""))
 			# 先閃一張過場顯示玩家的選擇文字，再開戰
 			if log_text.is_empty():
-				start_event_tree_battle(enemy_id, hp_mult, v_effects, d_effects)
+				start_event_tree_battle(enemy_id, hp_mult, v_effects, d_effects, nov, nod)
 			else:
 				# 非終局：獎勵在戰後才發（victory_effects），不可提早標記已領獎。
 				_show_event_outcome(log_text, func() -> void:
-					start_event_tree_battle(enemy_id, hp_mult, v_effects, d_effects), "", false)
+					start_event_tree_battle(enemy_id, hp_mult, v_effects, d_effects, nov, nod), "", false)
 		_:
 			# reward / punish / mixed / neutral：直接跑 effects
 			var effects2: Array = outcome.get("effects", []) as Array
@@ -5622,7 +5629,7 @@ func _pick_random_card_from_pool(pool_key: String) -> CardData:
 #   4. _finish_event_tree_battle：勝利跑 victory_effects、戰敗 revive party + 跑 defeat_effects
 #      （若 defeat_effects 跑完仍全員 0 HP → 真正 game over；否則 advance）
 
-func start_event_tree_battle(enemy_id: String, hp_mult: float, victory_effects: Array, defeat_effects: Array) -> void:
+func start_event_tree_battle(enemy_id: String, hp_mult: float, victory_effects: Array, defeat_effects: Array, next_on_victory: String = "", next_on_defeat: String = "") -> void:
 	var template: EnemyData = GameData.enemy_by_id(enemy_id)
 	if template == null:
 		push_warning("event tree battle: unknown enemy id '%s' — running defeat_effects as fallback" % enemy_id)
@@ -5637,6 +5644,9 @@ func start_event_tree_battle(enemy_id: String, hp_mult: float, victory_effects: 
 	run_state.pending_event_return = {
 		"victory_effects": victory_effects.duplicate(),
 		"defeat_effects": defeat_effects.duplicate(),
+		# 戰後續劇情（仙劍任務式）：非空則戰鬥結束後重進事件樹該節點，而非結束事件回地圖。
+		"next_on_victory": next_on_victory,
+		"next_on_defeat": next_on_defeat,
 	}
 	start_next_battle(clone)
 
@@ -5651,6 +5661,9 @@ func _finish_event_tree_battle(victory: bool) -> void:
 		for i: int in range(min(players.size(), run_state.character_hps.size())):
 			var p: Dictionary = players[i] as Dictionary
 			run_state.character_hps[i] = max(0, int(p.get("hp", 0)))
+	# 戰後續劇情節點（仙劍任務式）：非空且該事件樹確有此節點，則戰後重進事件樹接續，
+	# 而非結束事件。非終局時 consumes_node=false，避免提早標記已領獎（防 save-scum）。
+	var ed_now: Dictionary = EventData.for_variant(run_state.current_event_variant)
 	if victory:
 		for defeated_e: EnemyData in battle.enemies:
 			Bestiary.mark_defeated(defeated_e.id)
@@ -5659,7 +5672,10 @@ func _finish_event_tree_battle(victory: bool) -> void:
 		var text: String = "戰勝了 %s。\n\n[ ⚔ 戰鬥勝利 ]" % battle.enemy.display_name
 		if not summary.is_empty():
 			text += " " + summary
-		_show_event_outcome(text, func() -> void: _flush_pending_confirmations(advance_non_battle_node))
+		var next_v: String = String(pending.get("next_on_victory", ""))
+		var continues_v: bool = not next_v.is_empty() and not EventRunner.get_node(ed_now, next_v).is_empty()
+		var cont_v: Callable = (func() -> void: _show_event_tree_node(next_v)) if continues_v else advance_non_battle_node
+		_show_event_outcome(text, func() -> void: _flush_pending_confirmations(cont_v), "", not continues_v)
 		return
 	# 戰敗：先把全隊 HP 抬到 1（不直接 game over），再跑 defeat_effects
 	for i: int in range(run_state.character_hps.size()):
@@ -5674,7 +5690,10 @@ func _finish_event_tree_battle(victory: bool) -> void:
 	var d_text: String = "敗給了 %s。\n\n[ ⚔ 戰鬥失敗 ]" % battle.enemy.display_name
 	if not d_summary.is_empty():
 		d_text += " " + d_summary
-	_show_event_outcome(d_text, func() -> void: _flush_pending_confirmations(advance_non_battle_node))
+	var next_d: String = String(pending.get("next_on_defeat", ""))
+	var continues_d: bool = not next_d.is_empty() and not EventRunner.get_node(ed_now, next_d).is_empty()
+	var cont_d: Callable = (func() -> void: _show_event_tree_node(next_d)) if continues_d else advance_non_battle_node
+	_show_event_outcome(d_text, func() -> void: _flush_pending_confirmations(cont_d), "", not continues_d)
 
 func _start_event_fight() -> void:
 	var outcome_text: String = _get_event_outcome(

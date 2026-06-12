@@ -91,6 +91,7 @@ static func visible_choices(node: Dictionary, context: Dictionary) -> Array:
 #   min_act:          int             — context.act >= N
 #   max_act:          int             — context.act <= N
 #   has_potion_slot:  bool            — true 時要求 context.potion_free_slots >= 1
+#   has_potion:       bool/String/Array — true=持有任一藥品；String/Array=持有指定藥品 id（Array 任一即可）
 #   event_flag:       String/Array    — 持有此旗標（Array → 任一即可）
 #   not_event_flag:   String/Array    — 不可持有此旗標（Array → 全部都沒有才通過）
 static func eval_requires(requires: Dictionary, context: Dictionary) -> bool:
@@ -167,6 +168,24 @@ static func eval_requires(requires: Dictionary, context: Dictionary) -> bool:
 	if requires.has("has_potion_slot") and bool(requires["has_potion_slot"]):
 		if int(context.get("potion_free_slots", 0)) < 1:
 			return false
+	# has_potion（true=持有任一藥品；String/Array=持有指定藥品 id）
+	if requires.has("has_potion"):
+		var owned_potions: Array = context.get("potion_ids", []) as Array
+		var need_potion: Variant = requires["has_potion"]
+		if need_potion is bool:
+			if bool(need_potion) and owned_potions.is_empty():
+				return false
+		elif need_potion is String:
+			if not (String(need_potion) in owned_potions):
+				return false
+		elif need_potion is Array:
+			var has_any: bool = false
+			for p: Variant in need_potion as Array:
+				if String(p) in owned_potions:
+					has_any = true
+					break
+			if not has_any:
+				return false
 	# event_flag（持有；Array → 任一即可）
 	if requires.has("event_flag"):
 		var flags: Dictionary = context.get("event_flags", {}) as Dictionary
@@ -244,7 +263,8 @@ static func build_context(
 	hp_frac: float = 1.0,
 	act: int = 1,
 	potion_free_slots: int = 0,
-	event_flags: Dictionary = {}
+	event_flags: Dictionary = {},
+	potion_ids: Array = []
 ) -> Dictionary:
 	return {
 		"character_id": character_id,
@@ -258,4 +278,5 @@ static func build_context(
 		"act": act,
 		"potion_free_slots": potion_free_slots,
 		"event_flags": event_flags.duplicate(true),
+		"potion_ids": potion_ids.duplicate(),
 	}
