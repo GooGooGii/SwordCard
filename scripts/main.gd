@@ -2704,6 +2704,12 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	var scale_mult: float = enemy_data.portrait_scale
 	if phased and enemy_data.phase_2_portrait_scale > 0.0:
 		scale_mult = enemy_data.phase_2_portrait_scale
+	# 多敵戰 cap 大型敵倍率：頭領級（scale>1）視覺高曾溢出版位 ~90px，
+	# 頭頂衝進意圖/浮字區、與鄰兵高低差過大（實機回報「位置上下不穩」觀感來源之一）
+	if total >= 3:
+		scale_mult = min(scale_mult, 1.12)
+	elif total == 2:
+		scale_mult = min(scale_mult, 1.25)
 	var portrait_size: Vector2 = _enemy_portrait_size_for(total) * scale_mult
 	var col: VBoxContainer = VBoxContainer.new()
 	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -3948,7 +3954,8 @@ func end_player_turn() -> void:
 		any_dash = true
 		if _enemy_action_lunges(act_i):
 			any_lunge = true
-			UIFactory.dash_node(w_wrap, Vector2(-1.0, -0.08), 190.0, 0.5)
+			# 突進只沿水平（Y 分量曾讓敵人「上下浮動」——實機回報），距離略收
+			UIFactory.dash_node(w_wrap, Vector2(-1.0, 0.0), 160.0, 0.5)
 		else:
 			UIFactory.dash_node(w_wrap, Vector2(-1, 0), 36.0, 0.22)
 	if any_lunge:
