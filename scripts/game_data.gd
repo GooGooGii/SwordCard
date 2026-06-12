@@ -103,6 +103,7 @@ static func _leaf_sprite() -> EnemyData:
 	enemy.display_name = "綠葉小妖"
 	enemy.max_hp = 26
 	enemy.portrait_path = "res://assets/art/enemies/leaf_sprite.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "葉刃 8", "effects": [{"kind": "damage", "amount": 8}]},
 		{"intent": "孢子 蠱毒 2", "effects": [{"kind": "poison", "amount": 2}]},
@@ -117,6 +118,7 @@ static func _grass_sprite() -> EnemyData:
 	enemy.display_name = "草精"
 	enemy.max_hp = 34
 	enemy.portrait_path = "res://assets/art/enemies/grass_sprite.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "藤鞭抽 10", "effects": [{"kind": "damage", "amount": 10}]},
 		{"intent": "纏繞 虛弱 1", "effects": [{"kind": "weak", "amount": 1}]},
@@ -130,6 +132,7 @@ static func _thug() -> EnemyData:
 	enemy.display_name = "打手"
 	enemy.max_hp = 58
 	enemy.portrait_path = "res://assets/art/enemies/thug.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "拳打 13", "effects": [{"kind": "damage", "amount": 13}]},
 		{"intent": "悶棍 11 + 破綻 1", "effects": [{"kind": "damage", "amount": 11}, {"kind": "vulnerable", "amount": 1}]},
@@ -143,6 +146,7 @@ static func _miao_maiden() -> EnemyData:
 	enemy.display_name = "長鞭苗女"
 	enemy.max_hp = 62
 	enemy.portrait_path = "res://assets/art/enemies/miao_maiden.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "長鞭抽 13 + 破綻 1", "effects": [{"kind": "damage", "amount": 13}, {"kind": "vulnerable", "amount": 1}]},
 		{"intent": "苗女毒鏢 11 + 蠱毒 3", "effects": [{"kind": "damage", "amount": 11}, {"kind": "poison", "amount": 3}]},
@@ -157,6 +161,7 @@ static func _octopus_imp() -> EnemyData:
 	enemy.display_name = "短腿章魚"
 	enemy.max_hp = 58
 	enemy.portrait_path = "res://assets/art/enemies/octopus_imp.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "觸腕纏 14", "effects": [{"kind": "damage", "amount": 14}]},
 		{"intent": "墨噴 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]},
@@ -170,6 +175,7 @@ static func _clam_spirit() -> EnemyData:
 	enemy.display_name = "蚌殼精"
 	enemy.max_hp = 72
 	enemy.portrait_path = "res://assets/art/enemies/clam_spirit.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "蚌夾 15", "effects": [{"kind": "damage", "amount": 15}]},
 		{"intent": "閉殼 22", "effects": [{"kind": "block", "amount": 22}]},
@@ -183,6 +189,7 @@ static func _conch_maiden() -> EnemyData:
 	enemy.display_name = "海螺女"
 	enemy.max_hp = 64
 	enemy.portrait_path = "res://assets/art/enemies/conch_maiden.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "海螺音波 13 + 虛弱 1", "effects": [{"kind": "damage", "amount": 13}, {"kind": "weak", "amount": 1}]},
 		{"intent": "纏絲 16", "effects": [{"kind": "damage", "amount": 16}]},
@@ -201,6 +208,7 @@ static func _turtle_demon() -> EnemyData:
 	enemy.display_name = "傻仔龜"
 	enemy.max_hp = 84
 	enemy.portrait_path = "res://assets/art/enemies/turtle_demon.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "龜殼撞 15", "effects": [{"kind": "damage", "amount": 15}]},
 		{"intent": "縮殼 24", "effects": [{"kind": "block", "amount": 24}]},
@@ -215,6 +223,7 @@ static func _gambler() -> EnemyData:
 	enemy.display_name = "賭棍"
 	enemy.max_hp = 50
 	enemy.portrait_path = "res://assets/art/enemies/gambler.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "比大小（莊家贏→傷14 / 你贏→賞銅錢20）", "effects": [{"kind": "gamble_attack", "amount": 14, "gold": 20}]},
 		{"intent": "詐賭 11 + 破綻 1", "effects": [{"kind": "damage", "amount": 11}, {"kind": "vulnerable", "amount": 1}]},
@@ -231,6 +240,7 @@ static func _lecher_thief() -> EnemyData:
 	enemy.display_name = "淫賊"
 	enemy.max_hp = 48
 	enemy.portrait_path = "res://assets/art/enemies/lecher_thief.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "偷襲 13", "effects": [{"kind": "damage", "amount": 13}]},
 		{"intent": "鹹豬手（女性：撲飛偷內衣→虛弱2）", "effects": [{"kind": "lecher_steal", "damage": 6, "weak": 2, "chance": 0.6}]},
@@ -246,6 +256,7 @@ static func _rat_demon() -> EnemyData:
 	enemy.display_name = "鼠妖"
 	enemy.max_hp = 24  # 單隻很弱，靠數量
 	enemy.portrait_path = "res://assets/art/enemies/rat_demon.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "啃咬 6 + 蠱毒 1", "effects": [{"kind": "damage", "amount": 6}, {"kind": "poison", "amount": 1}]},
 		{"intent": "鼠群竄 8", "effects": [{"kind": "damage", "amount": 8}]},
@@ -259,6 +270,7 @@ static func _bully() -> EnemyData:
 	enemy.display_name = "惡霸"
 	enemy.max_hp = 64
 	enemy.portrait_path = "res://assets/art/enemies/bully.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "橫行霸道 15（35%暈眩）", "effects": [{"kind": "damage", "amount": 15}, {"kind": "stun_chance", "amount": 1, "chance": 0.35}]},
 		{"intent": "推搡 11 + 破綻 1", "effects": [{"kind": "damage", "amount": 11}, {"kind": "vulnerable", "amount": 1}]},
@@ -274,6 +286,7 @@ static func _earth_imp() -> EnemyData:
 	enemy.display_name = "小土鬼"
 	enemy.max_hp = 46
 	enemy.portrait_path = "res://assets/art/enemies/earth_imp.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "泥拳 12", "effects": [{"kind": "damage", "amount": 12}]},
 		{"intent": "擲石 10 + 破綻 1", "effects": [{"kind": "damage", "amount": 10}, {"kind": "vulnerable", "amount": 1}]},
@@ -288,6 +301,7 @@ static func _blood_worm() -> EnemyData:
 	enemy.display_name = "血口蟲"
 	enemy.max_hp = 52
 	enemy.portrait_path = "res://assets/art/enemies/blood_worm.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "吸血咬 13", "effects": [{"kind": "damage", "amount": 13}]},
 		{"intent": "血口噴 11 + 蠱毒 3", "effects": [{"kind": "damage", "amount": 11}, {"kind": "poison", "amount": 3}]},
@@ -302,6 +316,7 @@ static func _venom_spider() -> EnemyData:
 	enemy.display_name = "五毒蜘蛛"
 	enemy.max_hp = 58
 	enemy.portrait_path = "res://assets/art/enemies/venom_spider.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "毒絲咬 12 + 蠱毒 3", "effects": [{"kind": "damage", "amount": 12}, {"kind": "poison", "amount": 3}]},
 		{"intent": "蛛網纏 虛弱 2", "effects": [{"kind": "weak", "amount": 2}]},
@@ -315,6 +330,7 @@ static func _fire_toad() -> EnemyData:
 	enemy.display_name = "食火蟾"
 	enemy.max_hp = 64
 	enemy.portrait_path = "res://assets/art/enemies/fire_toad.png"
+	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "噴火舌 16", "effects": [{"kind": "damage", "amount": 16}]},
 		{"intent": "灼毒 11 + 蠱毒 2", "effects": [{"kind": "damage", "amount": 11}, {"kind": "poison", "amount": 2}]},
