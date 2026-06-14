@@ -125,8 +125,8 @@
 |---|---|
 | `anu_duohun` | 佔位圖 |
 | `anu_sanshigu` | 與 `anu_wanyi` 同圖 |
-| `anu_shuhun` | 與 `anu_jiedu` 同圖 |
-| `anu_wangushitian` | 與 `anu_yufeng` 同圖 |
+| `anu_shuhun` | 🟢 已完成專屬水墨圖 (2026-06-14)，不再與 `anu_jiedu` 同圖 |
+| `anu_wangushitian` | 🟢 已完成專屬水墨圖 (2026-06-14)，不再與 `anu_yufeng` 同圖 |
 | `anu_wanyi_ls` | 佔位圖 |
 | `anu_yanshazhou` | 佔位圖 |
 | `lxy_jianshen` | 有圖 |
@@ -146,9 +146,9 @@
 | `zl_diliebeng` | 佔位圖 |
 | `zl_fengxuebing` | 與 `zl_bingzhou` 同圖（兩者皆孤兒）|
 | `zl_kuanglei` | 佔位圖 |
-| `zl_mengshe_ls` | 與 `zl_mengshe` 同圖 |
+| `zl_mengshe_ls` | 🟢 已完成專屬水墨圖 (2026-06-14)，不再與 `zl_mengshe` 同圖 |
 | `zl_sanmeizhenhuo` | 與 `zl_yanzhou` 同圖 |
-| `zl_taishan` | 與 `zl_tianlei` 同圖 |
+| `zl_taishan` | 🟢 已完成專屬水墨圖 (2026-06-14)，不再與 `zl_tianlei` 同圖 |
 | `zl_wuleizhou` | 與 `zl_leizhou` 同圖 |
 | `zl_xuanfengzhou` | 有圖 |
 
@@ -239,7 +239,7 @@
 - `xianren_yitui` (仙人遺蛻) - 🟢 已完成專屬水墨圖
 - `hunyuan_dan` (混元丹) - 🟢 已完成專屬水墨圖
 
-### 🟢 遺物圖示更新（2026-06-11 新增，13 件）
+### 🟢 遺物圖示更新（2026-06-11 新增，14 件）
 已全部補齊專屬水墨去背圖檔：
 - `xiaoyao_ling` (逍遙令) - 🟢 已完成專屬水墨圖
 - `zhen_hun_ling` (鎮魂鈴) - 🟢 已完成專屬水墨圖
@@ -254,6 +254,7 @@
 - `kuangzhan_fu` (狂戰護符) - 🟢 已完成專屬水墨圖
 - `guixi_xuanjia` (龜息玄甲) - 🟢 已完成專屬水墨圖
 - `yehuo_lu` (業火爐) - 🟢 已完成專屬水墨圖
+- `hu_shen_fu` (護身符) - 🟢 已完成專屬水墨圖 (2026-06-14 新增)
 
 
 
@@ -517,7 +518,7 @@ birefnet-general）後選 birefnet——邊緣最乾淨、無灰色 halo、水�
 
 ## 十四、總體檢報告衍生需求（2026-06-10，詳見 `docs/IMPROVEMENT_PLAN_2026-06.md`）
 
-### A. 卡圖風格一致性重生成（🔴 已盤點，12 張待重生成 — 2026-06-11）
+### A. 卡圖風格一致性重生成（🔴 已盤點，11 張待重生成 — 2026-06-11）
 用 `tools/contact_sheet.gd` 拼出全卡網格肉眼掃描完成（anu / lyr 大致統一；
 **2026-06-10 新增的 StS 對照批 6 張裡有 5 張整批跑成「扁平 icon 風」**，與水墨場景式插畫違和最重）。
 重生成方向：滿幅水墨場景式、去背、無文字，對齊各角色既有主色（李藍金劍氣 / 趙藍紫雷 / 林赤鞭 / 阿奴墨綠蠱）。
@@ -531,7 +532,7 @@ birefnet-general）後選 birefnet——邊緣最乾淨、無灰色 halo、水�
 | `cl_shipaijue` | 噬牌訣 | 黑底膠囊/卡牌咬痕 icon 風 | 高 |
 | `cl_wutongjue` | 無痛訣 | 青色圓圈 icon 風 | 高 |
 | `lyr_suohun` | 索魂十三劍 | 白底紫色扁平符紋 | 中 |
-| `zl_wanlingshi` | 萬靈噬 | 紫底扁平漩渦 icon 風 | 中 |
+| `zl_wanlingshi` | 萬靈噬 | 🟢 已完成專屬水墨圖 (2026-06-14 重製) | — |
 | `zl_yanzhou` | 炎咒 | 黑底寫實火焰，無水墨質感 | 中 |
 | `lxy_jianjue` | 劍訣 | 飽和藍人像插畫風，脫離水墨色域 | 中 |
 | `lxy_jianqizonghen` | 劍氣縱橫 | 白底極簡物件式，與場景式混排突兀 | 低 |

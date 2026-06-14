@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="432" height="432" viewBox="0 0 432 432">
+  <defs>
+    <linearGradient id="bg" x1="62" y1="48" x2="370" y2="384" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1a3a43"/>
+      <stop offset="0.58" stop-color="#10262f"/>
+      <stop offset="1" stop-color="#09151c"/>
+    </linearGradient>
+    <radialGradient id="mist" cx="50%" cy="38%" r="48%">
+      <stop offset="0" stop-color="#7fd3cd" stop-opacity="0.24"/>
+      <stop offset="1" stop-color="#7fd3cd" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="432" height="432" rx="104" fill="url(#bg)"/>
+  <rect x="42" y="42" width="348" height="348" rx="78" fill="none" stroke="#d8bb6e" stroke-opacity="0.82" stroke-width="8"/>
+  <rect x="62" y="62" width="308" height="308" rx="62" fill="none" stroke="#fff6d1" stroke-opacity="0.12" stroke-width="4"/>
+
+  <path d="M95 96 L146 96 L96 146 L96 201 L45 201 L95 151 Z" fill="#d9bb6b" fill-opacity="0.75"/>
+  <path d="M337 96 L387 146 L387 201 L336 201 L336 146 L286 96 Z" fill="#d9bb6b" fill-opacity="0.75"/>
+  <path d="M95 336 L45 286 L45 231 L96 231 L96 286 L146 336 Z" fill="#d9bb6b" fill-opacity="0.75"/>
+  <path d="M337 336 L286 336 L336 286 L336 231 L387 231 L387 281 Z" fill="#d9bb6b" fill-opacity="0.75"/>
+
+  <circle cx="216" cy="182" r="96" fill="url(#mist)"/>
+  <circle cx="216" cy="182" r="86" fill="none" stroke="#8fd4d8" stroke-opacity="0.3" stroke-width="4"/>
+  <path d="M132 294 Q216 257 300 294" fill="none" stroke="#ead58d" stroke-opacity="0.44" stroke-width="8" stroke-linecap="round"/>
+</svg>
