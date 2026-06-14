@@ -2978,6 +2978,7 @@ func _refresh_enemy_widgets() -> void:
 			{"kind": "silence", "value": int(slot.get("silenced", 0))},
 			{"kind": "berserk", "value": int(slot.get("berserk", 0))},
 			{"kind": "power", "value": int(slot.get("strength", 0))},
+			{"kind": "artifact", "value": int(slot.get("artifact", 0))},
 		], 20.0 if (_battle_compact or enemy_widgets.size() >= 2) else 24.0)
 		
 		var intent_label: Label = w.get("intent_label")
@@ -3490,21 +3491,11 @@ func _show_use_potion_confirm(slot: int) -> void:
 	box.add_theme_constant_override("separation", 14)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	margin.add_child(box)
-	# ── 標題列：◀ 名稱 ▶（去背白三角切換，與遺物一致）──
-	var title_row: HBoxContainer = HBoxContainer.new()
-	title_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	title_row.add_theme_constant_override("separation", 10)
-	title_row.custom_minimum_size = Vector2(360, 0)
-	box.add_child(title_row)
-	if total_potions > 1:
-		title_row.add_child(_potion_nav_button("◀", func() -> void: _show_use_potion_confirm((slot - 1 + total_potions) % total_potions)))
+	# ── 標題：名稱置中（切換三角移到下方藥瓶圖左右）──
 	var name_lbl: Label = UIFactory.title_label(String(potion.get("display_name", "?")), 28)
-	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_lbl.add_theme_color_override("font_color", rarity_col)
-	title_row.add_child(name_lbl)
-	if total_potions > 1:
-		title_row.add_child(_potion_nav_button("▶", func() -> void: _show_use_potion_confirm((slot + 1) % total_potions)))
+	box.add_child(name_lbl)
 	# ── 稀有度膠囊 +（多瓶）頁碼 ──
 	var meta_row: HBoxContainer = HBoxContainer.new()
 	meta_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -3525,12 +3516,16 @@ func _show_use_potion_confirm(slot: int) -> void:
 		var counter_lbl: Label = UIFactory.card_label("%d / %d" % [slot + 1, total_potions], 12, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 		counter_lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
 		meta_row.add_child(counter_lbl)
-	# ── 主視覺：大藥瓶 + 稀有度光暈（用 StyleBox 陰影當光暈）──
+	# ── 主視覺：◀ 大藥瓶(稀有度光暈) ▶ — 切換三角放在藥瓶圖的左右兩側 ──
 	var art_path: String = "res://assets/art/potions/%s.png" % potion.get("id", "")
 	var texture: Texture2D = UIFactory.load_texture(art_path)
+	var hero_row: HBoxContainer = HBoxContainer.new()
+	hero_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	hero_row.add_theme_constant_override("separation", 18)
+	box.add_child(hero_row)
+	if total_potions > 1:
+		hero_row.add_child(_potion_nav_button("◀", func() -> void: _show_use_potion_confirm((slot - 1 + total_potions) % total_potions)))
 	if texture != null:
-		var halo: CenterContainer = CenterContainer.new()
-		box.add_child(halo)
 		var disc: PanelContainer = PanelContainer.new()
 		disc.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		var disc_sb: StyleBoxFlat = UIFactory.style_box(Color(rarity_col.r, rarity_col.g, rarity_col.b, 0.14), Color(rarity_col.r, rarity_col.g, rarity_col.b, 0.6), 2, 999)
@@ -3549,7 +3544,13 @@ func _show_use_potion_confirm(slot: int) -> void:
 		rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		rect.custom_minimum_size = Vector2(124, 124)
 		disc.add_child(rect)
-		halo.add_child(disc)
+		hero_row.add_child(disc)
+	else:
+		var ph: Control = Control.new()
+		ph.custom_minimum_size = Vector2(140, 140)
+		hero_row.add_child(ph)
+	if total_potions > 1:
+		hero_row.add_child(_potion_nav_button("▶", func() -> void: _show_use_potion_confirm((slot + 1) % total_potions)))
 	# ── 描述：嵌入暗底卷軸框，提升可讀性與層次 ──
 	var desc_panel: PanelContainer = PanelContainer.new()
 	var desc_sb: StyleBoxFlat = UIFactory.style_box(Color("0d141d", 0.66), Color(rarity_col.r, rarity_col.g, rarity_col.b, 0.28), 1, 10)
@@ -8196,6 +8197,7 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 			{"kind": "vulnerable", "value": int(battle.state["player_vulnerable"])},
 			{"kind": "stun", "value": int(battle.state.get("player_stun", 0))},
 			{"kind": "thorns", "value": int(battle.state.get("player_thorns", 0))},
+			{"kind": "artifact", "value": int(battle.state.get("player_artifact", 0))},
 		], 22.0 if _battle_compact else 24.0)
 	_refresh_bench_strip()
 	# Multi-Enemy: 迭代更新每個敵人的 widget（active 高亮、死敵 dim、HP/block/status）
