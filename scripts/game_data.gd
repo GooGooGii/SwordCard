@@ -516,8 +516,8 @@ static func _zhao_linger() -> CharacterData:
 		make_card("zl_lingxijue", "靈息訣", "趙靈兒", 1, "power", "靈息綿長，本場戰鬥每打出一張技能牌便抽 1 張牌。", [{"kind": "draw_on_skill", "amount": 1}], "rare", "", true),
 		# 杖流 payoff：萬靈噬 —— 對全體依各自虛弱/破綻層數加傷，承接她大量的 weak_all / vulnerable_all 鋪場。
 		make_card("zl_wanlingshi", "萬靈噬", "趙靈兒", 2, "attack", "五靈反噬，對所有敵人造成 6 點傷害，敵人每層虛弱／破綻額外 +4。", [{"kind": "damage_debuff_bonus_all", "amount": 6, "bonus_per_layer": 4}], "rare"),
-		# 護咒（Artifact）source：靈族護身咒術，結護咒層擋下敵人施加的負面狀態（含蠱毒），art 借金剛咒
-		make_card("zl_huxinzhou", "護心咒", "趙靈兒", 1, "skill", "結 2 層護咒（每層擋下敵人施加的一個負面狀態，含蠱毒），並獲得 5 點護體。", [{"kind": "player_artifact", "amount": 2}, {"kind": "block", "amount": 5}], "uncommon", "zl_jingang"),
+		# 護咒（Artifact）source：靈族護身咒術，結護咒層擋下敵人施加的負面狀態（含蠱毒），art 已補齊專屬圖
+		make_card("zl_huxinzhou", "護心咒", "趙靈兒", 1, "skill", "結 2 層護咒（每層擋下敵人施加的一個負面狀態，含蠱毒），並獲得 5 點護體。", [{"kind": "player_artifact", "amount": 2}, {"kind": "block", "amount": 5}], "uncommon"),
 	]
 	var character: CharacterData = _character("zhao_linger", "趙靈兒", 68, "五靈仙術、治療、護盾、解狀態與長戰持續。", cards)
 	# PAL1 對齊：9 basic + 3 uncommon + 0 rare
@@ -658,7 +658,7 @@ static func _anu() -> CharacterData:
 	]
 	# HP 66→82：阿奴是「長戰持續傷害」毒龜流，毒需要時間 ramp+tick，必須夠肉才撐得到
 	# 毒生效（pilot 實測：66 HP 對上 +15% 傷害的多敵戰撐不過 3 回合就被消耗死）。
-	var character: CharacterData = _character("anu", "阿奴", 82, "蠱毒、咒術、削弱與長戰持續傷害。", cards)
+	var character: CharacterData = _character("anu", "阿奴", 82, "苗疆巫女。巫術通蠱、驅鬼、攝魂、巫醫——蠱毒只是其一，長於纏戰削弱。", cards)
 	# PAL1 對齊：10 basic + 2 uncommon + 0 rare
 	# 御蜂術 ×3 → ×2（4 hits 連擊堆疊太快，每張 12 dmg + 觸發毒 tick 過強）
 	# 平衡修正（2026-06，run_simulator 揭露）：原起始牌組 13 張有 8 張純治療/淨化/
@@ -729,7 +729,7 @@ static func _passives_for(id: String) -> Array[Dictionary]:
 				# Lv20 僅 -3 —— 開場層數確定不是阿奴的檔位閘（兩代 AI 結論一致），維持 5。
 				# 她的強度在毒引擎+引爆時機，要 nerf 得動引爆倍率或 boss 端淨化，見 BALANCE_REPORT §七。
 				"amount": 5,
-				"label": "敵人每場戰鬥開場受到 5 層蠱毒"
+				"label": "下蠱（巫術之一）：敵人每場戰鬥開場受到 5 層蠱毒"
 			}]
 	return []
 
