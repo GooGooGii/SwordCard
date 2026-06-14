@@ -36,33 +36,54 @@ func _show_info_popup() -> void:
 	# 切換清單：有注入 siblings（戰鬥遺物帶）就能在全部遺物間切換，否則只有自己這顆。
 	var list: Array = siblings if siblings.size() > 1 else [relic]
 	var start_idx: int = clampi(sibling_index, 0, list.size() - 1) if siblings.size() > 1 else 0
-	var popup: PopupPanel = PopupPanel.new()
-	popup.exclusive = false
-	popup.process_mode = Node.PROCESS_MODE_ALWAYS
-	var panel_style: StyleBoxFlat = StyleBoxFlat.new()
-	panel_style.bg_color = Color("13202c", 0.96)
-	panel_style.border_color = _border_for(list[start_idx] as RelicData)
-	panel_style.set_border_width_all(2)
-	panel_style.set_corner_radius_all(8)
-	panel_style.content_margin_left = 12
-	panel_style.content_margin_right = 12
-	panel_style.content_margin_top = 12
-	panel_style.content_margin_bottom = 12
-	popup.add_theme_stylebox_override("panel", panel_style)
+	# 用 overlay + CenterContainer + PanelContainer（與藥品彈窗同結構）：面板緊貼內容、
+	# 不會像 PopupPanel 被撐成正方形而下半留白。點背景關閉。
+	var overlay: Control = Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.z_index = 300
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0.02, 0.04, 0.07, 0.62)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	backdrop.gui_input.connect(func(ev: InputEvent) -> void:
+		if (ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed) \
+				or (ev is InputEventScreenTouch and (ev as InputEventScreenTouch).pressed):
+			overlay.queue_free())
+	overlay.add_child(backdrop)
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+	var panel: PanelContainer = PanelContainer.new()
+	var panel_sb: StyleBoxFlat = StyleBoxFlat.new()
+	panel_sb.bg_color = Color("13202c", 0.97)
+	panel_sb.border_color = _border_for(list[start_idx] as RelicData)
+	panel_sb.set_border_width_all(2)
+	panel_sb.set_corner_radius_all(12)
+	panel_sb.content_margin_left = 24
+	panel_sb.content_margin_right = 24
+	panel_sb.content_margin_top = 18
+	panel_sb.content_margin_bottom = 18
+	panel_sb.shadow_color = Color("000000", 0.5)
+	panel_sb.shadow_size = 10
+	panel_sb.shadow_offset = Vector2(0, 5)
+	panel.add_theme_stylebox_override("panel", panel_sb)
+	center.add_child(panel)
 	var content: VBoxContainer = VBoxContainer.new()
-	content.add_theme_constant_override("separation", 8)
-	popup.add_child(content)
-	get_viewport().add_child(popup)
-	popup.popup_hide.connect(popup.queue_free)
-	_fill_info_popup(popup, content, list, start_idx)
+	content.add_theme_constant_override("separation", 12)
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_child(content)
+	get_viewport().add_child(overlay)
+	_fill_info_popup(panel, content, list, start_idx)
 
-# 就地重填 popup 內容；多件時左右各放一個「去背白色三角」切換鈕（畫面上只見白三角）。
-func _fill_info_popup(popup: PopupPanel, content: VBoxContainer, list: Array, idx: int) -> void:
+# 就地重填面板內容；多件時左右各放一個「去背白色三角」切換鈕（畫面上只見白三角）。
+func _fill_info_popup(panel: PanelContainer, content: VBoxContainer, list: Array, idx: int) -> void:
 	for child: Node in content.get_children():
 		child.queue_free()
 	var cur: RelicData = list[idx] as RelicData
 	var border: Color = _border_for(cur)
-	(popup.get_theme_stylebox("panel") as StyleBoxFlat).border_color = border
+	(panel.get_theme_stylebox("panel") as StyleBoxFlat).border_color = border
 	var multi: bool = list.size() > 1
 	# ── 標題：名稱置中（切換三角移到下方遺物圖左右；與藥品彈窗一致）──
 	var title_label: Label = UIFactory.title_label(cur.display_name, 26)
@@ -103,7 +124,7 @@ func _fill_info_popup(popup: PopupPanel, content: VBoxContainer, list: Array, id
 	content.add_child(hero_row)
 	if multi:
 		var prev_i: int = (idx - 1 + list.size()) % list.size()
-		hero_row.add_child(_nav_triangle("◀", func() -> void: _fill_info_popup(popup, content, list, prev_i)))
+		hero_row.add_child(_nav_triangle("◀", func() -> void: _fill_info_popup(panel, content, list, prev_i)))
 	var hero_icon: RelicIcon = RelicIcon.new()
 	hero_row.add_child(hero_icon)
 	hero_icon.custom_minimum_size = Vector2(120, 120)
@@ -111,7 +132,7 @@ func _fill_info_popup(popup: PopupPanel, content: VBoxContainer, list: Array, id
 	hero_icon.set_relic(cur)
 	if multi:
 		var next_i: int = (idx + 1) % list.size()
-		hero_row.add_child(_nav_triangle("▶", func() -> void: _fill_info_popup(popup, content, list, next_i)))
+		hero_row.add_child(_nav_triangle("▶", func() -> void: _fill_info_popup(panel, content, list, next_i)))
 	# ── 描述：嵌入暗底卷軸框 ──
 	var desc_panel: PanelContainer = PanelContainer.new()
 	var desc_sb: StyleBoxFlat = UIFactory.style_box(Color("0d141d", 0.66), Color(border.r, border.g, border.b, 0.28), 1, 10)
@@ -129,8 +150,6 @@ func _fill_info_popup(popup: PopupPanel, content: VBoxContainer, list: Array, id
 	desc_label.add_theme_font_size_override("font_size", 14)
 	desc_label.add_theme_color_override("font_color", Color("e8e2c8"))
 	desc_panel.add_child(desc_label)
-	popup.reset_size()
-	popup.popup_centered()
 
 # 去背白色三角切換鈕：StyleBoxEmpty 三態 → 無方框、無底色，畫面上只見一個白色三角。
 func _nav_triangle(glyph: String, on_press: Callable) -> Button:
