@@ -84,6 +84,8 @@ static func _generals() -> Array[RelicData]:
 		[{"trigger": "battle_start", "effects": [{"kind": "immune_silence"}]}], Color("7fd6c0")))
 	l.append(_make("ding_hun_zhu", "定魂珠", "本場戰鬥免疫瘋魔（敵人無法使你失控）。", "uncommon",
 		[{"trigger": "battle_start", "effects": [{"kind": "immune_berserk"}]}], Color("b08fd9")))
+	l.append(_make("hu_shen_fu", "護身符", "戰鬥開始結 2 層護咒（每層擋下敵人施加的一個負面狀態，含蠱毒）。", "rare",
+		[{"trigger": "battle_start", "effects": [{"kind": "self_artifact", "amount": 2}]}], Color("e8d49a")))
 	l.append(_make("ning_qi_dan", "凝氣丹", "戰鬥開始多 1 點靈力（僅第 1 回合）。", "uncommon",
 		[{"trigger": "battle_start", "effects": [{"kind": "self_energy", "amount": 1}]}], ThemeColors.BORDER_GOLD))
 	l.append(_make("feng_hun_yu", "風魂玉", "本場戰鬥傷害 +1。", "rare",
@@ -153,8 +155,10 @@ static func _generals() -> Array[RelicData]:
 		[{"trigger": "passive_modifier", "effects": [{"kind": "damage_taken_reduction", "amount": 2}]}], Color("6a8a78")))
 	l.append(_make("nu_huo_ling", "怒火令", "造成的傷害 +2。", "rare",
 		[{"trigger": "passive_modifier", "effects": [{"kind": "damage_out_bonus", "amount": 2}]}], ThemeColors.HP_FILL))
-	l.append(_make("zui_xian_hu", "醉仙葫", "造成的傷害 +1。", "uncommon",
-		[{"trigger": "passive_modifier", "effects": [{"kind": "damage_out_bonus", "amount": 1}]}], Color("d8a456")))
+	# 壽葫蘆（PAL1 正史：桃源村村長贈逍遙＋阿奴，戰鬥中每回合回 HP/MP 各 20）。
+	# 本作無 MP，忠實改寫為「每回合開始回復 5 點生命」。沿用原 id / 圖示。
+	l.append(_make("zui_xian_hu", "壽葫蘆", "每回合開始回復 5 點生命。", "uncommon",
+		[{"trigger": "turn_start", "effects": [{"kind": "self_heal", "amount": 5}]}], Color("d8a456")))
 	l.append(_make("tai_ji_zhu", "太極珠", "治療效果 +2。", "uncommon",
 		[{"trigger": "passive_modifier", "effects": [{"kind": "heal_bonus", "amount": 2}]}], Color("e8e2c8")))
 	l.append(_make("fan_hun_zhou", "反魂咒", "敵人受到的蠱毒 +1。", "uncommon",
