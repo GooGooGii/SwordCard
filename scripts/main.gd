@@ -3526,25 +3526,13 @@ func _show_use_potion_confirm(slot: int) -> void:
 	if total_potions > 1:
 		hero_row.add_child(_potion_nav_button("◀", func() -> void: _show_use_potion_confirm((slot - 1 + total_potions) % total_potions)))
 	if texture != null:
-		var disc: PanelContainer = PanelContainer.new()
-		disc.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		var disc_sb: StyleBoxFlat = UIFactory.style_box(Color(rarity_col.r, rarity_col.g, rarity_col.b, 0.14), Color(rarity_col.r, rarity_col.g, rarity_col.b, 0.6), 2, 999)
-		disc_sb.content_margin_left = 18
-		disc_sb.content_margin_right = 18
-		disc_sb.content_margin_top = 18
-		disc_sb.content_margin_bottom = 18
-		# 稀有度色陰影 = 柔光暈
-		disc_sb.shadow_color = Color(rarity_col.r, rarity_col.g, rarity_col.b, 0.45)
-		disc_sb.shadow_size = 18
-		disc_sb.shadow_offset = Vector2.ZERO
-		disc.add_theme_stylebox_override("panel", disc_sb)
+		# 藥瓶圖直接顯示（不再加圓盤光暈 halo）
 		var rect: TextureRect = TextureRect.new()
 		rect.texture = texture
 		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		rect.custom_minimum_size = Vector2(124, 124)
-		disc.add_child(rect)
-		hero_row.add_child(disc)
+		rect.custom_minimum_size = Vector2(140, 140)
+		hero_row.add_child(rect)
 	else:
 		var ph: Control = Control.new()
 		ph.custom_minimum_size = Vector2(140, 140)
