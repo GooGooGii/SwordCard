@@ -3,6 +3,15 @@ extends RefCounted
 
 const STARTING_GOLD: int = 45
 
+# 永久攻擊力（power_bonus）軟上限 + 遞減。
+# 動機：power 是 per-hit 加成，多段攻擊牌（如九龍訣 12×3）會把它乘 N 倍；若 power 無限累積，
+#   一張多段牌就能兩發甚至一發秒掉 boss。為守住「再強也不能兩下秒 boss」，有效 power 必須 ≤ ~12
+#   （(12+12)×3 = 72，兩發 144 < 拉高後的最終 boss 155 HP）。
+# 曲線：前 POWER_SOFT_CAP 點全額計入，之後每點只算半額（無條件進位），最高封頂 POWER_HARD_CAP。
+#   負值（debuff）不受限、直接扣。詳見 add_power_bonus()。
+const POWER_SOFT_CAP: int = 8
+const POWER_HARD_CAP: int = 12
+
 # Party (1–3 角色) — characters[0] 是隊長、永久不變
 var characters: Array[CharacterData] = []
 var character_hps: Array[int] = []
@@ -112,6 +121,23 @@ var power_bonus: int:
 	set(value):
 		if active_character_index < character_power_bonus.size():
 			character_power_bonus[active_character_index] = value
+
+# 永久攻擊力加成的唯一入口（事件 power / permanent_power 都走這）。正值套軟上限+遞減+硬封頂；
+# 負值（極少數 debuff 事件）直接扣、不受上限影響。作用在當前 active 角色的 power_bonus 上。
+func add_power_bonus(amount: int) -> void:
+	if amount <= 0:
+		power_bonus += amount
+		return
+	var cur: int = power_bonus
+	if cur >= POWER_HARD_CAP:
+		return
+	var full_room: int = max(0, POWER_SOFT_CAP - cur)
+	var full_part: int = min(amount, full_room)
+	cur += full_part
+	var rest: int = amount - full_part
+	if rest > 0:
+		cur += int(ceil(rest * 0.5))   # 軟上限以上每點半額
+	power_bonus = min(POWER_HARD_CAP, cur)
 
 var deck: Array[CardData]:
 	get:

@@ -1156,7 +1156,7 @@ const VARIANTS: Dictionary = {
 			"lin_yueru": "月如手按劍柄，警惕地打量著黑霧中的身影。林家堡有一句話：見妖不殺，非懦，是智——但也有另一句：與妖立契，非勇，是愚。她深知這道理，但那妖女說的條件確實讓她心動了一瞬，而她最討厭自己被心動。她沉默著，沒有立刻回應。",
 			"anu": "阿奴見過苗疆的妖，也和幾個性情溫和的山妖做過交易。但黑霧裡這個不同——她的氣息太涼，不是自然生長的妖，更像是刻意塑造出來的。阿奴沒有動，只是靜靜地打量著對方，等著看她葫蘆裡賣的是什麼藥。",
 		},
-		"heal": 0, "gain_cost": 4, "power": 4, "power_label": "立契",
+		"heal": 0, "gain_cost": 4, "power": 3, "power_label": "立契",
 		"pact_max_hp_cost": 8, "pact_power": 4,
 		"observe_text": "你細細打量這個自稱要與你交易的妖女。她的瞳孔縱裂，瓜子臉看似溫柔，但嘴角扯動的弧度過於精準——是學過人類面部表情的妖物。她身後的黑霧裡有極細的鏈條，像是有什麼東西把她拴在這個位置——她並非自由的存在，這個交易，可能不只是給你力量、收你血肉這麼單純。她在等的，或許是替她解開那條鏈子的人。",
 		"observe_effects": [{"kind": "damage", "amount": 2}, {"kind": "gold", "amount": 5}],
@@ -1273,7 +1273,7 @@ const VARIANTS: Dictionary = {
 								"kind": "punish",
 								"effects": [
 									{"kind": "max_hp", "amount": -10},
-									{"kind": "permanent_power", "amount": 5},
+									{"kind": "permanent_power", "amount": 3},
 									{"kind": "gain_card_pool", "pool": "rare"},
 									{"kind": "gain_curse", "curse_id": "yao_zhai"},
 								],
@@ -1856,8 +1856,8 @@ const VARIANTS: Dictionary = {
 			"lin_yueru": "月如把手按在劍上，穩步走入霧林。林家堡有一門功課叫做「亂境心法」，訓練弟子在視覺干擾下保持平衡的心態——這片霧林，對她而言更像一道考驗，而非一場威脅。越深入，她的心跳反而越清晰有力，像是劍心在此刻得到了磨礪。",
 			"anu": "阿奴在霧林裡走得很安靜，幾乎沒有腳步聲。她從小在南詔的密林中長大，習慣了和各種存在共處——那些在彼端注視你的眼睛，不見得都是惡意的，有些只是好奇，有些只是寂寞。她輕聲用苗語問了一句：「你們想要什麼？」",
 		},
-		"heal": 0, "gain_cost": 3, "power": 5, "power_label": "借膽",
-		"gamble_win_power": 5, "gamble_lose_damage": 10,
+		"heal": 0, "gain_cost": 3, "power": 3, "power_label": "借膽",
+		"gamble_win_power": 4, "gamble_lose_damage": 10,
 		"observe_text": "你停下腳步，閉眼感應周遭。霧中的眼睛有兩種：一種帶著好奇，從遠處飄過，並不靠近；另一種懸在你正前方一棵老樹的高處，紋絲不動，呼吸極淺——這個是危險的，是會撲擊的捕食者。你知道：往北走是安全方向，往南走會迎向那雙眼睛。賭一把進去，可以借膽，也可能受傷。",
 		"observe_effects": [{"kind": "heal", "amount": 5}, {"kind": "gold", "amount": 4}],
 		"choices": ["gain_card", "gamble", "observe", "leave"],
@@ -2461,7 +2461,7 @@ const VARIANTS: Dictionary = {
 								"kind": "punish",
 								"effects": [
 									{"kind": "max_hp", "amount": -5},
-									{"kind": "permanent_power", "amount": 5},
+									{"kind": "permanent_power", "amount": 3},
 									{"kind": "gain_curse", "curse_id": "xie_yin"},
 								],
 								"log": "你以掌心按上血環中央。邪氣沿著經脈灌入——是力量，也是印記。你知道從此這條路只能走下去，再也不回頭。",
@@ -2698,7 +2698,7 @@ const VARIANTS: Dictionary = {
 			"lin_yueru": "月如在劍冢中站立，感到了一種久違的、只有在真正的劍者之間才存在的共鳴。這些斷劍的主人，曾經也是像她一樣持劍而行的人；他們最後選擇把劍插在這裡，而不是帶走——那是一種怎樣的心情？她彎腰，認真地看著每一把劍。",
 			"anu": "阿奴不太懂得劍的意義，但她懂得守護。苗疆的女巫也有她們自己的守護之物，埋在土地裡，代代相傳。她走在劍冢中，感受那些刀氣的質地——不是殺氣，是護持之意，和蠱術中「守護之蠱」的氣息有幾分相似，讓她意外地感到了一種親近感。",
 		},
-		"heal": 0, "gain_cost": 6, "power": 4, "power_label": "承志",
+		"heal": 0, "gain_cost": 6, "power": 3, "power_label": "承志",
 		"observe_text": "你仔細看那些斷劍。它們插的方向並非雜亂——劍尖全部指向北方某個遙遠的點，那是中原劍道的源頭之一。每一把劍上都刻著名字，有的姓氏你認得，有的已經風化模糊。最讓你動容的是其中一柄劍鞘上刻著「未竟」二字，像是劍主臨終前最後的心意——他知道自己走不到，但希望後人能替他走完。",
 		"observe_effects": [{"kind": "power", "amount": 2}],
 		"choices": ["power", "upgrade", "gain_card", "observe", "leave"],
@@ -3351,7 +3351,7 @@ const VARIANTS: Dictionary = {
 							"kind": "punish",
 							"effects": [
 								{"kind": "max_hp", "amount": -6},
-								{"kind": "permanent_power", "amount": 4},
+								{"kind": "permanent_power", "amount": 3},
 								{"kind": "set_flag", "flag": "fox_slain"},
 							],
 							"log": "你要她獻出本源。一縷冰冷妖丹融入胸口——力量是真的，那份永久的折損也是真的。她化煙之前看了你一眼，那眼神你大概一輩子忘不掉。",
@@ -4873,7 +4873,7 @@ const VARIANTS: Dictionary = {
 						"outcome": {
 							"kind": "punish",
 							"effects": [
-								{"kind": "permanent_power", "amount": 4},
+								{"kind": "permanent_power", "amount": 3},
 								{"kind": "max_hp", "amount": -8},
 								{"kind": "gain_curse", "curse_id": "yao_zhai"},
 							],
@@ -4932,7 +4932,7 @@ const VARIANTS: Dictionary = {
 			"lin_yueru": "月如站在茅屋中央，靜靜地讀完那幾頁血書。寫的是一個普通女子被拜月教選中為祭品的過程——沒有英雄救美，沒有奇蹟，只有一個年輕生命被緩慢殺死的真相。月如把血書折好，放進懷裡。她不是會輕易說承諾的人，但這一次，她在心裡發了一個誓。",
 			"anu": "阿奴蹲在女子身旁，用蠱術感應她生前的氣息——還殘留著苗疆才有的某種草藥味道。這個女子曾用過南疆的解毒藥，但顯然不夠。阿奴從袋裡取出一個小小的銀鈴，輕輕放在女子手心：「在苗疆，這代表你已經安息。」她低聲說，「對不起，這是我能給你的全部。」",
 		},
-		"heal": 0, "gain_cost": 0, "power": 4, "power_label": "立誓",
+		"heal": 0, "gain_cost": 0, "power": 3, "power_label": "立誓",
 		"observe_text": "你細讀那幾頁血書。婉兒並非普通村女——她是某個拜月教叛逃者的妹妹，被當作報復的對象帶到這裡，緩慢地用作儀式祭品。她最後的一頁寫著：「無論誰看到這封信，我求你一件事：替我告訴拜月教的人，他們最終的祭壇上會有人替我，把他們的血一起灑下去。」字跡到這裡突然中斷。",
 		"observe_effects": [{"kind": "damage", "amount": 2}, {"kind": "power", "amount": 3}],
 		"choices": ["power", "remove", "observe", "leave"],
@@ -5018,7 +5018,7 @@ const VARIANTS: Dictionary = {
 							"outcome": {
 								"kind": "reward",
 								"effects": [
-									{"kind": "permanent_power", "amount": 4},
+									{"kind": "permanent_power", "amount": 3},
 								],
 								"log": "你蘸了她未乾的血，在那句話的斷處，沉沉按下一枚指印。她沒能寫完的請求，從今日起，由你的劍替她一筆一筆寫完。怒意與哀痛在丹田裡凝成一股不退的鋒芒，劍意如鋼，再無一絲遲疑。「我記下了，婉兒。」你低聲說。屋外，風起了。",
 							},
@@ -5145,7 +5145,7 @@ const VARIANTS: Dictionary = {
 							"gamble": {
 								"win_chance": 0.5,
 								"win_effects": [
-									{"kind": "permanent_power", "amount": 5},
+									{"kind": "permanent_power", "amount": 3},
 									{"kind": "max_hp", "amount": 10},
 								],
 								"lose_effects": [

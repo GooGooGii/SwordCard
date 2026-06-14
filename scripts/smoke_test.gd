@@ -125,6 +125,7 @@ func _initialize() -> void:
 	_test_boss_successor()
 	_test_event_variety()
 	_test_event_resolved_guard(characters)
+	_test_power_bonus_cap(characters)
 	_test_revive_event(characters)
 	_test_map_seed_determinism(enemies, bosses)
 	_test_elite_generation(enemies, bosses)
@@ -1020,6 +1021,28 @@ func _test_event_resolved_guard(characters: Array[CharacterData]) -> void:
 	var legacy: RunState = RunState.new()
 	_check(legacy.from_dict(old_save, characters), "old save without resolved_event_index should load")
 	_check(legacy.resolved_event_index == -1, "missing resolved_event_index should default to -1, got %d" % legacy.resolved_event_index)
+
+func _test_power_bonus_cap(characters: Array[CharacterData]) -> void:
+	# 永久攻擊力軟上限+遞減：防多段牌×power 兩發秒 boss。
+	var rs: RunState = RunState.new()
+	rs.init_for(characters[0])
+	# 軟上限以下全額
+	rs.add_power_bonus(5)
+	_check(rs.power_bonus == 5, "below soft cap should add full, got %d" % rs.power_bonus)
+	rs.add_power_bonus(3)
+	_check(rs.power_bonus == RunState.POWER_SOFT_CAP, "should reach soft cap exactly, got %d" % rs.power_bonus)
+	# 軟上限以上每點半額（無條件進位）：再 +4 → +2
+	rs.add_power_bonus(4)
+	_check(rs.power_bonus == RunState.POWER_SOFT_CAP + 2, "above soft cap should diminish, got %d" % rs.power_bonus)
+	# 灌爆也不超過硬上限
+	rs.add_power_bonus(999)
+	_check(rs.power_bonus == RunState.POWER_HARD_CAP, "should clamp to hard cap, got %d" % rs.power_bonus)
+	# 負值（debuff）不受上限、直接扣
+	rs.add_power_bonus(-5)
+	_check(rs.power_bonus == RunState.POWER_HARD_CAP - 5, "negative should subtract raw, got %d" % rs.power_bonus)
+	# 硬上限保證：(base+HARD)×3 兩發 < 拉高前最弱 boss 也守不住是已知，但至少終局最終 boss 安全
+	var burst_two: int = (12 + RunState.POWER_HARD_CAP) * 3 * 2
+	_check(burst_two <= 144, "九龍訣 two-cast at hard cap should be <=144, got %d" % burst_two)
 
 func _test_event_variety() -> void:
 	# 至少 10 種 event variant、每種都有合理的欄位

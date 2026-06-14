@@ -5464,7 +5464,7 @@ func _resolve_observe_effects(effects: Array) -> String:
 					run_state.hp = min(run_state.hp, run_state.max_hp)
 					parts.append("最大生命 %d" % amount)
 			"power":
-				run_state.power_bonus += amount
+				run_state.add_power_bonus(amount)   # 軟上限+遞減（見 RunState.add_power_bonus）
 				if amount > 0:
 					parts.append("本輪攻擊 +%d" % amount)
 				elif amount < 0:
@@ -5524,7 +5524,8 @@ func _resolve_observe_effects(effects: Array) -> String:
 						parts.append("全副招式精進（%d 張升階）" % upgraded_n)
 			# ── Event Branching：新 effect kinds（P6 範疇，P2 為了讓 tree 能跑先補基本實作）──
 			"permanent_power":
-				run_state.power_bonus += amount
+				# 正值才吃搖錢樹 bonus；負值（debuff）直接扣。軟上限+遞減見 RunState.add_power_bonus。
+				run_state.add_power_bonus(amount + (_event_power_relic_bonus() if amount > 0 else 0))
 				if amount > 0:
 					parts.append("永久攻擊 +%d" % amount)
 				elif amount < 0:
@@ -5812,7 +5813,7 @@ func _resolve_yokai_pact() -> void:
 	run_state.max_hp = max(1, run_state.max_hp - cost)
 	if run_state.hp > run_state.max_hp:
 		run_state.hp = run_state.max_hp
-	run_state.power_bonus += power
+	run_state.add_power_bonus(power)   # 軟上限+遞減
 	var outcome: String = _get_event_outcome(event_data, "pact")
 	if not outcome.is_empty():
 		_show_event_outcome(outcome, advance_non_battle_node)
@@ -5821,7 +5822,7 @@ func _resolve_yokai_pact() -> void:
 
 func _resolve_tainted_power() -> void:
 	var event_data: Dictionary = EventData.for_variant(run_state.current_event_variant)
-	run_state.power_bonus += int(event_data["power"])
+	run_state.add_power_bonus(int(event_data["power"]))   # 軟上限+遞減
 	run_state.take_damage(int(event_data.get("taint_damage", 6)))
 	var outcome: String = _get_event_outcome(event_data, "tainted_power")
 	if not outcome.is_empty():
@@ -5836,7 +5837,7 @@ func _resolve_ghost_gamble() -> void:
 	var won: bool = randf() < 0.5
 	var outcome_key: String = "gamble_win" if won else "gamble_lose"
 	if won:
-		run_state.power_bonus += win_power
+		run_state.add_power_bonus(win_power)   # 軟上限+遞減
 	else:
 		run_state.take_damage(lose_damage)
 	var outcome: String = _get_event_outcome(event_data, outcome_key)
@@ -6524,7 +6525,9 @@ func _show_event_card_confirm(card: CardData, force_accept: bool, on_accept: Cal
 		on_accept.call())
 	btn_row.add_child(accept_btn)
 
-func resolve_event_power(amount: int = 1) -> void:
+# 搖錢樹（event_power_bonus）：奇遇給 power 時的額外加成。抽成 helper 讓 legacy「power」與
+# tree「permanent_power」兩條路徑都吃得到（先前只有 legacy 吃到，是不一致）。
+func _event_power_relic_bonus() -> int:
 	var bonus: int = 0
 	for r: RelicData in run_state.relics:
 		for t: Dictionary in r.triggers:
@@ -6533,7 +6536,10 @@ func resolve_event_power(amount: int = 1) -> void:
 			for e: Dictionary in (t.get("effects", []) as Array):
 				if String(e.get("kind", "")) == "event_power_bonus":
 					bonus += int(e.get("amount", 0))
-	run_state.power_bonus = run_state.power_bonus + amount + bonus
+	return bonus
+
+func resolve_event_power(amount: int = 1) -> void:
+	run_state.add_power_bonus(amount + _event_power_relic_bonus())   # 搖錢樹 bonus 一併走軟上限+遞減
 	var ev_p: Dictionary = EventData.for_variant(run_state.current_event_variant)
 	var outcome_p: String = _get_event_outcome(ev_p, "power")
 	if not outcome_p.is_empty():
