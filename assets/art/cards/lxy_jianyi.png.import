@@ -15,9 +15,9 @@ dest_files=["res://.godot/imported/lxy_jianyi.png-e0e2bff2e87cf61a0607409331b428
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

@@ -15,9 +15,9 @@ dest_files=["res://.godot/imported/brush_divider.png-5a0d4cbb996a9eb1bca11a11f6b
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

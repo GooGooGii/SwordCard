@@ -15,9 +15,9 @@ dest_files=["res://.godot/imported/lyr_huaci.png-40ce49a9915e6a61e5cf5b0b2f0b1b1
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

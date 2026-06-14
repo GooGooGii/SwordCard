@@ -15,9 +15,9 @@ dest_files=["res://.godot/imported/hua_zhai.png-9cda06f331992a5b4d05d450e87b2571
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
