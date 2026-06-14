@@ -16,7 +16,7 @@ extends Resource
 @export var swarm_size: int = 0              # > 1：此怪以「群」出現，遭遇時整組換成 N 隻同類（capped by MAX_ENEMIES）
 @export var summon_pool: Array[String] = []  # boss 召喚物 id pool；空 = 不召喚
 @export var is_summoned: bool = false        # 由 spawn_enemy() 設為 true，勝利結算時不計入掉落
-@export var default_facing_left: bool = false # 原始圖檔是否已面向左邊（若是，則戰鬥中不需 flip_h）
+@export var default_facing_left: bool = true # 圖檔已面向左 → 戰鬥中一律不翻轉（朝向畫進圖裡）
 @export var split_into: String = ""          # 分裂：HP 過半時召出的敵人 id（空 = 不分裂）
 @export var split_count: int = 1             # 分裂出幾隻（受 MAX_ENEMIES 上限）
 @export var ultimate_action: Dictionary = {} # 大招：每 ultimate_every 回合改放此招（空 = 無）
@@ -111,5 +111,5 @@ static func from_dict(data: Dictionary) -> EnemyData:
 		)
 	enemy.portrait_scale = float(data.get("portrait_scale", 1.0))
 	enemy.phase_2_portrait_scale = float(data.get("phase_2_portrait_scale", 0.0))
-	enemy.default_facing_left = bool(data.get("default_facing_left", false))
+	enemy.default_facing_left = bool(data.get("default_facing_left", true))
 	return enemy
