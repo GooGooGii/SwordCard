@@ -374,6 +374,8 @@ static func _summary_token(effect: Dictionary) -> String:
 			return "瘋魔"
 		"thorns":
 			return "反傷%d" % amount
+		"player_artifact":
+			return "護咒%d" % amount
 		"self_damage":
 			return "自損%d" % amount
 		"self_weak":
@@ -428,6 +430,8 @@ static func _summary_token(effect: Dictionary) -> String:
 			return "淨化"
 		"debuff_immunity":
 			return "異常免疫"
+		"player_artifact":
+			return "護咒%d" % amount
 		"damage_reduction":
 			return "減傷%d" % amount
 		"end_turn_damage":
