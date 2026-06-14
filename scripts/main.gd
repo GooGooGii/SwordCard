@@ -3629,15 +3629,22 @@ func _living_enemy_count() -> int:
 
 # 藥品彈窗的圓形金邊左右切換鈕
 func _potion_nav_button(glyph: String, on_press: Callable) -> Button:
+	# 去背白色三角切換鈕（與遺物說明 popup 一致）：StyleBoxEmpty 三態 + 透明 disabled →
+	# 無圓環、無方框、無底色，畫面上只見一個白色三角。
 	var btn: Button = Button.new()
 	btn.text = glyph
-	btn.custom_minimum_size = Vector2(46, 46)
+	btn.focus_mode = Control.FOCUS_NONE
+	btn.custom_minimum_size = Vector2(34, 34)
 	btn.add_theme_font_size_override("font_size", 22)
-	btn.add_theme_stylebox_override("normal", UIFactory.style_box(Color("1d2735", 0.95), Color("b89e63", 0.7), 1, 999))
-	btn.add_theme_stylebox_override("hover", UIFactory.style_box(Color("2a3850", 0.97), ThemeColors.ACCENT_GOLD, 2, 999))
-	btn.add_theme_stylebox_override("pressed", UIFactory.style_box(Color("141d2a", 0.98), ThemeColors.BORDER_GOLD, 2, 999))
-	btn.add_theme_color_override("font_color", Color("ecdfc2"))
-	btn.add_theme_color_override("font_hover_color", Color("fff3cf"))
+	var empty: StyleBoxEmpty = StyleBoxEmpty.new()
+	btn.add_theme_stylebox_override("normal", empty)
+	btn.add_theme_stylebox_override("hover", empty)
+	btn.add_theme_stylebox_override("pressed", empty)
+	btn.add_theme_stylebox_override("focus", empty)
+	btn.add_theme_stylebox_override("disabled", empty)
+	btn.add_theme_color_override("font_color", Color("ffffff"))
+	btn.add_theme_color_override("font_hover_color", Color("ffe9b8"))
+	btn.add_theme_color_override("font_pressed_color", Color("cfd6e2"))
 	btn.pressed.connect(on_press)
 	return btn
 
