@@ -2339,15 +2339,13 @@ func _build_battle_scene() -> void:
 	var screen: VBoxContainer = VBoxContainer.new()
 	screen.add_theme_constant_override("separation", 4 if _battle_compact else 6)
 	root.add_child(screen)
-	# Phase C2：遺物帶左對齊單排（StS 語法）＋ 半透明墨帶襯底，超量摺疊進 +N
-	var relic_band: PanelContainer = PanelContainer.new()
-	relic_band.add_theme_stylebox_override("panel", UIFactory.style_box(Color(0, 0, 0, 0.25), Color(0, 0, 0, 0), 0, 6))
-	screen.add_child(relic_band)
+	# 遺物帶：恢復舊版「置中單排」視覺（40px 易點、無墨帶襯底），
+	# 但保留超量摺疊：超過 MAX_RELIC_STRIP 顆 → 摺進「+N」鈕開遺物清單 popup（修溢出 bug）。
 	relic_strip = HBoxContainer.new()
-	relic_strip.alignment = BoxContainer.ALIGNMENT_BEGIN
+	relic_strip.alignment = BoxContainer.ALIGNMENT_CENTER
 	relic_strip.add_theme_constant_override("separation", 4)
 	relic_strip.mouse_filter = Control.MOUSE_FILTER_PASS
-	relic_band.add_child(relic_strip)
+	screen.add_child(relic_strip)
 	_refresh_relic_strip()
 	_build_battle_potion_strip(screen)
 	var arena: HBoxContainer = HBoxContainer.new()
@@ -3837,14 +3835,14 @@ func _refresh_relic_strip() -> void:
 		return
 	for child: Node in relic_strip.get_children():
 		child.queue_free()
-	# Phase C2：最多顯示 MAX_RELIC_STRIP 顆，其餘摺進「+N」鈕（開既有遺物清單 popup）
+	# 最多顯示 MAX_RELIC_STRIP 顆（40px 舊版易點尺寸），其餘摺進「+N」鈕（開遺物清單 popup）
 	const MAX_RELIC_STRIP: int = 12
 	var shown: int = 0
 	for r: RelicData in run_state.relics:
 		if shown >= MAX_RELIC_STRIP:
 			break
 		var icon: RelicIcon = RelicIcon.new()
-		icon.custom_minimum_size = Vector2(34, 34)
+		icon.custom_minimum_size = Vector2(40, 40)
 		relic_strip.add_child(icon)
 		icon.set_relic(r)
 		shown += 1
@@ -3852,7 +3850,7 @@ func _refresh_relic_strip() -> void:
 	if overflow > 0:
 		var more_btn: Button = Button.new()
 		more_btn.text = "+%d" % overflow
-		more_btn.custom_minimum_size = Vector2(38, 34)
+		more_btn.custom_minimum_size = Vector2(40, 40)
 		more_btn.focus_mode = Control.FOCUS_NONE
 		more_btn.add_theme_font_size_override("font_size", 14)
 		more_btn.add_theme_color_override("font_color", ThemeColors.HIGHLIGHT_GOLD)
