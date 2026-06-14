@@ -76,7 +76,7 @@ var _selected_hand_card: CardData = null
 var _potion_buttons: Array[Button] = []
 var _battle_potion_strip: HBoxContainer = null
 var _in_battle: bool = false  # 是否正處於戰鬥場景（battle 物件會殘留，不能用 battle!=null 判斷）
-var _potion_popup: CenterContainer = null  # 戰鬥中藥品說明彈窗（單一實例，避免疊開）
+var _potion_popup: Control = null  # 戰鬥中藥品說明彈窗（單一實例，避免疊開）；overlay 為全螢幕 Control
 var _potion_overlay: HBoxContainer = null
 var _potion_overlay_buttons: Array[Button] = []
 var _selected_hand_button: Button = null
@@ -3487,51 +3487,82 @@ func _show_use_potion_confirm(slot: int) -> void:
 	margin.add_theme_constant_override("margin_bottom", 22)
 	panel.add_child(margin)
 	var box: VBoxContainer = VBoxContainer.new()
-	box.add_theme_constant_override("separation", 12)
+	box.add_theme_constant_override("separation", 14)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	margin.add_child(box)
-	# 標題列：◀ 名稱 ▶（多瓶時可左右切換；圓形金邊鈕）
+	# ── 標題列：◀ 名稱 ▶（去背白三角切換，與遺物一致）──
 	var title_row: HBoxContainer = HBoxContainer.new()
 	title_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	title_row.add_theme_constant_override("separation", 14)
+	title_row.add_theme_constant_override("separation", 10)
+	title_row.custom_minimum_size = Vector2(360, 0)
 	box.add_child(title_row)
 	if total_potions > 1:
 		title_row.add_child(_potion_nav_button("◀", func() -> void: _show_use_potion_confirm((slot - 1 + total_potions) % total_potions)))
-	var name_lbl: Label = UIFactory.title_label(String(potion.get("display_name", "?")), 24)
+	var name_lbl: Label = UIFactory.title_label(String(potion.get("display_name", "?")), 28)
+	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_lbl.add_theme_color_override("font_color", rarity_col)
 	title_row.add_child(name_lbl)
 	if total_potions > 1:
 		title_row.add_child(_potion_nav_button("▶", func() -> void: _show_use_potion_confirm((slot + 1) % total_potions)))
-	# 稀有度 + (i / n)
-	var rarity_text: String = "%s 藥草" % String(potion.get("rarity", "common")).capitalize()
+	# ── 稀有度膠囊 +（多瓶）頁碼 ──
+	var meta_row: HBoxContainer = HBoxContainer.new()
+	meta_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	meta_row.add_theme_constant_override("separation", 10)
+	box.add_child(meta_row)
+	var rarity_pill: PanelContainer = PanelContainer.new()
+	var pill_sb: StyleBoxFlat = UIFactory.style_box(Color(rarity_col.r, rarity_col.g, rarity_col.b, 0.18), Color(rarity_col.r, rarity_col.g, rarity_col.b, 0.5), 1, 999)
+	pill_sb.content_margin_left = 12
+	pill_sb.content_margin_right = 12
+	pill_sb.content_margin_top = 2
+	pill_sb.content_margin_bottom = 3
+	rarity_pill.add_theme_stylebox_override("panel", pill_sb)
+	var rarity_lbl: Label = UIFactory.card_label("%s 藥草" % String(potion.get("rarity", "common")).capitalize(), 12, rarity_col, HORIZONTAL_ALIGNMENT_CENTER)
+	rarity_lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
+	rarity_pill.add_child(rarity_lbl)
+	meta_row.add_child(rarity_pill)
 	if total_potions > 1:
-		rarity_text += "　·　%d / %d" % [slot + 1, total_potions]
-	box.add_child(UIFactory.card_label(rarity_text, 13, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER))
-	box.add_child(UIFactory.ink_divider())
-	# 藥瓶圖：圓形宣紙底盤 + 稀有度微光
+		var counter_lbl: Label = UIFactory.card_label("%d / %d" % [slot + 1, total_potions], 12, ThemeColors.TEXT_MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+		counter_lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
+		meta_row.add_child(counter_lbl)
+	# ── 主視覺：大藥瓶 + 稀有度光暈（用 StyleBox 陰影當光暈）──
 	var art_path: String = "res://assets/art/potions/%s.png" % potion.get("id", "")
 	var texture: Texture2D = UIFactory.load_texture(art_path)
 	if texture != null:
+		var halo: CenterContainer = CenterContainer.new()
+		box.add_child(halo)
 		var disc: PanelContainer = PanelContainer.new()
 		disc.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		var disc_sb: StyleBoxFlat = UIFactory.style_box(Color(rarity_col.r, rarity_col.g, rarity_col.b, 0.12), Color(rarity_col.r, rarity_col.g, rarity_col.b, 0.5), 1, 999)
-		disc_sb.content_margin_left = 14
-		disc_sb.content_margin_right = 14
-		disc_sb.content_margin_top = 14
-		disc_sb.content_margin_bottom = 14
+		var disc_sb: StyleBoxFlat = UIFactory.style_box(Color(rarity_col.r, rarity_col.g, rarity_col.b, 0.14), Color(rarity_col.r, rarity_col.g, rarity_col.b, 0.6), 2, 999)
+		disc_sb.content_margin_left = 18
+		disc_sb.content_margin_right = 18
+		disc_sb.content_margin_top = 18
+		disc_sb.content_margin_bottom = 18
+		# 稀有度色陰影 = 柔光暈
+		disc_sb.shadow_color = Color(rarity_col.r, rarity_col.g, rarity_col.b, 0.45)
+		disc_sb.shadow_size = 18
+		disc_sb.shadow_offset = Vector2.ZERO
 		disc.add_theme_stylebox_override("panel", disc_sb)
 		var rect: TextureRect = TextureRect.new()
 		rect.texture = texture
 		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		rect.custom_minimum_size = Vector2(96, 96)
+		rect.custom_minimum_size = Vector2(124, 124)
 		disc.add_child(rect)
-		box.add_child(disc)
-	# 描述
+		halo.add_child(disc)
+	# ── 描述：嵌入暗底卷軸框，提升可讀性與層次 ──
+	var desc_panel: PanelContainer = PanelContainer.new()
+	var desc_sb: StyleBoxFlat = UIFactory.style_box(Color("0d141d", 0.66), Color(rarity_col.r, rarity_col.g, rarity_col.b, 0.28), 1, 10)
+	desc_sb.content_margin_left = 16
+	desc_sb.content_margin_right = 16
+	desc_sb.content_margin_top = 10
+	desc_sb.content_margin_bottom = 10
+	desc_panel.add_theme_stylebox_override("panel", desc_sb)
+	box.add_child(desc_panel)
 	var desc: Label = UIFactory.card_label(String(potion.get("description", "")), 15, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.custom_minimum_size = Vector2(380, 0)
-	box.add_child(desc)
+	desc.custom_minimum_size = Vector2(360, 0)
+	desc_panel.add_child(desc)
 	var captured_slot: int = slot
 	# 單體攻擊型藥品 + 多於 1 名活敵 → 讓玩家選目標（一敵一鈕）；否則用一般「取消/使用」。
 	if _potion_needs_enemy_target(potion) and _living_enemy_count() > 1:
