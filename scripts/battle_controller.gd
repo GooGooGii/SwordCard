@@ -182,6 +182,7 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"turn": 0,
 		"li_discount_used": false,
 		"lin_block_used": false,
+		"player_artifact": 0,  # 護咒（Artifact）：每層擋掉敵人施加的一個負面狀態（含蠱毒），逐層消耗、不衰減
 		"player_thorns": 0,  # 反擊（Thorns）：被攻擊時反彈 N 點傷害給攻擊者，不衰減
 		"poison_per_turn": 0,  # 毒引擎（StS Noxious Fumes 式）：每回合開始對全體敵人施毒
 		"draw_on_attack": 0,  # 御劍心訣（李）：每打出攻擊牌抽 N
@@ -1318,6 +1319,9 @@ func _apply_trigger_effects(effects: Array, relic_name: String) -> void:
 			"self_thorns":
 				state["player_thorns"] = int(state.get("player_thorns", 0)) + amount
 				add_log("【%s】獲得 %d 點荊棘。" % [relic_name, amount])
+			"self_artifact":
+				state["player_artifact"] = int(state.get("player_artifact", 0)) + amount
+				add_log("【%s】結起 %d 層護咒（擋負面狀態）。" % [relic_name, amount])
 			"enemy_damage":
 				var dmg: int = amount + int(state.get("damage_out_bonus", 0))
 				var blocked: int = min(int(state["enemy_block"]), dmg)

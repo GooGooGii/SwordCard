@@ -168,6 +168,7 @@ func _initialize() -> void:
 	_test_enemy_pierce(characters[0], enemies[0])
 	_test_enemy_thorns(characters[0], enemies[0])
 	_test_enemy_strip_and_artifact(characters[3], enemies[0])
+	_test_player_artifact(characters[0], enemies[0])
 	_test_enemy_split_and_ultimate(characters[0])
 	_test_downed_reaction(characters)
 	# 技能/能力多樣化：翻倍 / 蓄勢 / 每回合引擎 / 回合結束 AOE
@@ -2516,6 +2517,28 @@ func _test_enemy_strip_and_artifact(character: CharacterData, enemy: EnemyData) 
 	_check(int(bc.state["enemy_artifact"]) == 0, "artifact 消耗一層, got %d" % int(bc.state["enemy_artifact"]))
 	bc.resolver._resolve_effect({"kind": "weak", "amount": 2}, bc.state)  # 護咒已用完 → 正常生效
 	_check(int(bc.state["enemy_weak"]) == 2, "artifact 用完後 debuff 正常生效, got weak %d" % int(bc.state["enemy_weak"]))
+
+func _test_player_artifact(character: CharacterData, enemy: EnemyData) -> void:
+	# 玩家側護咒（對稱機制）：每層擋下敵人施加的一個負面狀態（含蠱毒），逐層消耗、不衰減。
+	var bc: BattleController = _make_multi_battle(character, [enemy])
+	bc.start_turn()
+	# 來源：player_artifact 效果 kind（卡牌/遺物用）→ 結 2 層
+	bc.resolver._resolve_effect({"kind": "player_artifact", "amount": 2}, bc.state)
+	_check(int(bc.state["player_artifact"]) == 2, "player_artifact 效果應結 2 層, got %d" % int(bc.state["player_artifact"]))
+	# 敵人施毒 → 被護咒擋（含毒），消耗 1 層
+	bc.state["player_poison"] = 0
+	bc.resolver._resolve_effect({"kind": "poison", "amount": 5}, bc.state, true)
+	_check(int(bc.state["player_poison"]) == 0, "護咒應擋下敵方蠱毒, got poison %d" % int(bc.state["player_poison"]))
+	_check(int(bc.state["player_artifact"]) == 1, "護咒消耗 1 層, got %d" % int(bc.state["player_artifact"]))
+	# 敵人施虛弱 → 擋下，消耗最後 1 層
+	bc.state["player_weak"] = 0
+	bc.resolver._resolve_effect({"kind": "weak", "amount": 2}, bc.state, true)
+	_check(int(bc.state["player_weak"]) == 0, "護咒應擋下虛弱, got weak %d" % int(bc.state["player_weak"]))
+	_check(int(bc.state["player_artifact"]) == 0, "護咒用完, got %d" % int(bc.state["player_artifact"]))
+	# 護咒用完 → 後續破綻正常生效
+	bc.state["player_vulnerable"] = 0
+	bc.resolver._resolve_effect({"kind": "vulnerable", "amount": 3}, bc.state, true)
+	_check(int(bc.state["player_vulnerable"]) == 3, "護咒用完後破綻正常生效, got %d" % int(bc.state["player_vulnerable"]))
 
 func _test_enemy_thorns(character: CharacterData, enemy: EnemyData) -> void:
 	# 反甲：玩家「單體攻擊」它時受反傷（每次攻擊一次，直接扣 HP）；AoE 不觸發

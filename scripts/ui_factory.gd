@@ -226,6 +226,7 @@ const STATUS_CHIP_DEFS: Dictionary = {
 	"silence":    {"symbol": "禁", "color": Color("6d5a8e")},
 	"berserk":    {"symbol": "狂", "color": Color("a04545")},
 	"thorns":     {"symbol": "刺", "color": Color("8a7a4d")},
+	"artifact":   {"symbol": "咒", "color": Color("c9a86a")},
 }
 
 static func status_chip(kind: String, value: int, chip_px: float = 24.0) -> Control:

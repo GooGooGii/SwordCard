@@ -119,6 +119,15 @@ func _artifact_absorb(state: Dictionary, log_lines: Array[String], debuff_name: 
 		return true
 	return false
 
+# 玩家側護咒（Artifact）：敵人對玩家施加負面狀態時，若玩家有護咒則消耗一層擋下，回傳 true。
+# 與 _artifact_absorb 對稱（不論敵我都能持有護咒層數），含蠱毒在內的所有負面皆可擋。
+func _player_artifact_absorb(state: Dictionary, log_lines: Array[String], debuff_name: String) -> bool:
+	if int(state.get("player_artifact", 0)) > 0:
+		state["player_artifact"] = int(state["player_artifact"]) - 1
+		log_lines.append("你的護咒擋下了%s。" % debuff_name)
+		return true
+	return false
+
 func _enemy_hit_player(state: Dictionary, raw: int) -> int:
 	raw += int(state.get("enemy_strength", 0))  # 漸怒：累積攻擊力
 	var dmg_mult: float = float(state.get("enemy_damage_mult", 1.0))
@@ -240,8 +249,11 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				log_lines.append("全隊回復 %d 點生命。" % party_heal)
 		"poison":
 			if from_enemy:
-				state["player_poison"] = int(state["player_poison"]) + amount
-				log_lines.append("被施加 %d 層蠱毒。" % amount)
+				if _player_artifact_absorb(state, log_lines, "蠱毒"):
+					pass
+				else:
+					state["player_poison"] = int(state["player_poison"]) + amount
+					log_lines.append("被施加 %d 層蠱毒。" % amount)
 			elif _artifact_absorb(state, log_lines, "蠱毒"):
 				pass
 			else:
@@ -252,6 +264,8 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			if from_enemy:
 				if bool(state.get("player_weak_immune", false)):
 					log_lines.append("（凝神）免疫虛弱。")
+				elif _player_artifact_absorb(state, log_lines, "虛弱"):
+					pass
 				else:
 					state["player_weak"] = int(state["player_weak"]) + amount
 					log_lines.append("你受到 %d 層虛弱。" % amount)
@@ -264,6 +278,8 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			if from_enemy:
 				if bool(state.get("player_vulnerable_immune", false)):
 					log_lines.append("（金鐘罩）免疫破綻。")
+				elif _player_artifact_absorb(state, log_lines, "破綻"):
+					pass
 				else:
 					state["player_vulnerable"] = int(state["player_vulnerable"]) + amount
 					log_lines.append("你受到 %d 層破綻。" % amount)
@@ -280,13 +296,17 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			if from_enemy:
 				if bool(state.get("player_stun_immune", false)):
 					log_lines.append("（金剛座）免疫暈眩。")
+				elif _player_artifact_absorb(state, log_lines, "暈眩"):
+					pass
 				elif stun_hit:
 					state["player_stunned"] = int(state.get("player_stunned", 0)) + amount
 					log_lines.append("你陷入暈眩，%d 回合無法行動！" % amount)
 				else:
 					log_lines.append("你穩住身形，未被打暈。")
 			else:
-				if stun_hit:
+				if _artifact_absorb(state, log_lines, "暈眩"):
+					pass
+				elif stun_hit:
 					state["enemy_stunned"] = int(state.get("enemy_stunned", 0)) + amount
 					log_lines.append("敵人陷入暈眩，%d 回合無法行動！" % amount)
 				else:
@@ -337,23 +357,33 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			if from_enemy:
 				if bool(state.get("player_silence_immune", false)):
 					log_lines.append("（通靈玉）免疫禁言。")
+				elif _player_artifact_absorb(state, log_lines, "禁言"):
+					pass
 				else:
 					state["player_silenced"] = int(state.get("player_silenced", 0)) + amount
 					log_lines.append("你被禁言，%d 回合無法施法！" % amount)
 			else:
-				state["enemy_silenced"] = int(state.get("enemy_silenced", 0)) + amount
-				log_lines.append("敵人被禁言，%d 回合無法施法！" % amount)
+				if _artifact_absorb(state, log_lines, "禁言"):
+					pass
+				else:
+					state["enemy_silenced"] = int(state.get("enemy_silenced", 0)) + amount
+					log_lines.append("敵人被禁言，%d 回合無法施法！" % amount)
 		"berserk":
 			# 瘋魔：接下來 amount 個回合失控（隨機目標、可能呆立）
 			if from_enemy:
 				if bool(state.get("player_berserk_immune", false)):
 					log_lines.append("（定魂珠）免疫瘋魔。")
+				elif _player_artifact_absorb(state, log_lines, "瘋魔"):
+					pass
 				else:
 					state["player_berserk"] = int(state.get("player_berserk", 0)) + amount
 					log_lines.append("你陷入瘋魔，%d 回合無法控制！" % amount)
 			else:
-				state["enemy_berserk"] = int(state.get("enemy_berserk", 0)) + amount
-				log_lines.append("敵人陷入瘋魔，%d 回合無法控制！" % amount)
+				if _artifact_absorb(state, log_lines, "瘋魔"):
+					pass
+				else:
+					state["enemy_berserk"] = int(state.get("enemy_berserk", 0)) + amount
+					log_lines.append("敵人陷入瘋魔，%d 回合無法控制！" % amount)
 		"draw":
 			state["pending_draw"] = int(state["pending_draw"]) + amount
 			log_lines.append("抽 %d 張牌。" % amount)
@@ -747,6 +777,10 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			var stripped: int = before_block if amount <= 0 else min(before_block, amount)
 			state["player_block"] = before_block - stripped
 			log_lines.append("%s 擊碎了你 %d 點護體。" % [state.get("enemy_name", "敵人"), stripped])
+		"player_artifact":
+			# 玩家獲得 N 層護咒（StS Artifact）：每層擋掉敵人施加的一個負面狀態（含蠱毒）。
+			state["player_artifact"] = int(state.get("player_artifact", 0)) + amount
+			log_lines.append("你結起護咒（擋下接下來 %d 次負面狀態）。" % amount)
 		"enemy_artifact":
 			# 護咒（StS Artifact）：敵人獲得 N 層護咒，每層擋掉玩家施加的一個負面狀態
 			# （虛弱/破綻/蠱毒）。剋制 debuff / 毒流，逼玩家硬輸出。

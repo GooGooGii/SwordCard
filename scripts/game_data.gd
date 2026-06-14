@@ -516,6 +516,8 @@ static func _zhao_linger() -> CharacterData:
 		make_card("zl_lingxijue", "靈息訣", "趙靈兒", 1, "power", "靈息綿長，本場戰鬥每打出一張技能牌便抽 1 張牌。", [{"kind": "draw_on_skill", "amount": 1}], "rare", "", true),
 		# 杖流 payoff：萬靈噬 —— 對全體依各自虛弱/破綻層數加傷，承接她大量的 weak_all / vulnerable_all 鋪場。
 		make_card("zl_wanlingshi", "萬靈噬", "趙靈兒", 2, "attack", "五靈反噬，對所有敵人造成 6 點傷害，敵人每層虛弱／破綻額外 +4。", [{"kind": "damage_debuff_bonus_all", "amount": 6, "bonus_per_layer": 4}], "rare"),
+		# 護咒（Artifact）source：靈族護身咒術，結護咒層擋下敵人施加的負面狀態（含蠱毒），art 借金剛咒
+		make_card("zl_huxinzhou", "護心咒", "趙靈兒", 1, "skill", "結 2 層護咒（每層擋下敵人施加的一個負面狀態，含蠱毒），並獲得 5 點護體。", [{"kind": "player_artifact", "amount": 2}, {"kind": "block", "amount": 5}], "uncommon", "zl_jingang"),
 	]
 	var character: CharacterData = _character("zhao_linger", "趙靈兒", 68, "五靈仙術、治療、護盾、解狀態與長戰持續。", cards)
 	# PAL1 對齊：9 basic + 3 uncommon + 0 rare
