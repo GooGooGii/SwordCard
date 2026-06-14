@@ -64,38 +64,71 @@ func _fill_info_popup(popup: PopupPanel, content: VBoxContainer, list: Array, id
 	var border: Color = _border_for(cur)
 	(popup.get_theme_stylebox("panel") as StyleBoxFlat).border_color = border
 	var multi: bool = list.size() > 1
-	var title_row: HBoxContainer = HBoxContainer.new()
-	title_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	title_row.add_theme_constant_override("separation", 12)
-	title_row.custom_minimum_size = Vector2(300, 0)
-	content.add_child(title_row)
-	if multi:
-		var prev_i: int = (idx - 1 + list.size()) % list.size()
-		title_row.add_child(_nav_triangle("◀", func() -> void: _fill_info_popup(popup, content, list, prev_i)))
-	var title_label: Label = Label.new()
-	title_label.text = cur.display_name
+	# ── 標題：名稱置中（切換三角移到下方遺物圖左右；與藥品彈窗一致）──
+	var title_label: Label = UIFactory.title_label(cur.display_name, 26)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_label.add_theme_font_size_override("font_size", 18)
 	title_label.add_theme_color_override("font_color", border)
-	title_row.add_child(title_label)
-	if multi:
-		var next_i: int = (idx + 1) % list.size()
-		title_row.add_child(_nav_triangle("▶", func() -> void: _fill_info_popup(popup, content, list, next_i)))
+	content.add_child(title_label)
+	# ── 稀有度膠囊 +（多件）計數 ──
+	var meta_row: HBoxContainer = HBoxContainer.new()
+	meta_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	meta_row.add_theme_constant_override("separation", 10)
+	content.add_child(meta_row)
+	var rar: String = cur.rarity if not cur.rarity.is_empty() else "common"
+	var pill: PanelContainer = PanelContainer.new()
+	var pill_sb: StyleBoxFlat = UIFactory.style_box(Color(border.r, border.g, border.b, 0.18), Color(border.r, border.g, border.b, 0.5), 1, 999)
+	pill_sb.content_margin_left = 12
+	pill_sb.content_margin_right = 12
+	pill_sb.content_margin_top = 2
+	pill_sb.content_margin_bottom = 3
+	pill.add_theme_stylebox_override("panel", pill_sb)
+	var pill_lbl: Label = Label.new()
+	pill_lbl.text = "%s 遺物" % rar.capitalize()
+	pill_lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
+	pill_lbl.add_theme_font_size_override("font_size", 12)
+	pill_lbl.add_theme_color_override("font_color", border)
+	pill.add_child(pill_lbl)
+	meta_row.add_child(pill)
 	if multi:
 		var counter: Label = Label.new()
 		counter.text = "%d / %d" % [idx + 1, list.size()]
-		counter.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		counter.autowrap_mode = TextServer.AUTOWRAP_OFF
 		counter.add_theme_font_size_override("font_size", 12)
 		counter.add_theme_color_override("font_color", Color("9aa3b2"))
-		content.add_child(counter)
+		meta_row.add_child(counter)
+	# ── 主視覺：◀ 遺物圖 ▶ — 切換三角放在圖的左右兩側 ──
+	var hero_row: HBoxContainer = HBoxContainer.new()
+	hero_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	hero_row.add_theme_constant_override("separation", 18)
+	content.add_child(hero_row)
+	if multi:
+		var prev_i: int = (idx - 1 + list.size()) % list.size()
+		hero_row.add_child(_nav_triangle("◀", func() -> void: _fill_info_popup(popup, content, list, prev_i)))
+	var hero_icon: RelicIcon = RelicIcon.new()
+	hero_row.add_child(hero_icon)
+	hero_icon.custom_minimum_size = Vector2(120, 120)
+	hero_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hero_icon.set_relic(cur)
+	if multi:
+		var next_i: int = (idx + 1) % list.size()
+		hero_row.add_child(_nav_triangle("▶", func() -> void: _fill_info_popup(popup, content, list, next_i)))
+	# ── 描述：嵌入暗底卷軸框 ──
+	var desc_panel: PanelContainer = PanelContainer.new()
+	var desc_sb: StyleBoxFlat = UIFactory.style_box(Color("0d141d", 0.66), Color(border.r, border.g, border.b, 0.28), 1, 10)
+	desc_sb.content_margin_left = 16
+	desc_sb.content_margin_right = 16
+	desc_sb.content_margin_top = 10
+	desc_sb.content_margin_bottom = 10
+	desc_panel.add_theme_stylebox_override("panel", desc_sb)
+	content.add_child(desc_panel)
 	var desc_label: Label = Label.new()
 	desc_label.text = cur.description
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc_label.custom_minimum_size = Vector2(300, 0)
+	desc_label.custom_minimum_size = Vector2(320, 0)
+	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc_label.add_theme_font_size_override("font_size", 14)
 	desc_label.add_theme_color_override("font_color", Color("e8e2c8"))
-	content.add_child(desc_label)
+	desc_panel.add_child(desc_label)
 	popup.reset_size()
 	popup.popup_centered()
 
