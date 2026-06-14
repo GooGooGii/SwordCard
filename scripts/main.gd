@@ -3093,7 +3093,7 @@ func _animate_enemy_death(w: Dictionary) -> void:
 
 
 func _build_battle_potion_strip(parent: VBoxContainer) -> void:
-	var slot_size: int = 46 if _battle_compact else 54  # 放大易點（觸控）
+	var slot_size: int = 50 if _battle_compact else 58  # 放大易點（觸控）
 	var strip: HBoxContainer = HBoxContainer.new()
 	strip.alignment = BoxContainer.ALIGNMENT_CENTER
 	strip.add_theme_constant_override("separation", 8)
@@ -3835,22 +3835,25 @@ func _refresh_relic_strip() -> void:
 		return
 	for child: Node in relic_strip.get_children():
 		child.queue_free()
-	# 最多顯示 MAX_RELIC_STRIP 顆（40px 舊版易點尺寸），其餘摺進「+N」鈕（開遺物清單 popup）
+	# 最多顯示 MAX_RELIC_STRIP 顆（44px 易點尺寸），其餘摺進「+N」鈕（開遺物清單 popup）。
+	# 每顆注入 siblings=全部遺物 + 索引 → 點開說明 popup 可用左右白三角切換檢視所有遺物。
 	const MAX_RELIC_STRIP: int = 12
 	var shown: int = 0
 	for r: RelicData in run_state.relics:
 		if shown >= MAX_RELIC_STRIP:
 			break
 		var icon: RelicIcon = RelicIcon.new()
-		icon.custom_minimum_size = Vector2(40, 40)
+		icon.custom_minimum_size = Vector2(44, 44)
 		relic_strip.add_child(icon)
 		icon.set_relic(r)
+		icon.siblings = run_state.relics
+		icon.sibling_index = shown
 		shown += 1
 	var overflow: int = run_state.relics.size() - shown
 	if overflow > 0:
 		var more_btn: Button = Button.new()
 		more_btn.text = "+%d" % overflow
-		more_btn.custom_minimum_size = Vector2(40, 40)
+		more_btn.custom_minimum_size = Vector2(44, 44)
 		more_btn.focus_mode = Control.FOCUS_NONE
 		more_btn.add_theme_font_size_override("font_size", 14)
 		more_btn.add_theme_color_override("font_color", ThemeColors.HIGHLIGHT_GOLD)
