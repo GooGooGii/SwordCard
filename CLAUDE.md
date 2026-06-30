@@ -85,7 +85,7 @@ AIRUN_AUTO=1 godot --headless --path . -s tools/ai_run.gd  # 內建粗淺 policy
 ```
 scenes/main.tscn         入口場景（極簡，主要邏輯在 scripts/main.gd）
 scripts/
-  main.gd                主控制器，所有 screen 都在這裡建構（~2000 行）
+  main.gd                主控制器，所有 screen 都在這裡建構（~12,300 行、386 函式——已成 god object，待抽 screen 控制器）
   ui_factory.gd          純 UI 工廠 (style_box, hp_bar, card_label, ...)
   theme_colors.gd        13 個 semantic 色常數
   card_format.gd         卡片/敵人 action 純格式化（顏色、名稱、intent badge、傷害預測）
@@ -528,7 +528,7 @@ match version:
 | 同格疊放 | **不允許**（每格只能放 1 瓶） |
 | Save | `RunState.potions: Array[Dictionary]`，存 id + 暫無其他欄位 |
 
-### 藥品清單（共 34 種；single source = `scripts/potion_catalog.gd`）
+### 藥品清單（共 37 種；single source = `scripts/potion_catalog.gd`，smoke test 鎖死數量 == 37）
 
 下表須與 `PotionCatalog.all()` 同步；新增 / 改藥時兩邊一起改。
 
@@ -680,7 +680,7 @@ func resolve_effects_list(effects: Array, state: Dictionary) -> Array[String]:
 
 | Phase | 內容 | 狀態 |
 |---|---|---|
-| 1. 資料層 | `potion_catalog.gd`（31 種藥）＋ `RunState.potions` + to/from_dict | ✅ 完成 |
+| 1. 資料層 | `potion_catalog.gd`（37 種藥）＋ `RunState.potions` + to/from_dict | ✅ 完成 |
 | 2. EffectResolver | `resolve_effects_list()` helper + `cure_poison` kind | ✅ 完成 |
 | 3. 戰鬥 UI | left_dock 藥格列 + `_use_potion()` + 確認 overlay + 戰鬥外 `_potion_overlay` | ✅ 完成 |
 | 4. 商店整合 | `ShopInventory.build_potions()` + 商店藥品列 + 購買確認 + 丟棄功能 | ✅ 完成 |
@@ -689,7 +689,7 @@ func resolve_effects_list(effects: Array, state: Dictionary) -> Array[String]:
 
 ### Smoke test 覆蓋
 
-- `_test_potion_catalog` — 31 種藥都有 id / display_name / effects，PotionCatalog.by_id 能找到
+- `_test_potion_catalog` — 37 種藥都有 id / display_name / effects，PotionCatalog.by_id 能找到
 - `_test_potion_save_roundtrip` — RunState 放 2 瓶藥 → to_dict → from_dict → 藥品保留
 - `_test_potion_use_heal` — 戰鬥 state 接 resolve_effects_list(heal 15) → player_hp 正確增加
 - `_test_potion_cure_poison` — 有 3 層蠱毒 → 使用解毒散 → player_poison = 0
