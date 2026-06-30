@@ -63,6 +63,8 @@ jobs:
           set -euo pipefail
           godot --headless --path . -s scripts/smoke_test.gd 2>&1 | tee smoke.log
           grep -q "SwordCard smoke test passed." smoke.log || { echo "::error::smoke test did not report success"; exit 1; }
+          # 引擎 ERROR: 行（含 SCRIPT ERROR:）一律視為失敗——避免「印 passed 但途中吞掉 ERROR」(WARNING 不擋)
+          if grep -q "ERROR:" smoke.log; then echo "::error::smoke log contains engine ERROR lines"; grep -n "ERROR:" smoke.log; exit 1; fi
 
       - name: Export Web build
         shell: bash

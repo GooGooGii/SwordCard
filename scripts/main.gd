@@ -690,11 +690,16 @@ func _battle_background_path() -> String:
 # main.gd 的編譯快取（smoke test 載入 main.gd 時就會踩到）。改用節點路徑存取，
 # 讓 main.gd 在任何 headless / tool 情境都能編譯；正式遊戲時節點存在、行為不變。
 func _play_bgm(track: String) -> void:
+	# 絕對路徑 get_node 在節點不在 active tree 時會丟 ERROR（smoke test 用 detached node）
+	if not is_inside_tree():
+		return
 	var am: Node = get_node_or_null("/root/AudioManager")
 	if am != null:
 		am.play_bgm(track)
 
 func _sfx(sfx_id: String) -> void:
+	if not is_inside_tree():
+		return
 	var am: Node = get_node_or_null("/root/AudioManager")
 	if am != null:
 		am.play_sfx(sfx_id)
