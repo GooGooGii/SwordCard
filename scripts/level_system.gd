@@ -209,18 +209,22 @@ static func _zl_unlocks() -> Dictionary:
 		# 3c 28傷 → 2c 18傷
 		16: [
 			# 2026-06-11 平衡：18→20（趙 Lv20 終幕谷底 30%，後期絕招直傷上修）
+			# 2026-06-30：20→24（同狂雷，趙 Lv20 vs 拜月 clock race 直傷續推）
 			GameData.make_card("zl_taishan", "泰山壓頂", "趙靈兒", 2, "attack",
-				"土系絕招。造成 20 點傷害。",
-				([{"kind": "damage", "amount": 20}] as Array[Dictionary]),
+				"土系絕招。造成 24 點傷害。",
+				([{"kind": "damage", "amount": 24}] as Array[Dictionary]),
 				"rare"),
 		],
 		# Lv18 (PAL1 Lv26) — 狂雷
 		# 3c 30傷 → 2c 20傷
 		18: [
 			# 2026-06-11 平衡：20→22（同泰山，趙 Lv20 終幕谷底上修）
+			# 2026-06-30 終幕谷底再修：22→26。趙 Lv20 vs 拜月 37% 仍為四角地板；
+			# 試過加複利 power capstone 反因稀薄牌組 dilution + policy 誤用 → 30%（回滾）。
+			# 直傷上修是趙的歷史有效槓桿（不稀釋牌組）：續推絕招直傷。
 			GameData.make_card("zl_kuanglei", "狂雷", "趙靈兒", 2, "attack",
-				"雷系絕招。造成 22 點傷害。",
-				([{"kind": "damage", "amount": 22}] as Array[Dictionary]),
+				"雷系絕招。造成 26 點傷害。",
+				([{"kind": "damage", "amount": 26}] as Array[Dictionary]),
 				"rare"),
 		],
 	}

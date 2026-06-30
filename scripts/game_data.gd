@@ -1570,11 +1570,11 @@ static func _zhenyu_mingwang() -> EnemyData:
 	enemy.actions = [
 		{"intent": "明王怒喝 20 + 破綻 1", "effects": [{"kind": "damage", "amount": 20}, {"kind": "vulnerable", "amount": 1}]},
 		{"intent": "鎖妖鐵鏈 16 + 虛弱 2", "effects": [{"kind": "damage", "amount": 16}, {"kind": "weak", "amount": 2}]},
-		{"intent": "金剛法相 22", "effects": [{"kind": "block", "amount": 22}]},
+		{"intent": "金剛法相 護22·噬毒", "effects": [{"kind": "absorb_poison"}, {"kind": "block", "amount": 22}]},
 		{"intent": "降魔杵 28", "effects": [{"kind": "damage", "amount": 28}]}
 	]
 	enemy.phase_2_actions = [
-		{"intent": "明王金身 26", "effects": [{"kind": "block", "amount": 26}]},
+		{"intent": "明王金身 護26·噬毒", "effects": [{"kind": "absorb_poison"}, {"kind": "block", "amount": 26}]},
 		{"intent": "鎮獄業火 32 + 破綻 2", "effects": [{"kind": "damage", "amount": 32}, {"kind": "vulnerable", "amount": 2}]},
 		{"intent": "召喚鎖妖塔殘魂", "effects": [{"kind": "summon", "count": 1}]},
 		{"intent": "怒目摧魂 38", "effects": [{"kind": "damage", "amount": 38}]}
