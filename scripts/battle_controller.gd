@@ -454,6 +454,76 @@ func snapshot_state() -> Dictionary:
 		"enemies": enemy_snaps,
 	}
 
+# ── RunLogger 逐事件記錄（僅在 RunLogger.is_active() 時有負擔；一般模擬 no-op）──
+func _enemy_snap_list() -> Array:
+	var out: Array = []
+	var slots: Array = state.get("enemies", []) as Array
+	for i: int in range(slots.size()):
+		var s: Dictionary = slots[i] as Dictionary
+		out.append({"name": _enemy_display_name_for(i), "hp": int(s.get("hp", 0)), "max_hp": int(s.get("max_hp", 1))})
+	return out
+
+func _log_turn_start() -> void:
+	if not RunLogger.is_active():
+		return
+	var hand_names: Array = []
+	if deck != null:
+		for c_v: Variant in deck.hand:
+			hand_names.append((c_v as CardData).display_title())
+	RunLogger.log_event("battle", "turn_start", {
+		"turn": int(state["turn"]), "energy": int(state["energy"]),
+		"player_hp": int(state["player_hp"]), "player_max_hp": int(state.get("player_max_hp", 0)),
+		"player_block": int(state["player_block"]),
+		"active": _active_index(), "hand": hand_names, "enemies": _enemy_snap_list(),
+	})
+
+func _log_card_play(card: CardData, cost: int, before: Dictionary) -> void:
+	if not RunLogger.is_active():
+		return
+	var after: Dictionary = snapshot_state()
+	var eb: Array = before.get("enemies", []) as Array
+	var ea: Array = after.get("enemies", []) as Array
+	var dmg: Array = []
+	var total: int = 0
+	var statuses: Array = []
+	for i: int in range(min(eb.size(), ea.size())):
+		var d: int = int((eb[i] as Dictionary)["hp"]) - int((ea[i] as Dictionary)["hp"])
+		dmg.append(d)
+		if d > 0:
+			total += d
+		var st: Dictionary = {}
+		for key: String in ["poison", "weak", "vulnerable", "stunned"]:
+			var delta: int = int((ea[i] as Dictionary).get(key, 0)) - int((eb[i] as Dictionary).get(key, 0))
+			if delta != 0:
+				st[key] = delta
+		if not st.is_empty():
+			st["i"] = i
+			statuses.append(st)
+	RunLogger.log_event("battle", "play_card", {
+		"turn": int(state["turn"]), "card": card.display_title(), "ctype": card.card_type, "cost": cost,
+		"energy_after": int(state["energy"]),
+		"dmg": dmg, "total_dmg": total,
+		"block_gained": int(after["player_block"]) - int(before["player_block"]),
+		"self_hp_delta": int(after["player_hp"]) - int(before["player_hp"]),
+		"statuses": statuses, "enemies": _enemy_snap_list(), "ended": is_battle_over(),
+	})
+
+func _log_enemy_phase(before: Dictionary, actions: Array[Dictionary]) -> void:
+	if not RunLogger.is_active():
+		return
+	var acts: Array = []
+	for i: int in range(actions.size()):
+		var a: Dictionary = actions[i]
+		if a.is_empty():
+			continue
+		acts.append({"i": i, "name": _enemy_display_name_for(i), "intent": String(a.get("intent", ""))})
+	RunLogger.log_event("battle", "enemy_action", {
+		"turn": int(state["turn"]), "actions": acts,
+		"player_hp_before": int(before.get("player_hp", 0)), "player_hp_after": int(state["player_hp"]),
+		"player_hp_delta": int(state["player_hp"]) - int(before.get("player_hp", 0)),
+		"player_block_after": int(state["player_block"]), "enemies": _enemy_snap_list(),
+	})
+
 func is_victory() -> bool:
 	# 全部敵人 HP <= 0 才算勝（含召喚物）
 	var enemy_slots: Array = state.get("enemies", []) as Array
@@ -698,6 +768,7 @@ func start_turn() -> Dictionary:
 	if deck != null:
 		deck.draw(draw_count)
 	add_log("第 %d 回合開始，抽 %d 張牌。" % [int(state["turn"]), draw_count])
+	_log_turn_start()
 	return {"before_tick": before_tick, "ended": false}
 
 # Event Branching P4：掃 active 角色的整副 deck（draw + hand + discard + exhausted）
@@ -825,6 +896,7 @@ func play_card(card: CardData) -> Dictionary:
 	_check_combo_strike()
 	_process_corpse_poison()  # 屍蠱：剛被打死的中毒敵人殘餘毒轉移給活敵
 	_check_active_enemy_death()  # active 敵被打死 → 自動換到下一個活敵
+	_log_card_play(card, cost, before_card)
 	return {"affordable": true, "before_card": before_card, "ended": is_battle_over(), "stolen_item": stolen_item}
 
 # 消耗流 on-exhaust 觸發：每消耗 1 張牌 → 無痛訣(+護體) / 噬牌訣(抽牌) / 消耗協同遺物。
@@ -1104,6 +1176,7 @@ func resolve_enemy_phase(actions: Variant) -> Dictionary:
 		if run_state != null:
 			run_state.gold += won_gold
 		add_log("你從賭局贏得 %d 枚銅錢。" % won_gold)
+	_log_enemy_phase(before_enemy, action_list)
 	return {"before_enemy": before_enemy, "ended": is_battle_over()}
 
 # 召喚機制：EffectResolver 的 "summon" effect 會把請求加進 state["pending_summons"]

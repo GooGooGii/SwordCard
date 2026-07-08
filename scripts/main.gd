@@ -705,6 +705,7 @@ func _sfx(sfx_id: String) -> void:
 		am.play_sfx(sfx_id)
 
 func show_main_menu() -> void:
+	RunLogger.finish()  # 收尾任何進行中的 run log（無 active log 則 no-op）
 	selected_party_ids.clear()  # 進主選單清掉 character_select 的暫存隊伍
 	_hide_title_bar()
 	_play_bgm("title")
@@ -1310,6 +1311,11 @@ func start_run(party_or_char: Variant) -> void:
 	if Ascension.starts_cursed(run_state.ascension_level) and not run_state.character_decks.is_empty():
 		(run_state.character_decks[0] as Array).append(CurseCatalog.make_card("yao_zhai"))
 	run_state.encounter_choices = _make_encounter_choices()
+	# 逐事件 run 記錄（電腦版才寫；戰鬥效果由 BattleController 自動記，見 RunLogger）
+	var _log_ids: Array = []
+	for _c: CharacterData in party:
+		_log_ids.append(_c.id)
+	RunLogger.start({"party": _log_ids, "ascension": run_state.ascension_level, "seed": seed_for_run, "mode": "game"})
 	randomize()  # 地圖生成完，戰鬥/獎勵恢復隨機 RNG
 	pending_seed = 0  # 消費掉
 	selected_party_ids.clear()  # 隊伍鎖死、清掉 select buffer

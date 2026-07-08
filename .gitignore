@@ -32,6 +32,7 @@ _ai_result.json
 _ai_transcript.json
 _ai_err.txt
 _ai_runs/
+_run_log.jsonl
 
 # render-probe 暫存截圖
 _*.png

@@ -102,6 +102,14 @@ AIRUN_AUTO=1 godot --headless --path . -s tools/ai_run.gd  # 內建粗淺 policy
 
 完整協定見 `docs/AI_BALANCE_HARNESS.md`。玩完刪 `_ai_*.json` 暫存。
 
+**逐事件 run log（試玩後多面向分析，`scripts/run_logger.gd`）**：跑 run 時把每個決策點與效果寫成 JSONL
+（`cat` ∈ run/meta/battle）。驅動器寫到 repo 根 `_run_log.jsonl`（gitignored）；一般遊戲寫 `user://run_logs/`。
+**只在電腦寫**（`OS.has_feature("mobile")` 為真則整個停用）；未 `start()` 前 no-op，故 smoke/模擬零負擔。
+戰鬥效果（出牌傷害/護體/狀態、敵人行動傷害）由 `BattleController` 自動記；meta 決策由 `AiRunEngine._log` 轉寫。
+玩一次即可從不同面向切（出牌效率 `ev==play_card` 的 `total_dmg/cost`、每回合節奏 group by `turn`、
+敵人壓力 `ev==enemy_action` 的 `player_hp_delta`、取捨 `cat==meta`）。
+> 讀檔用 UTF-8（`io.open(..., encoding='utf-8')`）——Windows cp950 console 會 mojibake 中文，但檔案本身是好的。
+
 ## Project Layout
 
 ```
@@ -122,6 +130,7 @@ scripts/
   deck_manager.gd        抽牌堆/棄牌堆/手牌
   run_state.gd           跨節點的 run 狀態（角色、HP、deck、relics、地圖、藥品）
   save_manager.gd        user://savegame.json 讀寫 + 版本/損毀處理
+  run_logger.gd          逐事件 run log（JSONL，僅電腦寫）；試玩後多面向分析
   settings_manager.gd    音量、全螢幕（手機平台略過）
   map_generator.gd       隨機地圖（9-11 層 + boss）+ ACT_ENCOUNTERS 遭遇表
   map_link_layer.gd      地圖連線渲染

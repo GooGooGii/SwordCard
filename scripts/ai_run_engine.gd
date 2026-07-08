@@ -77,6 +77,10 @@ func setup(party_ids: Array, ascension: int = 0, run_seed: int = 0) -> void:
 	seed(seed_for_run)
 	_phase = "boon"
 	_ctx = {"boons": _make_boon_choices()}
+	# 逐事件 run 記錄（試玩後多面向分析）；驅動器寫到 repo 根方便直接讀，手機版 RunLogger 自會停用。
+	RunLogger.start({
+		"party": party_ids.duplicate(), "ascension": ascension, "seed": seed_for_run,
+	}, "res://_run_log.jsonl")
 	_log("run_start", {
 		"party": party_ids.duplicate(),
 		"ascension": ascension,
@@ -1255,6 +1259,7 @@ func _finish(victory: bool, reason: String) -> void:
 		"steps": _step_count,
 	}
 	_log("run_end", result)
+	RunLogger.finish(result)
 
 func _view_done() -> Dictionary:
 	return {"kind": "done", "phase_label": "結束", "run": _run_context(),
@@ -1278,6 +1283,10 @@ func _choice_int(choice: Variant) -> int:
 
 func _log(event: String, data: Dictionary) -> void:
 	transcript.append({"step": _step_count, "phase": _phase, "event": event, "data": data})
+	# 轉寫進 RunLogger 檔（meta 決策層）。run_start/run_end 由 RunLogger.start/finish 自己寫、
+	# play_card 由 BattleController 記更完整的效果 delta，故此處三者不重複轉寫。
+	if event != "run_start" and event != "run_end" and event != "play_card":
+		RunLogger.log_event("meta", event, data)
 
 # ──────────────────────────────────────────────────────────────────────────
 # 內建啟發式 policy（smoke test 與無人值守模式用；比隨機 AI 略聰明，但仍很粗淺）。
