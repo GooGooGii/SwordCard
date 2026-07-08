@@ -4825,6 +4825,7 @@ func _make_reward_choices() -> Array[CardData]:
 			for e: Dictionary in (t.get("effects", []) as Array):
 				if String(e.get("kind", "")) == "card_reward_count_bonus":
 					count += int(e.get("amount", 0))
+	count = maxi(1, count)  # 玉菩提珠等負向 bonus 疊加後至少留 1 張可選
 	# Boss 獎勵：優先 rare，不足再補 uncommon、最後 common（STS：boss 卡三張皆最高稀有）
 	if _boss_card_reward:
 		var ordered: Array[CardData] = []

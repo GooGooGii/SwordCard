@@ -68,6 +68,8 @@ static func _generals() -> Array[RelicData]:
 		[{"trigger": "battle_start", "effects": [{"kind": "self_heal", "amount": 6}]}], Color("d76a5a")))
 	l.append(_make("she_dan", "蛇膽", "戰鬥開始敵人受到 3 層蠱毒。", "common",
 		[{"trigger": "battle_start", "effects": [{"kind": "enemy_poison", "amount": 3}]}], Color("76c46a")))
+	l.append(_make("poyao_sha", "破妖砂", "戰鬥開始敵人破綻 1 層。", "common",
+		[{"trigger": "battle_start", "effects": [{"kind": "enemy_vulnerable", "amount": 1}]}], Color("d8b06a")))
 	l.append(_make("zhu_sha_bi", "朱砂筆", "戰鬥開始敵人虛弱 2 層。", "uncommon",
 		[{"trigger": "battle_start", "effects": [{"kind": "enemy_weak", "amount": 2}]}], ThemeColors.HP_FILL))
 	l.append(_make("han_shuang_zhu", "寒霜珠", "戰鬥開始敵人破綻 2 層。", "uncommon",
@@ -133,6 +135,10 @@ static func _generals() -> Array[RelicData]:
 		[{"trigger": "card_played", "filter": {"card_type": "skill"}, "effects": [{"kind": "self_block", "amount": 2}]}], Color("76c4a8")))
 	l.append(_make("tie_xue_ling", "鐵血令", "每場戰鬥第 1 次出技能牌時，回復 2 生命。", "common",
 		[{"trigger": "card_played", "filter": {"card_type": "skill", "max_per_battle": 1}, "effects": [{"kind": "self_heal", "amount": 2}]}], Color("a85a4a")))
+	l.append(_make("kaishan_fu", "開山符", "每場戰鬥第 1 次出攻擊牌時，對敵人額外造成 4 點傷害。", "common",
+		[{"trigger": "card_played", "filter": {"card_type": "attack", "max_per_battle": 1}, "effects": [{"kind": "enemy_damage", "amount": 4}]}], Color("e2a04a")))
+	l.append(_make("tongqian_jian", "銅錢劍", "每場戰鬥前 2 次出技能牌時，各獲得 3 護體。", "common",
+		[{"trigger": "card_played", "filter": {"card_type": "skill", "max_per_battle": 2}, "effects": [{"kind": "self_block", "amount": 3}]}], Color("c9a23a")))
 	l.append(_make("wu_cai_shi", "五彩石", "出能力牌時，敵人 +2 層蠱毒。", "uncommon",
 		[{"trigger": "card_played", "filter": {"card_type": "power"}, "effects": [{"kind": "enemy_poison", "amount": 2}]}], Color("d9c2ff")))
 	l.append(_make("nu_mu_zhu", "怒目珠", "每次獲得護體，敵人 +1 層破綻。", "uncommon",
@@ -201,6 +207,11 @@ static func _generals() -> Array[RelicData]:
 	# 取捨②龜甲流：高減傷換低輸出（懲罰多段連擊、獎勵毒/反傷流）
 	l.append(_make("guixi_xuanjia", "龜息玄甲", "受到的傷害 -3（最低 0），但造成的傷害 -1。", "rare",
 		[{"trigger": "passive_modifier", "effects": [{"kind": "damage_taken_reduction", "amount": 3}, {"kind": "damage_out_bonus", "amount": -1}]}], Color("6a8a78")))
+	# 取捨③玉菩提珠（StS Busted Crown 式「+能量＋run 層代價」；正史：鎮獄明王身上可偷的九顆玉菩提珠）
+	# 代價用 card_reward_count_bonus 負值實現，卡牌獎勵處已 clamp ≥1；與多寶閣(+1)疊加為 -1
+	l.append(_make("yu_puti_zhu", "玉菩提珠", "每回合開始 +1 靈力，但卡牌獎勵少 2 張可選。", "rare",
+		[{"trigger": "turn_start", "effects": [{"kind": "self_energy", "amount": 1}]},
+		{"trigger": "permanent", "effects": [{"kind": "card_reward_count_bonus", "amount": -2}]}], Color("e8d49a")))
 	# 消耗流協同（StS Charon's Ashes 式）：每消耗 1 張牌就對敵造成傷害
 	l.append(_make("yehuo_lu", "業火爐", "每消耗 1 張牌，對敵人造成 3 點直接傷害。", "rare",
 		[{"trigger": "card_exhausted", "effects": [{"kind": "enemy_damage", "amount": 3}]}], Color("e2552a")))
@@ -209,15 +220,22 @@ static func _generals() -> Array[RelicData]:
 static func _weapons() -> Array[RelicData]:
 	var l: Array[RelicData] = []
 	# 李逍遙 (劍)
+	# 注意：run_state.init_for 送 weapons_for_character()[0] 當起始武器，各角色第一件不可換位
 	l.append(_make_weapon("chunjun_jian", "純鈞劍", "戰鬥開始本場戰鬥造成的傷害 +1。", "li_xiaoyao", "uncommon",
 		[{"trigger": "battle_start", "effects": [{"kind": "self_power", "amount": 1}]}], Color("a8c4e8")))
 	l.append(_make_weapon("longquan_jian", "龍泉劍", "戰鬥開始敵人 +2 層破綻。", "li_xiaoyao", "rare",
 		[{"trigger": "battle_start", "effects": [{"kind": "enemy_vulnerable", "amount": 2}]}], Color("9bd8ff")))
+	# common 專武（StS pattern：Common 級角色遺物＝小幅放大 archetype）：木劍＝正史初始武器，速攻開場手數
+	l.append(_make_weapon("mu_jian", "木劍", "戰鬥第一回合多抽 1 張牌。", "li_xiaoyao", "common",
+		[{"trigger": "battle_start", "effects": [{"kind": "self_draw_next_turn", "amount": 1}]}], Color("b09a6a")))
 	# 趙靈兒 (法器)
 	l.append(_make_weapon("suoyao_yu", "鎖妖玉", "戰鬥開始回復 10 生命。", "zhao_linger", "uncommon",
 		[{"trigger": "battle_start", "effects": [{"kind": "self_heal", "amount": 10}]}], Color("d9c2ff")))
 	l.append(_make_weapon("nuwa_shi", "女媧石", "治療效果 +3。", "zhao_linger", "rare",
 		[{"trigger": "passive_modifier", "effects": [{"kind": "heal_bonus", "amount": 3}]}], Color("e2a8ff")))
+	# common 專武：越女劍＝正史靈兒可裝備武器，debuff 開局鋪墊
+	l.append(_make_weapon("yuenv_jian", "越女劍", "戰鬥開始敵人虛弱 1 層。", "zhao_linger", "common",
+		[{"trigger": "battle_start", "effects": [{"kind": "enemy_weak", "amount": 1}]}], Color("9bd8d0")))
 	# 林月如 (鞭劍)
 	l.append(_make_weapon("longshe_zhang", "龍蛇杖", "戰鬥開始本場戰鬥造成的傷害 +2。", "lin_yueru", "rare",
 		[{"trigger": "battle_start", "effects": [{"kind": "self_power", "amount": 2}]}], ThemeColors.HP_FILL))
@@ -226,6 +244,9 @@ static func _weapons() -> Array[RelicData]:
 	# 反擊流錨點（鳳鳴刀）：戰鬥開始得 3 點荊棘，搭配 Thorns 卡建反擊流
 	l.append(_make_weapon("fengming_dao", "鳳鳴刀", "戰鬥開始獲得 3 點荊棘（被攻擊時反彈傷害給攻擊者）。", "lin_yueru", "rare",
 		[{"trigger": "battle_start", "effects": [{"kind": "self_thorns", "amount": 3}]}], Color("e89a5f")))
+	# common 專武：林家劍穗（自創，林家堡意象），續航反擊起手
+	l.append(_make_weapon("linjia_jiansui", "林家劍穗", "戰鬥開始獲得 2 點荊棘（被攻擊時反彈傷害給攻擊者）。", "lin_yueru", "common",
+		[{"trigger": "battle_start", "effects": [{"kind": "self_thorns", "amount": 2}]}], Color("d88a8a")))
 	# 阿奴 (蠱蟲)
 	l.append(_make_weapon("wanyi_wang", "天蛇靈笛", "笛音催蠱，敵人受到的蠱毒 +2。", "anu", "rare",
 		[{"trigger": "passive_modifier", "effects": [{"kind": "poison_bonus", "amount": 2}]}], Color("6aa44a")))
@@ -234,6 +255,9 @@ static func _weapons() -> Array[RelicData]:
 	# 阿奴刀流錨點（巫月神刀）：每出一張攻擊牌本場傷害 +1，連斬越多疊越快
 	l.append(_make_weapon("wuyue_shendao", "巫月神刀", "每出一張攻擊牌，本場戰鬥傷害 +1（每場戰鬥僅前 4 次）。", "anu", "rare",
 		[{"trigger": "card_played", "filter": {"card_type": "attack", "max_per_battle": 4}, "effects": [{"kind": "self_power", "amount": 1}]}], Color("c0455a")))
+	# common 專武：百蠱囊（自創，苗疆蠱術意象），毒流引擎起手
+	l.append(_make_weapon("baigu_nang", "百蠱囊", "戰鬥開始敵人 +2 層蠱毒。", "anu", "common",
+		[{"trigger": "battle_start", "effects": [{"kind": "enemy_poison", "amount": 2}]}], Color("7a9a4a")))
 	return l
 
 static func _artifacts() -> Array[RelicData]:
