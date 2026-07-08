@@ -11,6 +11,12 @@ const BLACK_PRICE_MULTIPLIER: float = 1.25
 const BLACK_PRICE_FLAT_BONUS: int = 12
 const SALE_CHANCE: float = 0.35
 const SALE_DISCOUNT: float = 0.5
+# §六 經濟修正 A：商店價隨幕數遞增（卡/遺物/藥品/服務共用），幕 1 ×1.0 → 幕 8 ×2.26。
+# 後期金山才有出口、重現「想買買不起」的取捨時刻。main.gd 與 ai_run_engine 共用此式避免漂移。
+const ACT_PRICE_STEP: float = 0.18
+
+static func act_price_multiplier(act: int) -> float:
+	return 1.0 + ACT_PRICE_STEP * float(max(0, act - 1))
 
 static func build(character: CharacterData, is_black_shop: bool) -> Array[Dictionary]:
 	var pool: Array[CardData] = _black_pool(character) if is_black_shop else _normal_pool(character)

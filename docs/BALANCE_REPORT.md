@@ -271,3 +271,42 @@ AIBATCH_SEEDS=16 godot --headless --path . -s tools/ai_batch.gd
 新通用被動 ×2（`enrage_after` 倒數狂化、`ally_block_aura` 護持光環），開戰 log 自動告示規則。
 平衡影響（故意調整）：**阿奴 vs 石長老 mid 83→73、升級組 100→83**——毒流終於有剋星戰、
 升級層恢復對阿奴的靈敏度；其餘 baseline 全部容差內不動。8/8 幕每幕至少 1 機制敵 + boss 機制覆蓋完成。
+
+## 九、經濟通膨 + 組隊免費勝利修正（2026-06-30）
+
+> 對應 GAME_REVIEW_2026-06-30 §1.1 / §2.2 兩個 P1。§六（經濟）的建議 A 在此落地。
+
+### A. 商店價格幕數係數（§六 通膨修正，已實作）
+
+根因（§六）：商店價**不隨幕數成長**，後期金山 vs 早期固定價的剪刀差越拉越大、幕 3 起「躺著全買」。
+
+- 新增 `ShopInventory.act_price_multiplier(act) = 1.0 + 0.18×(act-1)`（幕 1 ×1.0 → 幕 8 ×2.26），
+  卡 / 遺物 / 藥品 / 服務（削牌・強化）**全部套用**。
+- 中央化：`main.gd` 卡價從各自內聯折扣迴圈改走 `_shop_apply_discount`（順手修掉「卡價漏套
+  ascension 漲價 / 詛咒加價」的既有不一致）；`_shop_relic_price` 與 `_shop_apply_discount` 各乘一次係數。
+- **三條模擬路徑同步避免漂移**：`ai_run_engine._shop_discount`（§六 經濟探針用）、
+  `run_simulator._resolve_shop`（含削牌成本）皆套同一式。
+- 效果：後期一次滿貨清倉成本 ~2×，rare/legendary 遺物（130/180 base）幕 8 ≈ 294/407，金山終於有出口。
+- 未做（待真人/探針重測後再評）：§六 建議 B（戰鬥金 act 遞減，動爽感後置）、C（傳承服務金坑，新 UI 較重）。
+  若重跑 §六 協定（同 seed 20260611 對照曲線）仍通膨，再上 B/C。
+
+### B. 組隊「免費勝利」修正（故意調整）
+
+根因（GAME_REVIEW §2.2）：`duo_li_anu` / `trio` baseline 皆 **100%＝永不輸**。切人便宜 + 敵 HP ×1.35/人不足。
+
+| 旋鈕 | 改動 | 觀測（vs 石長老 mid，10 回合限時）|
+|---|---|---|
+| `PARTY_ENEMY_HP_STEP` | 0.35 → **0.85**（duo ×1.85 / trio ×2.85）| — |
+| `BENCH_HEAL_PER_TURN` | 2 → **1**（削免費續航）| — |
+| 結果 | | **trio 100→63**（終於 37% 敗場）、**duo 100→97** |
+
+**關鍵發現：本層在 10 回合 DPS race 下是「雙峰閾值偵測器」，非平滑旋鈕。**
+
+- trio 隨 HP step 0.70→0.85→1.0 = **93→63→0**（cliff）：要嘛 10 回合內 out-DPS、要嘛永遠打不完，中間沒平滑帶。
+- `duo_li_anu` 是「阿奴疊毒 ramp + 李直傷」**真 synergy carry**：毒流累積傷害不隨敵 max HP 縮放失效，
+  故 HP ×1.7~×2.85 都壓不太動（~97）。要再壓 duo 需 HP 高到 trio 歸零，不可取。
+- 試過拔 trio +1 能量（tempo 槓桿）→ trio 100→**7%**（能量 cliff 太粗、且 duo 不受影響）= 過度修正，回滾。
+
+**結論**：trio 的「永不輸」已解除；duo 殘留 97 是合理 synergy 而非免費身體。**真正的 duo 旋鈕是製作人
+決策（組隊＝opt-in 變化模式 vs 深調）＋ 互動 agent 實測**，非此啟發式（emergency-only 切人、不打 combo）測得到。
+本層 baseline 視為上界警報（duo 97 / trio 63），同其他飽和層。

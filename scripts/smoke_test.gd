@@ -1708,11 +1708,16 @@ func _simulate_party_battle(party: Array[CharacterData], enemy_template: EnemyDa
 # null = 尚未觀測；初跑後填入。若 3 人隊勝率 >95% = 組隊白給，要回頭評估能量/敵 HP scale。
 const BALANCE_BASELINES_PARTY: Dictionary = {
 	# 2026-06-11 P2-10 觀測：舊公式（能量 3+(n-1)、無敵 HP 補正）兩組皆 100% = 組隊白給。
-	# 修正：能量 3+(n-1)/2（2人3、3人4）＋ 敵 HP 每隊員 +35% → 隨機 AI 下 duo 80 / trio 87。
-	# 2026-06-11 BattlePolicy 重置：聰明打法下兩組回 100（與單人最強林 97 一致＝
-	# 「組隊≈最強單人」非白給；本層同樣退化為 regression 上界警報）。
-	"duo_li_anu": 100,
-	"trio_li_zhao_lin": 100,
+	# 2026-06-11 BattlePolicy 重置：HP step 0.35 下聰明打法兩組回 100%（永不輸＝免費勝利）。
+	# 2026-06-30「免費勝利」修正（故意調整）：HP step 0.35→0.85（duo ×1.85 / trio ×2.85）＋ 後排回血 2→1。
+	#   觀測：trio 100→63（終於有 37% 敗場）、duo 100→97。
+	#   ⚠ 本層在 10 回合 DPS race 下為「雙峰閾值偵測器」非平滑旋鈕：trio 隨 HP step 0.70→0.85→1.0
+	#     = 93→63→0（cliff）；duo_li_anu 是「阿奴疊毒 ramp + 李直傷」真 synergy carry，毒流不隨敵 HP
+	#     縮放而失效，故 HP 拉不太動 duo（×1.7~×2.85 都 ~97）。要再壓 duo 需 HP 高到 trio 歸零。
+	#   結論：trio 的「永不輸」已解除；duo 殘留高勝率是合理 synergy，真正的 duo 旋鈕是「組隊定位
+	#     （變化模式 vs 深調）」的製作人決策＋互動 agent 實測，非此啟發式測得到。本層視為上界警報。
+	"duo_li_anu": 97,
+	"trio_li_zhao_lin": 63,
 }
 
 func _test_balance_party(characters: Array[CharacterData], bosses: Array[EnemyData]) -> void:

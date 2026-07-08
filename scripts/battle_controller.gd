@@ -4,8 +4,8 @@ extends RefCounted
 const HAND_SIZE: int = 5
 const BASE_TURN_ENERGY: int = 3
 const SWITCH_IN_BLOCK: int = 2  # P3-11：切人上場護體（鼓勵主動切人）
-const PARTY_ENEMY_HP_STEP: float = 0.35  # P2-10：每多 1 名隊員，敵 HP +35%（組隊白給補正）
-const BENCH_HEAL_PER_TURN: int = 2
+const PARTY_ENEMY_HP_STEP: float = 0.85  # P2-10→2026-06-30：每多 1 名隊員敵 HP +85%（原 0.35 仍「免費勝利」=duo/trio 100%）
+const BENCH_HEAL_PER_TURN: int = 1  # 2026-06-30：後排回血 2→1，削組隊「免費續航」（tempo 才是白給瓶頸，非血池）
 const MAX_ENEMIES_PER_BATTLE: int = 3
 const FEMALE_CHARACTER_IDS: Array[String] = ["zhao_linger", "lin_yueru", "anu"]
 
@@ -95,8 +95,8 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 	battle_log.clear()
 	var party_size: int = run_state.characters.size()
 	# P2-10 組隊白給修正：能量 3+(n-1) → 3+(n-1)/2（2人3、3人4）。
-	# 實測 vs 中段 boss：舊公式 2/3 人隊 100%（單人最高 83%）；敵 HP 補正單獨拉不動
-	#（×2.4 仍 97%，瓶頸是 tempo 不是血池）。新公式+HP 0.35 → duo 83 / trio 87。
+	# 2026-06-30：拔 trio +1 能量試過 → trio 100%→7%（能量 cliff 太粗、duo 不受影響）= 過度修正，
+	# 故能量公式保留，改用單一 HP step 旋鈕（見 PARTY_ENEMY_HP_STEP）把 duo/trio 一起壓回有敗場。
 	var per_turn_energy: int = BASE_TURN_ENERGY + max(0, party_size - 1) / 2
 	# 每個角色獨立 DeckManager
 	decks.clear()

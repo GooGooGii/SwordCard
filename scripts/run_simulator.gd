@@ -648,12 +648,13 @@ func _apply_event_effects(rs: RunState, effects: Array, tier: String) -> void:
 
 func _resolve_shop(rs: RunState, tier: String) -> void:
 	var inv: Array[Dictionary] = ShopInventory.build(rs.characters[0], false)
+	var act_mult: float = ShopInventory.act_price_multiplier(rs.act)  # §六 幕數係數
 	if tier == "random":
 		# 生手：隨機亂買得起的，浪費銅錢、稀釋牌組；不削牌
 		inv.shuffle()
 		for entry: Dictionary in inv:
 			var card_r: CardData = entry["card"] as CardData
-			var price_r: int = int(entry.get("price", ShopInventory.price_of(card_r, false)))
+			var price_r: int = int(round(int(entry.get("price", ShopInventory.price_of(card_r, false))) * act_mult))
 			if rs.gold >= price_r and randf() < 0.6:
 				rs.gold -= price_r
 				(rs.character_decks[0] as Array).append(card_r.clone())
@@ -666,20 +667,21 @@ func _resolve_shop(rs: RunState, tier: String) -> void:
 		if bought >= 2:
 			break
 		var card: CardData = entry["card"] as CardData
-		var price: int = int(entry.get("price", ShopInventory.price_of(card, false)))
+		var price: int = int(round(int(entry.get("price", ShopInventory.price_of(card, false))) * act_mult))
 		if rs.gold >= price and _card_draft_value(card) >= 8.0:
 			rs.gold -= price
 			(rs.character_decks[0] as Array).append(card.clone())
 			bought += 1
 	# 削牌（去蕪存菁）：高手門檻較低（更積極控牌）
 	var thin_floor: int = 10 if tier == "expert" else 12
-	if rs.gold >= 75 and (rs.character_decks[0] as Array).size() > thin_floor:
+	var remove_cost: int = int(round(75 * act_mult))
+	if rs.gold >= remove_cost and (rs.character_decks[0] as Array).size() > thin_floor:
 		var deck: Array = rs.character_decks[0] as Array
 		for i: int in range(deck.size()):
 			var c: CardData = deck[i] as CardData
 			if c.rarity == "basic" and c.card_type == "attack":
 				deck.remove_at(i)
-				rs.gold -= 75
+				rs.gold -= remove_cost
 				break
 
 func _resolve_rest(rs: RunState, tier: String) -> void:

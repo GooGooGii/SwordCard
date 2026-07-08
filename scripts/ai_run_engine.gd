@@ -1045,7 +1045,7 @@ func _relic_by_id(id: String) -> RelicData:
 	return null
 
 func _shop_discount(base: int) -> int:
-	var price: float = float(base) * Ascension.shop_price_multiplier(run_state.ascension_level)  # A16 漲價
+	var price: float = float(base) * Ascension.shop_price_multiplier(run_state.ascension_level) * ShopInventory.act_price_multiplier(run_state.act)  # A16 漲價 + §六 幕數係數
 	for r: RelicData in run_state.relics:
 		for t: Dictionary in r.triggers:
 			if String(t.get("trigger", "")) == "permanent":

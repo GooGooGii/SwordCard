@@ -6836,7 +6836,7 @@ func _shop_relic_price(relic: RelicData) -> int:
 			for e: Dictionary in (t.get("effects", []) as Array):
 				if String(e.get("kind", "")) == "shop_discount":
 					base -= int(e.get("amount", 0))
-	return max(10, int(ceil(float(base) * _shop_curse_surcharge_mult() * Ascension.shop_price_multiplier(run_state.ascension_level))))
+	return max(10, int(ceil(float(base) * _shop_curse_surcharge_mult() * Ascension.shop_price_multiplier(run_state.ascension_level) * ShopInventory.act_price_multiplier(run_state.act))))
 
 func _buy_shop_relic(relic: RelicData, price: int) -> void:
 	if run_state.gold < price:
@@ -6995,7 +6995,7 @@ func _shop_apply_discount(base_price: int) -> int:
 			for e: Dictionary in (t.get("effects", []) as Array):
 				if String(e.get("kind", "")) == "shop_discount":
 					price -= int(e.get("amount", 0))
-	return max(10, int(ceil(float(price) * _shop_curse_surcharge_mult() * Ascension.shop_price_multiplier(run_state.ascension_level))))
+	return max(10, int(ceil(float(price) * _shop_curse_surcharge_mult() * Ascension.shop_price_multiplier(run_state.ascension_level) * ShopInventory.act_price_multiplier(run_state.act))))
 
 # 商店導覽面板（翻閱 / 離店）：與服務面板同樣的水墨navy框，取代原本格格不入的米色事件按鈕。
 func _shop_nav_panel(title: String, description: String, button_text: String, on_press: Callable) -> Control:
@@ -7086,15 +7086,8 @@ func _shop_deck_upgrade(card: CardData) -> void:
 
 func _shop_item_view(item: Dictionary) -> Control:
 	var card: CardData = item["card"] as CardData
-	var price: int = int(item["price"])
-	# 通寶錢折扣
-	for r: RelicData in run_state.relics:
-		for t: Dictionary in r.triggers:
-			if String(t.get("trigger", "")) != "permanent":
-				continue
-			for e: Dictionary in (t.get("effects", []) as Array):
-				if String(e.get("kind", "")) == "shop_discount":
-					price = max(5, price - int(e.get("amount", 0)))
+	# 通寶錢折扣 + 詛咒加價 + ascension 漲價 + 幕數係數，全部走 _shop_apply_discount 中央化（與遺物/藥品一致）
+	var price: int = _shop_apply_discount(int(item["price"]))
 	var panel: PanelContainer = UIFactory.make_panel()
 	panel.custom_minimum_size = Vector2(180, 400)
 	var box: VBoxContainer = VBoxContainer.new()
