@@ -13,7 +13,7 @@ const MALE_ONLY_VARIANTS: Array[String] = ["flower_spirit"]
 const FEMALE_CHARACTER_IDS: Array[String] = ["zhao_linger", "lin_yueru", "anu"]
 const MALE_CHARACTER_IDS: Array[String] = ["li_xiaoyao"]
 const BLACK_SHOP_CHANCE: float = 0.25
-const MIN_SHOPS_PER_MAP: int = 2       # 每張地圖至少要有的商店節點數
+const MIN_SHOPS_PER_MAP: int = 3       # 每張地圖至少要有的商店節點數（2026-06-30：2→3，配合經濟通膨修正給金山更多出口；實測找店玩家單路徑可遇店數 1.4→~2）
 const MERCHANT_EVENT_CHANCE: float = 0.12  # 奇遇節點其實是行腳商人（進入後開商店）的機率
 const AMBUSH_EVENT_CHANCE: float = 0.22  # 奇遇節點其實是埋伏（進入後直接開戰，StS 風）的機率；與行腳商人互斥
 # 每幕普通戰鬥節點的敵人數量加權表。count 為從 pool 中抽取的敵人數。
@@ -244,7 +244,8 @@ static func _build_row_types(row_index: int, total_rows: int, row_size: int) -> 
 	# 部分事件再透過 ambush_event/merchant_event 暗路變戰鬥或商店。
 	var special_types: Array[String] = []
 	special_types.append("rest" if row_index % 4 == 3 else "event")
-	var weighted_pool: Array[String] = ["event", "event", "shop", "rest"]
+	# 2026-06-30：shop 由 1/4 → 2/5 權重（配合經濟修正，讓金山有更多花的地方；events 仍為大宗）
+	var weighted_pool: Array[String] = ["event", "event", "shop", "shop", "rest"]
 	if special_budget >= 2:
 		weighted_pool.shuffle()
 		special_types.append(weighted_pool[0])
