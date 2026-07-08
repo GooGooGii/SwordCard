@@ -1,0 +1,7 @@
+# Memory Index
+
+- [Project Overview](project_overview.md) — SwordCard 仙劍1同人卡牌原型整體架構、角色、效果系統與計畫功能
+- [UI 改動要實機渲染驗證](feedback_ui_render_verify.md) — 改 UI 前後都渲染截圖自己看，不合預期就再改；別只靠推理
+- [並行 session 防撞守則](project_parallel_session_pitfalls.md) — 使用者常開另一個 session 跑美術管線：勤 commit、驗 .gd 入庫、驗圖 alpha、stash 保護
+- [Webgame 網頁版](project_webgame.md) — webgame/ 零依賴網頁重製（餘杭篇），node test_smoke.js 驗證
+- [攻擊力上限決策](project_power_scaling_cap.md) — power_bonus 軟上限+遞減的數學張力與「接受爆發為獎勵」決定；別用拉高boss HP做平衡

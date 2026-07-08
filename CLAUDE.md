@@ -1,7 +1,7 @@
 # SwordCard — Architecture & Conventions
 
 私人粉絲向原型：仙俠卡牌戰鬥，靈感來自仙劍奇俠傳 1（PAL1）。
-第二靈感：《幽冥仙途》（減肥專家）——只取「幽/冥/血/魂/影/蝶」的命名語感，用於阿奴等鬼冥系卡牌風格；**不照搬**該書招式名，PAL1 正史永遠優先。
+第二靈感：《幽冥仙途》（減肥專家）——只取「幽/冥/血/魂/影/蝶」的命名語感，用於阿奴等鬼冥系卡牌風格（既有例：幽魂噬影、化蝶歸夢、逆影遁法、骨絡通心、血魔化心）；**不照搬**該書招式名，PAL1 正史永遠優先。
 
 ## 路由表（先查這裡，需要時才讀長文件）
 
@@ -55,7 +55,7 @@
 - **Godot 4.6**（mobile renderer, ETC2/ASTC textures）
 - **GDScript**（typed）。沒有 C# / GDExtension。
 - **Target**: Windows desktop + Android phone。強制橫向。
-- **CI**: GitHub Actions, `barichello/godot-ci:4.6` container。每次 push 自動跑 smoke test，失敗阻擋 APK / EXE build（見 `.github/workflows/`）。
+- **CI**: GitHub Actions, `barichello/godot-ci:4.6` container。每次 push 自動跑 smoke test，失敗阻擋 APK / Web build（見 `.github/workflows/`）。CI 另有 ERROR tripwire：log 出現任何 `ERROR:` 行就 fail，本地 smoke「passed」不代表 CI 會過。
 
 ## Run / Test
 
@@ -73,7 +73,7 @@ godot --headless --path . --quit
 godot --headless --path . --import
 ```
 
-成功判準：`_smoke_out.txt` 檔尾出現 `SwordCard smoke test passed.` 且 exit code 0。
+成功判準：`_smoke_out.txt` 檔尾出現 `SwordCard smoke test passed.`、exit code 0、**且全檔無 `ERROR:` 行**（CI tripwire 會擋，本地先自查：`grep "ERROR:" _smoke_out.txt`）。
 
 ### 實機渲染截圖（驗證 UI / 動畫）
 
@@ -81,9 +81,10 @@ godot --headless --path . --import
 專案根目錄兩支 `SceneTree` 工具，pattern：開真場景 → 跑幾幀 → `save_png()`：
 
 - **`render_effects.gd`** — 出牌動畫截圖。改頂部 `SHOTS`（每筆 `[card_id, frame, label]`，frame≈秒數×60）與 `ENEMY_IDS`。內建 `CARD_ANIM` 表把 card_id 對到 `_animate_*`（新增動畫時補這表）。
-- **`render_shop.gd`** — 商店畫面截圖（範例：`start_run` → 灌道具 → 開某 screen）。
+- **`render_battle_ui.gd`** / **`render_event.gd`** / **`render_battle_backgrounds.gd`** — 戰鬥 UI / 奇遇畫面 / 戰鬥背景截圖。pattern 相同（`start_run` → 灌狀態 → 開某 screen）；改哪類畫面就用哪支，都不合用就仿照現有的加一支。
 
 ```bash
+godot --headless --path . --import        # 只有特效/卡圖剛新增、沒匯入過才需要
 # 務必 windowed，不要 --headless（headless 無 rendering，截圖全黑）
 godot --path . -s render_effects.gd       # 輸出 res://_<label>.png
 ```
@@ -106,7 +107,7 @@ AIRUN_AUTO=1 godot --headless --path . -s tools/ai_run.gd  # 內建粗淺 policy
 ```
 scenes/main.tscn         入口場景（極簡，主要邏輯在 scripts/main.gd）
 scripts/
-  main.gd                主控制器，所有 screen 都在這裡建構（~12,300 行——god object，讀取見鐵律 1）
+  main.gd                主控制器，所有 screen 都在這裡建構（~12,300 行——god object，待抽 screen 控制器；讀取見鐵律 1）
   ui_factory.gd          純 UI 工廠 (style_box, hp_bar, card_label, ...)
   theme_colors.gd        13 個 semantic 色常數
   card_format.gd         卡片/敵人 action 純格式化（顏色、名稱、intent badge、傷害預測）
@@ -213,7 +214,7 @@ var needs_enemy = CardFormat.requires_enemy_target(card)         # drag-to-play 
 
 ### Debug menu（桌面開發用）
 
-**F1** 切換，只在 `!OS.has_feature("mobile")` 建構、run 進行中可開。快捷：+100 Gold / Full Heal / Add Random Card / Add Random Relic / Give Random Potion / Spawn Test Minion / Jump to Boss。每個動作 `print("[DEBUG] ...")`。
+**F1** 切換，只在 `!OS.has_feature("mobile")` 建構、run 進行中可開。快捷：+100 Gold / Full Heal（戰鬥中會同步 `battle.state["player_hp"]` 並 `_refresh_battle()`）/ Add Random Card / Add Random Relic / Give Random Potion / Spawn Test Minion / Jump to Boss（只跳 encounter_index，仍要手動點 boss 開戰）。每個動作 `print("[DEBUG] ...")`。
 加新動作：`debug_menu.gd` 加 signal + `_build()` 連按鈕；`main.gd` 加 `_dbg_*()` handler 並在 `_build_debug_menu()` connect。
 
 ### 戰鬥資料流
@@ -278,7 +279,7 @@ main.gd
 ### 多敵人系統 → `docs/design/MULTI_ENEMY.md`
 - 1–3 敵同場；AOE 用 effect kind `damage_all`/`poison_all`/`weak_all`/`vulnerable_all`
 - 召喚：`summon` kind + `EnemyData.summon_pool` + `spawn_enemy()`（上限 3、召喚物無 loot、`is_summoned` 旗標）
-- 遭遇組：`MapGenerator.ACT_ENCOUNTERS` 加權表 + `choose_enemies_for_act(act)`
+- 遭遇組：`MapGenerator.ACT_ENCOUNTERS` 加權表 + `choose_enemies_for_act(act, pool)`
 
 ## 美術資源狀況
 

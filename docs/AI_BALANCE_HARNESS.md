@@ -19,7 +19,8 @@ AI agent（Claude）決定，遊戲用 headless 事件串口真的執行，玩�
 **戰鬥 100% 用真實 `BattleController`**（平衡問題的核心，零失真）。地圖 / 獎勵 / 加護 / 休息 /
 事件 / 商店重用純生成器，套用變更在引擎內鏡像 main.gd（只動 RunState；不碰 UI）。
 
-> 既有 `smoke_test.gd` 的隨機 AI balance regression **保留不動**——它仍是 CI 的快速防回歸。
+> 既有 `smoke_test.gd` 的 balance regression **保留**——它仍是 CI 的快速防回歸
+> （2026-06-11 起已升級為 `BattlePolicy` 啟發式出牌，不再是隨機 AI）。
 > 本驅動器是「我親自玩」的按需質性工具，不進 CI gating。
 
 ## 跑法
