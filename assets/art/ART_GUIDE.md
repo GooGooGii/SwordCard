@@ -109,32 +109,43 @@
 
 Current generated backgrounds:
 
-- `main_menu_bg.png`  
-  Used by main menu and character select.
-- `battle_bg.png`  
-  Legacy fallback used by the battle scene.
-- `battle_bg_act_1.png`  
-  Used by act 1 battles.
-- `battle_bg_act_2.png`  
-  Used by act 2 battles.
-- `battle_bg_act_3.png`  
-  Used by act 3 battles.
-- `battle_bg_act_4.png`  
-  Used by act 4 battles.
-- `battle_bg_act_5.png`  
-  Used by act 5 battles.
-- `event_bg.png`  
-  Used by route, rest, event, reward, and result screens.
-- `map_bg_ink.png`  
-  Used by the route map screen.
+- `main_menu_bg.png` — main menu and character select.
+- `battle_bg.png` — legacy fallback (used only if an act bg is missing; `main.gd:_battle_background_path`).
+- `battle_bg_act_1.png` … `battle_bg_act_8.png` — act 1–8 battles（遊戲以 `clamp(run_state.act, 1, 8)` 選圖，8 張全在線上）。
+- `event_bg.png` — route, rest, event, reward, result screens.
+- `map_bg_ink.png` — route map screen.
+
+### 8 幕戰鬥背景：地理／旅程對照（2026-06-30 美術指導判讀）
+
+背景**確實承載了「餘杭→蘇州→苗疆」旅程感**（設計支柱 1 的美術兌現），明暗弧線亦成立（起 → 入世繁華高點 → 步步入暗）：
+
+| 幕 | 畫面 | PAL1 對應 | 旅程辨識度 |
+|---|---|---|---|
+| 1 | 黃昏霧竹林山道 + 小亭 | 餘杭/十里坡郊野 | ✓ 起點 |
+| 2 | 江南水鄉庭院・拱橋・蓮花・晨霧 | **蘇州** | ✓✓ 最高 |
+| 3 | 夜・枯樹廢廟・藍焰鬼火 | 鬼森/陰宅 | ◐ 偏通用（可綁具體正史場景拉識別度） |
+| 4 | 陰天古戰場・將軍塚石像・斷旗裂地 | 將軍塚/殭屍 | ✓ |
+| 5 | 藍水晶洞窟・刻紋石柱・晶簇 | 隱龍窟/鎖妖塔地宮 | ✓ |
+| 6 | 雙巨龍柱大殿・青焰・地面法陣・王座 | 拜月教壇/塔頂 boss 殿 | ✓ |
+| 7 | 苗疆瘴氣叢林・圖騰・骷髏旗・竹刺・瀑布 | **苗疆** | ✓✓✓ 最高 |
+| 8 | 夜・廢殿柱列・青魂火・水澤 | 終局祭壇 | ✓ |
+
+### 套用方式（畫背景時務必知道）
+
+`background_rect` 用 `STRETCH_KEEP_ASPECT_COVERED`（`main.gd:581`）：**永不變形，但會裁切溢出**。
+螢幕比例 16:9 → 非 16:9 的圖上下（或左右）會被切掉。**構圖務必留安全邊、把主體/敘事放中央**。
 
 Target size:
 
-- 1280 x 720
+- **1280 x 720（16:9）**；更高解析度可（如 1672×941）但**比例必須維持 16:9**，否則會被 COVERED 裁掉。
 - Route map: 1280 x 1800
-- PNG
-- No text, no logos, no watermarks
+- PNG, no text/logos/watermarks
 - Keep central negative space for UI panels
+
+### 🟡 背景待辦（美術指導，低急迫）
+
+1. **`act_5` 比例為 3:2（1536×1024）**——唯一非 16:9，在戰場會被裁掉上下（鐘乳石頂＋前景晶簇）。有空重出成 16:9（1280×720 或 1672×941）。不變形、無急迫性。
+2. **`act_2` 色調離群（open decision，待製作人裁決）**：act_2 明顯比其餘 7 張更亮／更柔／更高明度（近 anime-painterly），其餘為偏寫實低明度概念美術。**兩種讀法皆成立**——(a) 刻意讓「抵達蘇州」成為視覺最美高點、之後入暗（建議保留）；(b) 壓暗一檔向其餘對齊。**在此裁決前不要動 act_2。**
 
 ## Planned Event Story Illustrations
 
@@ -241,63 +252,42 @@ Target:
 
 > **現況**：所有流派卡 / 等級解鎖卡 / 專武遺物，以及連打牌組、毒引擎與 colorless 移植卡牌等全部 27 張原本借圖的卡牌皆已補齊專屬 2D 水墨插圖。現已無借圖（`art_id`）情況。
 >
-> **最近驗證（2026-05-31）**：補上 12 張李逍遙／趙靈兒／林月如／阿奴的水墨卡圖（含工作區另 4 張林月如卡），
-> 已實際在 Godot 內重新匯入並驗證 `valid=true` + 產生非佔位的 `.ctex`，確認真的會顯示在遊戲中。
+> **最近盤點（2026-06-30，美術指導對賬）**：直接掃磁碟＋讀圖驗證，確認**美術資產覆蓋率已近 100%**：
+> `game_data.gd` 的 `art_id` 借圖實際使用 = **0**（下方所有「借圖待補」清單皆已補實，故移除）；
+> 5 隻原列「placeholder 敵人」（`flower_spirit`／`red_eye_imp`／`zombie_thrall`／`centipede_brood`／
+> `tower_wisp`）皆為獨立圖；18 張烤字卡已重製乾淨；12 張戰鬥肖像已統一 768²＋去背；`node_elite.png` 存在。
+> 美術重心已從「補洞」轉為「一致性 QA／旅程感凝聚」（見下方統計與本檔頂部風格紀律）。
 
-### 🔴 待重製：卡圖含文字（2026-06 全卡盤點，共 18 張）
+### ✅ 已解決：卡圖含文字（原 18 張，2026-06-30 全部重製確認）
 
 卡圖原則「**不要出現文字**」（標題／英文／浮水印／數值框／水墨題跋落款）。
-例外：**符咒（符／法陣）上的符文字保留**（如 `lxy_tianshi` 天師符、`zl_shuiyin` 法陣）。
-下列卡圖違反原則，需重製去除文字：
+例外：**符咒（符／法陣）上的符文字保留**（如 `lxy_tianshi` 天師符、`zl_shuiyin` 法陣；
+`zl_jingang` 的金色法陣符文亦屬此例外）。
 
-**A. 烤進卡圖的卡框／標題／英文／浮水印／數值（最優先 — 會與程式自繪卡框疊起來）**
-| ID | 問題 |
-|---|---|
-| `zl_huihun` | 「迴魂咒 (Huihun Zhen)」+ 英文 + 整張卡框與說明 |
-| `zl_leiguang` | 「紫金雷霆術」+「ATK 8 HP 4」數值框 + 卡框 |
-| `lyr_tieyi` | 「鐵衣功 / Tieyi Gong」+ 英文敘述 + 底部版權浮水印 |
-| `zl_bingxin` | 「清心咒」+「SR」稀有度標 + 卡框 |
-| `zl_lingxi` | 「靈犀」+ 卡框 + 說明文字 |
-| `zl_shenlei` | 「神雷」+ 裱框標題 |
-| `zl_shuiling` | 「水靈盾／持寧」+ 紅色印章 |
-| `lyr_xuanjian` | 「旋劍花舞」標題框 + 印章 |
-| `zl_jingang` | 幡旗直書標題字（borderline，偏標題） |
-| `tong_ji`（詛咒卡） | 裱框水墨 + 紅色落款印 |
+**狀態**：原本被點名烤進文字的 18 張卡（A 類卡框／標題／英文／浮水印／數值：`zl_huihun`、
+`zl_leiguang`、`lyr_tieyi`、`zl_bingxin`、`zl_lingxi`、`zl_shenlei`、`zl_shuiling`、`lyr_xuanjian`、
+`zl_jingang`、`tong_ji`；B 類題跋／落款印：`anu_duwu`、`anu_guwang`、`anu_guxue`、`anu_sanmao`、
+`lyr_poqian`、`lyr_tianv`、`lyr_tongqianbiao`、`lyr_qijuejianqi`）**已全部重製為乾淨無文字版**
+（2026-06-30 逐張讀圖確認）。全卡庫目前無烤字問題。
 
-**B. 水墨題跋／落款印章（畫上詩文題字、藝術家紅印，非符咒）**
-| ID | 問題 |
-|---|---|
-| `anu_duwu` | 左上題字 |
-| `anu_guwang` | 題字 + 紅印 |
-| `anu_guxue` | 直書題字數行 |
-| `anu_sanmao` | 左上題字 |
-| `lyr_poqian` | 左下題字 |
-| `lyr_tianv` | 左下題字 |
-| `lyr_tongqianbiao` | 右上題字 |
-| `lyr_qijuejianqi` | 右上角紅色落款印 |
+> ⚠️ **風格觀察（非債，待裁決）**：重製後有數張改採「人物動勢」構圖（`lyr_tieyi`、`zl_shuiling`、
+> `lyr_xuanjian`、`zl_jingang`、`anu_guwang`、`lyr_tongqianbiao`），與本指南「卡圖盡量不要出現人物」
+> 的軟性原則相左。並非錯誤，但若要維持牌組縮圖的視覺齊整，建議明確裁決人物卡比例上限或分流規則。
+> 另：`lyr_qijuejianqi` 與 `lyr_xuanjian` 構圖近乎相同，疑似復用，可複查是否需差異化。
 
-> 其餘約 90 張（純法術光效／人物／無題字水墨山水如 `lxy_qingfeng`、`lxy_jiulong`、`lxy_ningyuan_ls`、`anu_gushen`）皆乾淨無文字。
-> 重製後放回原路徑 `assets/art/cards/<id>.png`（依上方硬性要求：真 PNG + 重新匯入驗證）。
+### ✅ 已解決：戰鬥肖像對齊／大小／去背（原 12 張，2026-06-30 確認）
 
-### 🔴 待重製：戰鬥肖像對齊／大小不一（2026-06）
+**狀態**：四角色 × 6 姿勢全部已統一 **768×768 ＋ 真透明去背**（2026-06-30 量測：
+`lin_yueru_*` 6 張、`zhao_linger_*_v2` 6 張皆 768²；alpha range 0–255、近透明像素 ~74%，
+與基準 `li_xiaoyao`／`anu` 同級，林月如不再是白底）。程式端 `UIFactory.ground_portrait`
+做底部對齊。對齊／大小／去背三問題均已收斂。
 
-**問題**：戰鬥肖像用 `STRETCH_KEEP_ASPECT` 塞進固定框，但各角色原圖**比例與取景不一致** →
-高度漂移（林月如「位置特別高」）、人物大小不一。程式已加「底部對齊地面線」（`UIFactory.ground_portrait`）
-把各圖底部對齊，但**大小一致＋乾淨去背**仍需統一原圖才能解決。
-
-**統一規格（重出 `assets/art/battle_characters/<id>_<pose>.png` 時遵守）**：
-1. **畫布統一 768×768**（正方，與李逍遙／阿奴一致）。
-2. **強制透明去背**（PNG RGBA，不可白底）。
-3. **人物高度一致**：頭頂→腳底約佔畫布高 85–90%。
-4. **腳底對齊同一基準線**：腳底約在畫布底部 ~92% 處（底對齊後四角色與人型敵人站同一條地面線）。
+**規格備忘（未來重出 `assets/art/battle_characters/<id>_<pose>.png` 時沿用）**：
+1. 畫布統一 **768×768**（正方）。
+2. 強制透明去背（PNG RGBA，不可白底）。
+3. 人物高度一致：頭頂→腳底約佔畫布高 85–90%。
+4. 腳底對齊同一基準線：約在畫布底部 ~92% 處。
 5. 人型敵人比照同一人物高度；大型／非人型 boss 才可放大。
-
-**待重出清單**：
-- **林月如（6 張，最優先）**：`lin_yueru_idle/block/cast/attack/downed/low_hp` —— **白底未去背**且比例各異
-  （576×768 / 768×615 / 768×512 / 602×768），需重出成 768×768 透明、與其他角色同取景。
-- **趙靈兒 v2（6 張）**：`zhao_linger_*_v2` 為 512×768（比例 0.667），與李逍遙／阿奴的 768×768 不一致 →
-  對齊規格（或在程式端統一改用非 v2 的 768×768 版本）。
-- 李逍遙 / 阿奴：已是 768×768 透明，符合規格（基準）。
 
 ### ⚠️ 新增美術資源的硬性要求（踩過的雷）
 
@@ -325,79 +315,14 @@ Target:
 
 > 連打抽牌遺物（循環珠 / 連環珮 / 疾風鈴）使用程序繪製圖示（`RelicCatalog` 的 `icon_color` + `icon_shape`），無 PNG 需求。
 
-### 🔴 流派／新機制卡（8 張）
+### 🟢 全部已補實（流派卡 8 + 等級解鎖卡 27 + 專武遺物 2 + 連打/毒引擎 17 + colorless 10）
 
-所有卡片皆已補齊專屬 2D 水墨國風插畫：
-- `anu_cuifeng` (淬鋒蠱刃)
-- `anu_wuyuezhan` (巫月斬)
-- `anu_xuerenwu` (血刃亂舞)
-- `lxy_wanjianguizong` (萬劍歸宗)
-- `lyr_fenghuan` (鳳鳴反擊)
-- `lyr_yuehua` (月華護體)
-- `zl_shuiyin` (水靈封印)
-- `zl_ganlin` (甘霖咒)
+上述各批原列的「借圖待補」**已全部補上專屬卡圖**，`game_data.gd` 內 `art_id` 借圖參數實際使用量 = **0**
+（2026-06-30 `grep art_id scripts/game_data.gd` 僅剩函式簽名定義與 `image_id` 賦值兩處）。
+故原本逐張的借圖對照表（lxy 御劍連擊 4、zl 連咒 4、lyr 鞭劍連擊 4、anu 蠱毒/鬼冥 10、colorless 10 等）
+已無作用，移除以免誤導協作者重畫。專武 `wuyue_shendao`（巫月神刀）／`fengming_dao`（鳳鳴刀）已配專屬圖示。
 
-### 🟡 等級解鎖卡（27 張）
-
-所有解鎖卡牌皆已擁有專屬卡圖，不再依賴其他卡牌插畫：
-- **李逍遙 (8 張)**: `lxy_tiangangqi` (天罡戰氣)、`lxy_ningyuan_ls` (凝神歸元)、`lxy_yuanlinggui` (元靈歸心術)、`lxy_zhenyuan` (真元護體)、`lxy_tianjian` (天劍)、`lxy_jinchan_ls` (金蟬脫殼)、`lxy_xiaoyao_shenjian` (逍遙神劍)、`lxy_jianshen` (劍神)。
-- **趙靈兒 (8 張)**: `zl_xuanfengzhou` (旋風咒)、`zl_wuleizhou` (五雷咒)、`zl_sanmeizhenhuo` (三昧真火)、`zl_fengxuebing` (風雪冰天)、`zl_diliebeng` (地裂天崩)、`zl_mengshe_ls` (夢蛇)、`zl_taishan` (泰山壓頂)、`zl_kuanglei` (狂雷)。
-- **林月如 (5 張)**: `lyr_tongqianbiao` (銅錢鏢)、`lyr_qijuejianqi` (七訣劍氣)、`lyr_yuanlinggui` (元靈歸心術)、`lyr_lielong` (裂龍式)、`lyr_wanlikuang` (萬里狂沙)。
-- **阿奴 (6 張)**: `anu_sanshigu` (三屍蠱)、`anu_yanshazhou` (炎殺咒)、`anu_shuhun` (贖魂)、`anu_duohun` (奪魂)、`anu_wanyi_ls` (萬蟻蝕象)、`anu_wangushitian` (萬蠱蝕天)。
-
-### 🟡 遺物（2 件）
-
-兩件流派錨點專屬武器已成功配置專屬圖示，並移除了程序繪製 fallback 顯示：
-- `wuyue_shendao` (巫月神刀): 阿奴刀流錨點。
-- `fengming_dao` (鳳鳴刀): 林月如刀流錨點。
-
-### 🔴 借圖待補（17 張，連打牌組 + 毒引擎）
-
-下列卡片目前以 `art_id` 暫借同角色既有卡圖，補圖時放 `assets/art/cards/<id>.png` 即可生效
-（並把 `game_data.gd` 對應 `make_card` 的最後 `art_id` 參數移除）。
-**注意上方「新增美術資源的硬性要求」：必須是真 PNG、`.import` UID 唯一、匯入後驗證。**
-
-- **李逍遙（4，御劍連擊）**
-  - `lxy_jianjue` (劍引) ← 借 `lxy_yujian` 御劍術
-  - `lxy_huijian` (揮劍引氣) ← 借 `lxy_qingfeng` 清風御劍
-  - `lxy_yufengbu` (御風步) ← 借 `lxy_jianqi` 劍氣護身
-  - `lxy_lianhuanjian` (連環御劍，減靈耗升級) ← 借 `lxy_jianzhen` 劍陣
-- **趙靈兒（4，連咒）**
-  - `zl_xiaoleizhou` (小雷咒) ← 借 `zl_leizhou` 雷咒
-  - `zl_yinlingfu` (引靈符) ← 借 `zl_fengling` 風靈符
-  - `zl_huguangzhou` (護光咒) ← 借 `zl_lingguang` 靈光護體
-  - `zl_lianzhuzhou` (連珠雷咒，減靈耗升級) ← 借 `zl_leiguang` 雷光連擊
-- **林月如（4，鞭劍連擊）**
-  - `lyr_jici` (急刺) ← 借 `lyr_xuanjian` 旋劍花舞
-  - `lyr_huaci` (花刺引身) ← 借 `lyr_tianv` 飛花亂舞
-  - `lyr_qiebushan` (怯步閃) ← 借 `lyr_fanji` 回身反擊
-  - `lyr_shuangjianci` (雙劍連刺，減靈耗升級) ← 借 `lyr_lianhuan` 連環快斬
-- **阿奴（5，蠱毒連擊 + 毒引擎）**
-  - `anu_sandu` (散蠱) ← 借 `anu_duwu` 毒霧繚繞
-  - `anu_yindu` (引蠱) ← 借 `anu_yufeng` 御蜂術
-  - `anu_huguzhao` (護蠱罩) ← 借 `anu_guling` 蠱靈護身
-  - `anu_lianduzhen` (連環毒針，減靈耗升級) ← 借 `anu_duzhen` 毒針連射
-  - `anu_guzhang` (蠱瘴瀰漫，毒引擎) ← 借 `anu_baizu` 百足蠱
-- **阿奴（5，鬼／冥 主題·苗巫邪術）**
-  - `anu_guiling_zhuansheng` (鬼靈轉生，復活) ← 借 `anu_guijiang` 鬼降
-  - `anu_minghe_yindu` (冥河引渡，AOE 傷+毒) ← 借 `anu_wangushitian` 萬蠱噬天
-  - `anu_suoming_egui` (索命厲鬼，傷+虛弱) ← 借 `anu_duohun` 奪魂術
-  - `anu_youming_shigu` (幽冥蝕骨，毒+破綻) ← 借 `anu_sanshigu` 三屍蠱
-  - `anu_guihuo_liaoyuan` (鬼火燎原，AOE 傷×2+毒) ← 借 `anu_yanshazhou` 燃殺咒
-
-### 🔴 借圖待補（10 張，共同牌 colorless 移植）
-
-`owner="無門"`，任何角色都能在 獎勵/商店/事件 取得（STS colorless 移植）。同樣借既有卡圖：
-- `cl_xunjiezhan` (迅捷斬，Swift Strike) ← 借 `lxy_yujian`
-- `cl_hanfengjue` (寒鋒訣，Flash of Steel) ← 借 `lyr_xuanjian`
-- `cl_hushenjue` (護身訣，Good Instincts) ← 借 `lxy_jianqi`
-- `cl_qiaojin` (巧勁，Finesse) ← 借 `zl_lingguang`
-- `cl_zhimingfu` (致盲符，Blind) ← 借 `anu_mihun`
-- `cl_poshi` (破式，Trip) ← 借 `lyr_juesha`
-- `cl_jinchuangtie` (金創藥帖，Bandage Up，exhaust) ← 借 `lxy_qiliao`
-- `cl_qimendunjia` (奇門遁甲，Dramatic Entrance) ← 借 `lxy_wanjian`
-- `cl_yunchou` (運籌帷幄，Master of Strategy，exhaust) ← 借 `zl_lingxi`
-- `cl_huacaijianyi` (華彩劍意，Panache，連打 payoff) ← 借 `lxy_jianshen`
+> 若日後新增卡牌再以 `art_id` 暫借，請在本處補一張「現役借圖」小表，並於補實後即時刪除。
 
 ## Card Layering Convention
 
