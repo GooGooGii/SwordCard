@@ -8,7 +8,10 @@ var siblings: Array = []      # Array[RelicData]
 var sibling_index: int = 0
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(28, 28)
+	# 預設 28×28（戰鬥遺物帶），但呼叫端建構時若已明確給更大尺寸（商店 80、彈窗 120）不要覆寫——
+	# _ready 在整棵樹進場景時才觸發，會晚於建構期的賦值
+	if custom_minimum_size == Vector2.ZERO:
+		custom_minimum_size = Vector2(28, 28)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	gui_input.connect(_on_gui_input)
 

@@ -25,6 +25,9 @@ desktop.ini
 # Scratch / experimental output
 tmp/
 
+# 美術後處理工具的二進位與模型（下載方式見 tools/art_post.py 檔頭）
+tools/bin/
+
 # AI balance harness 暫存協定檔（單開根目錄 / 多開 _ai_runs/<session>/）
 _ai_view.json
 _ai_cmd.json

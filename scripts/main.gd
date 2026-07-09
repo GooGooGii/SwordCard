@@ -6608,7 +6608,24 @@ func show_shop_node() -> void:
 	_clear_root()
 	_show_title_bar()
 	var panel: PanelContainer = UIFactory.make_panel()
+	# 黑店識別：紫墨底 + 暗琥珀邊（同地圖黑店節點的 e2a86b），跟山道商店一眼區分
+	if run_state.current_shop_is_black:
+		var black_sb: StyleBoxFlat = UIFactory.style_box(Color("1a1224", 0.93), Color("e2a86b", 0.50), 1, 12)
+		black_sb.shadow_color = Color("000000", 0.45)
+		black_sb.shadow_size = 7
+		black_sb.shadow_offset = Vector2(0, 4)
+		panel.add_theme_stylebox_override("panel", black_sb)
 	root.add_child(panel)
+	# 宣紙底紋：低透明度平鋪在面板底，加紙張顆粒感而不翻掉深色調
+	var grain_texture: Texture2D = UIFactory.load_texture("res://assets/art/ui/paper_texture.png")
+	if grain_texture != null:
+		var grain: TextureRect = TextureRect.new()
+		grain.texture = grain_texture
+		grain.stretch_mode = TextureRect.STRETCH_TILE
+		grain.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		grain.modulate = Color(1, 1, 1, 0.05)
+		grain.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		panel.add_child(grain)
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -6623,9 +6640,14 @@ func show_shop_node() -> void:
 	scroll.add_child(box)
 	var title_text: String = "夜路黑店" if run_state.current_shop_is_black else "山道商店"
 	var flavor_text: String = "簾後藏著來路不明的珍品，價格狠，成色也狠。" if run_state.current_shop_is_black else "行商在山道旁支起小攤，貨色普通但價格公道。"
-	box.add_child(_title(title_text, 34))
+	var title: Label = _title(title_text, 34)
+	if run_state.current_shop_is_black:
+		title.add_theme_color_override("font_color", Color("e2a86b"))
+	box.add_child(title)
 	box.add_child(UIFactory.ink_divider())
-	box.add_child(UIFactory.paragraph(flavor_text))
+	var flavor: Label = UIFactory.paragraph(flavor_text)
+	flavor.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(flavor)
 	# 依種類分列：第一列卡片、第二列遺物、第三列藥品、第四列其它（服務 + 導覽）。
 	# 每列用 HFlowContainer → 商品多時自動換行，不會超出畫面右緣（全部可見、可點購買）。
 
@@ -6676,10 +6698,23 @@ func show_shop_node() -> void:
 		run_state.shop_upgrade_used, not _upgradeable_cards().is_empty(),
 		func(): _open_shop_upgrade_service(upgrade_price)))
 	other_row.add_child(_shop_nav_panel("牌組", "查看當前手札", "翻閱", show_deck_view))
-	other_row.add_child(_shop_nav_panel("離開", "收手回程", "離店", advance_non_battle_node))
+	other_row.add_child(_shop_nav_panel("離開", "收手回程", "離店", advance_non_battle_node, true))
 	# 讓「非按鈕的所有區域」都能上下拖曳捲動（panel/label/卡圖對滑鼠透明，事件落到 ScrollContainer）
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_make_non_button_scroll_transparent(box)
+	# 捲動提示：首屏只看得到卡牌列，底下還有遺物/藥品/服務——沒捲到底前常駐提示
+	var hint: Label = UIFactory.card_label("▼ 往下捲動看更多貨品 ▼", 13, ThemeColors.HIGHLIGHT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	hint.size_flags_vertical = Control.SIZE_SHRINK_END
+	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hint.add_theme_color_override("font_outline_color", Color("17110a", 0.95))
+	hint.add_theme_constant_override("outline_size", 4)
+	panel.add_child(hint)
+	var vbar: VScrollBar = scroll.get_v_scroll_bar()
+	var update_hint: Callable = func() -> void:
+		hint.visible = vbar.visible and (vbar.value + vbar.page < vbar.max_value - 6.0)
+	vbar.value_changed.connect(func(_v: float) -> void: update_hint.call())
+	vbar.changed.connect(update_hint)
+	update_hint.call()
 
 # 遞迴把非 BaseButton 的 Control 設為 MOUSE_FILTER_IGNORE，使 ScrollContainer 能在
 # 任意非按鈕處接到 drag 捲動；Button（含 _make_card_button）維持 STOP 仍可點擊。
@@ -6782,8 +6817,30 @@ func _refresh_shop_ui_states() -> void:
 					button.visible = true
 					button.disabled = not can_use
 
-func _shop_section_label(text: String) -> Label:
-	return UIFactory.card_label("— %s —" % text, 16, ThemeColors.ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+func _shop_section_label(text: String) -> Control:
+	# 水墨小節標題：兩側短金線 + 描邊標題字（黑店用暗琥珀），取代原「— 卡牌 —」純文字
+	var accent: Color = Color("e2a86b") if run_state.current_shop_is_black else ThemeColors.ACCENT_GOLD
+	var row: HBoxContainer = HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 14)
+	row.add_child(_shop_section_rule(accent))
+	var label: Label = UIFactory.card_label(text, 18, accent, HORIZONTAL_ALIGNMENT_CENTER)
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.add_theme_color_override("font_outline_color", Color("17110a", 0.9))
+	label.add_theme_constant_override("outline_size", 3)
+	row.add_child(label)
+	row.add_child(_shop_section_rule(accent))
+	return row
+
+func _shop_section_rule(accent: Color) -> Control:
+	var rule: PanelContainer = PanelContainer.new()
+	rule.custom_minimum_size = Vector2(72, 2)
+	rule.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var sb: StyleBoxFlat = StyleBoxFlat.new()
+	sb.bg_color = Color(accent.r, accent.g, accent.b, 0.5)
+	sb.set_corner_radius_all(2)
+	rule.add_theme_stylebox_override("panel", sb)
+	return rule
 
 func _shop_flow_row() -> HFlowContainer:
 	var row: HFlowContainer = HFlowContainer.new()
@@ -6817,7 +6874,7 @@ func _pick_shop_relic_ids(count: int = 3) -> Array[String]:
 func _shop_relic_view(relic: RelicData) -> Control:
 	var price: int = _shop_relic_price(relic)
 	var panel: PanelContainer = UIFactory.make_panel()
-	panel.custom_minimum_size = Vector2(210, 305)
+	panel.custom_minimum_size = Vector2(210, 0)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -6892,7 +6949,7 @@ func _shop_potion_view(item: Dictionary) -> Control:
 	var rarity_col: Color = PotionCatalog.rarity_color(potion)
 	
 	var panel: PanelContainer = UIFactory.make_panel()
-	panel.custom_minimum_size = Vector2(170, 250)
+	panel.custom_minimum_size = Vector2(170, 0)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -7037,7 +7094,7 @@ func _shop_apply_discount(base_price: int) -> int:
 	return max(10, int(ceil(float(price) * _shop_curse_surcharge_mult() * Ascension.shop_price_multiplier(run_state.ascension_level) * ShopInventory.act_price_multiplier(run_state.act))))
 
 # 商店導覽面板（翻閱 / 離店）：與服務面板同樣的水墨navy框，取代原本格格不入的米色事件按鈕。
-func _shop_nav_panel(title: String, description: String, button_text: String, on_press: Callable) -> Control:
+func _shop_nav_panel(title: String, description: String, button_text: String, on_press: Callable, emphasized: bool = false) -> Control:
 	var panel: PanelContainer = UIFactory.make_panel()
 	panel.custom_minimum_size = Vector2(180, 130)
 	var box: VBoxContainer = VBoxContainer.new()
@@ -7046,7 +7103,14 @@ func _shop_nav_panel(title: String, description: String, button_text: String, on
 	panel.add_child(box)
 	box.add_child(UIFactory.card_label(title, 15, ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER))
 	box.add_child(UIFactory.card_label(description, 11, Color("d8e0ec"), HORIZONTAL_ALIGNMENT_CENTER))
-	var btn: Button = _button(button_text)
+	var btn: Button
+	if emphasized:
+		# 「離店」是導覽主動作，用米金強調按鈕跟消費項目的墨藍按鈕區分
+		btn = UIFactory.main_menu_button(button_text, true, 46.0, 18)
+		btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		btn.custom_minimum_size = Vector2(150, 46)
+	else:
+		btn = _button(button_text)
 	btn.pressed.connect(on_press)
 	box.add_child(btn)
 	return panel
@@ -7132,16 +7196,17 @@ func _shop_item_view(item: Dictionary) -> Control:
 	# 通寶錢折扣 + 詛咒加價 + ascension 漲價 + 幕數係數，全部走 _shop_apply_discount 中央化（與遺物/藥品一致）
 	var price: int = _shop_apply_discount(int(item["price"]))
 	var panel: PanelContainer = UIFactory.make_panel()
-	panel.custom_minimum_size = Vector2(180, 400)
+	panel.custom_minimum_size = Vector2(180, 0)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	panel.add_child(box)
-	if item.get("on_sale", false):
-		box.add_child(UIFactory.card_label("★ 特賣！五折優惠", 12, Color("ff5555"), HORIZONTAL_ALIGNMENT_CENTER))
 	var is_sold: bool = bool(item.get("sold", false))
 	var can_buy: bool = run_state.gold >= price and not is_sold
 	var card_button: Button = _make_card_button(card, card.cost, Vector2(153, 287), can_buy, true)
 	card_button.disabled = not can_buy or is_sold
+	if item.get("on_sale", false):
+		# 特賣改成斜蓋在卡面上的紅印章，不再佔一行版面（原本會把整張卡往下推、破壞同列基線）
+		card_button.add_child(_shop_sale_stamp())
 	var pressed_callable: Callable = func(): _show_shop_buy_confirm_overlay(card, price)
 	if not is_sold:
 		card_button.pressed.connect(pressed_callable)
@@ -7165,6 +7230,29 @@ func _shop_item_view(item: Dictionary) -> Control:
 	})
 	
 	return panel
+
+func _shop_sale_stamp() -> Control:
+	# 硃砂印風格的「五折特賣」章，斜蓋在卡面左上角
+	var stamp: PanelContainer = PanelContainer.new()
+	var sb: StyleBoxFlat = StyleBoxFlat.new()
+	sb.bg_color = Color("9e2b25", 0.92)
+	sb.border_color = Color("f3d9a0", 0.85)
+	sb.set_border_width_all(1)
+	sb.set_corner_radius_all(4)
+	sb.content_margin_left = 8
+	sb.content_margin_right = 8
+	sb.content_margin_top = 2
+	sb.content_margin_bottom = 3
+	stamp.add_theme_stylebox_override("panel", sb)
+	var label: Label = UIFactory.card_label("五折特賣", 12, Color("f8ecd4"), HORIZONTAL_ALIGNMENT_CENTER)
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stamp.add_child(label)
+	stamp.rotation_degrees = -8.0
+	stamp.position = Vector2(-8, 10)
+	stamp.z_index = 5
+	stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return stamp
 
 func _show_shop_buy_confirm_overlay(card: CardData, price: int) -> void:
 	_hide_card_preview()
