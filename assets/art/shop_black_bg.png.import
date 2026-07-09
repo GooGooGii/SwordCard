@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bof2cewhdcj0i"
-valid=false
+uid="uid://x8cfyhdu7xc1"
+path="res://.godot/imported/shop_black_bg.png-341020a3927e2a98aa1ac71f4be9036e.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/art/shop_black_bg.png"
+dest_files=["res://.godot/imported/shop_black_bg.png-341020a3927e2a98aa1ac71f4be9036e.ctex"]
 
 [params]
 

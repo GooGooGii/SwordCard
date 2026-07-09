@@ -6606,17 +6606,20 @@ func show_shop_node() -> void:
 	_apply_infinite_gold()  # 工程模式：進商店回填銅錢
 	_shop_ui_refs = []
 	_play_bgm("shop")
-	_set_background("res://assets/art/event_bg.png")
+	_set_background("res://assets/art/shop_black_bg.png" if run_state.current_shop_is_black else "res://assets/art/shop_bg.png")
 	_clear_root()
 	_show_title_bar()
 	var panel: PanelContainer = UIFactory.make_panel()
 	# 黑店識別：紫墨底 + 暗琥珀邊（同地圖黑店節點的 e2a86b），跟山道商店一眼區分
 	if run_state.current_shop_is_black:
-		var black_sb: StyleBoxFlat = UIFactory.style_box(Color("1a1224", 0.93), Color("e2a86b", 0.50), 1, 12)
+		var black_sb: StyleBoxFlat = UIFactory.style_box(Color("1a1224", 0.88), Color("e2a86b", 0.50), 1, 12)
 		black_sb.shadow_color = Color("000000", 0.45)
 		black_sb.shadow_size = 7
 		black_sb.shadow_offset = Vector2(0, 4)
 		panel.add_theme_stylebox_override("panel", black_sb)
+	else:
+		# 面板底稍微透一點，讓新畫的山道商店背景能呼吸
+		(panel.get_theme_stylebox("panel") as StyleBoxFlat).bg_color = Color("141b27", 0.84)
 	root.add_child(panel)
 	# 宣紙底紋：低透明度平鋪在面板底，加紙張顆粒感而不翻掉深色調
 	var grain_texture: Texture2D = UIFactory.load_texture("res://assets/art/ui/paper_texture.png")
@@ -6642,14 +6645,37 @@ func show_shop_node() -> void:
 	scroll.add_child(box)
 	var title_text: String = "夜路黑店" if run_state.current_shop_is_black else "山道商店"
 	var flavor_text: String = "簾後藏著來路不明的珍品，價格狠，成色也狠。" if run_state.current_shop_is_black else "行商在山道旁支起小攤，貨色普通但價格公道。"
+	# 店頭：行商立繪站在標題旁招呼（黑店掌櫃暫借行商圖，見 ART_TODO §十七）
+	var header: HBoxContainer = HBoxContainer.new()
+	header.alignment = BoxContainer.ALIGNMENT_CENTER
+	header.add_theme_constant_override("separation", 26)
+	box.add_child(header)
+	var merchant_path: String = "res://assets/art/npc/shop_black_merchant.png" if run_state.current_shop_is_black else "res://assets/art/npc/shop_merchant.png"
+	var merchant_tex: Texture2D = UIFactory.load_texture(merchant_path)
+	if merchant_tex != null:
+		var merchant: TextureRect = TextureRect.new()
+		merchant.texture = merchant_tex
+		merchant.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		merchant.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		merchant.custom_minimum_size = Vector2(180, 200)
+		merchant.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if run_state.current_shop_is_black:
+			merchant.modulate = Color(0.72, 0.62, 0.78)  # 黑店掌櫃沉進簾影裡
+		header.add_child(merchant)
+	var title_col: VBoxContainer = VBoxContainer.new()
+	title_col.alignment = BoxContainer.ALIGNMENT_CENTER
+	title_col.add_theme_constant_override("separation", 10)
+	# HBox 內 autowrap Label 會縮到一字一行，給標題欄固定寬度
+	title_col.custom_minimum_size = Vector2(520, 0)
+	header.add_child(title_col)
 	var title: Label = _title(title_text, 34)
 	if run_state.current_shop_is_black:
 		title.add_theme_color_override("font_color", Color("e2a86b"))
-	box.add_child(title)
-	box.add_child(UIFactory.ink_divider())
+	title_col.add_child(title)
+	title_col.add_child(UIFactory.ink_divider())
 	var flavor: Label = UIFactory.paragraph(flavor_text)
 	flavor.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(flavor)
+	title_col.add_child(flavor)
 	# 依種類分列：第一列卡片、第二列遺物、第三列藥品、第四列其它（服務 + 導覽）。
 	# 每列用 HFlowContainer → 商品多時自動換行，不會超出畫面右緣（全部可見、可點購買）。
 
@@ -7251,7 +7277,7 @@ func _shop_sale_stamp() -> Control:
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stamp.add_child(label)
 	stamp.rotation_degrees = -8.0
-	stamp.position = Vector2(-8, 10)
+	stamp.position = Vector2(38, 2)  # 避開左上費用數字與右上稀有度寶石
 	stamp.z_index = 5
 	stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return stamp
