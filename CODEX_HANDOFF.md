@@ -35,5 +35,10 @@ Development — Batch A 已完成入庫，Batch B 實作中。
 - **C3 條件式遺物池**：`RelicData.pool_requires`＋`RelicCatalog.pool_eligible(relic, deck)`；攝魂蠱鈴(毒卡≥4)/逍遙令(0費≥3)/業火爐(消耗≥2) 只在牌組符合時進掉落/商店池；Boss 三選一與事件不過濾
 - 待辦：C2 上線後找機會跑同 seed AI run 對照（前測基線＝2026-07-09 seed 20260709 4 幕全通）
 
+## 幕間難度縮放（2026-07-09/10，commit 9eb93c7，同 seed 驗證完成）
+- 反曲線修正：幕 3 起敵 HP +12%/幕、傷害 +5%/幕（`BattleController.ACT_HP_STEP`/`ACT_DMG_STEP`）；前兩幕不動；召喚/接續 boss 也套；意圖預測補齊 strength×mult（修 A2+ 預測偏低既有 bug）
+- 同 seed 333 對照（agent 親玩 8 幕通關）：幕 3 boss 1回合0傷→2回合18傷 ✓、phase-2 boss 全數 2+ 回合有實傷 ✓、受傷中位數 0→3.5、無牆。詳見 BALANCE_REPORT §十
+- **殘餘缺口**：幕 4 赤鬼王 / 幕 6 鎮獄明王（單階段 boss）仍被最佳化爆發 1 回合斬。**不要用加 HP 解**（違反既有爆發獎勵決策）；正解＝給這兩隻補 phase 2（phase-2 boss 天然免疫一回合斬，已驗證）。赤鬼王概念圖已有（ART_TODO §6C）
+
 ## 下一個最安全任務
-Batch C 後的同 seed AI 平衡對照 run；或收斂 gold 通膨（BALANCE_REPORT §六，獨立輪）
+幕 4/6 單階段 boss 補 phase 2（赤鬼王/鎮獄明王，數據驅動的內容工單）；或收斂 gold 通膨（BALANCE_REPORT §六，獨立輪）
