@@ -1104,59 +1104,70 @@ func begin_enemy_phase() -> Array[Dictionary]:
 
 func resolve_enemy_phase(actions: Variant) -> Dictionary:
 	# 向後相容：actions 可為 Array[Dictionary]（multi-enemy）或單一 Dictionary（legacy 1v1 caller）
+	# UI 逐隻出手節奏走三段式 API：begin_enemy_resolution → resolve_one_enemy × N → finish_enemy_resolution
+	# （main.gd 在每隻之間插動畫/浮字）；模擬器/測試維持本函式一次呼叫，行為相同。
 	var action_list: Array[Dictionary] = []
 	if actions is Dictionary:
 		action_list.append(actions as Dictionary)
 	elif actions is Array:
 		for a: Variant in (actions as Array):
 			action_list.append((a as Dictionary) if a is Dictionary else {})
-	var before_enemy: Dictionary = snapshot_state()
-	var saved_active: int = _active_enemy_index()
+	var ctx: Dictionary = begin_enemy_resolution()
 	for i: int in range(action_list.size()):
-		var action: Dictionary = action_list[i]
-		if action.is_empty():
-			continue
-		if i >= state["enemies"].size():
-			break
-		var slot: Dictionary = state["enemies"][i] as Dictionary
-		if int(slot["hp"]) <= 0:
-			continue
-		# 切 active 到 i，讓 enemy_weak / enemy_block alias 反映該敵
-		if i != _active_enemy_index():
-			_sync_state_to_active_enemy()
-			state["active_enemy_index"] = i
-			_sync_active_enemy_to_state()
-		# 瘋魔：失控。25% 呆立不動；否則攻擊招隨機選目標（可能誤擊友軍敵人）
-		if int(slot.get("berserk", 0)) > 0:
-			slot["berserk"] = int(slot["berserk"]) - 1
-			if randf() < 0.25:
-				add_log("%s 瘋魔發作，呆立不動！" % _enemy_display_name_for(i))
-				continue
-			if CardFormat.action_has_damage(action):
-				var candidates: Array[int] = [-1]  # -1 = 玩家
-				for j: int in range(state["enemies"].size()):
-					if j != i and int((state["enemies"][j] as Dictionary)["hp"]) > 0:
-						candidates.append(j)
-				var pick: int = candidates[randi() % candidates.size()]
-				if pick >= 0:
-					_berserk_strike_enemy(action, i, pick)
-					_process_pending_summons(i)
-					if is_defeat():
-						break
-					continue  # 誤擊友軍 → 不再打玩家
-				# pick == -1 → 照常攻擊玩家（往下走正常流程）
-		add_log("%s：%s。" % [_enemy_display_name_for(i), String(action.get("intent", ""))])
-		add_logs(resolver.resolve_enemy_action(action, state))
-		_sync_state_to_active_enemy()
-		_check_player_revive()  # 仙人遺蛻：active 瀕死自動保命（搶在 is_defeat 之前）
-		# 林月如反擊指向最後一個對玩家造成傷害的敵人
-		if CardFormat.action_has_damage(action):
-			state["last_attacker_index"] = i
-		# 處理該敵 action 內的召喚請求
-		_process_pending_summons(i)
+		resolve_one_enemy(i, action_list[i])
 		# 玩家若被打死，戰鬥結束，不繼續處理後面敵人
 		if is_defeat():
 			break
+	return finish_enemy_resolution(ctx, action_list)
+
+func begin_enemy_resolution() -> Dictionary:
+	# 敵方結算前快照：before_enemy 給 UI 算 delta / RunLogger，saved_active 供結算後還原
+	return {"before_enemy": snapshot_state(), "saved_active": _active_enemy_index()}
+
+func resolve_one_enemy(i: int, action: Dictionary) -> void:
+	# 結算第 i 隻敵人的一招。死敵 / 空 action（暈眩、被禁言封死）直接跳過。
+	if action.is_empty():
+		return
+	if i >= (state["enemies"] as Array).size():
+		return
+	var slot: Dictionary = state["enemies"][i] as Dictionary
+	if int(slot["hp"]) <= 0:
+		return
+	# 切 active 到 i，讓 enemy_weak / enemy_block alias 反映該敵
+	if i != _active_enemy_index():
+		_sync_state_to_active_enemy()
+		state["active_enemy_index"] = i
+		_sync_active_enemy_to_state()
+	# 瘋魔：失控。25% 呆立不動；否則攻擊招隨機選目標（可能誤擊友軍敵人）
+	if int(slot.get("berserk", 0)) > 0:
+		slot["berserk"] = int(slot["berserk"]) - 1
+		if randf() < 0.25:
+			add_log("%s 瘋魔發作，呆立不動！" % _enemy_display_name_for(i))
+			return
+		if CardFormat.action_has_damage(action):
+			var candidates: Array[int] = [-1]  # -1 = 玩家
+			for j: int in range(state["enemies"].size()):
+				if j != i and int((state["enemies"][j] as Dictionary)["hp"]) > 0:
+					candidates.append(j)
+			var pick: int = candidates[randi() % candidates.size()]
+			if pick >= 0:
+				_berserk_strike_enemy(action, i, pick)
+				_process_pending_summons(i)
+				return  # 誤擊友軍 → 不再打玩家
+			# pick == -1 → 照常攻擊玩家（往下走正常流程）
+	add_log("%s：%s。" % [_enemy_display_name_for(i), String(action.get("intent", ""))])
+	add_logs(resolver.resolve_enemy_action(action, state))
+	_sync_state_to_active_enemy()
+	_check_player_revive()  # 仙人遺蛻：active 瀕死自動保命（搶在 is_defeat 之前）
+	# 林月如反擊指向最後一個對玩家造成傷害的敵人
+	if CardFormat.action_has_damage(action):
+		state["last_attacker_index"] = i
+	# 處理該敵 action 內的召喚請求
+	_process_pending_summons(i)
+
+func finish_enemy_resolution(ctx: Dictionary, action_list: Array[Dictionary]) -> Dictionary:
+	var before_enemy: Dictionary = ctx["before_enemy"] as Dictionary
+	var saved_active: int = int(ctx["saved_active"])
 	# 還原 active：若 saved 還活著切回；否則找第一個活敵
 	var enemy_slots: Array = state.get("enemies", []) as Array
 	if saved_active < enemy_slots.size() and int((enemy_slots[saved_active] as Dictionary)["hp"]) > 0:

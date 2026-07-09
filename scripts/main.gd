@@ -4093,49 +4093,46 @@ func end_player_turn() -> void:
 	_sfx("end_turn")
 	_animate_hand_discard()
 	# Multi-Enemy 模式：begin_enemy_phase 回傳每隻敵人的 action（陣列）
-	# Phase 4 UI 才會每敵顯示獨立 intent；目前先取 active 敵 (或首個非空) 作 preview
 	var actions: Array[Dictionary] = battle.begin_enemy_phase()
 	var prev_active_player: int = int(battle.state.get("active_player_index", 0))
-	var preview_action: Dictionary = {}
-	var preview_idx: int = battle._active_enemy_index()
-	if preview_idx >= 0 and preview_idx < actions.size():
-		preview_action = actions[preview_idx]
-	if preview_action.is_empty():
-		for a: Dictionary in actions:
-			if not a.is_empty():
-				preview_action = a
-				break
-	if not preview_action.is_empty():
-		_show_enemy_action_preview(preview_action)
 	_refresh_battle()
 	await get_tree().create_timer(0.8).timeout
-	# 每隻要出傷害招的敵人各自動畫：重擊單體招 → 飛龍探雲手式大突進（衝向主角再回位）；
-	# 其餘傷害招維持原本小衝。多敵時逐隻啟動，比單一 active 敵更有臨場感。
-	var any_lunge: bool = false
-	var any_dash: bool = false
+	# 逐隻出手：每隻敵人依序「顯示意圖 → 衝刺動畫 → 結算 → 浮字回饋」，
+	# 玩家能看清每一隻打了什麼、扣了多少血（StS 節奏）。
+	# 重擊單體招 → 飛龍探雲手式大突進（衝向主角再回位）；其餘傷害招小衝。
+	var ctx: Dictionary = battle.begin_enemy_resolution()
+	var acted_before: bool = false
 	for ai: int in range(actions.size()):
 		var act_i: Dictionary = actions[ai]
-		if act_i.is_empty() or not CardFormat.action_has_damage(act_i):
+		if act_i.is_empty():
 			continue
+		# 敵人可能被前面隊友的瘋魔誤擊打死 → 跳過動畫與結算
+		var slots: Array = battle.state.get("enemies", []) as Array
+		if ai >= slots.size() or int((slots[ai] as Dictionary)["hp"]) <= 0:
+			continue
+		if acted_before:
+			await get_tree().create_timer(0.35).timeout  # 逐隻之間的呼吸間隔
+		acted_before = true
+		_show_enemy_action_preview(act_i)
 		var w_wrap: Control = null
 		if ai < enemy_widgets.size():
 			w_wrap = enemy_widgets[ai].get("wrap")
-		if w_wrap == null or not is_instance_valid(w_wrap):
-			continue
-		any_dash = true
-		if _enemy_action_lunges(act_i):
-			any_lunge = true
-			# 突進只沿水平（Y 分量曾讓敵人「上下浮動」——實機回報），距離略收
-			UIFactory.dash_node(w_wrap, Vector2(-1.0, 0.0), 160.0, 0.5)
-		else:
-			UIFactory.dash_node(w_wrap, Vector2(-1, 0), 36.0, 0.22)
-	if any_lunge:
-		await get_tree().create_timer(0.26).timeout  # 等突進衝到位（前 45% 去程）才結算傷害
-	elif any_dash:
-		await get_tree().create_timer(0.1).timeout
-	var result: Dictionary = battle.resolve_enemy_phase(actions)
+		if CardFormat.action_has_damage(act_i) and w_wrap != null and is_instance_valid(w_wrap):
+			if _enemy_action_lunges(act_i):
+				# 突進只沿水平（Y 分量曾讓敵人「上下浮動」——實機回報），距離略收
+				UIFactory.dash_node(w_wrap, Vector2(-1.0, 0.0), 160.0, 0.5)
+				await get_tree().create_timer(0.26).timeout  # 等突進衝到位（前 45% 去程）才結算傷害
+			else:
+				UIFactory.dash_node(w_wrap, Vector2(-1, 0), 36.0, 0.22)
+				await get_tree().create_timer(0.1).timeout
+		var before_one: Dictionary = battle.snapshot_state()
+		battle.resolve_one_enemy(ai, act_i)
+		_show_state_feedback(before_one)
+		_refresh_battle()
+		if battle.is_defeat():
+			break
+	var result: Dictionary = battle.finish_enemy_resolution(ctx, actions)
 	_process_battle_curses()
-	_show_state_feedback(result["before_enemy"])
 	_refresh_battle()
 	# 隊友倒下、後排被迫接替上場 → 接替者台詞
 	var now_active_player: int = int(battle.state.get("active_player_index", 0))

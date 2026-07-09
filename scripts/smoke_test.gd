@@ -191,6 +191,7 @@ func _initialize() -> void:
 	_test_multi_enemy_set_active(characters, enemies)
 	# Phase 3+3.5
 	_test_multi_enemy_turn_each_attacks(characters, enemies)
+	_test_multi_enemy_stepwise_resolution(characters, enemies)
 	_test_multi_enemy_per_enemy_phase(characters)
 	_test_summon_basic(characters, enemies)
 	_test_summon_cap(characters, enemies)
@@ -2887,6 +2888,35 @@ func _test_multi_enemy_turn_each_attacks(characters: Array[CharacterData], enemi
 	var actions2: Array[Dictionary] = bc.begin_enemy_phase()
 	_check(actions2[1].is_empty(), "dead enemy's action should be empty")
 	_check(not actions2[0].is_empty(), "alive enemy still acts")
+
+func _test_multi_enemy_stepwise_resolution(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# 三段式 API（UI 逐隻出手用）：begin_enemy_resolution → resolve_one_enemy × N → finish_enemy_resolution
+	# 結果須等同一次呼叫 resolve_enemy_phase（同 seed、同敵組、同回合數）
+	seed(20260709)
+	var bc_batch: BattleController = _make_multi_battle(characters[0], [enemies[0], enemies[1]])
+	bc_batch.start_turn()
+	bc_batch.resolve_enemy_phase(bc_batch.begin_enemy_phase())
+	seed(20260709)
+	var bc_step: BattleController = _make_multi_battle(characters[0], [enemies[0], enemies[1]])
+	bc_step.start_turn()
+	var actions: Array[Dictionary] = bc_step.begin_enemy_phase()
+	var ctx: Dictionary = bc_step.begin_enemy_resolution()
+	for i: int in range(actions.size()):
+		var before_one: Dictionary = bc_step.snapshot_state()
+		bc_step.resolve_one_enemy(i, actions[i])
+		# 逐隻結算間可插 UI 快照：該敵結算後玩家 HP 不得回升（無治療招時單調遞減）
+		_check(int(bc_step.state["player_hp"]) <= int(before_one["player_hp"]), "stepwise: player hp should not increase after enemy %d acts" % i)
+		if bc_step.is_defeat():
+			break
+	var result: Dictionary = bc_step.finish_enemy_resolution(ctx, actions)
+	_check(int(bc_step.state["player_hp"]) == int(bc_batch.state["player_hp"]), "stepwise resolution should end with same player hp as batch (%d vs %d)" % [int(bc_step.state["player_hp"]), int(bc_batch.state["player_hp"])])
+	_check(int(bc_step.state["active_enemy_index"]) == int(bc_batch.state["active_enemy_index"]), "stepwise resolution should restore the same active enemy")
+	_check(bool(result["ended"]) == bc_batch.is_battle_over(), "stepwise 'ended' flag should match batch outcome")
+	# 死敵在 UI 端會被跳過動畫；resolve_one_enemy 對死敵也必須是 no-op
+	(bc_step.state["enemies"][1] as Dictionary)["hp"] = 0
+	var hp_before_dead: int = int(bc_step.state["player_hp"])
+	bc_step.resolve_one_enemy(1, actions[1] if actions.size() > 1 and not actions[1].is_empty() else {"intent": "攻擊", "effects": [{"kind": "damage", "amount": 5}]})
+	_check(int(bc_step.state["player_hp"]) == hp_before_dead, "resolve_one_enemy on dead enemy should be a no-op")
 
 func _test_multi_enemy_per_enemy_phase(characters: Array[CharacterData]) -> void:
 	# 每個敵獨立 phase 2 切換：bandit 沒有 phase_2 → 永不 phased；boss 有
