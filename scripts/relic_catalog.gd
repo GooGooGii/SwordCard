@@ -216,8 +216,10 @@ static func _generals() -> Array[RelicData]:
 		[{"trigger": "passive_modifier", "effects": [{"kind": "damage_taken_reduction", "amount": 3}, {"kind": "damage_out_bonus", "amount": -1}]}], Color("6a8a78")))
 	# 取捨③玉菩提珠（StS Busted Crown 式「+能量＋run 層代價」；正史：鎮獄明王身上可偷的九顆玉菩提珠）
 	# 代價用 card_reward_count_bonus 負值實現，卡牌獎勵處已 clamp ≥1；與多寶閣(+1)疊加為 -1
-	l.append(_make("yu_puti_zhu", "玉菩提珠", "每回合開始 +1 靈力，但卡牌獎勵少 2 張可選。", "rare",
-		[{"trigger": "turn_start", "effects": [{"kind": "self_energy", "amount": 1}]},
+	# 2026-07-09 平衡削弱：+1 靈力限「前 3 回合」（max_per_battle:3，turn_start 每回合觸發一次＝前 3 回合），
+	# 掐掉長 boss 戰無限滾能量的雪球；保留 rare 定位。原設計備案見 docs/design/RELIC_DESIGN.md。
+	l.append(_make("yu_puti_zhu", "玉菩提珠", "戰鬥前 3 回合，每回合開始 +1 靈力；但卡牌獎勵少 2 張可選。", "rare",
+		[{"trigger": "turn_start", "filter": {"max_per_battle": 3}, "effects": [{"kind": "self_energy", "amount": 1}]},
 		{"trigger": "permanent", "effects": [{"kind": "card_reward_count_bonus", "amount": -2}]}], Color("e8d49a")))
 	# 消耗流協同（StS Charon's Ashes 式）：每消耗 1 張牌就對敵造成傷害
 	l.append(_make("yehuo_lu", "業火爐", "每消耗 1 張牌，對敵人造成 3 點直接傷害。", "rare",

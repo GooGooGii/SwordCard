@@ -18,10 +18,16 @@ Development — Batch A 已完成入庫，Batch B 實作中。
 ## 測試
 `godot --headless --path . -s scripts/smoke_test.gd > _out.txt 2>&1`，檔尾須 `SwordCard smoke test passed.` 且無 `ERROR:` 行。Batch A 後已跑過：PASS，平衡 regression delta 0。
 
+## AI 平衡 run 觀察（2026-07-09，li_xiaoyao / seed 20260709 / focus / A0）
+- 4 幕全通、李逍遙無險（末段滿血輾壓）。**新遺物「有用但不破格」，未讓 run 失衡。**
+- 遇到 4/11 件（客棧腰牌進商店 +8HP、烈火令、銅錢劍、+既有），皆如預期生效；乾坤袋/醒神茶/木劍/破妖砂等本 seed 未出現。
+- **玉菩提珠整趟未遇到**（4 商店 4 boss 池都沒滾到 rare 通用），auto-buy 疑慮**仍未實測結論**。
+- **真正裂縫是 gold 通膨**（4 幕後剩近 3000 金、買滿仍有餘）——pre-existing，見 `docs/BALANCE_REPORT.md` §六，非新遺物造成。
+
 ## 風險 / 未驗證
-- 玉菩提珠強度（每回合 +1 靈力、rare 售價 130）恐 auto-buy——**待跑 AI 平衡驅動器**（`tools/ai_run.gd`）觀察，備案：改「前 3 回合 +1 靈力」或升 legendary 檔價
+- 玉菩提珠強度未實測（有機 run 沒抽到）。分析上仍偏強：+1 靈力/回合是全遊戲僅 legendary 神器有的效果，rare 130 金＋僅 -2 卡獎（clamp≥1）代價恐偏低。**待使用者裁決**：跑定點對照（需小改 driver 加 grant-relic env）或直接套備案（前 3 回合 +1 靈力／升 legendary 檔價）
 - 並行 session：另一 session 在改 `event_data.gd`/`docs/EVENT_BRANCHING.md`（未 commit，勿動）；背景任務在修 CLAUDE.md 遺物件數（本批 +11 件後其計數需再對）
 - `relic_catalog.gd` 檔頭「71 件」註解過時（實際 Batch A 後 87、Batch B 後 90），由背景任務統一修
 
 ## 下一個最安全任務
-Batch B 驗收（fresh-context verifier）→ commit → Batch C 工單（見 RELIC_DESIGN.md：Boss「+靈力+代價」神器系、掉落稀有度權重 45/30/20/5、條件式遺物池）
+玉菩提珠裁決（見上）→ Batch C 工單（見 RELIC_DESIGN.md：Boss「+靈力+代價」神器系、掉落稀有度權重 45/30/20/5、條件式遺物池）

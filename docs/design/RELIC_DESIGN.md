@@ -42,8 +42,8 @@
 |---|---|---|---|---|---|
 | `yu_puti_zhu` | 玉菩提珠 | rare | 每回合開始 +1 靈力；**代價：卡牌獎勵少 2 張可選** | Busted Crown | 鎮獄明王身上可偷的九顆玉菩提珠 |
 
-實作註記：代價用既有 `card_reward_count_bonus` 帶**負值**（-2）實現，零新 kind；卡牌獎勵張數需 clamp ≥1（實作時驗證 `main.gd:4823` 附近）。與多寶閣（+1）疊加為 -1。
-平衡風險：每回合 +1 靈力強度高（全遊戲僅拜月教旨神器有此效果），rare 售價 130 恐是 auto-buy——**上線後跑一次 AI 平衡驅動器觀察**，必要時改為「前 3 回合 +1 靈力」或漲為 legendary 檔價。
+實作註記：代價用既有 `card_reward_count_bonus` 帶**負值**（-2）實現，零新 kind；卡牌獎勵張數已 clamp ≥1（`main.gd` `_make_card_rewards` count `maxi(1, count)`）。與多寶閣（+1）疊加為 -1。
+平衡結論（2026-07-09）：初版「每回合 +1 靈力」強度高（全遊戲僅拜月教旨神器有此效果），AI 平衡 run（seed 20260709）未抽到它無法實測，但分析上 rare 130 金偏低。**已套備案削弱**：改為「**戰鬥前 3 回合**每回合 +1 靈力」（用 `filter: {max_per_battle: 3}`，turn_start 每回合觸發一次＝前 3 回合），掐掉長 boss 戰無限滾能量的雪球、保留 rare 定位與速攻開場助益。
 
 ## Batch B — run 層互動批次（3 件；新 permanent kind + main.gd 接線）✅ 本次實作
 
