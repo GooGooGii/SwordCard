@@ -36,6 +36,10 @@ func _run() -> void:
 		await process_frame
 		main.run_state.gold = 250
 		main.open_shop_node(bool(shot["black"]))
+		# 固定讓第一張卡特賣，穩定驗證「五折特賣」印章渲染
+		if not main.run_state.current_shop_inventory.is_empty():
+			main.run_state.current_shop_inventory[0]["on_sale"] = true
+			main.show_shop_node()
 		for i in range(8): await process_frame
 		var fname := "res://_shop_%s.png" % shot["label"]
 		get_root().get_texture().get_image().save_png(fname)
