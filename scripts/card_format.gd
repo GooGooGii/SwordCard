@@ -196,6 +196,10 @@ static func requires_enemy_target(card: CardData) -> bool:
 # 所以這裡使用 max(0, value-1) 模擬。state 中的 enemy_weak 維持原值不變。
 static func predict_enemy_damage(action: Dictionary, state: Dictionary) -> Dictionary:
 	var enemy_weak: int = int(state.get("enemy_weak", 0))
+	# 與 resolver 同步：漸怒 strength 先加基礎傷，再乘 enemy_damage_mult（幕間縮放 × Ascension），
+	# 之後才進 weak / vuln / 減傷。漏掉任一項意圖預測就會低於實傷。
+	var enemy_strength: int = int(state.get("enemy_strength", 0))
+	var dmg_mult: float = float(state.get("enemy_damage_mult", 1.0))
 	var player_vuln_at_hit: int = max(0, int(state.get("player_vulnerable", 0)) - 1)
 	var damage_reduction: int = int(state.get("damage_taken_reduction", 0))
 	var remaining_block: int = int(state.get("player_block", 0))
@@ -208,7 +212,9 @@ static func predict_enemy_damage(action: Dictionary, state: Dictionary) -> Dicti
 		var k: String = String(effect.get("kind", ""))
 		if k != "damage" and k != "damage_all":
 			continue
-		var amount: int = int(effect.get("amount", 0))
+		var amount: int = int(effect.get("amount", 0)) + enemy_strength
+		if dmg_mult != 1.0:
+			amount = int(round(amount * dmg_mult))
 		var modified: int = max(0, amount - enemy_weak)
 		if player_vuln_at_hit > 0:
 			modified = int(ceil(modified * 1.5))

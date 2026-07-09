@@ -392,7 +392,8 @@ func _start_battle(enemies_in: Array, is_elite: bool = false) -> void:
 			slot["max_hp"] = sm
 			slot["hp"] = sm
 		battle._sync_active_enemy_to_state()
-	battle.state["enemy_damage_mult"] = Ascension.enemy_damage_multiplier(run_state.ascension_level, enemy_tier)
+	# 疊乘而非覆蓋：setup 已放入幕間縮放基底（BattleController.act_enemy_dmg_mult）
+	battle.state["enemy_damage_mult"] = float(battle.state.get("enemy_damage_mult", 1.0)) * Ascension.enemy_damage_multiplier(run_state.ascension_level, enemy_tier)
 	battle.state["battle_is_elite"] = is_elite  # 供 A18 招式判斷 tier
 	_ctx = {"is_boss": is_boss, "is_elite": is_elite, "turn": 0}
 	battle.start_turn()

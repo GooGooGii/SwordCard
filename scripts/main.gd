@@ -2336,7 +2336,8 @@ func start_next_battle(enemies: Variant, is_elite: bool = false) -> void:
 			slot["hp"] = scaled_max
 		battle._sync_active_enemy_to_state()
 	# Ascension A2-4：敵人傷害倍率（一般/精英/boss）
-	battle.state["enemy_damage_mult"] = Ascension.enemy_damage_multiplier(run_state.ascension_level, enemy_tier)
+	# 疊乘而非覆蓋：setup 已放入幕間縮放基底（BattleController.act_enemy_dmg_mult）
+	battle.state["enemy_damage_mult"] = float(battle.state.get("enemy_damage_mult", 1.0)) * Ascension.enemy_damage_multiplier(run_state.ascension_level, enemy_tier)
 	battle.state["battle_is_elite"] = is_elite  # 供 A18 招式判斷 tier
 	battle_end_pending = false
 	_banter_used = {}
@@ -3040,6 +3041,7 @@ func _refresh_enemy_widgets() -> void:
 					intent_name = CardFormat.strip_trailing_number(intent_name)  # 去名稱尾數，改用淨傷
 					var temp_state: Dictionary = battle.state.duplicate()
 					temp_state["enemy_weak"] = int(slot.get("weak", 0))
+					temp_state["enemy_strength"] = int(slot.get("strength", 0))  # 漸怒：意圖顯示該敵累積攻擊力後的實傷
 					# 只顯示該敵的攻擊值：清掉玩家側修正（護體 / 破綻 / 減傷），
 					# 不再自動減去護體顯示「實受X(擋Y)」（仍反映敵人自身虛弱降低的攻擊）
 					temp_state["player_block"] = 0

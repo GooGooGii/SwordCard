@@ -114,6 +114,7 @@ func _initialize() -> void:
 	_test_map_encounter_groups(enemies, bosses)
 	_test_map_shop_rules(enemies, bosses)
 	_test_predict_enemy_damage_matches_resolver()
+	_test_act_enemy_scaling(characters, enemies)
 	_test_intent_display()
 	_test_requires_enemy_target()
 	_test_all_upgrades_change(characters)
@@ -940,6 +941,61 @@ func _test_predict_enemy_damage_matches_resolver() -> void:
 		_check(int(pred["dealt"]) == actual_dealt,
 			"predict mismatch: block=%d vuln=%d weak=%d atk=%d → predicted %d, actual %d" %
 			[block_amt, vuln, enemy_weak, attack, int(pred["dealt"]), actual_dealt])
+	# 漸怒 strength + enemy_damage_mult（幕間縮放 × Ascension）也要兩邊一致
+	# resolver 順序：(amount + strength) × mult(round) → -weak → ×1.5 vuln(ceil) → -減傷 → 護體
+	var cases2: Array[Array] = [
+		# [strength, dmg_mult, block, vuln, weak, amount]
+		[3, 1.0, 0, 0, 0, 10],    # 純漸怒
+		[0, 1.3, 0, 0, 0, 10],    # 純倍率（幕 8 縮放檔）
+		[3, 1.3, 5, 2, 2, 10],    # 全開：(10+3)×1.3=round(16.9)=17 → -2=15 → ×1.5=ceil(22.5)=23 → 擋5
+		[2, 1.72, 0, 1, 0, 8],    # 幕 8 HP 檔倍率誤用也不該炸；vuln -1 後歸零不乘
+	]
+	for c: Array in cases2:
+		var strength: int = int(c[0])
+		var mult: float = float(c[1])
+		var state2: Dictionary = _make_state()
+		state2["enemy_strength"] = strength
+		state2["enemy_damage_mult"] = mult
+		state2["player_block"] = int(c[2])
+		state2["player_vulnerable"] = int(c[3])
+		state2["enemy_weak"] = int(c[4])
+		var action2: Dictionary = {"intent": "test", "effects": [{"kind": "damage", "amount": int(c[5])}]}
+		var pred2: Dictionary = CardFormat.predict_enemy_damage(action2, state2)
+		if int(state2["player_vulnerable"]) > 0:
+			state2["player_vulnerable"] -= 1
+		var hp_before2: int = int(state2["player_hp"])
+		resolver.resolve_enemy_action(action2, state2)
+		var actual2: int = hp_before2 - int(state2["player_hp"])
+		_check(int(pred2["dealt"]) == actual2,
+			"predict mismatch (str/mult): str=%d mult=%.2f → predicted %d, actual %d" %
+			[strength, mult, int(pred2["dealt"]), actual2])
+
+func _test_act_enemy_scaling(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# 幕間難度縮放（2026-07-09 反曲線修正）：幕 1-2 不動，幕 3 起 HP +12%/幕、傷害 +5%/幕
+	_check(BattleController.act_enemy_hp_mult(1) == 1.0, "act1 HP mult 應為 1.0")
+	_check(BattleController.act_enemy_hp_mult(2) == 1.0, "act2 HP mult 應為 1.0")
+	_check(abs(BattleController.act_enemy_hp_mult(3) - 1.12) < 0.001, "act3 HP 應 ×1.12")
+	_check(abs(BattleController.act_enemy_hp_mult(8) - 1.72) < 0.001, "act8 HP 應 ×1.72")
+	_check(BattleController.act_enemy_dmg_mult(2) == 1.0, "act2 dmg mult 應為 1.0")
+	_check(abs(BattleController.act_enemy_dmg_mult(8) - 1.30) < 0.001, "act8 dmg 應 ×1.30")
+	# setup 實際套用：act=5 → HP ×1.36、enemy_damage_mult = 1.15
+	var rs: RunState = RunState.new()
+	rs.init_for(characters[0])
+	rs.act = 5
+	var bc: BattleController = BattleController.new()
+	bc.setup(rs, characters[0], enemies[0])
+	var expected_hp: int = max(1, int(round(enemies[0].max_hp * 1.36)))
+	_check(int(bc.state["enemy_max_hp"]) == expected_hp,
+		"act5 敵 HP 應為 %d（base %d ×1.36），got %d" % [expected_hp, enemies[0].max_hp, int(bc.state["enemy_max_hp"])])
+	_check(abs(float(bc.state["enemy_damage_mult"]) - 1.15) < 0.001,
+		"act5 enemy_damage_mult 應為 1.15，got %.3f" % float(bc.state["enemy_damage_mult"]))
+	# act=1 基準不動（防禦：新縮放不得影響前兩幕與既有模擬基線）
+	var rs1: RunState = RunState.new()
+	rs1.init_for(characters[0])
+	var bc1: BattleController = BattleController.new()
+	bc1.setup(rs1, characters[0], enemies[0])
+	_check(int(bc1.state["enemy_max_hp"]) == enemies[0].max_hp, "act1 敵 HP 不應被縮放")
+	_check(abs(float(bc1.state["enemy_damage_mult"]) - 1.0) < 0.001, "act1 dmg mult 應為 1.0")
 
 func _test_ascension_persistence_and_modifiers() -> void:
 	# 持久化：clear → mark(2) → unlocked == 3

@@ -5,6 +5,20 @@ const HAND_SIZE: int = 5
 const BASE_TURN_ENERGY: int = 3
 const SWITCH_IN_BLOCK: int = 2  # P3-11：切人上場護體（鼓勵主動切人）
 const PARTY_ENEMY_HP_STEP: float = 0.85  # P2-10→2026-06-30：每多 1 名隊員敵 HP +85%（原 0.35 仍「免費勝利」=duo/trio 100%）
+
+# 幕間難度縮放（2026-07-09 難度反曲線修正）：run log 實測幕 1-2 boss 有張力（4 回合、掉 ~25 HP），
+# 幕 3 起玩家成長超車、boss 常 0-1 回合零傷被斬。幕 3 起敵人 HP / 傷害隨幕數線性拉陡；
+# 前兩幕不動（新手體驗不變）。與 party / Ascension 倍率相乘疊加。傷害走既有 enemy_damage_mult
+# 管線（EffectResolver 與 CardFormat.predict_enemy_damage 都吃它，意圖預測不失真）。
+const ACT_SCALE_FROM_ACT: int = 3    # 從第幾幕開始縮放
+const ACT_HP_STEP: float = 0.12      # 每幕敵 HP +12%（幕 8 ×1.72）
+const ACT_DMG_STEP: float = 0.05     # 每幕敵傷 +5%（幕 8 ×1.30）
+
+static func act_enemy_hp_mult(act: int) -> float:
+	return 1.0 + ACT_HP_STEP * max(0, act - ACT_SCALE_FROM_ACT + 1)
+
+static func act_enemy_dmg_mult(act: int) -> float:
+	return 1.0 + ACT_DMG_STEP * max(0, act - ACT_SCALE_FROM_ACT + 1)
 const BENCH_HEAL_PER_TURN: int = 1  # 2026-06-30：後排回血 2→1，削組隊「免費續航」（tempo 才是白給瓶頸，非血池）
 const MAX_ENEMIES_PER_BATTLE: int = 3
 const FEMALE_CHARACTER_IDS: Array[String] = ["zhao_linger", "lin_yueru", "anu"]
@@ -123,9 +137,10 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 	# P2-10 組隊難度補正：多人隊（能量+1/人、後排回血、切人迴避）實測 vs 中段 boss
 	# 勝率 100%（單人最高 83%）= 白給；敵 HP 按隊伍人數補正拉回張力（2 人 ×1.2、3 人 ×1.4）。
 	var party_hp_mult: float = 1.0 + PARTY_ENEMY_HP_STEP * max(0, party_size - 1)
+	var act_hp_mult: float = act_enemy_hp_mult(run_state.act)  # 幕間縮放（幕 1-2 為 1.0）
 	var enemy_slots: Array[Dictionary] = []
 	for e: EnemyData in enemies:
-		var scaled_hp: int = max(1, int(round(e.max_hp * party_hp_mult)))
+		var scaled_hp: int = max(1, int(round(e.max_hp * party_hp_mult * act_hp_mult)))
 		enemy_slots.append({
 			"id": e.id,
 			"name": e.display_name,
@@ -202,7 +217,7 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"block_bonus": 0,
 		"heal_bonus": 0,
 		"poison_bonus": 0,
-		"enemy_damage_mult": 1.0,  # Ascension A2-4：敵人攻擊傷害倍率
+		"enemy_damage_mult": act_enemy_dmg_mult(run_state.act),  # 幕間縮放基底；Ascension A2-4 在 caller 疊乘
 		"draw_next_turn_bonus": 0,
 		"card_played_counts": {},
 		"last_attacker_index": 0,  # 林月如反擊指向的敵人
@@ -1244,11 +1259,14 @@ func spawn_enemy(enemy_id: String, mark_summoned: bool = true) -> bool:
 	enemies.append(clone)
 	enemy_action_indices.append(0)
 	enemy_phased.append(false)
+	# 幕間縮放也套用到召喚物/接續 boss（如水魔獸）——否則終幕接續 boss 停留在未縮放數值。
+	# 注意：party 倍率沿革上未套（召喚物本就設計為較弱），維持現狀不動。
+	var spawn_hp: int = max(1, int(round(clone.max_hp * act_enemy_hp_mult(run_state.act if run_state != null else 1))))
 	var slot: Dictionary = {
 		"id": clone.id,
 		"name": clone.display_name,
-		"max_hp": clone.max_hp,
-		"hp": clone.max_hp,
+		"max_hp": spawn_hp,
+		"hp": spawn_hp,
 		"block": 0,
 		"poison": 0,
 		"weak": 0,
