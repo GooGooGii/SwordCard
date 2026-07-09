@@ -362,15 +362,27 @@ static func ignore_child_mouse(node: Node) -> void:
 # 位移類動畫（shake / dash）共用的「先 kill 舊 tween 並還原真正原點」前處理，
 # 避免同節點重複觸發時把「位移中的位置」誤當成原點 → 動畫結束回不到原位。
 static func _reset_pos_fx(node: Control) -> Vector2:
+	# 只有在「殺掉仍在跑的 fx tween」時才用 meta 還原。fx 早已結束的話，父容器可能
+	# 已經重排（意圖字增減會改 col 最小高度 → 子節點 local y 變），無條件還原過期
+	# 座標會把節點釘回舊高度、直到下次重排才跳回——實機「敵人位置忽高忽低」的來源。
 	if node.has_meta("_fx_pos_tween"):
 		var prev: Variant = node.get_meta("_fx_pos_tween")
 		if prev is Tween and (prev as Tween).is_valid():
 			(prev as Tween).kill()
-		if node.has_meta("_fx_pos_rest"):
-			node.position = node.get_meta("_fx_pos_rest")
+			if node.has_meta("_fx_pos_rest"):
+				node.position = node.get_meta("_fx_pos_rest")
 	var rest: Vector2 = node.position
 	node.set_meta("_fx_pos_rest", rest)
 	return rest
+
+static func _end_pos_fx(node: Control) -> void:
+	# fx 收尾：位置主導權交還父容器——重排一次，把節點放回容器當下認定的正確位置
+	# （fx 進行中若發生過重排，tween 的還原終點是過期座標，這裡校正）。
+	if node == null or not is_instance_valid(node):
+		return
+	var parent: Node = node.get_parent()
+	if parent is Container:
+		(parent as Container).queue_sort()
 
 static func shake_node(node: Control, intensity: float = 8.0, duration: float = 0.25) -> void:
 	if node == null:
@@ -383,6 +395,7 @@ static func shake_node(node: Control, intensity: float = 8.0, duration: float = 
 		var offset: Vector2 = Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity))
 		tween.tween_property(node, "position", orig_pos + offset, step_duration).set_trans(Tween.TRANS_SINE)
 	tween.tween_property(node, "position", orig_pos, step_duration)
+	tween.tween_callback(_end_pos_fx.bind(node))
 	node.set_meta("_fx_pos_tween", tween)
 
 static func dash_node(node: Control, direction: Vector2, distance: float = 36.0, duration: float = 0.24) -> void:
@@ -392,6 +405,7 @@ static func dash_node(node: Control, direction: Vector2, distance: float = 36.0,
 	var tween: Tween = node.create_tween()
 	tween.tween_property(node, "position", orig_pos + direction.normalized() * distance, duration * 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(node, "position", orig_pos, duration * 0.55).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.tween_callback(_end_pos_fx.bind(node))
 	node.set_meta("_fx_pos_tween", tween)
 
 static func flash_node(node: Control, color: Color = Color(1.4, 1.4, 1.6), duration: float = 0.22) -> void:
