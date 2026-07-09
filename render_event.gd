@@ -17,6 +17,7 @@ const SHOTS := [
 	{"variant": "spring", "character": "zhao_linger", "flags": []},
 	{"variant": "tavern_acquaintance", "character": "anu", "flags": ["yamen_grudge", "thief_backer_grudge"]},
 	{"variant": "baiyue_altar", "character": "li_xiaoyao", "flags": ["waner_clue", "yao_freed"]},
+	{"variant": "ancient_battlefield", "character": "li_xiaoyao", "flags": []},
 ]
 # 低血（觸發 hp_below 條件選項）
 const LOW_HP := false

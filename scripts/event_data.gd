@@ -1692,20 +1692,6 @@ const VARIANTS: Dictionary = {
 						},
 					},
 					{
-						"id": "blade_communion",
-						"label": "以滿身鋒銳與千年戰魂共鳴",
-						"kind_hint": "reward",
-						"requires": {"deck_archetype": ["attack"], "character": ["li_xiaoyao", "lin_yueru", "anu"]},
-						"outcome": {
-							"kind": "reward",
-							"effects": [
-								{"kind": "permanent_power", "amount": 2},
-								{"kind": "gain_card_pool", "pool": "character"},
-							],
-							"log": "你亮出兵刃一引，滿地殘旌與斷戟轟然共鳴。千年前的殺伐意志認出了同道，把一式失傳的軍陣戰法，痛快地交到了你手裡。",
-						},
-					},
-					{
 						"id": "lowhp_last_stand",
 						"label": "拖著傷軀，擺出死戰之姿",
 						"kind_hint": "gamble",
@@ -1724,27 +1710,6 @@ const VARIANTS: Dictionary = {
 								],
 							},
 							"log": "你拖著傷軀立於古戰場中央，擺出與滿地英靈相同的死戰之姿。鐵血在絕境裡反而燒得更旺——能不能燒成戰意，看你撐不撐得住。",
-						},
-					},
-					{
-						"id": "wraith_duel",
-						"label": "兵刃直指土心，搦鬼一戰",
-						"kind_hint": "battle",
-						"outcome": {
-							"kind": "battle",
-							"battle": {
-								"enemy_id": "ancient_evil_spirit",
-								"enemy_hp_mult": 0.9,
-								"victory_effects": [
-									{"kind": "gain_relic_pool", "pool": "rare"},
-									{"kind": "permanent_power", "amount": 3},
-								],
-								"defeat_effects": [
-									{"kind": "damage", "amount": 15},
-									{"kind": "max_hp", "amount": -3},
-								],
-							},
-							"log": "你兵刃直指土心，朗聲搦戰。地底沉默了三息，然後整片戰場的低鳴驟然止住——有什麼東西應了你，正從千年的血土深處，一寸一寸地上來。",
 						},
 					},
 					{
@@ -1783,6 +1748,27 @@ const VARIANTS: Dictionary = {
 									{"kind": "heal", "amount": 8},
 								],
 								"log": "你在斷劍前堆了個小小的土壇，點起隨身的香。香煙繞著斷劍打了一個圈，又一個圈，最後輕輕落在你的肩頭，像一只告別的手。你起身時，掌中多了一件他留下的物事。",
+							},
+						},
+						{
+							"id": "finish_his_duel",
+							"label": "提起斷劍，替他打完這一戰",
+							"kind_hint": "battle",
+							"outcome": {
+								"kind": "battle",
+								"battle": {
+									"enemy_id": "ancient_evil_spirit",
+									"enemy_hp_mult": 0.9,
+									"victory_effects": [
+										{"kind": "gain_relic_pool", "pool": "rare"},
+										{"kind": "permanent_power", "amount": 3},
+									],
+									"defeat_effects": [
+										{"kind": "damage", "amount": 15},
+										{"kind": "max_hp", "amount": -3},
+									],
+								},
+								"log": "你握住那柄斷劍，朝土心一指——「未竟」的最後一筆劃向哪裡，他沒打完的仇家就在哪裡。地底沉默了三息，滿場低鳴驟然止住：那個讓他沒能寫完最後一筆的東西，正從千年血土深處，一寸一寸地上來。",
 							},
 						},
 					],
