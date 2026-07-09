@@ -2,9 +2,9 @@
 
 把現有 28（+3 後續新增）個 event variant 從「扁平選單」升級為**分支故事樹**：每個事件 3–5 個主選項、可進入子節點、葉節點分類為 reward / punish / battle / gamble / mixed。
 
-> **目前實作狀態：核心框架 + 內容批次 A/B 已完成**（Phase 1-5、7-A、7-B；P6 僅缺 `act_modifier`）。
-> EventRunner tree walker、curse 系統、observe token、戰鬥回流都已上線；13/31 事件已轉成 tree（其餘 18 個走 legacy fallback）。
-> 詳見下方「現況對照」。
+> **目前實作狀態：核心框架與內容已全面完成**（Phase 1-5、7-A、7-B；P6 僅缺 `act_modifier`）。
+> EventRunner tree walker、curse 系統、observe token、戰鬥回流都已上線；**全部 32 個事件都已有 tree**（舊扁平 schema 僅為 fallback 保險）。
+> 詳見下方「現況對照」。（2026-07-08 稽核更新）
 
 ---
 
@@ -14,7 +14,7 @@
 
 | 設計項目 | 實作狀態 | 程式位置 |
 |---|---|---|
-| 樹狀 `tree { root, nodes }` schema | ✅ 完成 | `event_data.gd` 22 個事件有 `tree` 欄位；舊事件走 fallback |
+| 樹狀 `tree { root, nodes }` schema | ✅ 完成 | `event_data.gd` 全部 32 個事件皆有 `tree` 欄位 |
 | EventRunner tree walker | ✅ 完成 | `event_runner.gd`（191 行）：has_tree / visible_choices / eval_requires / is_leaf / leaf_kind / badge_for_kind / build_context |
 | 多層深度（3+ 層） | ✅ 完成 | `EventRunner.get_node()` 支援 root + nodes 遞迴走訪 |
 | `requires`（character / min_gold / has_relic / min_power / observe_token） | ✅ 完成 | `EventRunner.eval_requires()`（多條件 AND） |
@@ -23,13 +23,13 @@
 | observe token 系統 | ✅ 完成 | `RunState.observe_tokens`（起始 3）+ `next_battle_buffs`；to/from_dict round-trip |
 | 戰鬥回流（pending_event_return） | ✅ 完成 | Phase 3 commit `01b78a7`；事件戰鬥敗不直接 game over |
 | 新 effect kinds | 🟨 大致完成 | `main.gd:3616-3667` 處理 permanent_power / next_battle_buff / gain_relic_pool / gain_card_pool / gain_curse；**`act_modifier` 仍是 push_warning「not implemented (P6)」** |
-| 事件 tree 內容 | 🟨 22 / 32 | Batch A 6 個 (`99ff292`) + Batch B 6 個含戰鬥 (`c43a306`) + caiyi_butterfly + spring + PAL1 名場面批次 8 個（yokai_pact / baiyue_altar / flower_spirit / yangzhou_officer / jiang_waner_grief / shilipo_sword_god / drunk_swordsman / tangyu_sparring）；其餘 10 個走 legacy 扁平 schema |
+| 事件 tree 內容 | ✅ 32 / 32 | Batch A 6 個 (`99ff292`) + Batch B 6 個含戰鬥 (`c43a306`) + caiyi_butterfly + spring + PAL1 名場面批次 8 個 + 最終批次 10 個（原 legacy 事件全數轉樹） |
 | Smoke test 覆蓋 | ✅ 17 個事件相關 | event_runner ×7 / observe_token ×3 / curse ×6 / event_variety ×1（全 78 個測試通過） |
 
 **現況白話總結**：
-- 核心 tree 系統 + curse + observe + 戰鬥回流**都能跑了**，玩家在 22 個事件能體驗到真正的分支樹（68% 覆蓋率）
-- 剩餘 10 個 legacy 事件：spirit_clan_ruins / tavern_acquaintance / sword_tomb / miao_healer / yinlong_cave / lingmiao / xianling_shrine / flower_thief / jianling_whisper / aqi_reunion
+- 核心 tree 系統 + curse + observe + 戰鬥回流**都能跑了**，全部 32 個事件都是真正的分支樹（100% 覆蓋率）
 - 其他未竟：`act_modifier` effect、event-only 敵人（P10）、更多測試
+- 內容品質審查與已知問題清單見 `docs/EVENT_WRITING_REVIEW.md`（2026-07-08）
 
 ---
 
