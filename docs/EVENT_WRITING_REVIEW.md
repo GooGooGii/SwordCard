@@ -18,7 +18,8 @@
 - **P2-2 flavor-tree 脫節** ✅：補 20+ 條角色變體/專屬分支（詳見 commit）；並依使用者要求完成全池
   「角色邏輯體檢」——劍/酒選項鎖 `requires.character`，靈兒（仙術）/阿奴（蠱/巫醫/飛刀）給等價變體。
 - 文件過時 ✅：EVENT_BRANCHING.md 更新為 32/32；spring 頂部註解修正。
-- 未處理：雙軌文本冗餘（舊扁平 schema 移除與否）留待後續決策；battlefield root 8 選項過載未動。
+- battlefield root 選項過載 ✅：9→7（blade_communion 移除、搦鬼戰移入「未竟」節點，`f6ca917`）。
+- 未處理：雙軌文本冗餘（舊扁平 schema 移除與否）留待後續決策。
 - 新規範：**設 flag 必須有消費點，否則不設**（本次已全池達成，新增事件時遵守）。
 
 ## 一、逐事件評分總表
