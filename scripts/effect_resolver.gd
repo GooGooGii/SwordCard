@@ -228,12 +228,12 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				state["player_block"] = int(state["player_block"]) + actual_block
 				log_lines.append("獲得 %d 點護體。" % actual_block)
 		"heal":
-			var actual_heal: int = amount + int(state.get("heal_bonus", 0))
+			var actual_heal: int = maxi(0, amount + int(state.get("heal_bonus", 0)))
 			state["player_hp"] = min(int(state["player_max_hp"]), int(state["player_hp"]) + actual_heal)
 			log_lines.append("回復 %d 點生命。" % actual_heal)
 		"heal_party":
-			# 全隊活著的成員回血（PAL1 五氣朝元等全體治療對應）
-			var party_heal: int = amount + int(state.get("heal_bonus", 0))
+			# 全隊活著的成員回血（PAL1 五氣朝元等全體治療對應）；heal_bonus 負值 clamp ≥0（朱漆酒葫蘆）
+			var party_heal: int = maxi(0, amount + int(state.get("heal_bonus", 0)))
 			var players: Array = state.get("players", []) as Array
 			var healed_any: bool = false
 			for p_v: Variant in players:
@@ -675,7 +675,7 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 				log_lines.append("救回 %s（+%d HP）。" % [name, amount])
 			else:
 				# 沒人倒下 → fallback：當 heal 用
-				var actual_heal: int = amount + int(state.get("heal_bonus", 0))
+				var actual_heal: int = maxi(0, amount + int(state.get("heal_bonus", 0)))
 				state["player_hp"] = min(int(state["player_max_hp"]), int(state["player_hp"]) + actual_heal)
 				log_lines.append("無人需救，改回復 %d 點生命。" % actual_heal)
 		"damage_all":

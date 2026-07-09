@@ -1398,7 +1398,7 @@ func _apply_trigger_effects(effects: Array, relic_name: String) -> void:
 		var amount: int = int(effect.get("amount", 0))
 		match kind:
 			"self_heal":
-				var actual: int = amount + int(state.get("heal_bonus", 0))
+				var actual: int = maxi(0, amount + int(state.get("heal_bonus", 0)))
 				state["player_hp"] = min(int(state["player_max_hp"]), int(state["player_hp"]) + actual)
 				_sync_state_to_active()
 				add_log("【%s】回復 %d 生命。" % [relic_name, actual])

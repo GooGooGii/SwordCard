@@ -59,11 +59,45 @@ STS pattern：遺物把地圖節點變成 build 的一部分（Meal Ticket / Maw
 - 存檔：純加欄位走 `data.get(key, default)` 回退，不升 SAVE_VERSION；`RunState.to_dict()/from_dict()` 兩邊都要加。
 - smoke test：各補 1 條（flag 存讀 round-trip + 效果觸發）。
 
-## Batch C — 後續工單（本次不做，規格先立）
+## Batch C — Boss 代價神器系＋稀有度權重＋條件式遺物池（2026-07-09 實作）
 
-1. **Boss 神器「+靈力＋代價」系**：現有 6 神器綁 6 Boss、只有 3 件帶詛咒代價。後續在 Boss 三選一的 generals 補位裡混入 2–3 件 legendary「能量+代價」遺物（代價維度：休息無法回血 / 商店全面 +25% / 每回合出牌上限 6 張），對齊 STS「可用路線規劃繞開代價」的取捨深度。出牌上限需 battle_controller 改動，故整批延後。
-2. **掉落/商店稀有度權重**：對齊 STS 50/33/17（SwordCard 四級建議 45/30/20/5）。全域平衡改動，需先跑 AI 平衡驅動器建基線再上。
-3. **條件式遺物池**（Bottled 系列 pattern）：如「牌組毒牌 ≥5 才出現的毒引擎遺物」，避免流派遺物掉錯角色。需掉落處查 deck 組成，小改動但等 Batch A/B 消化後再做。
+### C1. Boss 池「+1 靈力＋run 層代價」神器（3 件 legendary，STS 能量系 Boss 遺物模板）
+
+新概念「**Boss 池神器**」：`slot="artifact"`、`boss_id=""`（不綁特定 Boss）。Boss 三選一組成改為：
+該 Boss 專屬神器（未持有時）→ **未持有的 Boss 池神器隨機補位** → 仍不足才用 generals 補滿 3。
+main.gd `_make_boss_relic_choices`、ai_run_engine 對應處、smoke `_test_boss_relic_choices` 三處同步。
+
+| id | 名稱 | 效果 | 代價 kind | 正史依據 / 代價風味 |
+|---|---|---|---|---|
+| `wangyou_san` | 忘憂散 | 每回合開始 +1 靈力；**休息時無法回血**（仍可打磨） | `rest_heal_disable`（新，休息結算處短路，雙引擎） | 李逍遙被灌忘憂散失憶——忘憂忘痛，不知休養 |
+| `zhuqi_jiuhulu` | 朱漆酒葫蘆 | 每回合開始 +1 靈力；**戰鬥中治療效果 -2**（最低 0） | `heal_bonus` 負值（既有 kind；resolver 需 clamp 治療 ≥0） | 酒劍仙的朱漆酒葫蘆——以酒代藥 |
+| `shengling_zhu` | 聖靈珠 | 每回合開始 +1 靈力；**商店每件商品 +30 銅錢** | `shop_discount` 負值（既有 kind；折後最低 10 的 clamp 不影響加價） | 靈珠系統（聖靈珠）——寶光引貪，商人抬價 |
+
+- 三件皆「每回合 +1 靈力」不限回合（legendary 檔，與拜月教旨一致；rare 檔的玉菩提珠才限 3 回合）。
+- 代價全落 run 層、可用路線/習慣繞開（少休息 / 不靠戰鬥治療 / 少逛商店），對齊 STS 取捨深度。
+- 與通寶錢（shop_discount +8）自然疊加抵銷，dict 疊加語意不變。
+
+### C2. 掉落/商店稀有度權重（對齊 STS 50/33/17）
+
+現況：`_try_random_relic_drop` / `_pick_shop_relic_ids`（main.gd 與 ai_run_engine 鏡像）從 generals 均勻抽，
+稀有度只影響價格。改為權重抽選：**common 45 / uncommon 30 / rare 20 / legendary 5**
+（legendary generals 目前為 0 件，權重先掛著；Boss 池神器不入 generals 不受影響）。
+實作：抽稀有度層 → 該層無未持有遺物則 fallback 下一層（避免池空抽不出）。
+基線：2026-07-09 AI 平衡 run（seed 20260709，4 幕全通無險）為前測基線；上線後再跑一趟同 seed 對照。
+
+### C3. 條件式遺物池（Bottled 系列 pattern，先套用於 3 件既有流派遺物）
+
+`RelicData` 加 `pool_requires: Dictionary`（空 = 無條件；序列化兩邊都加，舊檔回退空 dict）。
+掉落/商店抽選時過濾：deck 中符合條件的卡數 ≥ 門檻才會出現（已持有者不受影響；事件/Boss 池不過濾）。
+
+| relic | 條件 | 理由 |
+|---|---|---|
+| `shehun_guling` 攝魂蠱鈴（毒半轉傷） | 牌組帶毒效果的卡 ≥ 4 | 無毒源時是死遺物 |
+| `xiaoyao_ling` 逍遙令（0 費打 4） | 牌組 0 費卡 ≥ 3 | 同上 |
+| `yehuo_lu` 業火爐（消耗打 3） | 牌組帶消耗的卡 ≥ 2 | 同上 |
+
+條件判定用 deck 掃描（cost==0 / effects 含 poison / 卡帶 exhaust 旗標），格式
+`{"deck_min": {"match": "cost_zero"|"poison"|"exhaust", "count": N}}`，match 邏輯集中一個 helper 供雙引擎共用。
 
 ## 美術
 

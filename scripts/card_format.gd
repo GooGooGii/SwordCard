@@ -282,7 +282,7 @@ static func live_effect_previews(card: CardData, state: Dictionary) -> Array[Dic
 			"block":
 				out.append({"label": "護體", "value": amount + int(state.get("block_bonus", 0)), "base": amount, "hits": 1})
 			"heal", "heal_party":
-				out.append({"label": "治療", "value": amount + int(state.get("heal_bonus", 0)), "base": amount, "hits": 1})
+				out.append({"label": "治療", "value": maxi(0, amount + int(state.get("heal_bonus", 0))), "base": amount, "hits": 1})
 			"poison", "poison_all":
 				out.append({"label": "蠱毒", "value": amount + int(state.get("poison_bonus", 0)), "base": amount, "hits": 1})
 	return out

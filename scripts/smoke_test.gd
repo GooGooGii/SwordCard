@@ -247,6 +247,7 @@ func _initialize() -> void:
 	_test_enemy_curse_infliction(characters[0], enemies[0])
 	_test_artifact_curse_on_acquire()
 	_test_boss_relic_choices(characters[0])
+	_test_boss_pool_artifacts(characters[0], enemies[0])
 	_test_boss_card_reward_rarity(characters)
 	_test_run_start_boons(characters[0])
 	# Phase 7-A：Batch A 6 個事件樹
@@ -290,6 +291,8 @@ func _initialize() -> void:
 	_test_enemy_block_persists_to_player_turn(characters)
 	# Batch B run 層互動遺物（docs/design/RELIC_DESIGN.md）：客棧腰牌 / 乾坤袋 / 醒神茶
 	_test_run_layer_relics(characters)
+	# Batch C2/C3（docs/design/RELIC_DESIGN.md）：條件式遺物池 + 稀有度權重抽選
+	_test_relic_pool_rules(characters)
 	if _smoke_failures > 0:
 		push_error("[smoke] %d 個 _check() 失敗。以 quit(1) 結束。" % _smoke_failures)
 		print("SwordCard smoke test FAILED (%d check failures)." % _smoke_failures)
@@ -376,6 +379,88 @@ func _test_run_layer_relics(characters: Array[CharacterData]) -> void:
 	_check(int(battle.state["energy"]) == base_energy, "start_turn 後 energy 應回到 per_turn_energy 基準（消耗邏輯必須在此之後套用）")
 	battle.state["energy"] = int(battle.state["energy"]) + 1  # 鏡像 main.gd/ai_run_engine.gd 的 +bonus 消耗
 	_check(int(battle.state["energy"]) == base_energy + 1, "醒神茶 +1 靈力套用後數值不符")
+
+func _test_relic_pool_rules(characters: Array[CharacterData]) -> void:
+	# 1) pool_eligible：無條件遺物恆 true
+	var unconditioned: RelicData = RelicCatalog.by_id("hu_xin_jing")
+	_check(unconditioned != null, "hu_xin_jing 不存在於 catalog")
+	if unconditioned != null:
+		_check(RelicCatalog.pool_eligible(unconditioned, characters[0].starting_deck), "無條件遺物 pool_eligible 應恆為 true（空 deck 亦然）")
+		_check(RelicCatalog.pool_eligible(unconditioned, []), "無條件遺物對空 deck 也應為 true")
+
+	# 2) xiaoyao_ling（0 費卡 >= 3）：低於門檻 false、達門檻 true
+	var xiaoyao: RelicData = RelicCatalog.by_id("xiaoyao_ling")
+	_check(xiaoyao != null, "xiaoyao_ling 不存在於 catalog")
+	if xiaoyao != null:
+		var zero_cost_card: CardData = GameData.make_card("_test_zero_cost", "測試·零費", "li_xiaoyao", 0, "attack", "測試用 0 費卡。", [{"kind": "damage", "amount": 1}])
+		var nonzero_cost_card: CardData = GameData.make_card("_test_nonzero_cost", "測試·一費", "li_xiaoyao", 1, "attack", "測試用 1 費卡。", [{"kind": "damage", "amount": 1}])
+		var deck_below: Array[CardData] = [zero_cost_card.clone(), zero_cost_card.clone(), nonzero_cost_card.clone(), nonzero_cost_card.clone()]
+		var deck_at: Array[CardData] = [zero_cost_card.clone(), zero_cost_card.clone(), zero_cost_card.clone(), nonzero_cost_card.clone()]
+		_check(not RelicCatalog.pool_eligible(xiaoyao, deck_below), "xiaoyao_ling 對 0 費卡 <3 的 deck 應為 false")
+		_check(RelicCatalog.pool_eligible(xiaoyao, deck_at), "xiaoyao_ling 對 0 費卡 >=3 的 deck 應為 true")
+
+	# 3) shehun_guling（poison 卡 >= 4）：match 掃 effects 內任一 kind 含 "poison"
+	var shehun: RelicData = RelicCatalog.by_id("shehun_guling")
+	_check(shehun != null, "shehun_guling 不存在於 catalog")
+	if shehun != null:
+		var poison_card: CardData = GameData.make_card("_test_poison_card", "測試·蠱毒", "anu", 1, "attack", "測試用蠱毒卡。", [{"kind": "poison", "amount": 3}])
+		var non_poison_card: CardData = GameData.make_card("_test_non_poison_card", "測試·普攻", "anu", 1, "attack", "測試用普攻卡。", [{"kind": "damage", "amount": 5}])
+		var poison_deck_below: Array[CardData] = [poison_card.clone(), poison_card.clone(), poison_card.clone(), non_poison_card.clone()]
+		var poison_deck_at: Array[CardData] = [poison_card.clone(), poison_card.clone(), poison_card.clone(), poison_card.clone()]
+		_check(not RelicCatalog.pool_eligible(shehun, poison_deck_below), "shehun_guling 對毒卡 <4 的 deck 應為 false")
+		_check(RelicCatalog.pool_eligible(shehun, poison_deck_at), "shehun_guling 對毒卡 >=4 的 deck 應為 true")
+
+	# 4) yehuo_lu（exhaust 卡 >= 2）：match 讀卡上的 exhaust 旗標
+	var yehuo: RelicData = RelicCatalog.by_id("yehuo_lu")
+	_check(yehuo != null, "yehuo_lu 不存在於 catalog")
+	if yehuo != null:
+		var exhaust_card: CardData = GameData.make_card("_test_exhaust_card", "測試·消耗", "lin_yueru", 1, "skill", "測試用消耗卡。", [{"kind": "block", "amount": 5}], "basic", "", false, true)
+		var normal_card: CardData = GameData.make_card("_test_normal_card", "測試·普通", "lin_yueru", 1, "skill", "測試用普通卡。", [{"kind": "block", "amount": 5}])
+		var exhaust_deck_below: Array[CardData] = [exhaust_card.clone(), normal_card.clone(), normal_card.clone()]
+		var exhaust_deck_at: Array[CardData] = [exhaust_card.clone(), exhaust_card.clone(), normal_card.clone()]
+		_check(not RelicCatalog.pool_eligible(yehuo, exhaust_deck_below), "yehuo_lu 對消耗卡 <2 的 deck 應為 false")
+		_check(RelicCatalog.pool_eligible(yehuo, exhaust_deck_at), "yehuo_lu 對消耗卡 >=2 的 deck 應為 true")
+
+	# 5) pool_requires 序列化 round-trip（to_dict → from_dict 保留）
+	if xiaoyao != null:
+		var xiaoyao_dict: Dictionary = xiaoyao.to_dict()
+		var xiaoyao_restored: RelicData = RelicData.from_dict(xiaoyao_dict)
+		_check(xiaoyao_restored.pool_requires == xiaoyao.pool_requires, "pool_requires to_dict/from_dict round-trip 遺失內容")
+		var xiaoyao_clone: RelicData = xiaoyao.clone()
+		_check(xiaoyao_clone.pool_requires == xiaoyao.pool_requires, "clone() 未帶上 pool_requires")
+	var no_cond: RelicData = RelicData.new()
+	var no_cond_restored: RelicData = RelicData.from_dict(no_cond.to_dict())
+	_check(no_cond_restored.pool_requires.is_empty(), "無條件遺物 round-trip 後 pool_requires 應仍為空 dict")
+	var legacy_dict_no_field: Dictionary = no_cond.to_dict()
+	legacy_dict_no_field.erase("pool_requires")
+	var legacy_restored_relic: RelicData = RelicData.from_dict(legacy_dict_no_field)
+	_check(legacy_restored_relic.pool_requires.is_empty(), "舊存檔缺 pool_requires 欄位時 from_dict 應 fallback 為空 dict")
+
+	# 6) weighted_pick：固定 seed，200 次抽選分布合理（common 件數 > rare 件數；不斷言精確比例，避免 flaky）
+	seed(20260709)
+	var mixed_pool: Array[RelicData] = []
+	for r: RelicData in RelicCatalog.generals():
+		mixed_pool.append(r)
+	var tier_counts: Dictionary = {}
+	for i: int in range(200):
+		var picked: RelicData = RelicCatalog.weighted_pick(mixed_pool)
+		_check(picked != null, "weighted_pick 對非空 pool 不應回 null")
+		if picked != null:
+			tier_counts[picked.rarity] = int(tier_counts.get(picked.rarity, 0)) + 1
+	_check(int(tier_counts.get("common", 0)) > int(tier_counts.get("rare", 0)), "weighted_pick 200 次抽選：common 件數應多於 rare 件數（權重 45 vs 20）")
+
+	# 7) 單一稀有度 pool 不會回 null
+	var single_rarity_pool: Array[RelicData] = []
+	for r: RelicData in RelicCatalog.generals():
+		if r.rarity == "rare":
+			single_rarity_pool.append(r)
+	_check(not single_rarity_pool.is_empty(), "測試前提：catalog 應存在 rare 遺物")
+	var single_pick: RelicData = RelicCatalog.weighted_pick(single_rarity_pool)
+	_check(single_pick != null, "單一稀有度 pool 的 weighted_pick 不應回 null")
+
+	# 8) 空 pool 回 null
+	var empty_pool: Array[RelicData] = []
+	_check(RelicCatalog.weighted_pick(empty_pool) == null, "空 pool 的 weighted_pick 應回 null")
 
 func _test_save_round_trip(characters: Array[CharacterData]) -> void:
 	var state: RunState = RunState.new()
@@ -3933,10 +4018,17 @@ func _test_boss_relic_choices(character: CharacterData) -> void:
 		_check(artifact.id == "wugong_jia", "centipede_lord artifact should still be wugong_jia")
 		_check(artifact.curse_on_acquire == "gu_du",
 			"wugong_jia curse_on_acquire should be gu_du, got: %s" % artifact.curse_on_acquire)
-	# 2. 填滿 3 個選項的邏輯
+	# 2. 填滿 3 個選項的邏輯（Batch C1：boss 專屬 → 未持有 Boss 池神器 → generals 補滿）
 	var choices: Array[RelicData] = []
 	if artifact != null:
 		choices.append(artifact)
+	var boss_pool: Array[RelicData] = []
+	for bp: RelicData in RelicCatalog.artifacts():
+		if bp.boss_id == "" and not rs.has_relic(bp.id):
+			boss_pool.append(bp.clone())
+	var needed_pool: int = 3 - choices.size()
+	for i_p: int in range(min(needed_pool, boss_pool.size())):
+		choices.append(boss_pool[i_p])
 	var general_pool: Array[RelicData] = []
 	for r: RelicData in RelicCatalog.generals():
 		if not rs.has_relic(r.id):
@@ -3945,8 +4037,17 @@ func _test_boss_relic_choices(character: CharacterData) -> void:
 	for i: int in range(min(needed, general_pool.size())):
 		choices.append(general_pool[i])
 	_check(choices.size() == 3, "boss relic choices should be exactly 3, got %d" % choices.size())
-	# 3. 已持有 boss 神器時，全部 3 個都應來自 generals
+	# Boss 池神器（3 件、未持有）應已補進選項，故此刻選項裡不該再需要 general 補位
+	var boss_pool_in_choices: int = 0
+	for c: RelicData in choices:
+		if c.boss_id == "":
+			boss_pool_in_choices += 1
+	_check(boss_pool_in_choices == 2, "boss 專屬神器 + 1 位後應由 2 個 Boss 池神器補位，got %d" % boss_pool_in_choices)
+	# 3. 已持有 boss 神器與全部 Boss 池神器時，全部 3 個都應來自 generals
 	rs.add_relic(artifact.clone() if artifact != null else RelicData.new())
+	for bp2: RelicData in RelicCatalog.artifacts():
+		if bp2.boss_id == "":
+			rs.add_relic(bp2.clone())
 	var choices2: Array[RelicData] = []
 	var pool2: Array[RelicData] = []
 	for a2: RelicData in RelicCatalog.artifacts():
@@ -3966,6 +4067,87 @@ func _test_boss_relic_choices(character: CharacterData) -> void:
 			if c2.id == artifact.id:
 				artifact_in_choices2 = true
 		_check(not artifact_in_choices2, "already-owned artifact should not appear in choices2")
+
+func _test_boss_pool_artifacts(character: CharacterData, enemy: EnemyData) -> void:
+	# Batch C1：3 件 Boss 池神器（boss_id 空、legendary、每回合 +1 靈力＋run 層代價）
+	var pool_ids: Array[String] = ["wangyou_san", "zhuqi_jiuhulu", "shengling_zhu"]
+	var expected_cost_kind: Dictionary = {
+		"wangyou_san": "rest_heal_disable",
+		"zhuqi_jiuhulu": "heal_bonus",
+		"shengling_zhu": "shop_discount",
+	}
+	for id: String in pool_ids:
+		var r: RelicData = RelicCatalog.by_id(id)
+		_check(r != null, "%s must exist in RelicCatalog" % id)
+		if r == null:
+			continue
+		_check(r.slot == "artifact", "%s slot should be 'artifact', got '%s'" % [id, r.slot])
+		_check(r.boss_id == "", "%s boss_id should be empty, got '%s'" % [id, r.boss_id])
+		_check(r.rarity == "legendary", "%s rarity should be legendary, got '%s'" % [id, r.rarity])
+		var has_turn_start_energy: bool = false
+		var cost_kind_ok: bool = false
+		for t: Dictionary in r.triggers:
+			var trig: String = String(t.get("trigger", ""))
+			for e: Dictionary in (t.get("effects", []) as Array):
+				var kind: String = String(e.get("kind", ""))
+				if trig == "turn_start" and kind == "self_energy" and int(e.get("amount", 0)) == 1:
+					has_turn_start_energy = true
+				if kind == String(expected_cost_kind[id]):
+					cost_kind_ok = true
+		_check(has_turn_start_energy, "%s should grant turn_start self_energy +1" % id)
+		_check(cost_kind_ok, "%s should carry cost kind '%s'" % [id, expected_cost_kind[id]])
+
+	# Boss 三選一補位：該 boss 專屬神器已持有時，選項應由未持有的 Boss 池神器補位；恆為 3 選項
+	var rs: RunState = RunState.new()
+	rs.init_for(character)
+	var boss_id: String = "centipede_lord"
+	for a: RelicData in RelicCatalog.artifacts():
+		if a.boss_id == boss_id:
+			rs.add_relic(a.clone())
+			break
+	var choices: Array[RelicData] = []
+	var boss_pool: Array[RelicData] = []
+	for bp: RelicData in RelicCatalog.artifacts():
+		if bp.boss_id == "" and not rs.has_relic(bp.id):
+			boss_pool.append(bp.clone())
+	for bp2: RelicData in boss_pool:
+		if choices.size() >= 3:
+			break
+		choices.append(bp2)
+	_check(choices.size() == 3, "with boss artifact owned, 3 boss-pool artifacts should fill all 3 slots, got %d" % choices.size())
+	var has_pool_relic: bool = false
+	for c: RelicData in choices:
+		if pool_ids.has(c.id):
+			has_pool_relic = true
+	_check(has_pool_relic, "boss-pool artifacts should appear as fallback when boss-specific artifact is owned")
+
+	# fallback generals：boss 專屬 + 全部 Boss 池神器都已持有時
+	for id2: String in pool_ids:
+		rs.add_relic(RelicCatalog.by_id(id2).clone())
+	var fallback_choices: Array[RelicData] = []
+	for bp3: RelicData in RelicCatalog.artifacts():
+		if bp3.boss_id == "" and not rs.has_relic(bp3.id):
+			fallback_choices.append(bp3.clone())
+	_check(fallback_choices.is_empty(), "all boss-pool artifacts owned -> pool should be empty for fallback")
+	var generals_pool: Array[RelicData] = []
+	for g: RelicData in RelicCatalog.generals():
+		if not rs.has_relic(g.id):
+			generals_pool.append(g.clone())
+	_check(generals_pool.size() >= 3, "generals pool should still have enough to fill 3 choices")
+
+	# heal_bonus 負值 clamp：真實 BattleController + 持有朱漆酒葫蘆（heal_bonus -2），小額治療不應扣血
+	var rs2: RunState = RunState.new()
+	rs2.init_for(character)
+	rs2.add_relic(RelicCatalog.by_id("zhuqi_jiuhulu").clone())
+	var bc: BattleController = BattleController.new()
+	bc.setup(rs2, character, enemy.clone())
+	bc.start_turn()
+	_check(int(bc.state.get("heal_bonus", 0)) == -2, "zhuqi_jiuhulu should set state.heal_bonus to -2, got %d" % int(bc.state.get("heal_bonus", 0)))
+	var hp_before: int = int(bc.state["player_hp"])
+	bc.state["player_hp"] = max(1, hp_before - 5)
+	var hp_before_heal: int = int(bc.state["player_hp"])
+	bc.resolver._resolve_effect({"kind": "heal", "amount": 1}, bc.state)
+	_check(int(bc.state["player_hp"]) >= hp_before_heal, "heal with amount(1)+heal_bonus(-2) should clamp to 0, not reduce HP: before %d after %d" % [hp_before_heal, int(bc.state["player_hp"])])
 
 func _test_boss_card_reward_rarity(characters: Array[CharacterData]) -> void:
 	# Boss 卡獎勵：三張優先 rare。驗證 (1) 每角色 reward_pool 有足夠高稀有牌餵 boss 獎勵，

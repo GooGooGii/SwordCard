@@ -16,6 +16,8 @@ extends Resource
 @export var triggers: Array[Dictionary] = []
 @export var icon_color: Color = ThemeColors.BORDER_GOLD
 @export var icon_shape: String = "diamond"  # diamond | circle | hex | star
+# C3 條件式遺物池：空 dict = 無條件。格式 {"deck_min": {"match": "cost_zero"|"poison"|"exhaust", "count": N}}
+@export var pool_requires: Dictionary = {}
 
 func clone() -> RelicData:
 	var copy: RelicData = RelicData.new()
@@ -30,6 +32,7 @@ func clone() -> RelicData:
 	copy.triggers = triggers.duplicate(true)
 	copy.icon_color = icon_color
 	copy.icon_shape = icon_shape
+	copy.pool_requires = pool_requires.duplicate(true)
 	return copy
 
 func to_dict() -> Dictionary:
@@ -44,7 +47,8 @@ func to_dict() -> Dictionary:
 		"curse_on_acquire": curse_on_acquire,
 		"triggers": triggers.duplicate(true),
 		"icon_color": [icon_color.r, icon_color.g, icon_color.b, icon_color.a],
-		"icon_shape": icon_shape
+		"icon_shape": icon_shape,
+		"pool_requires": pool_requires.duplicate(true)
 	}
 
 static func from_dict(data: Dictionary) -> RelicData:
@@ -67,4 +71,6 @@ static func from_dict(data: Dictionary) -> RelicData:
 	if c_data.size() >= 3:
 		r.icon_color = Color(float(c_data[0]), float(c_data[1]), float(c_data[2]), float(c_data[3]) if c_data.size() >= 4 else 1.0)
 	r.icon_shape = String(data.get("icon_shape", "diamond"))
+	var raw_pool_requires: Variant = data.get("pool_requires", {})
+	r.pool_requires = (raw_pool_requires as Dictionary).duplicate(true) if raw_pool_requires is Dictionary else {}
 	return r

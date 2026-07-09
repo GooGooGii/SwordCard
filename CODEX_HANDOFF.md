@@ -29,5 +29,11 @@ Development — Batch A 已完成入庫，Batch B 實作中。
 - 並行 session：另一 session 在改 `event_data.gd`/`docs/EVENT_BRANCHING.md`（未 commit，勿動）；背景任務在修 CLAUDE.md 遺物件數（本批 +11 件後其計數需再對）
 - `relic_catalog.gd` 檔頭「71 件」註解過時（實際 Batch A 後 87、Batch B 後 90），由背景任務統一修
 
+## Batch C（2026-07-09 完成，fresh-context 驗收 10/10 PASS）
+- **C1 Boss 池神器 ×3**（忘憂散/朱漆酒葫蘆/聖靈珠，legendary、boss_id 空）：每回合 +1 靈力＋run 層代價（禁休息回血/戰鬥治療-2/商店+30）。Boss 三選一新組成：專屬神器→Boss 池補位→generals。附帶修掉既有隱患：heal_bonus 負值原本會讓治療變扣血，已在 effect_resolver/battle_controller 補 `maxi(0,...)`、card_format 預覽同步
+- **C2 稀有度權重**：掉落與商店改 45/30/20/5 權重抽（`RelicCatalog.weighted_pick`，對 pool 內實際存在稀有度歸一化），不再均勻抽
+- **C3 條件式遺物池**：`RelicData.pool_requires`＋`RelicCatalog.pool_eligible(relic, deck)`；攝魂蠱鈴(毒卡≥4)/逍遙令(0費≥3)/業火爐(消耗≥2) 只在牌組符合時進掉落/商店池；Boss 三選一與事件不過濾
+- 待辦：C2 上線後找機會跑同 seed AI run 對照（前測基線＝2026-07-09 seed 20260709 4 幕全通）
+
 ## 下一個最安全任務
-玉菩提珠裁決（見上）→ Batch C 工單（見 RELIC_DESIGN.md：Boss「+靈力+代價」神器系、掉落稀有度權重 45/30/20/5、條件式遺物池）
+Batch C 後的同 seed AI 平衡對照 run；或收斂 gold 通膨（BALANCE_REPORT §六，獨立輪）

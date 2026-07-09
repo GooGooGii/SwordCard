@@ -3,6 +3,68 @@ extends RefCounted
 
 # 71 件裝備：55 通用 + 10 角色專武 + 6 神器
 
+# C2：掉落/商店稀有度權重（對齊 STS 50/33/17 概念，本作用 45/30/20/5）
+const RARITY_WEIGHTS: Dictionary = {"common": 45, "uncommon": 30, "rare": 20, "legendary": 5}
+
+# C3：pool_requires 判定 —— deck 中符合 match 的卡數 ≥ count 才可進入掉落/商店池。
+# match: "cost_zero"（cost==0）｜"poison"（effects 內任一 kind 含 "poison"）｜"exhaust"（exhaust==true）
+static func pool_eligible(relic: RelicData, deck: Array[CardData]) -> bool:
+	if relic == null or relic.pool_requires.is_empty():
+		return true
+	var deck_min: Dictionary = relic.pool_requires.get("deck_min", {}) as Dictionary
+	if deck_min.is_empty():
+		return true
+	var match_kind: String = String(deck_min.get("match", ""))
+	var need: int = int(deck_min.get("count", 0))
+	var count: int = 0
+	for card: CardData in deck:
+		if card == null:
+			continue
+		match match_kind:
+			"cost_zero":
+				if card.cost == 0:
+					count += 1
+			"poison":
+				for e: Dictionary in card.effects:
+					if String(e.get("kind", "")).contains("poison"):
+						count += 1
+						break
+			"exhaust":
+				if card.exhaust:
+					count += 1
+	return count >= need
+
+# C2：稀有度分層權重抽選。先按 pool 內實際存在的稀有度歸一化權重抽層，再該層內均勻抽一件。
+static func weighted_pick(pool: Array[RelicData]) -> RelicData:
+	if pool.is_empty():
+		return null
+	var by_rarity: Dictionary = {}
+	for r: RelicData in pool:
+		var tier: String = r.rarity
+		if not by_rarity.has(tier):
+			by_rarity[tier] = []
+		(by_rarity[tier] as Array).append(r)
+	var total_weight: float = 0.0
+	for tier: String in by_rarity.keys():
+		total_weight += float(RARITY_WEIGHTS.get(tier, 0))
+	if total_weight <= 0.0:
+		# 沒有已知稀有度權重（理論不該發生）：退回均勻抽選避免死鎖。
+		return pool[randi() % pool.size()].clone()
+	var roll: float = randf() * total_weight
+	var acc: float = 0.0
+	var chosen_tier: String = ""
+	for tier: String in by_rarity.keys():
+		var w: float = float(RARITY_WEIGHTS.get(tier, 0))
+		acc += w
+		if roll <= acc:
+			chosen_tier = tier
+			break
+	if chosen_tier == "":
+		chosen_tier = by_rarity.keys()[by_rarity.keys().size() - 1]
+	var tier_pool: Array = by_rarity[chosen_tier] as Array
+	var picked: RelicData = tier_pool[randi() % tier_pool.size()] as RelicData
+	return picked.clone()
+
 static func all() -> Array[RelicData]:
 	var list: Array[RelicData] = []
 	list.append_array(_generals())
@@ -199,9 +261,11 @@ static func _generals() -> Array[RelicData]:
 	# 0 費流派：把信手一劍/驚鴻一點等 0 費牌變成輸出引擎（李/林 0 費牌多）
 	l.append(_make("xiaoyao_ling", "逍遙令", "每出 1 張 0 費牌，對敵人造成 4 點直接傷害。", "uncommon",
 		[{"trigger": "card_played", "filter": {"cost_eq": 0}, "effects": [{"kind": "enemy_damage", "amount": 4}]}], Color("e8d27a")))
+	l[l.size() - 1].pool_requires = {"deck_min": {"match": "cost_zero", "count": 3}}
 	# 毒流核心：把堆疊的蠱毒部分即時轉為傷害（阿奴疊毒滾雪球）
 	l.append(_make("shehun_guling", "攝魂蠱鈴", "每回合結束，敵人當前蠱毒的一半轉為直接傷害。", "rare",
 		[{"trigger": "turn_end", "effects": [{"kind": "poison_resonance"}]}], Color("8a4a76")))
+	l[l.size() - 1].pool_requires = {"deck_min": {"match": "poison", "count": 4}}
 	# 荊棘流開啟（任何角色）：搭配護體/反擊卡建反傷流
 	l.append(_make("xueji_guan", "血棘冠", "戰鬥開始獲得 5 點荊棘（被攻擊時反彈傷害給攻擊者）。", "uncommon",
 		[{"trigger": "battle_start", "effects": [{"kind": "self_thorns", "amount": 5}]}], Color("e89a5f")))
@@ -224,6 +288,7 @@ static func _generals() -> Array[RelicData]:
 	# 消耗流協同（StS Charon's Ashes 式）：每消耗 1 張牌就對敵造成傷害
 	l.append(_make("yehuo_lu", "業火爐", "每消耗 1 張牌，對敵人造成 3 點直接傷害。", "rare",
 		[{"trigger": "card_exhausted", "effects": [{"kind": "enemy_damage", "amount": 3}]}], Color("e2552a")))
+	l[l.size() - 1].pool_requires = {"deck_min": {"match": "exhaust", "count": 2}}
 	return l
 
 static func _weapons() -> Array[RelicData]:
@@ -299,4 +364,21 @@ static func _artifacts() -> Array[RelicData]:
 		"每回合開始多抽 1 張牌並回復 1 靈力。【附帶詛咒：通緝】",
 		"baiyue_lord",
 		[{"trigger": "turn_start", "effects": [{"kind": "self_draw", "amount": 1}, {"kind": "self_energy", "amount": 1}]}], Color("9966cc"), "tong_ji"))
+	# ── Batch C1：Boss 池神器（boss_id 空字串＝不綁特定 Boss，進 Boss 三選一時隨機補位）──
+	# STS 能量系 Boss 遺物模板：每回合 +1 靈力（不限回合，legendary 檔），代價落在 run 層、可用路線繞開。
+	l.append(_make_artifact("wangyou_san", "忘憂散",
+		"每回合開始 +1 靈力，但休息時無法回血（打磨/升級不受影響）。",
+		"",
+		[{"trigger": "turn_start", "effects": [{"kind": "self_energy", "amount": 1}]},
+		{"trigger": "permanent", "effects": [{"kind": "rest_heal_disable", "amount": 1}]}], Color("b08a6a")))
+	l.append(_make_artifact("zhuqi_jiuhulu", "朱漆酒葫蘆",
+		"每回合開始 +1 靈力，但戰鬥中治療效果 -2（最低 0）。",
+		"",
+		[{"trigger": "turn_start", "effects": [{"kind": "self_energy", "amount": 1}]},
+		{"trigger": "passive_modifier", "effects": [{"kind": "heal_bonus", "amount": -2}]}], Color("8a3a2a")))
+	l.append(_make_artifact("shengling_zhu", "聖靈珠",
+		"每回合開始 +1 靈力，但商店每件商品 +30 銅錢。",
+		"",
+		[{"trigger": "turn_start", "effects": [{"kind": "self_energy", "amount": 1}]},
+		{"trigger": "permanent", "effects": [{"kind": "shop_discount", "amount": -30}]}], Color("d8c8e8")))
 	return l

@@ -603,12 +603,11 @@ func _try_random_relic_drop(chance: float) -> RelicData:
 		return null
 	var pool: Array[RelicData] = []
 	for r: RelicData in RelicCatalog.generals():
-		if not run_state.has_relic(r.id):
+		if not run_state.has_relic(r.id) and RelicCatalog.pool_eligible(r, run_state.deck):
 			pool.append(r)
 	if pool.is_empty():
 		return null
-	pool.shuffle()
-	return pool[0].clone()
+	return RelicCatalog.weighted_pick(pool)
 
 func _maybe_potion_drop(chance: float) -> void:
 	if randf() >= chance:
@@ -631,6 +630,17 @@ func _make_boss_relic_choices(boss_id: String) -> Array:
 			choices.append(a.clone())
 			seen.append(a.id)
 			break
+	# Batch C1：未持有的 Boss 池神器（boss_id==""）隨機補位，優先於 generals
+	var boss_pool: Array[RelicData] = []
+	for a: RelicData in RelicCatalog.artifacts():
+		if a.boss_id == "" and not run_state.has_relic(a.id) and not seen.has(a.id):
+			boss_pool.append(a)
+	boss_pool.shuffle()
+	for a: RelicData in boss_pool:
+		if choices.size() >= 3:
+			break
+		choices.append(a.clone())
+		seen.append(a.id)
 	var generals: Array[RelicData] = []
 	for r: RelicData in RelicCatalog.generals():
 		if not run_state.has_relic(r.id) and not seen.has(r.id):
@@ -779,8 +789,12 @@ func _apply_rest_choice(choice: Variant) -> void:
 					for e: Dictionary in (t.get("effects", []) as Array):
 						if String(e.get("kind", "")) == "rest_heal_bonus":
 							bonus += int(e.get("amount", 0))
-		run_state.heal(run_state.pending_rest_heal + bonus)
-		_log("rest", {"choice": "heal", "amount": run_state.pending_rest_heal + bonus})
+		var heal_amount: int = run_state.pending_rest_heal + bonus
+		# Batch C1（忘憂散）：持有 rest_heal_disable 則休息時無法回血，鏡像 main.gd resolve_rest_heal
+		if _permanent_relic_kind_amount("rest_heal_disable") > 0:
+			heal_amount = 0
+		run_state.heal(heal_amount)
+		_log("rest", {"choice": "heal", "amount": heal_amount})
 		# 醒神茶（rest_energy_next_battle）鏡像 main.gd resolve_rest_heal：只在「調息」分支觸發
 		if _permanent_relic_kind_amount("rest_energy_next_battle") > 0:
 			run_state.next_battle_energy_bonus = 1
@@ -1042,9 +1056,8 @@ func _open_shop() -> void:
 func _pick_shop_relic_ids(count: int) -> Array[String]:
 	var pool: Array[RelicData] = []
 	for r: RelicData in RelicCatalog.generals():
-		if not run_state.has_relic(r.id):
+		if not run_state.has_relic(r.id) and RelicCatalog.pool_eligible(r, run_state.deck):
 			pool.append(r)
-	pool.shuffle()
 	var ids: Array[String] = []
 	if run_state.current_shop_is_black:
 		var weapons: Array[RelicData] = []
@@ -1053,11 +1066,16 @@ func _pick_shop_relic_ids(count: int) -> Array[String]:
 				weapons.append(w)
 		if not weapons.is_empty() and randf() < 0.3:
 			ids.append(weapons[randi() % weapons.size()].id)
-	for r: RelicData in pool:
-		if ids.size() >= count:
+	while ids.size() < count and not pool.is_empty():
+		var picked: RelicData = RelicCatalog.weighted_pick(pool)
+		if picked == null:
 			break
-		if not ids.has(r.id):
-			ids.append(r.id)
+		if not ids.has(picked.id):
+			ids.append(picked.id)
+		for i: int in range(pool.size()):
+			if pool[i].id == picked.id:
+				pool.remove_at(i)
+				break
 	return ids
 
 func _relic_by_id(id: String) -> RelicData:

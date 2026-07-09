@@ -594,6 +594,18 @@ P1 通用分類 fallback 特效已上線（無專屬動畫的 121 張卡自動�
 | `xingshen_cha` | 醒神茶 | uncommon run 層 | 青瓷茶盞、裊裊熱氣凝成靈光 |
 
 > 完成後 `godot --headless --path . --import` 重匯入即生效。
+> 註（2026-07-09）：上表 11 件的 PNG 已見於工作樹 `assets/art/relics/`（美術管線 session 生成中）；
+> 驗圖（alpha / 主體居中）與狀態改 🟢 由美術 session 自行結案。
+
+### 十六之二、Boss 池代價神器圖示（🔴 3 件待補，2026-07-09 Batch C1）
+
+Boss 三選一補位用的 legendary「+1 靈力＋代價」神器（`docs/design/RELIC_DESIGN.md` §C1）。規格同上（`assets/art/relics/<id>.png`、去背水墨）。
+
+| id | 名稱 | 建議意象 |
+|---|---|---|
+| `wangyou_san` | 忘憂散 | 散開的藥粉紙包、迷離香霧（正史：李逍遙被灌忘憂散失憶），暖白粉霧帶一絲不祥紫 |
+| `zhuqi_jiuhulu` | 朱漆酒葫蘆 | 酒劍仙的朱漆酒葫蘆（正史），朱紅亮漆、酒氣化劍意的一縷金 |
+| `shengling_zhu` | 聖靈珠 | 七彩內蘊的聖靈寶珠（正史靈珠系統），聖光斂於珠心、法相莊嚴 |
 
 ---
 

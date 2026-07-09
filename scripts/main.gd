@@ -3928,11 +3928,11 @@ func _try_random_relic_drop(rarity_chance: float = 0.25) -> RelicData:
 		return null
 	var pool: Array[RelicData] = []
 	for r: RelicData in RelicCatalog.generals():
-		if not run_state.has_relic(r.id):
+		if not run_state.has_relic(r.id) and RelicCatalog.pool_eligible(r, run_state.deck):
 			pool.append(r)
 	if pool.is_empty():
 		return null
-	return pool[randi() % pool.size()].clone()
+	return RelicCatalog.weighted_pick(pool)
 
 func _start_player_turn() -> void:
 	_clear_selected_hand_card()
@@ -4676,7 +4676,16 @@ func _make_boss_relic_choices(boss_id: String) -> Array[RelicData]:
 		if a.boss_id == boss_id and not run_state.has_relic(a.id):
 			choices.append(a.clone())
 			break
-	# 用 general pool 補滿 3 個
+	# Batch C1：未持有的 Boss 池神器（boss_id==""）隨機補位，優先於 generals
+	var boss_pool: Array[RelicData] = []
+	for a: RelicData in RelicCatalog.artifacts():
+		if a.boss_id == "" and not run_state.has_relic(a.id):
+			boss_pool.append(a.clone())
+	boss_pool.shuffle()
+	var needed_from_pool: int = 3 - choices.size()
+	for i: int in range(min(needed_from_pool, boss_pool.size())):
+		choices.append(boss_pool[i])
+	# 仍不足才用 general pool 補滿 3 個
 	var general_pool: Array[RelicData] = []
 	for r: RelicData in RelicCatalog.generals():
 		if not run_state.has_relic(r.id):
@@ -5074,7 +5083,11 @@ func resolve_rest_heal() -> void:
 			for e: Dictionary in (t.get("effects", []) as Array):
 				if String(e.get("kind", "")) == "rest_heal_bonus":
 					bonus += int(e.get("amount", 0))
-	run_state.heal(run_state.pending_rest_heal + bonus)
+	var heal_amount: int = run_state.pending_rest_heal + bonus
+	# Batch C1（忘憂散）：持有 rest_heal_disable 則休息時無法回血（打磨/升級選項不受影響）
+	if _permanent_relic_kind_amount("rest_heal_disable") > 0:
+		heal_amount = 0
+	run_state.heal(heal_amount)
 	run_state.pending_rest_heal = 0
 	if _permanent_relic_kind_amount("rest_energy_next_battle") > 0:
 		run_state.next_battle_energy_bonus = 1
@@ -6878,12 +6891,11 @@ func _shop_flow_row() -> HFlowContainer:
 	return row
 
 func _pick_shop_relic_ids(count: int = 3) -> Array[String]:
-	# 挑 count 種不重複、尚未持有的遺物。黑店 30% 機率讓第一格出角色專武。
+	# 挑 count 種不重複、尚未持有的遺物（C2 稀有度權重抽選）。黑店 30% 機率讓第一格出角色專武。
 	var pool: Array[RelicData] = []
 	for r: RelicData in RelicCatalog.generals():
-		if not run_state.has_relic(r.id):
+		if not run_state.has_relic(r.id) and RelicCatalog.pool_eligible(r, run_state.deck):
 			pool.append(r)
-	pool.shuffle()
 	var ids: Array[String] = []
 	if run_state.current_shop_is_black:
 		var avail_weapons: Array[RelicData] = []
@@ -6892,11 +6904,16 @@ func _pick_shop_relic_ids(count: int = 3) -> Array[String]:
 				avail_weapons.append(w)
 		if not avail_weapons.is_empty() and randf() < 0.3:
 			ids.append(avail_weapons[randi() % avail_weapons.size()].id)
-	for r: RelicData in pool:
-		if ids.size() >= count:
+	while ids.size() < count and not pool.is_empty():
+		var picked: RelicData = RelicCatalog.weighted_pick(pool)
+		if picked == null:
 			break
-		if not ids.has(r.id):
-			ids.append(r.id)
+		if not ids.has(picked.id):
+			ids.append(picked.id)
+		for i: int in range(pool.size()):
+			if pool[i].id == picked.id:
+				pool.remove_at(i)
+				break
 	return ids
 
 func _shop_relic_view(relic: RelicData) -> Control:
