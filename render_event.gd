@@ -11,37 +11,48 @@ extends SceneTree
 # ---------------------------------------------------------------------------
 
 const WINDOW := Vector2i(1280, 720)
-# 要截圖的事件 variant（root 節點畫面）
-const VARIANTS := ["ghost_forest"]
-# 驗證條件分支：低血（觸發 hp_below）＋ 設旗標（觸發 event_flag 回訪選項）
-const LOW_HP := true
-const SET_FLAGS := ["fox_spared", "marked_by_bandits"]
+# 每張截圖：事件 variant ＋ 操作角色 ＋ 事前旗標（觸發 event_flag 回訪選項）
+const SHOTS := [
+	{"variant": "tangyu_sparring", "character": "anu", "flags": []},
+	{"variant": "spring", "character": "zhao_linger", "flags": []},
+	{"variant": "tavern_acquaintance", "character": "anu", "flags": ["yamen_grudge", "thief_backer_grudge"]},
+	{"variant": "baiyue_altar", "character": "li_xiaoyao", "flags": ["waner_clue", "yao_freed"]},
+]
+# 低血（觸發 hp_below 條件選項）
+const LOW_HP := false
 
 var main: Node
 
 func _initialize() -> void:
-	var root := get_root()
-	root.size = WINDOW
+	get_root().size = WINDOW
 	main = load("res://scripts/main.gd").new()
 	main.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root.add_child(main)
+	get_root().add_child(main)
 	_run()
 
+func _character_by_id(id: String) -> CharacterData:
+	for c in GameData.characters():
+		if c.id == id:
+			return c
+	return GameData.characters()[0]
+
 func _run() -> void:
+	# 同一行程重複 start_run/重建 main 會殘影疊圖——一個行程只截一張，
+	# 用環境變數 EVENT_SHOT=<index> 選 SHOTS 的哪一筆（shell 迴圈跑多張）。
 	await process_frame
 	await process_frame
-	main.start_run(GameData.characters()[0])
+	var idx := int(OS.get_environment("EVENT_SHOT")) if OS.get_environment("EVENT_SHOT") != "" else 0
+	var shot: Dictionary = SHOTS[clampi(idx, 0, SHOTS.size() - 1)]
+	main.start_run(_character_by_id(shot["character"]))
 	await process_frame
 	if LOW_HP:
 		main.run_state.character_hps[0] = max(1, int(main.run_state.character_max_hps[0] * 0.3))
-	for f in SET_FLAGS:
+	for f in shot["flags"]:
 		main.run_state.set_event_flag(f)
-	for v in VARIANTS:
-		main.run_state.current_event_variant = v
-		main.show_event_node()
-		for i in range(8): await process_frame
-		get_root().get_texture().get_image().save_png("res://_event_%s.png" % v)
-		print("[event] saved _event_%s.png" % v)
-		for i in range(3): await process_frame
-	print("[event] done; %d shot(s)" % VARIANTS.size())
+	main.run_state.current_event_variant = shot["variant"]
+	main.show_event_node()
+	for i in range(8): await process_frame
+	var fname := "res://_event_%s_%s.png" % [shot["variant"], shot["character"]]
+	get_root().get_texture().get_image().save_png(fname)
+	print("[event] saved %s" % fname)
 	quit(0)
