@@ -106,8 +106,20 @@ def main() -> int:
 
     session = None
     if not args.no_rembg:
+        try:  # onnxruntime-gpu 找 pip 版 CUDA DLL：cudnn 子庫走 PATH 搜尋，add_dll_directory 管不到
+            import os
+            import sysconfig
+
+            cudnn_bin = os.path.join(sysconfig.get_paths()["purelib"], "nvidia", "cudnn", "bin")
+            if os.path.isdir(cudnn_bin):
+                os.environ["PATH"] = cudnn_bin + os.pathsep + os.environ["PATH"]
+            import onnxruntime as ort
+            ort.preload_dlls()
+        except Exception:
+            pass  # 沒裝 GPU wheels 就照常回退 CPU
         from rembg import new_session
         session = new_session(args.rembg_model)
+        print(f"rembg providers: {session.inner_session.get_providers()}")
 
     failures = 0
     with tempfile.TemporaryDirectory() as tmp:

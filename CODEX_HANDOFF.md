@@ -35,6 +35,13 @@ Development — Batch A 已完成入庫，Batch B 實作中。
 - **C3 條件式遺物池**：`RelicData.pool_requires`＋`RelicCatalog.pool_eligible(relic, deck)`；攝魂蠱鈴(毒卡≥4)/逍遙令(0費≥3)/業火爐(消耗≥2) 只在牌組符合時進掉落/商店池；Boss 三選一與事件不過濾
 - 待辦：C2 上線後找機會跑同 seed AI run 對照（前測基線＝2026-07-09 seed 20260709 4 幕全通）
 
+## 美術後處理管線（2026-07-10 完成，端到端實測 PASS）
+- **`tools/art_post.py`**：批次「去背（rembg isnet-anime）→ 4x 放大（Real-ESRGAN anime）→ 縮回 --max-size」，輸出 RGBA PNG。用法見檔頭 docstring；`--gpu 1` 指定 RTX 4050 給 ESRGAN
+- 依賴（已裝於本機 Python 3.12）：`rembg[gpu,cli]` + `onnxruntime-gpu==1.22.0` + `nvidia-{cublas,cudnn,cufft,cuda-runtime}-cu12`（cu13 無 Windows wheel，勿升）；`tools/bin/realesrgan/`（gitignored，下載連結見腳本 docstring）
+- 坑：cudnn 子庫走 PATH 搜尋，腳本已自動把 site-packages `nvidia/cudnn/bin` 前置進 PATH；沒裝 GPU wheels 會安靜回退 CPU（功能不變）
+- 實測：白底遺物圖 → 透明背景 1024×1024，去背 GPU 0.46s/張，整批單張 ≈ 數秒
+- 調研結論（工具選型）：次優先為 MIT 特效庫（GODOT-VFX-LIBRARY / godotshaders.com）強化出牌特效；ComfyUI+水墨 LoRA 第三；Spine/DragonBones 不採
+
 ## 幕間難度縮放（2026-07-09/10，commit 9eb93c7，同 seed 驗證完成）
 - 反曲線修正：幕 3 起敵 HP +12%/幕、傷害 +5%/幕（`BattleController.ACT_HP_STEP`/`ACT_DMG_STEP`）；前兩幕不動；召喚/接續 boss 也套；意圖預測補齊 strength×mult（修 A2+ 預測偏低既有 bug）
 - 同 seed 333 對照（agent 親玩 8 幕通關）：幕 3 boss 1回合0傷→2回合18傷 ✓、phase-2 boss 全數 2+ 回合有實傷 ✓、受傷中位數 0→3.5、無牆。詳見 BALANCE_REPORT §十
