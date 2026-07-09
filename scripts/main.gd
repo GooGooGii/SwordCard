@@ -2257,6 +2257,12 @@ func _is_map_node_selectable(row_index: int, node_index: int) -> bool:
 	return connects.has(node_index)
 
 func choose_route_node(node_data: Dictionary, target_row: int = -1) -> void:
+	# 乾坤袋（floor_gold）：玩家選定地圖節點＝前進一層，唯一觸發點（不隨畫面刷新重複）。
+	# floor_gold_dead 是商店消費後的永久剎車，見 _shop_purchase 系列 handler。
+	if not run_state.floor_gold_dead:
+		var floor_gold_bonus: int = _permanent_relic_kind_amount("floor_gold")
+		if floor_gold_bonus > 0:
+			run_state.gold += floor_gold_bonus
 	var node_index: int = int(node_data.get("index", 0))
 	if dbg_test_mode and target_row > run_state.encounter_index:
 		while run_state.chosen_map_path.size() < target_row:
@@ -2336,6 +2342,12 @@ func start_next_battle(enemies: Variant, is_elite: bool = false) -> void:
 	_banter_used = {}
 	_build_battle_scene()
 	_start_player_turn()
+	# 醒神茶（rest_energy_next_battle）：休息後暫存的靈力加成，第一回合 start_turn() 重置能量
+	# 之後才套用一次性加成並消耗，否則會被 per_turn_energy 蓋掉。
+	if run_state.next_battle_energy_bonus > 0 and not battle_end_pending:
+		battle.state["energy"] = int(battle.state.get("energy", 0)) + run_state.next_battle_energy_bonus
+		run_state.next_battle_energy_bonus = 0
+		_refresh_battle(true)
 
 func _build_battle_scene() -> void:
 	_lecher_loot_shown = false
@@ -5065,6 +5077,8 @@ func resolve_rest_heal() -> void:
 					bonus += int(e.get("amount", 0))
 	run_state.heal(run_state.pending_rest_heal + bonus)
 	run_state.pending_rest_heal = 0
+	if _permanent_relic_kind_amount("rest_energy_next_battle") > 0:
+		run_state.next_battle_energy_bonus = 1
 	advance_non_battle_node()
 
 func show_event_node(sub_stage: String = "") -> void:
@@ -6550,6 +6564,19 @@ func _event_power_relic_bonus() -> int:
 					bonus += int(e.get("amount", 0))
 	return bonus
 
+# Batch B run 層互動遺物共用 helper：加總所有 trigger=="permanent" 且 kind 相符的 effect amount。
+# 客棧腰牌 / 乾坤袋 / 醒神茶都是「持有即生效、數值固定」的簡單 permanent kind，走同一條路徑。
+func _permanent_relic_kind_amount(kind: String) -> int:
+	var total: int = 0
+	for r: RelicData in run_state.relics:
+		for t: Dictionary in r.triggers:
+			if String(t.get("trigger", "")) != "permanent":
+				continue
+			for e: Dictionary in (t.get("effects", []) as Array):
+				if String(e.get("kind", "")) == kind:
+					total += int(e.get("amount", 0))
+	return total
+
 func resolve_event_power(amount: int = 1) -> void:
 	run_state.add_power_bonus(amount + _event_power_relic_bonus())   # 搖錢樹 bonus 一併走軟上限+遞減
 	var ev_p: Dictionary = EventData.for_variant(run_state.current_event_variant)
@@ -6570,6 +6597,10 @@ func open_shop_node(is_black_shop: bool) -> void:
 		run_state.shop_remove_used = false
 		run_state.shop_upgrade_used = false
 		run_state.current_shop_node_index = run_state.encounter_index
+		# 客棧腰牌（shop_enter_heal）：每次「進入」商店節點觸發一次（首抽貨架時），不隨畫面刷新重複觸發
+		var heal_bonus: int = _permanent_relic_kind_amount("shop_enter_heal")
+		if heal_bonus > 0:
+			run_state.heal(heal_bonus)
 	show_shop_node()
 
 func show_shop_node() -> void:
@@ -6849,6 +6880,8 @@ func _buy_shop_relic(relic: RelicData, price: int) -> void:
 	if run_state.gold < price:
 		return
 	run_state.gold -= price
+	if run_state.has_relic("qiankun_dai"):
+		run_state.floor_gold_dead = true  # 乾坤袋剎車：僅已持有時觸發（判定先於入手，買乾坤袋那筆不算）
 	run_state.add_relic(relic)
 	run_state.current_shop_relic_sold_ids.append(relic.id)
 	_refresh_shop_ui_states()
@@ -6966,6 +6999,8 @@ func _buy_shop_potion(potion: Dictionary, item: Dictionary, price: int) -> void:
 	if run_state.gold < price:
 		return
 	run_state.gold -= price
+	if run_state.has_relic("qiankun_dai"):
+		run_state.floor_gold_dead = true  # 乾坤袋剎車：僅已持有時觸發
 	item["sold"] = true
 	if run_state.potions.size() < run_state.effective_potion_slots():
 		run_state.potions.append(potion.duplicate())
@@ -7070,6 +7105,8 @@ func _shop_deck_remove(card: CardData) -> void:
 		close_deck_view()
 		return
 	run_state.gold -= _deck_view_service_price
+	if run_state.has_relic("qiankun_dai"):
+		run_state.floor_gold_dead = true  # 乾坤袋剎車：僅已持有時觸發
 	run_state.shop_remove_used = true
 	for i: int in range(run_state.deck.size()):
 		if run_state.deck[i] == card:
@@ -7083,6 +7120,8 @@ func _shop_deck_upgrade(card: CardData) -> void:
 		close_deck_view()
 		return
 	run_state.gold -= _deck_view_service_price
+	if run_state.has_relic("qiankun_dai"):
+		run_state.floor_gold_dead = true  # 乾坤袋剎車：僅已持有時觸發
 	run_state.shop_upgrade_used = true
 	for i: int in range(run_state.deck.size()):
 		if run_state.deck[i] == card:
@@ -7177,6 +7216,8 @@ func buy_shop_card(card: CardData, price: int) -> void:
 	if run_state.gold < price:
 		return
 	run_state.gold = run_state.gold - price
+	if run_state.has_relic("qiankun_dai"):
+		run_state.floor_gold_dead = true  # 乾坤袋剎車：僅已持有時觸發
 	run_state.deck.append(card.clone())
 	for i: int in range(run_state.current_shop_inventory.size()):
 		var item_card: CardData = run_state.current_shop_inventory[i]["card"] as CardData

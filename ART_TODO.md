@@ -577,6 +577,30 @@ P1 通用分類 fallback 特效已上線（無專屬動畫的 121 張卡自動�
 
 ---
 
+## 十六、新遺物圖示（🔴 11 件待補，2026-07-09 遺物設計優化批次）
+
+遺物設計優化（`docs/design/RELIC_DESIGN.md`，源自 STS 遺物參考表差距分析）新增 11 件遺物。
+圖檔路徑：`assets/art/relics/<id>.png`，**去背水墨**（RGBA 透明、主體居中），與 §「遺物圖示更新」既有 14 件同規格；
+載不到圖會自動 fallback 程序化圖示（`relic_icon.gd`），**不阻擋上線**，可分批補。
+
+| id | 名稱 | 類型 | 建議意象 |
+|---|---|---|---|
+| `mu_jian` | 木劍 | 李逍遙 common 專武 | 樸拙木劍，淡棕木紋，少年習劍的第一把劍（PAL1 初始武器） |
+| `yuenv_jian` | 越女劍 | 趙靈兒 common 專武 | 纖細古劍、青碧劍穗，靈氣繚繞水色調 |
+| `linjia_jiansui` | 林家劍穗 | 林月如 common 專武 | 赤紅劍穗流蘇結飾，英氣俠女佩飾 |
+| `baigu_nang` | 百蠱囊 | 阿奴 common 專武 | 苗銀紋繡布囊、微露蟲影，墨綠底苗疆風 |
+| `kaishan_fu` | 開山符 | common 通用 | 硃砂「開山」符籙，金橙色劈石氣勁 |
+| `poyao_sha` | 破妖砂 | common 通用 | 掌中一撮金砂揚出，破邪光點 |
+| `tongqian_jian` | 銅錢劍 | common 通用 | 紅繩串銅錢成劍形，民俗法器 |
+| `yu_puti_zhu` | 玉菩提珠 | rare 取捨遺物 | 溫潤玉質菩提念珠（正史：鎮獄明王身上九顆），金光內斂帶一絲佛威 |
+| `kezhan_yaopai` | 客棧腰牌 | uncommon run 層 | 木製客棧腰牌刻紋（餘杭客棧意象），繫繩 |
+| `qiankun_dai` | 乾坤袋 | uncommon run 層 | 鼓脹錦囊、銅錢隱現，袋口束繩金線 |
+| `xingshen_cha` | 醒神茶 | uncommon run 層 | 青瓷茶盞、裊裊熱氣凝成靈光 |
+
+> 完成後 `godot --headless --path . --import` 重匯入即生效。
+
+---
+
 ## 補圖規格
 
 - 格式：PNG，存於 `assets/art/cards/<id>.png`（卡圖）或 `assets/art/<檔名>.png`（背景）；UI 圖示存 `assets/ui/<檔名>.png`，藥品圖示存 `assets/art/potions/<檔名>.png`，Boss 劇情圖存 `assets/art/story/<boss_id>.png`

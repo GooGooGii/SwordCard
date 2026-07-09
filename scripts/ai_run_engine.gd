@@ -314,6 +314,11 @@ func _view_map() -> Dictionary:
 		"state": {"row": run_state.encounter_index}, "options": options}
 
 func _apply_map_choice(choice: Variant) -> void:
+	# 乾坤袋（floor_gold）鏡像 main.gd choose_route_node：前進一層唯一觸發點
+	if not run_state.floor_gold_dead:
+		var floor_gold_bonus: int = _permanent_relic_kind_amount("floor_gold")
+		if floor_gold_bonus > 0:
+			run_state.gold += floor_gold_bonus
 	var node_index: int = _choice_int(choice)
 	# 記錄 chosen_map_path（鏡像 choose_route_node）
 	if run_state.chosen_map_path.size() > run_state.encounter_index:
@@ -391,6 +396,11 @@ func _start_battle(enemies_in: Array, is_elite: bool = false) -> void:
 	battle.state["battle_is_elite"] = is_elite  # 供 A18 招式判斷 tier
 	_ctx = {"is_boss": is_boss, "is_elite": is_elite, "turn": 0}
 	battle.start_turn()
+	# 醒神茶（rest_energy_next_battle）鏡像 main.gd start_next_battle：start_turn() 重置能量後
+	# 才套用一次性加成並消耗。
+	if run_state.next_battle_energy_bonus > 0:
+		battle.state["energy"] = int(battle.state.get("energy", 0)) + run_state.next_battle_energy_bonus
+		run_state.next_battle_energy_bonus = 0
 	_phase = "battle"
 	_log("battle_start", {"enemies": _enemy_names(), "is_boss": is_boss})
 
@@ -770,6 +780,9 @@ func _apply_rest_choice(choice: Variant) -> void:
 							bonus += int(e.get("amount", 0))
 		run_state.heal(run_state.pending_rest_heal + bonus)
 		_log("rest", {"choice": "heal", "amount": run_state.pending_rest_heal + bonus})
+		# 醒神茶（rest_energy_next_battle）鏡像 main.gd resolve_rest_heal：只在「調息」分支觸發
+		if _permanent_relic_kind_amount("rest_energy_next_battle") > 0:
+			run_state.next_battle_energy_bonus = 1
 	run_state.pending_rest_heal = 0
 	_advance_after_node()
 
@@ -1019,6 +1032,10 @@ func _open_shop() -> void:
 	run_state.current_shop_relic_sold_ids = []
 	run_state.shop_remove_used = false
 	run_state.shop_upgrade_used = false
+	# 客棧腰牌（shop_enter_heal）鏡像 main.gd open_shop_node：每次「進入」商店節點觸發一次
+	var heal_bonus: int = _permanent_relic_kind_amount("shop_enter_heal")
+	if heal_bonus > 0:
+		run_state.heal(heal_bonus)
 	_ctx = {"shop_sub": ""}
 
 func _pick_shop_relic_ids(count: int) -> Array[String]:
@@ -1047,6 +1064,19 @@ func _relic_by_id(id: String) -> RelicData:
 		if r.id == id:
 			return r
 	return null
+
+# Batch B run 層互動遺物共用 helper（鏡像 main.gd 同名函式）：加總所有 trigger=="permanent"
+# 且 kind 相符的 effect amount。
+func _permanent_relic_kind_amount(kind: String) -> int:
+	var total: int = 0
+	for r: RelicData in run_state.relics:
+		for t: Dictionary in r.triggers:
+			if String(t.get("trigger", "")) != "permanent":
+				continue
+			for e: Dictionary in (t.get("effects", []) as Array):
+				if String(e.get("kind", "")) == kind:
+					total += int(e.get("amount", 0))
+	return total
 
 func _shop_discount(base: int) -> int:
 	var price: float = float(base) * Ascension.shop_price_multiplier(run_state.ascension_level) * ShopInventory.act_price_multiplier(run_state.act)  # A16 漲價 + §六 幕數係數
@@ -1146,6 +1176,8 @@ func _apply_shop_choice(choice: Variant) -> void:
 				var price: int = _shop_discount(int(item.get("price", 0)))
 				if not bool(item.get("sold", false)) and run_state.gold >= price:
 					run_state.gold -= price
+					if run_state.has_relic("qiankun_dai"):
+						run_state.floor_gold_dead = true  # 乾坤袋剎車：僅已持有時觸發
 					item["sold"] = true
 					run_state.deck.append((item.get("card") as CardData).clone())
 					_log("shop_buy", {"kind": "card", "name": (item.get("card") as CardData).display_name, "price": price})
@@ -1156,6 +1188,8 @@ func _apply_shop_choice(choice: Variant) -> void:
 				var rprice: int = _shop_relic_price(relic)
 				if run_state.gold >= rprice:
 					run_state.gold -= rprice
+					if run_state.has_relic("qiankun_dai"):
+						run_state.floor_gold_dead = true  # 乾坤袋剎車：僅已持有時觸發（判定先於入手，買乾坤袋那筆不算）
 					run_state.add_relic(relic)
 					run_state.current_shop_relic_sold_ids.append(rid)
 					_log("shop_buy", {"kind": "relic", "name": relic.display_name, "price": rprice})
@@ -1167,6 +1201,8 @@ func _apply_shop_choice(choice: Variant) -> void:
 				var pot: Dictionary = pitem.get("potion", pitem) as Dictionary
 				if not bool(pitem.get("sold", false)) and run_state.gold >= pprice and run_state.potions.size() < run_state.effective_potion_slots():
 					run_state.gold -= pprice
+					if run_state.has_relic("qiankun_dai"):
+						run_state.floor_gold_dead = true  # 乾坤袋剎車：僅已持有時觸發
 					pitem["sold"] = true
 					run_state.potions.append(pot.duplicate())
 					_log("shop_buy", {"kind": "potion", "name": String(pot.get("display_name", "?")), "price": pprice})
@@ -1178,6 +1214,8 @@ func _apply_shop_choice(choice: Variant) -> void:
 					var price: int = _shop_discount(75)
 					if run_state.gold >= price:
 						run_state.gold -= price
+						if run_state.has_relic("qiankun_dai"):
+							run_state.floor_gold_dead = true  # 乾坤袋剎車：僅已持有時觸發
 						run_state.shop_remove_used = true
 						_log("shop_service", {"service": "remove", "card": deck[ri].display_name})
 						deck.remove_at(ri)
@@ -1192,6 +1230,8 @@ func _apply_shop_choice(choice: Variant) -> void:
 					var price2: int = _shop_discount(100)
 					if run_state.gold >= price2:
 						run_state.gold -= price2
+						if run_state.has_relic("qiankun_dai"):
+							run_state.floor_gold_dead = true  # 乾坤袋剎車：僅已持有時觸發
 						run_state.shop_upgrade_used = true
 						var target: CardData = up[ui] as CardData
 						var deck2: Array[CardData] = run_state.deck

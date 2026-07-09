@@ -286,6 +286,8 @@ func _initialize() -> void:
 	_test_enemy_passive_enrage_after(characters)
 	_test_enemy_passive_ally_block_aura(characters)
 	_test_enemy_block_persists_to_player_turn(characters)
+	# Batch B run 層互動遺物（docs/design/RELIC_DESIGN.md）：客棧腰牌 / 乾坤袋 / 醒神茶
+	_test_run_layer_relics(characters)
 	if _smoke_failures > 0:
 		push_error("[smoke] %d 個 _check() 失敗。以 quit(1) 結束。" % _smoke_failures)
 		print("SwordCard smoke test FAILED (%d check failures)." % _smoke_failures)
@@ -293,6 +295,85 @@ func _initialize() -> void:
 		return
 	print("SwordCard smoke test passed.")
 	quit(0)
+
+func _test_run_layer_relics(characters: Array[CharacterData]) -> void:
+	# 1) catalog：3 件遺物存在、trigger/kind/amount 正確
+	var kezhan: RelicData = RelicCatalog.by_id("kezhan_yaopai")
+	_check(kezhan != null, "kezhan_yaopai 不存在於 catalog")
+	if kezhan != null:
+		var found_kind: bool = false
+		for t: Dictionary in kezhan.triggers:
+			if String(t.get("trigger", "")) == "permanent":
+				for e: Dictionary in (t.get("effects", []) as Array):
+					if String(e.get("kind", "")) == "shop_enter_heal" and int(e.get("amount", 0)) == 8:
+						found_kind = true
+		_check(found_kind, "kezhan_yaopai trigger/kind/amount 不符（應為 permanent/shop_enter_heal/8）")
+	var qiankun: RelicData = RelicCatalog.by_id("qiankun_dai")
+	_check(qiankun != null, "qiankun_dai 不存在於 catalog")
+	if qiankun != null:
+		var found_kind2: bool = false
+		for t: Dictionary in qiankun.triggers:
+			if String(t.get("trigger", "")) == "permanent":
+				for e: Dictionary in (t.get("effects", []) as Array):
+					if String(e.get("kind", "")) == "floor_gold" and int(e.get("amount", 0)) == 8:
+						found_kind2 = true
+		_check(found_kind2, "qiankun_dai trigger/kind/amount 不符（應為 permanent/floor_gold/8）")
+	var xingshen: RelicData = RelicCatalog.by_id("xingshen_cha")
+	_check(xingshen != null, "xingshen_cha 不存在於 catalog")
+	if xingshen != null:
+		var found_kind3: bool = false
+		for t: Dictionary in xingshen.triggers:
+			if String(t.get("trigger", "")) == "permanent":
+				for e: Dictionary in (t.get("effects", []) as Array):
+					if String(e.get("kind", "")) == "rest_energy_next_battle" and int(e.get("amount", 0)) == 1:
+						found_kind3 = true
+		_check(found_kind3, "xingshen_cha trigger/kind/amount 不符（應為 permanent/rest_energy_next_battle/1）")
+
+	# 2) RunState 新欄位 save round-trip
+	var state: RunState = RunState.new()
+	state.init_for(characters[0])
+	_check(state.floor_gold_dead == false, "floor_gold_dead 預設值應為 false")
+	_check(state.next_battle_energy_bonus == 0, "next_battle_energy_bonus 預設值應為 0")
+	state.floor_gold_dead = true
+	state.next_battle_energy_bonus = 1
+	var dict: Dictionary = state.to_dict()
+	var text: String = JSON.stringify(dict)
+	var parsed: Variant = JSON.parse_string(text)
+	_check(parsed is Dictionary, "run_layer_relics round-trip JSON parse failed")
+	var restored: RunState = RunState.new()
+	_check(restored.from_dict(parsed as Dictionary, characters), "run_layer_relics from_dict 拒絕合法存檔")
+	_check(restored.floor_gold_dead == true, "floor_gold_dead round-trip 後遺失")
+	_check(restored.next_battle_energy_bonus == 1, "next_battle_energy_bonus round-trip 後遺失")
+
+	# 3) 舊存檔相容：無這兩欄位時 from_dict 要 fallback 到安全預設值
+	var legacy_dict: Dictionary = state.to_dict()
+	legacy_dict.erase("floor_gold_dead")
+	legacy_dict.erase("next_battle_energy_bonus")
+	var legacy_restored: RunState = RunState.new()
+	_check(legacy_restored.from_dict(legacy_dict, characters), "run_layer_relics 舊存檔相容性 from_dict 失敗")
+	_check(legacy_restored.floor_gold_dead == false, "舊存檔 floor_gold_dead 應 fallback 為 false")
+	_check(legacy_restored.next_battle_energy_bonus == 0, "舊存檔 next_battle_energy_bonus 應 fallback 為 0")
+
+	# 4) init_for 重置：新 run 開始時兩欄位應回到預設值（防止跨 run 洩漏）
+	var state2: RunState = RunState.new()
+	state2.init_for(characters[0])
+	state2.floor_gold_dead = true
+	state2.next_battle_energy_bonus = 1
+	state2.init_for(characters[0])
+	_check(state2.floor_gold_dead == false, "init_for 未重置 floor_gold_dead")
+	_check(state2.next_battle_energy_bonus == 0, "init_for 未重置 next_battle_energy_bonus")
+
+	# 5) 消耗邏輯（不開 main.gd）：直接驗證「start_turn 重置能量後才加成」的時序假設本身（
+	#    battle_controller.start_turn() 會把 energy 重設為 per_turn_energy，main.gd/ai_run_engine.gd
+	#    都是先呼叫 start_turn() 再套用 next_battle_energy_bonus，此處驗證該時序假設不會被
+	#    未來改動悄悄破壞）。
+	var battle: BattleController = BattleController.new()
+	battle.setup(state, characters[0], [GameData.enemies()[0].clone()])
+	var base_energy: int = int(battle.state.get("energy", 0))
+	battle.start_turn()  # 模擬「開戰時 start_turn 已跑過一次」
+	_check(int(battle.state["energy"]) == base_energy, "start_turn 後 energy 應回到 per_turn_energy 基準（消耗邏輯必須在此之後套用）")
+	battle.state["energy"] = int(battle.state["energy"]) + 1  # 鏡像 main.gd/ai_run_engine.gd 的 +bonus 消耗
+	_check(int(battle.state["energy"]) == base_energy + 1, "醒神茶 +1 靈力套用後數值不符")
 
 func _test_save_round_trip(characters: Array[CharacterData]) -> void:
 	var state: RunState = RunState.new()
@@ -4059,9 +4140,9 @@ func _test_batch_b_battle_leaves_valid() -> void:
 		var battle_count: int = _count_battle_leaves_in_tree(ed)
 		_check(battle_count >= 1, "%s should have >=1 battle leaf, got %d" % [variant, battle_count])
 		total_battle_leaves += battle_count
-	# 設計凍結：6 個事件共 8 條 battle 葉節點
-	_check(total_battle_leaves == 8,
-		"expected 8 battle leaves total in Batch B, got %d" % total_battle_leaves)
+	# 設計凍結：6 個事件共 8 條 battle 葉節點；+1 = ghost_forest fox_slain 尋仇分支（角色化改版）
+	_check(total_battle_leaves == 9,
+		"expected 9 battle leaves total in Batch B, got %d" % total_battle_leaves)
 
 func _count_battle_leaves_in_tree(ed: Dictionary) -> int:
 	# 遍歷 root + 所有 nodes 的 choices，找 outcome.kind == "battle"

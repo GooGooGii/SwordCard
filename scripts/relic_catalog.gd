@@ -185,6 +185,13 @@ static func _generals() -> Array[RelicData]:
 		[{"trigger": "permanent", "effects": [{"kind": "event_power_bonus", "amount": 1}]}], Color("76c46a")))
 	l.append(_make("duo_bao_ge", "多寶閣", "卡牌獎勵顯示 4 張（原 3）。", "rare",
 		[{"trigger": "permanent", "effects": [{"kind": "card_reward_count_bonus", "amount": 1}]}], Color("d9c2ff")))
+	# Batch B：run 層互動遺物（對齊 StS 地圖節點咬合，支柱 1+3）
+	l.append(_make("kezhan_yaopai", "客棧腰牌", "每次進入商店，回復 8 生命。", "uncommon",
+		[{"trigger": "permanent", "effects": [{"kind": "shop_enter_heal", "amount": 8}]}], Color("c8a468")))
+	l.append(_make("qiankun_dai", "乾坤袋", "每前進一層獲得 8 銅錢；在商店消費後永久失效。", "uncommon",
+		[{"trigger": "permanent", "effects": [{"kind": "floor_gold", "amount": 8}]}], Color("8a6a4a")))
+	l.append(_make("xingshen_cha", "醒神茶", "每次休息後，下一場戰鬥開始時 +1 靈力。", "uncommon",
+		[{"trigger": "permanent", "effects": [{"kind": "rest_energy_next_battle", "amount": 1}]}], Color("7ac47a")))
 	# Event Branching P4：淨化符 — 戰鬥勝利時驅散 1 張詛咒
 	l.append(_make("jing_hua_fu", "淨化符", "戰鬥勝利時，從牌組中除去 1 張隨機詛咒牌。", "rare",
 		[{"trigger": "battle_victory", "effects": [{"kind": "remove_random_curse"}]}], Color("c8e4ff"), "star"))

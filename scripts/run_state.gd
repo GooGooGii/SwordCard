@@ -48,6 +48,12 @@ var potions: Array[Dictionary] = []   # max MAX_POTION_SLOTS 元素，每個是 
 var ascension_level: int = 0
 var map_seed: int = 0
 
+# Batch B run 層互動遺物（docs/design/RELIC_DESIGN.md）
+# 乾坤袋（floor_gold）：商店消費過一次後永久失效的剎車旗標。
+var floor_gold_dead: bool = false
+# 醒神茶（rest_energy_next_battle）：休息後暫存，下場戰鬥開始時消費並歸零。
+var next_battle_energy_bonus: int = 0
+
 # Event Branching (Phase 5+6)
 # observe_tokens：全 run 限定的「觀察」資源。起始 3，每幕 boss 勝利 +1，遺物「慧眼」+2 起始。
 # next_battle_buffs：下次戰鬥開場注入的 effect 列表（effect kind=next_battle_buff 用）。
@@ -204,6 +210,8 @@ func init_for(chars: Variant) -> void:
 	event_flags = {}
 	act_intro_seen = 0
 	run_mode = "full"
+	floor_gold_dead = false
+	next_battle_energy_bonus = 0
 	# 每人各拿自己的 starter weapon
 	for c: CharacterData in party:
 		var weapons: Array[RelicData] = RelicCatalog.weapons_for_character(c.id)
@@ -329,6 +337,8 @@ func to_dict() -> Dictionary:
 		"event_flags": event_flags.duplicate(true),
 		"act_intro_seen": act_intro_seen,
 		"run_mode": run_mode,
+		"floor_gold_dead": floor_gold_dead,
+		"next_battle_energy_bonus": next_battle_energy_bonus,
 	}
 
 func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> bool:
@@ -436,6 +446,8 @@ func from_dict(data: Dictionary, available_characters: Array[CharacterData]) -> 
 	event_flags = (data.get("event_flags", {}) as Dictionary).duplicate(true)
 	act_intro_seen = int(data.get("act_intro_seen", 0))
 	run_mode = String(data.get("run_mode", "full"))
+	floor_gold_dead = bool(data.get("floor_gold_dead", false))
+	next_battle_energy_bonus = int(data.get("next_battle_energy_bonus", 0))
 	return true
 
 # Event Redesign：設定 / 查詢長尾旗標。value 預設 true，亦可存數值（例如人情次數）。
