@@ -115,6 +115,7 @@ func _initialize() -> void:
 	_test_map_shop_rules(enemies, bosses)
 	_test_predict_enemy_damage_matches_resolver()
 	_test_act_enemy_scaling(characters, enemies)
+	_test_phase_gate(characters)
 	_test_intent_display()
 	_test_requires_enemy_target()
 	_test_all_upgrades_change(characters)
@@ -1081,6 +1082,42 @@ func _test_act_enemy_scaling(characters: Array[CharacterData], enemies: Array[En
 	bc1.setup(rs1, characters[0], enemies[0])
 	_check(int(bc1.state["enemy_max_hp"]) == enemies[0].max_hp, "act1 敵 HP 不應被縮放")
 	_check(abs(float(bc1.state["enemy_damage_mult"]) - 1.0) < 0.001, "act1 dmg mult 應為 1.0")
+
+func _test_phase_gate(characters: Array[CharacterData]) -> void:
+	# Phase 2 不可跳過：未變身的 phase-2 boss 承受致死傷 → HP 鎖 1、立即變身、掛 phase_guard；
+	# guard 在敵人階段開始解除，之後可正常擊殺。（2026-07-10 難度反曲線收尾）
+	var boss_template: EnemyData = GameData.boss_for_act(4)  # 赤鬼王，有 phase_2_actions
+	_check(not boss_template.phase_2_actions.is_empty(), "act4 boss 應有 phase_2_actions（前提）")
+	var bc: BattleController = _make_multi_battle(characters[0], [boss_template])
+	# 1) 單發過量傷害：不會死，鎖 1 HP 並變身
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 999}, bc.state)
+	bc._check_phase_transition()
+	_check(int(bc.state["enemy_hp"]) == 1, "phase gate：致死傷應鎖 1 HP，got %d" % int(bc.state["enemy_hp"]))
+	_check(bc.phased, "phase gate：鎖血同時應切入 phase 2")
+	_check(not bc.is_victory(), "phase gate：boss 未死，不該判勝")
+	var slot0: Dictionary = (bc.state["enemies"] as Array)[0] as Dictionary
+	_check(bool(slot0.get("phase_guard", false)), "phase gate：應掛上 phase_guard")
+	# 2) 同回合再補刀：guard 仍在，還是死不了
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 999}, bc.state)
+	bc._check_phase_transition()
+	_check(int(bc.state["enemy_hp"]) == 1, "phase gate：guard 期間補刀仍應鎖 1 HP")
+	# 3) 敵人階段：guard 解除、boss 以 phase 2 招式出手
+	var actions: Array[Dictionary] = bc.begin_enemy_phase()
+	_check(not actions.is_empty() and not actions[0].is_empty(), "phase gate：boss 應在 phase 2 出手一次")
+	slot0 = (bc.state["enemies"] as Array)[0] as Dictionary
+	_check(not bool(slot0.get("phase_guard", false)), "phase gate：敵人階段開始後 guard 應解除")
+	# 4) guard 解除後可正常擊殺
+	bc.resolver._resolve_effect({"kind": "damage", "amount": 999}, bc.state)
+	bc._check_phase_transition()
+	_check(int(bc.state["enemy_hp"]) == 0, "phase gate：guard 解除後應可擊殺，got hp=%d" % int(bc.state["enemy_hp"]))
+	_check(bc.is_victory(), "phase gate：擊殺後應判勝")
+	# 5) 非致死傷不受影響（一般玩家無感）
+	var bc2: BattleController = _make_multi_battle(characters[0], [GameData.boss_for_act(4)])
+	var max_hp2: int = int(bc2.state["enemy_max_hp"])
+	bc2.resolver._resolve_effect({"kind": "damage", "amount": 10}, bc2.state)
+	bc2._check_phase_transition()
+	_check(int(bc2.state["enemy_hp"]) == max_hp2 - 10, "phase gate：非致死傷不該被 clamp")
+	_check(not bc2.phased, "phase gate：未過半血不該變身")
 
 func _test_ascension_persistence_and_modifiers() -> void:
 	# 持久化：clear → mark(2) → unlocked == 3
@@ -4777,6 +4814,8 @@ func _test_enemy_passive_ally_block_aura(characters: Array[CharacterData]) -> vo
 	var s1_after: int = int((slots[1] as Dictionary).get("block", 0))
 	_check(s1_after >= s1_before + aura, "soldier should gain aura block; before %d after %d" % [s1_before, s1_after])
 	# 殺掉頭領 → 下一輪光環不再發放（士兵自己招式可能加 block，改驗 log 次數）
+	# 頭領有 phase_2_actions：先標記已變身，否則 phase gate 會把直接設 0 的 HP 攔回 1（本測試驗光環，非閘門）
+	bc.enemy_phased[0] = true
 	(slots[0] as Dictionary)["hp"] = 0
 	if bc._active_enemy_index() == 0:
 		bc._sync_active_enemy_to_state()

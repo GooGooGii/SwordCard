@@ -644,6 +644,7 @@ func _enemy_display_name_for(idx: int) -> String:
 func _check_phase_transition() -> void:
 	# 確保 active slot 反映最新 alias（單體 damage 後 alias 已更新但 slot 還沒）
 	_sync_state_to_active_enemy()
+	_enforce_phase_gate()
 	for i: int in range(enemies.size()):
 		var e: EnemyData = enemies[i]
 		if enemy_phased[i] or e.phase_2_actions.is_empty():
@@ -652,20 +653,54 @@ func _check_phase_transition() -> void:
 		if int(slot["hp"]) <= 0:
 			continue  # 死敵不切 phase
 		if int(slot["hp"]) * 2 < int(slot["max_hp"]):
-			enemy_phased[i] = true
-			enemy_action_indices[i] = 0
-			var phase_2_name: String = e.phase_2_display_name
-			var emit_name: String
-			if not phase_2_name.is_empty():
-				slot["name"] = phase_2_name
-				if i == _active_enemy_index():
-					state["enemy_name"] = phase_2_name
-				add_log("%s 吟咒撕裂虛空，召出 %s 現世！" % [e.display_name, phase_2_name])
-				emit_name = phase_2_name
-			else:
-				add_log("%s 怒色暴漲，招式變換！" % e.display_name)
-				emit_name = e.display_name
-			phase_transitioned.emit(emit_name)
+			_transition_enemy_phase(i, e, slot)
+
+# 執行第 i 敵的 phase 2 變身（共用：50% 跨線與 phase gate 致死攔截兩條路都走這裡）
+func _transition_enemy_phase(i: int, e: EnemyData, slot: Dictionary) -> void:
+	enemy_phased[i] = true
+	enemy_action_indices[i] = 0
+	var phase_2_name: String = e.phase_2_display_name
+	var emit_name: String
+	if not phase_2_name.is_empty():
+		slot["name"] = phase_2_name
+		if i == _active_enemy_index():
+			state["enemy_name"] = phase_2_name
+		add_log("%s 吟咒撕裂虛空，召出 %s 現世！" % [e.display_name, phase_2_name])
+		emit_name = phase_2_name
+	else:
+		add_log("%s 怒色暴漲，招式變換！" % e.display_name)
+		emit_name = e.display_name
+	phase_transitioned.emit(emit_name)
+
+# Phase 2 不可跳過（2026-07-10 難度反曲線收尾）：未變身的 phase-2 boss 承受致死傷時
+# HP 鎖 1 並「立即變身」，且掛上 slot["phase_guard"]——在敵人階段開始（含它的開場毒 tick）
+# 之前不會死亡，保證 boss 至少有一次以新形態出手的機會（玩家仍可用暈眩/禁言封掉那次行動，
+# 是合法反制）。爆發流照樣拿到門檻前的全額價值；打不出過量傷害的一般玩家完全無感。
+# 不加 HP（尊重「接受爆發為獎勵」決策，BALANCE_REPORT §十）。
+# 注意：本函式只攔「致死」。非致死的 50% 跨線變身仍只在玩家出牌/用藥時檢查（_check_phase_transition）——
+# 敵人階段的毒 tick 跨線「不」提前變身，維持既有時序（石長老等機制 boss 依賴 phase 1 招式吃毒）。
+func _enforce_phase_gate() -> void:
+	_sync_state_to_active_enemy()
+	var slots: Array = state.get("enemies", []) as Array
+	var clamped_active: bool = false
+	for i: int in range(mini(enemies.size(), slots.size())):
+		var e: EnemyData = enemies[i]
+		if e.phase_2_actions.is_empty():
+			continue
+		var slot: Dictionary = slots[i] as Dictionary
+		if int(slot["hp"]) > 0:
+			continue
+		if enemy_phased[i] and not bool(slot.get("phase_guard", false)):
+			continue  # 已變身且保護期已過 → 正常死亡
+		slot["hp"] = 1
+		add_log("%s 命懸一線，妖力迴光死守殘軀！" % String(slot["name"]))
+		if not enemy_phased[i]:
+			slot["phase_guard"] = true
+			_transition_enemy_phase(i, e, slot)
+		if i == _active_enemy_index():
+			clamped_active = true
+	if clamped_active:
+		_sync_active_enemy_to_state()
 
 # 分裂：HP 過半（首次）且戰場未滿時，召出 split_into 指定的分身（每隻只分裂一次）。
 # 在 play_card 傷害後與 phase 檢查一起跑，所以斬到半血的瞬間就分裂。
@@ -772,6 +807,7 @@ func start_turn() -> Dictionary:
 		if ts_hit:
 			add_log("五雷轟頂：回合開始對全體敵人降下 %d 點雷傷！" % ts_dmg)
 	_sync_active_enemy_to_state()  # slot→alias 刷新顯示
+	_enforce_phase_gate()          # 回合開始的遺物直傷/五雷若致死 → 鎖 1 HP 並變身（不做一般 50% 檢查）
 	_process_corpse_poison()       # 屍蠱：回合開始直傷打死的中毒敵殘餘毒轉移
 	_check_successors()             # 接續 boss：回合開始蠱毒 tick 打死蛇妖男 → 狐妖女登場
 	_check_active_enemy_death()     # active 敵被打死 → 換到下一個活敵
@@ -1081,6 +1117,11 @@ func begin_enemy_phase() -> Array[Dictionary]:
 	var poison_engine: int = int(state.get("poison_per_turn", 0))
 	if poison_engine > 0:
 		add_logs(resolver.resolve_effects_list([{"kind": "poison_all", "amount": poison_engine}], state))
+	_enforce_phase_gate()  # 毒 tick 致死 → 鎖 1 HP 並變身；非致死跨線不在此變身（見函式註解）
+	# phase guard 到此為止：撐過玩家爆發回合＋開場毒 tick 後解除，boss 接著出手；
+	# 之後（荊棘反噬、下回合傷害）皆可正常擊殺。
+	for guard_slot_v: Variant in (state["enemies"] as Array):
+		(guard_slot_v as Dictionary).erase("phase_guard")
 	_process_corpse_poison()  # 屍蠱：毒死的敵人殘餘毒轉移給活敵
 	_check_active_enemy_death()  # 毒死 active 敵 → 換到下一個活敵
 	_sync_state_to_active()

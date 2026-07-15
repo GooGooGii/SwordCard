@@ -45,7 +45,7 @@ Development — Batch A 已完成入庫，Batch B 實作中。
 ## 幕間難度縮放（2026-07-09/10，commit 9eb93c7，同 seed 驗證完成）
 - 反曲線修正：幕 3 起敵 HP +12%/幕、傷害 +5%/幕（`BattleController.ACT_HP_STEP`/`ACT_DMG_STEP`）；前兩幕不動；召喚/接續 boss 也套；意圖預測補齊 strength×mult（修 A2+ 預測偏低既有 bug）
 - 同 seed 333 對照（agent 親玩 8 幕通關）：幕 3 boss 1回合0傷→2回合18傷 ✓、phase-2 boss 全數 2+ 回合有實傷 ✓、受傷中位數 0→3.5、無牆。詳見 BALANCE_REPORT §十
-- **殘餘缺口**：幕 4 赤鬼王 / 幕 6 鎮獄明王（單階段 boss）仍被最佳化爆發 1 回合斬。**不要用加 HP 解**（違反既有爆發獎勵決策）；正解＝給這兩隻補 phase 2（phase-2 boss 天然免疫一回合斬，已驗證）。赤鬼王概念圖已有（ART_TODO §6C）
+- ~~殘餘缺口：幕 4/6 boss 補 phase 2~~ → **定性更正＋已收尾（2026-07-10 phase gate）**：赤鬼王/鎮獄明王本來就有 phase_2_actions，真正的洞是「爆發從滿血打穿到 0 會跳過 phase 2」。已實作 phase gate（致死鎖 1 HP＋立即變身＋guard 撐到敵人階段），並補齊 start_turn 直傷/毒 tick/藥品三條漏檢查路徑。**地雷**：敵人階段毒 tick 只做致死攔截、不做一般 50% 提前變身——提前變身會廢掉石長老 phase 1 吃毒機制（實測 anu mid 83→100）。詳見 BALANCE_REPORT §十
 
 ## 下一個最安全任務
-幕 4/6 單階段 boss 補 phase 2（赤鬼王/鎮獄明王，數據驅動的內容工單）；或收斂 gold 通膨（BALANCE_REPORT §六，獨立輪）
+收斂 gold 通膨（BALANCE_REPORT §六，獨立輪）；或跑一趟 AI run 實測 phase gate 的體感（boss 戰應一律 ≥2 回合）

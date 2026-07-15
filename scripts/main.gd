@@ -3449,6 +3449,8 @@ func _use_potion(slot: int) -> void:
 	else:
 		log_lines = battle.resolver.resolve_effects_list(effects, battle.state)
 	_pending_revive_indices = _detect_revived(_dead_before_pot)
+	battle._check_phase_transition()  # 藥品直傷同樣不可跳過 phase 2（phase gate）
+	battle._check_successors()        # 藥品打死接續 boss（蛇妖男）→ 狐妖女照常登場
 	var drew: int = int(battle.state.get("pending_draw", 0))
 	if drew > 0:
 		battle.state["pending_draw"] = 0

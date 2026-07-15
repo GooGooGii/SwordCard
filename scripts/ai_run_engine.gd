@@ -490,6 +490,8 @@ func _apply_battle_choice(choice: Variant) -> void:
 			if si >= 0 and si < run_state.potions.size():
 				var effects: Array = run_state.potions[si].get("effects", []) as Array
 				battle.resolver.resolve_effects_list(effects, battle.state)
+				battle._check_phase_transition()  # 鏡像 main._use_potion：藥品直傷不可跳過 phase 2
+				battle._check_successors()
 				_log("potion", {"potion": String(run_state.potions[si].get("display_name", "?"))})
 				run_state.potions.remove_at(si)
 		"end", _:
