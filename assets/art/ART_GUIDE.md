@@ -5,9 +5,22 @@
 
 ## Current Art Direction
 
-- Style: 2D painted xianxia fantasy, ink-wash atmosphere with readable game UI contrast.
-- Palette: ink blue, charcoal, muted teal, jade green, antique gold, restrained red/purple accents.
+- Style: 2D painted xianxia fantasy with readable game UI contrast. ink-wash 質感保留在**筆觸與單體資產**，**不再作為整體暗色濾鏡**。
+- **明度基調＝日光**（2026-07-15 製作人裁決，見下方「明度紀律」）。
+- Palette（主・日光基調，用於背景/選單/大場景）: warm sunlight cream（暖陽米白）, fresh bamboo green（嫩竹綠）, watertown teal（水鄉青）, sky azure（天青藍）, antique gold（古金）。
+- Palette（副・僅限陰暗題材幕與鬼冥系資產）: ink blue, charcoal, muted teal, restrained red/purple accents.
 - Use: private fan prototype, not public or commercial release.
+
+### 明度紀律（2026-07-15 製作人裁決——背景/場景圖最高優先規範）
+
+**問題**：2026-07 盤點發現全部 8 張幕背景＋主選單皆為低明度 dark-fantasy 概念美術，開場 act_1 讀起來像恐怖遊戲。這與 PAL1 的基調相悖——**PAL1 前中期是白天、暖陽、田園、水鄉；陰暗是後期劇情轉折，是標點，不是基調。**
+
+**裁決**：
+1. **日光是預設**：背景/選單/事件/地圖圖預設為明亮日光場景。只有正史上就該暗的場景（鬼森、將軍塚、boss 殿、終局祭壇）允許低明度。
+2. 幕背景明:暗目標比例約 **4:4**，且 **act_1（開場）必須是亮的**。
+3. 產圖 prompt **必須**含亮側詞（`warm daylight` / `soft morning sunlight` / `bright, fresh, hopeful` 等）與負面控制 `not dark fantasy, not gloomy, not horror atmosphere, not night, not dusk`；陰暗幕豁免。
+4. 「顏色克制、低飽和」原則**只適用於去背單體資產**（卡圖/敵人/遺物/藥品）——單體低飽和疊在亮背景上反而耐看，此原則不變；**不得**外推到背景。
+5. 原「明暗弧線＝起→高點→步步入暗」的框架**作廢**，改為「明快為底、暗為劇情標點」（對齊 PAL1 情緒結構）。
 - **Card & Enemy Art Guidelines**:
   - 卡圖盡量不要出現人物與文字（專注於仙術效果、符咒、武器或道具意境）。
   - 蟲形敵人（如蠱蟲、蜈蚣等）不要太過寫實，應以水墨寫意風格進行藝術化簡化，避免造成視覺上的噁心感。
@@ -115,20 +128,22 @@ Current generated backgrounds:
 - `event_bg.png` — route, rest, event, reward, result screens.
 - `map_bg_ink.png` — route map screen.
 
-### 8 幕戰鬥背景：地理／旅程對照（2026-06-30 美術指導判讀）
+### 8 幕戰鬥背景：地理／旅程對照＋明度目標（2026-07-15 明度重校）
 
-背景**確實承載了「餘杭→蘇州→苗疆」旅程感**（設計支柱 1 的美術兌現），明暗弧線亦成立（起 → 入世繁華高點 → 步步入暗）：
+背景**確實承載了「餘杭→蘇州→苗疆」旅程感**（設計支柱 1 的美術兌現）。原「明暗弧線（起→高點→步步入暗）」框架已作廢（見頂部「明度紀律」），改為**明快為底、暗為劇情標點**：
 
-| 幕 | 畫面 | PAL1 對應 | 旅程辨識度 |
-|---|---|---|---|
-| 1 | 黃昏霧竹林山道 + 小亭 | 餘杭/十里坡郊野 | ✓ 起點 |
-| 2 | 江南水鄉庭院・拱橋・蓮花・晨霧 | **蘇州** | ✓✓ 最高 |
-| 3 | 夜・枯樹廢廟・藍焰鬼火 | 鬼森/陰宅 | ◐ 偏通用（可綁具體正史場景拉識別度） |
-| 4 | 陰天古戰場・將軍塚石像・斷旗裂地 | 將軍塚/殭屍 | ✓ |
-| 5 | 藍水晶洞窟・刻紋石柱・晶簇 | 隱龍窟/鎖妖塔地宮 | ✓ |
-| 6 | 雙巨龍柱大殿・青焰・地面法陣・王座 | 拜月教壇/塔頂 boss 殿 | ✓ |
-| 7 | 苗疆瘴氣叢林・圖騰・骷髏旗・竹刺・瀑布 | **苗疆** | ✓✓✓ 最高 |
-| 8 | 夜・廢殿柱列・青魂火・水澤 | 終局祭壇 | ✓ |
+| 幕 | 現況畫面 | PAL1 對應 | 明度目標 | 動作 |
+|---|---|---|---|---|
+| 1 | 黃昏霧竹林山道 + 小亭 | 餘杭/十里坡郊野 | ☀ **亮**（晨光田園） | 🔴 重出（最優先，開場第一印象） |
+| 2 | 江南水鄉庭院・拱橋・蓮花・晨霧 | **蘇州** | ☀ 亮 | ✅ 保留——**全套明度基準** |
+| 3 | 夜・枯樹廢廟・藍焰鬼火 | 鬼森/陰宅 | 🌙 暗（正史合理） | 保留，可加月光層次 |
+| 4 | 陰天古戰場・將軍塚石像・斷旗裂地 | 將軍塚/殭屍 | 🌙 暗（正史合理） | 保留 |
+| 5 | 藍水晶洞窟・刻紋石柱・晶簇 | 隱龍窟/鎖妖塔地宮 | ☀ 亮（晶光通明的靈氣洞窟） | 🟡 重出（暗場景也能亮） |
+| 6 | 雙巨龍柱大殿・青焰・地面法陣・王座 | 拜月教壇/塔頂 boss 殿 | 🌙 暗（boss 壓迫感合理） | 保留 |
+| 7 | 苗疆瘴氣叢林・圖騰・骷髏旗・竹刺・瀑布 | **苗疆** | ☀ 亮（白日苗疆：陽光瀑布、綠意、彩旗——PAL1 苗疆是鮮豔的） | 🟡 重出 |
+| 8 | 夜・廢殿柱列・青魂火・水澤 | 終局祭壇 | 🌙 暗（終局合理） | 保留 |
+
+另：`main_menu_bg.png`（深夜雲海，玩家開遊戲第一眼）建議同構圖重出為**晨曦仙山**；`event_bg` / `map_bg_ink` 一併檢視明度。
 
 ### 套用方式（畫背景時務必知道）
 
@@ -142,10 +157,29 @@ Target size:
 - PNG, no text/logos/watermarks
 - Keep central negative space for UI panels
 
-### 🟡 背景待辦（美術指導，低急迫）
+### 🟡 背景待辦（美術指導）
 
-1. **`act_5` 比例為 3:2（1536×1024）**——唯一非 16:9，在戰場會被裁掉上下（鐘乳石頂＋前景晶簇）。有空重出成 16:9（1280×720 或 1672×941）。不變形、無急迫性。
-2. **`act_2` 色調離群（open decision，待製作人裁決）**：act_2 明顯比其餘 7 張更亮／更柔／更高明度（近 anime-painterly），其餘為偏寫實低明度概念美術。**兩種讀法皆成立**——(a) 刻意讓「抵達蘇州」成為視覺最美高點、之後入暗（建議保留）；(b) 壓暗一檔向其餘對齊。**在此裁決前不要動 act_2。**
+1. **`act_5` 比例為 3:2（1536×1024）**——唯一非 16:9，在戰場會被裁掉上下（鐘乳石頂＋前景晶簇）。明度重出時一併改成 16:9（1280×720 或 1672×941）。
+2. ~~`act_2` 色調離群（open decision）~~ **已裁決（2026-07-15）**：act_2 不是離群，是**唯一對的**——它成為全套的明度基準，其餘往它對齊（優先序見上表「動作」欄）。舊「兩種讀法」條目作廢。
+
+### 背景 Prompt Pattern（2026-07 明度重校批次）
+
+背景圖（**不去背、畫滿**）與單體資產的 prompt 寫法不同，固定五段：
+
+1. **Asset instruction**：`background asset for a Godot card-battle game, 1280x720 landscape (16:9), PNG, no text, no watermark, no characters`
+2. **Scene identity**：PAL1 場景身分＋地理（餘杭竹林山道／蘇州水鄉／苗疆山寨…）
+3. **Lighting & mood（關鍵段，明度紀律落地處）**：亮幕必寫 `warm daylight` / `soft morning sunlight` / `bright, fresh, hopeful`；暗幕才准用夜色詞
+4. **Style**：`2D painted xianxia fantasy, hand-painted brushwork with light ink-wash texture, high-key lighting, airy and inviting`（暗幕改 `low-key` 但仍需可讀）
+5. **Composition + Negative**：`keep center and lower-middle relatively open for game UI and combatants; safe margins (cropped keep-aspect-covered)` ＋ 亮幕必附 `not dark fantasy, not gloomy, not horror, not night, not dusk, no heavy fog, no photorealism`
+
+#### act_1 參考範例（2026-07-15 首驗證張）
+
+> Background asset for a Godot card-battle game, 1280x720 landscape (16:9), PNG, no text, no watermark, no characters.
+> Scene: a sunlit bamboo-forest mountain path in the Jiangnan countryside near Yuhang, the opening region of a classic Chinese xianxia journey — a small rustic wooden pavilion beside a stone-paved path, distant green karst hills softened by thin morning haze under a clear blue sky, wildflowers and grass along the roadside, a few birds in the sky.
+> Lighting & mood: early morning warm sunlight streaming through tall green bamboo; bright, fresh, hopeful — the beginning of a young hero's adventure.
+> Style: 2D painted xianxia fantasy, hand-painted brushwork with light ink-wash texture; colors: warm cream sunlight, fresh bamboo green, sky azure, soft teal shadows. High-key lighting, airy and inviting.
+> Composition: keep the center and lower-middle area relatively open and uncluttered (game UI and combatants overlay there); main scenery on the sides and upper third; safe margins, nothing important near the edges (image is cropped keep-aspect-covered).
+> Negative: not dark fantasy, not gloomy, not horror, not night, not dusk, no heavy fog covering the scene, no photorealism, no anime characters, no text.
 
 ## Planned Event Story Illustrations
 
