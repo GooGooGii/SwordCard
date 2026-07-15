@@ -10,7 +10,10 @@
     --max-size N      放大後長邊縮回 N px（預設 1024；0 = 不縮）
     --no-rembg        跳過去背（圖已是透明背景時用）
     --no-upscale      跳過放大
-    --rembg-model M   rembg 模型（預設 isnet-anime，插畫最穩）
+    --rembg-model M   rembg 模型（預設 isnet-anime）
+                      ⚠️ isnet-anime 適合乾淨線稿；對「水墨painted、低對比」主體
+                      會過度切割、把主體一起刪光（實測 bai_hu_ya/yu_puti_zhu/yuenv_jian
+                      整片消失）。這類已上色插畫改用 isnet-general-use 或 u2net。
     --gpu N           Real-ESRGAN 用第 N 顆 GPU（-1 = 自動；本機 1 = RTX 4050）
 
 依賴：
