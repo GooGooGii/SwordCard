@@ -7248,6 +7248,9 @@ func _shop_item_view(item: Dictionary) -> Control:
 	var is_sold: bool = bool(item.get("sold", false))
 	var can_buy: bool = run_state.gold >= price and not is_sold
 	var card_button: Button = _make_card_button(card, card.cost, Vector2(153, 287), can_buy, true)
+	# 卡片元件靠 anchor 百分比排版、必須維持 0.535 寬高比；面板被 HFlow 拉寬時
+	# （如黑店只出 5 張卡）按鈕不能跟著撐開，否則卡圖整張橫向變形（看起來像高度被壓扁）
+	card_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	card_button.disabled = not can_buy or is_sold
 	if item.get("on_sale", false):
 		# 特賣改成斜蓋在卡面上的紅印章，不再佔一行版面（原本會把整張卡往下推、破壞同列基線）
