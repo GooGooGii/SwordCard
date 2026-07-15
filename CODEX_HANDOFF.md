@@ -47,5 +47,12 @@ Development — Batch A 已完成入庫，Batch B 實作中。
 - 同 seed 333 對照（agent 親玩 8 幕通關）：幕 3 boss 1回合0傷→2回合18傷 ✓、phase-2 boss 全數 2+ 回合有實傷 ✓、受傷中位數 0→3.5、無牆。詳見 BALANCE_REPORT §十
 - ~~殘餘缺口：幕 4/6 boss 補 phase 2~~ → **定性更正＋已收尾（2026-07-10 phase gate）**：赤鬼王/鎮獄明王本來就有 phase_2_actions，真正的洞是「爆發從滿血打穿到 0 會跳過 phase 2」。已實作 phase gate（致死鎖 1 HP＋立即變身＋guard 撐到敵人階段），並補齊 start_turn 直傷/毒 tick/藥品三條漏檢查路徑。**地雷**：敵人階段毒 tick 只做致死攔截、不做一般 50% 提前變身——提前變身會廢掉石長老 phase 1 吃毒機制（實測 anu mid 83→100）。詳見 BALANCE_REPORT §十
 
+## 意圖鎖定（2026-07-10，玩家實測回饋收尾）
+- 玩家回報：boss 變身後立刻用未預告的 phase-2 招攻擊，照舊意圖算血的玩家無預警被打死
+- 解法：變身時鎖定「變身前已預告的招」，變身當回合出該招、phase-2 下回合起才登場（暈眩會作廢預告招）。實作在 `_transition_enemy_phase`（locked_action）＋ `_action_for_enemy`（意圖查詢回鎖定招）＋ `begin_enemy_phase`（消耗）
+- **兩個棄用方案（勿重蹈）**：變身硬直不出手（mid 27→87 炸）；變身怒氣延遲力量（競速局來不及入帳、長戰誤傷 duo）
+- 基線重觀測（故意調整）：phase-2 boss 競速勝率全面上修（li mid 73、anu mid 93、趙/林 leveled 上修）；**duo_li_anu 97→73**——毒流不能再靠觸發變身白嫖躲石長老吞毒，恰好收斂「duo 過高」既有裂縫。詳見 BALANCE_REPORT §十補遺
+- 後續恢復中段牆高請調 phase-2 招式數值（誠實手段），不要回退鎖定
+
 ## 下一個最安全任務
-收斂 gold 通膨（BALANCE_REPORT §六，獨立輪）；或跑一趟 AI run 實測 phase gate 的體感（boss 戰應一律 ≥2 回合）
+收斂 gold 通膨（BALANCE_REPORT §六，獨立輪）；或跑一趟 AI run 實測 phase gate＋意圖鎖定的實戰體感

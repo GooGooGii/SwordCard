@@ -1089,6 +1089,7 @@ func _test_phase_gate(characters: Array[CharacterData]) -> void:
 	var boss_template: EnemyData = GameData.boss_for_act(4)  # 赤鬼王，有 phase_2_actions
 	_check(not boss_template.phase_2_actions.is_empty(), "act4 boss 應有 phase_2_actions（前提）")
 	var bc: BattleController = _make_multi_battle(characters[0], [boss_template])
+	var telegraphed: Dictionary = bc._action_for_enemy(0)  # 玩家出牌前看到的預告招（phase 1）
 	# 1) 單發過量傷害：不會死，鎖 1 HP 並變身
 	bc.resolver._resolve_effect({"kind": "damage", "amount": 999}, bc.state)
 	bc._check_phase_transition()
@@ -1101,11 +1102,23 @@ func _test_phase_gate(characters: Array[CharacterData]) -> void:
 	bc.resolver._resolve_effect({"kind": "damage", "amount": 999}, bc.state)
 	bc._check_phase_transition()
 	_check(int(bc.state["enemy_hp"]) == 1, "phase gate：guard 期間補刀仍應鎖 1 HP")
-	# 3) 敵人階段：guard 解除、boss 以 phase 2 招式出手
+	# 3) 意圖鎖定（意圖誠實性）：變身當回合仍出「變身前預告的那一招」，不出未預告的 phase-2 招
+	var locked_action: Dictionary = bc._action_for_enemy(0)
+	_check(String(locked_action.get("intent", "")) == String(telegraphed.get("intent", "")),
+		"意圖鎖定：變身後意圖應仍為預告招「%s」，got「%s」" % [String(telegraphed.get("intent", "")), String(locked_action.get("intent", ""))])
 	var actions: Array[Dictionary] = bc.begin_enemy_phase()
-	_check(not actions.is_empty() and not actions[0].is_empty(), "phase gate：boss 應在 phase 2 出手一次")
+	_check(not actions.is_empty() and String(actions[0].get("intent", "")) == String(telegraphed.get("intent", "")),
+		"意圖鎖定：變身當回合實際出手應為預告招")
 	slot0 = (bc.state["enemies"] as Array)[0] as Dictionary
 	_check(not bool(slot0.get("phase_guard", false)), "phase gate：敵人階段開始後 guard 應解除")
+	_check(not slot0.has("locked_action"), "意圖鎖定：預告招用掉後鎖應清除")
+	# 3b) 下一輪敵人階段：boss 以 phase 2 招式出手（此時意圖已在玩家回合正常預告過）
+	var phase_2_intents: Array[String] = []
+	for p2a: Dictionary in boss_template.phase_2_actions:
+		phase_2_intents.append(String(p2a.get("intent", "")))
+	var actions2: Array[Dictionary] = bc.begin_enemy_phase()
+	_check(not actions2.is_empty() and String(actions2[0].get("intent", "")) in phase_2_intents,
+		"意圖鎖定：下一輪起應輪替 phase 2 招式，got「%s」" % String(actions2[0].get("intent", "")))
 	# 4) guard 解除後可正常擊殺
 	bc.resolver._resolve_effect({"kind": "damage", "amount": 999}, bc.state)
 	bc._check_phase_transition()
@@ -1217,13 +1230,22 @@ func _test_boss_phase_transition(bosses: Array[EnemyData]) -> void:
 	bc.state["energy"] = 99
 	bc.play_card(tick_card)
 	_check(bc.phased, "boss should phase after dropping below 50%% (hp=%d / max=%d)" % [int(bc.state["enemy_hp"]), int(bc.state["enemy_max_hp"])])
-	# 切換後 next_enemy_action 應該回傳 phase_2_actions 的招式
+	# 意圖鎖定：變身當回合仍出「變身前預告的招」（phase 1），下一輪起才輪替 phase_2_actions
+	var phase_1_intents: Array[String] = []
+	for action: Dictionary in boss.actions:
+		phase_1_intents.append(String(action.get("intent", "")))
+	if not boss.ultimate_action.is_empty():
+		phase_1_intents.append(String(boss.ultimate_action.get("intent", "")))
 	var next_action: Dictionary = bc.next_enemy_action()
+	_check(String(next_action.get("intent", "")) in phase_1_intents,
+		"after phase, this turn should keep the telegraphed phase-1 action (intent lock)")
+	bc.begin_enemy_phase()  # 消耗鎖定的預告招
 	var phase_2_intents: Array[String] = []
 	for action: Dictionary in boss.phase_2_actions:
 		phase_2_intents.append(String(action.get("intent", "")))
-	_check(String(next_action.get("intent", "")) in phase_2_intents,
-		"after phase, next_enemy_action should pick from phase_2_actions")
+	var next_action_2: Dictionary = bc.next_enemy_action()
+	_check(String(next_action_2.get("intent", "")) in phase_2_intents,
+		"next turn, next_enemy_action should pick from phase_2_actions")
 
 func _test_boss_successor() -> void:
 	# 隱龍窟雙妖：蛇妖男（red_eye_demon）死 → 狐妖女（fox_demon）滿血接續登場
@@ -1608,10 +1630,14 @@ const BALANCE_BASELINES_MID: Dictionary = {
 	# （反擊 passive＋格擋時機被聰明打法放大——中段平衡新 outlier，見 BALANCE_REPORT §七）。
 	# 2026-06-11 機制敵全幕鋪開：石長老新增「百毒歸宗」（吞毒化力）= 毒流檔位閘，
 	# anu 83→73（正中設計目標：毒流終於有剋星戰；policy 照疊毒餵 boss，真人可繞）。
-	"li_xiaoyao": 27,
+	# 2026-07-10 意圖鎖定（故意調整，玩家實測回饋）：boss 變身回合改出「變身前預告的招」，
+	# 不再立刻甩未預告的 phase-2 大招——中段牆的高度不該由不誠實爆發撐起。li 27→73、anu 73→93
+	# （anu 上升含「鎖定的百毒歸宗照吃毒」的反向效應，但競速局淨值仍升）。
+	# 後續恢復牆高請調 phase-2 招式數值（誠實手段），見 BALANCE_REPORT §十。
+	"li_xiaoyao": 73,
 	"zhao_linger": 27,
 	"lin_yueru": 97,
-	"anu": 73
+	"anu": 93
 }
 # 全升級起始牌組 vs 山賊頭目。升級應嚴格 >= 基礎勝率，預期全 100%。
 const BALANCE_BASELINES_UPGRADED: Dictionary = {
@@ -1676,9 +1702,12 @@ const BALANCE_BASELINES_LEVELED: Dictionary = {
 	# 已回滾——四角 Lv20 皆靠分級牌組通關：李93/林50/趙43/阿奴100）。
 	# 趙靈兒終幕谷底（37% 為四角地板）：泰山壓頂 20→24、狂雷 22→26（直傷續推、不稀釋薄牌組；
 	# 試過加 power capstone 反因 dilution + policy 誤用降到 30%，已回滾）→ Lv20 37→43，脫離地板。
+	# 2026-07-10 意圖鎖定（故意調整）：變身回合出預告招、不再甩未預告的 phase-2 大招——
+	# phase-2 boss（赤鬼王/鎮獄明王/拜月教主）競速勝率全面上修：趙 Lv10 83→100 / Lv15 50→67 /
+	# Lv20 43→73、林 Lv15 63→90 / Lv20 50→87。李/阿奴各檔仍在容差內未動。
 	"li_xiaoyao":  {5: 100, 10: 97,  15: 77,  20: 93},
-	"zhao_linger": {5: 100, 10: 83,  15: 50,  20: 43},
-	"lin_yueru":   {5: 100, 10: 100, 15: 63,  20: 50},
+	"zhao_linger": {5: 100, 10: 100, 15: 67,  20: 73},
+	"lin_yueru":   {5: 100, 10: 100, 15: 90,  20: 87},
 	"anu":         {5: 100, 10: 100, 15: 87,  20: 100},
 }
 
@@ -1976,7 +2005,10 @@ const BALANCE_BASELINES_PARTY: Dictionary = {
 	#     縮放而失效，故 HP 拉不太動 duo（×1.7~×2.85 都 ~97）。要再壓 duo 需 HP 高到 trio 歸零。
 	#   結論：trio 的「永不輸」已解除；duo 殘留高勝率是合理 synergy，真正的 duo 旋鈕是「組隊定位
 	#     （變化模式 vs 深調）」的製作人決策＋互動 agent 實測，非此啟發式測得到。本層視為上界警報。
-	"duo_li_anu": 97,
+	# 2026-07-10 意圖鎖定（故意調整）：石長老預告「百毒歸宗」後被打過半血，變身不再取消該招——
+	# 毒流不能再靠觸發變身白嫖躲吞毒，duo_li_anu 97→73。恰好收斂「duo 勝率過高」的既有裂縫
+	#（BALANCE_REPORT §九）：上界警報解除，duo 73 / trio 63 回到同一帶。
+	"duo_li_anu": 73,
 	"trio_li_zhao_lin": 63,
 }
 

@@ -578,6 +578,12 @@ func next_enemy_action() -> Dictionary:
 func _action_for_enemy(idx: int) -> Dictionary:
 	if idx < 0 or idx >= enemies.size():
 		return {}
+	# 意圖鎖定：剛變身的敵人本回合仍出「變身前已預告的招」（意圖誠實性，見 _transition_enemy_phase）
+	var afe_slots: Array = state.get("enemies", []) as Array
+	if idx < afe_slots.size():
+		var locked_v: Variant = (afe_slots[idx] as Dictionary).get("locked_action", null)
+		if locked_v is Dictionary and not (locked_v as Dictionary).is_empty():
+			return (locked_v as Dictionary).duplicate(true)
 	var e: EnemyData = enemies[idx]
 	var active_actions: Array[Dictionary] = e.phase_2_actions if (enemy_phased[idx] and not e.phase_2_actions.is_empty()) else e.actions
 	if active_actions.is_empty():
@@ -657,8 +663,19 @@ func _check_phase_transition() -> void:
 
 # 執行第 i 敵的 phase 2 變身（共用：50% 跨線與 phase gate 致死攔截兩條路都走這裡）
 func _transition_enemy_phase(i: int, e: EnemyData, slot: Dictionary) -> void:
+	# 意圖誠實性（2026-07-10 玩家實測回饋）：玩家是照「變身前預告的意圖」算血出牌的——變身後
+	# 若立刻改用未預告的 phase-2 招式攻擊，玩家無從預期就被打死。解法＝鎖定變身前已預告的那一招：
+	# 變身當回合仍出「玩家看到的招」，phase-2 招式下回合起才登場（且經正常預告）。
+	#（曾試「變身回合硬直不出手」：每場過半血白送玩家一回合，mid 基線 27%→87% 直接炸，棄用。）
+	var telegraphed: Dictionary = _action_for_enemy(i)
 	enemy_phased[i] = true
 	enemy_action_indices[i] = 0
+	if not telegraphed.is_empty():
+		slot["locked_action"] = telegraphed.duplicate(true)
+	# 平衡註記：意圖鎖定讓變身回合少打一記 phase-2 大招 → phase-2 boss 對競速局全面軟化
+	#（mid 基線 li 27→73），屬「故意調整」——中段牆的高度不該由未預告的爆發撐起。
+	# 基線已重觀測；後續要恢復牆高請調 phase-2 招式數值（誠實手段），不要回退鎖定。
+	#（曾試「變身怒氣 +2 力量延遲生效」補償：競速局 boss 來不及入帳、長戰誤傷 duo 97→73，棄用。）
 	var phase_2_name: String = e.phase_2_display_name
 	var emit_name: String
 	if not phase_2_name.is_empty():
@@ -1135,10 +1152,14 @@ func begin_enemy_phase() -> Array[Dictionary]:
 			continue
 		if int(slot.get("stunned", 0)) > 0:
 			slot["stunned"] = int(slot["stunned"]) - 1  # 暈眩：消耗一層、跳過本回合出手
+			slot.erase("locked_action")  # 被暈掉的預告招作廢；下回合起 phase-2 正常預告輪替
 			actions.append({})
 			add_log("%s 暈眩，無法行動！" % _enemy_display_name_for(i))
 			continue
-		var action: Dictionary = _action_for_enemy(i)
+		var was_locked: bool = slot.has("locked_action")
+		var action: Dictionary = _action_for_enemy(i)  # was_locked 時回傳鎖定的預告招
+		if was_locked:
+			slot.erase("locked_action")  # 預告招用掉；index 不推進，下回合從 phase-2 第一招開始
 		# 禁言：過濾掉所有法術效果（異常/控制/強化/治療/召喚），只保留物理（攻擊/格擋）。
 		# 純法術招 → 無法出招；攻擊+異常招 → 攻擊照常、附帶狀態消失。每被禁言回合消耗一層。
 		if int(slot.get("silenced", 0)) > 0:
@@ -1146,14 +1167,16 @@ func begin_enemy_phase() -> Array[Dictionary]:
 			var orig_count: int = (action.get("effects", []) as Array).size()
 			var filtered: Dictionary = silence_filtered_action(action)
 			if filtered.is_empty():
-				enemy_action_indices[i] = enemy_action_indices[i] + 1
+				if not was_locked:
+					enemy_action_indices[i] = enemy_action_indices[i] + 1
 				actions.append({})
 				add_log("%s 被禁言，法術無法施放！" % _enemy_display_name_for(i))
 				continue
 			if (filtered.get("effects", []) as Array).size() != orig_count:
 				add_log("%s 被禁言，法術效果被封印，只能強攻！" % _enemy_display_name_for(i))
 			action = filtered
-		enemy_action_indices[i] = enemy_action_indices[i] + 1
+		if not was_locked:
+			enemy_action_indices[i] = enemy_action_indices[i] + 1
 		actions.append(action)
 		add_log("%s 準備施放：%s。" % [_enemy_display_name_for(i), String(action.get("intent", ""))])
 	return actions
