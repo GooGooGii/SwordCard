@@ -2369,6 +2369,8 @@ func _build_battle_scene() -> void:
 	relic_strip.alignment = BoxContainer.ALIGNMENT_CENTER
 	relic_strip.add_theme_constant_override("separation", 4)
 	relic_strip.mouse_filter = Control.MOUSE_FILTER_PASS
+	# 固定高（icon 44px）：遺物歸零（戰敗 retry 扣光）時不塌縮，戰場高度恆定
+	relic_strip.custom_minimum_size = Vector2(0, 44)
 	screen.add_child(relic_strip)
 	_refresh_relic_strip()
 	_build_battle_potion_strip(screen)
@@ -3124,6 +3126,9 @@ func _build_battle_potion_strip(parent: VBoxContainer) -> void:
 	strip.alignment = BoxContainer.ALIGNMENT_CENTER
 	strip.add_theme_constant_override("separation", 8)
 	strip.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	# 固定高：藥品全用完（空槽 visible=false）時整條塌 0，曾把整個戰場上抬 50px
+	# （版面已排滿、arena 無空間可吸收——layout probe 實測）。同 F2 意圖列不塌縮原則。
+	strip.custom_minimum_size = Vector2(0, slot_size)
 	parent.add_child(strip)
 	_battle_potion_strip = strip
 	_potion_buttons.clear()
