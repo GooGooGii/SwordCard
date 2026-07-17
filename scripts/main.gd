@@ -45,6 +45,7 @@ var enemy_portrait_wrap: Control
 # 每個 dict: {root, wrap, portrait, name_label, hp_bar, hp_value, block_badge, status_line, feedback_label, enemy_idx}
 var enemy_widgets: Array[Dictionary] = []
 var enemy_row_container: HBoxContainer = null  # 召喚物加入時用此 ref 重建 row
+var _intent_frozen: bool = false  # 敵人階段凍結意圖顯示（防洩下回合招），_start_player_turn 解凍
 var enemy_portrait_image: TextureRect  # ref to TextureRect inside wrap, for phase 2 swap
 var energy_orb: EnergyOrb
 var relic_strip: HBoxContainer
@@ -2352,6 +2353,7 @@ func start_next_battle(enemies: Variant, is_elite: bool = false) -> void:
 
 func _build_battle_scene() -> void:
 	_lecher_loot_shown = false
+	_intent_frozen = false  # 新戰鬥重置（防前場戰鬥在敵人階段中結束時旗標殘留）
 	_set_background(_battle_background_path())
 	_clear_root()  # 會把 _in_battle 設回 false
 	_in_battle = true  # 進入戰鬥場景（_clear_root 之後再設，故維持 true）
@@ -3008,7 +3010,12 @@ func _refresh_enemy_widgets() -> void:
 		], 20.0 if (_battle_compact or enemy_widgets.size() >= 2) else 24.0)
 		
 		var intent_label: Label = w.get("intent_label")
-		if intent_label != null and is_instance_valid(intent_label):
+		# 敵人階段意圖凍結：begin_enemy_phase 已推進 action index，此時 _action_for_enemy
+		# 回傳的是「下一回合」的招——若照常刷新，敵人一出手頭上意圖就換下回合的（洩節奏，
+		# 玩家實測回報）。凍結期間維持畫面上已預告的招（不進本區塊），死敵（hp<=0）仍進入
+		# 並走原本清空邏輯；解凍時機 = _start_player_turn（發新手牌的同一次 refresh）。
+		if intent_label != null and is_instance_valid(intent_label) \
+				and not (_intent_frozen and int(slot["hp"]) > 0):
 			var enemy_idx: int = int(w["enemy_idx"])
 			var action: Dictionary = battle._action_for_enemy(enemy_idx)
 			# 該敵被禁言 → 預告顯示禁言後的實際招式（法術效果被過濾）
@@ -3947,6 +3954,7 @@ func _start_player_turn() -> void:
 	_show_state_feedback(result["before_tick"])
 	if _check_battle_end():
 		return
+	_intent_frozen = false  # 進入玩家新回合：發牌的同一次 refresh 揭示敵人新意圖
 	_refresh_battle(true)
 
 func _snapshot_dead_bench() -> Array[int]:
@@ -4101,6 +4109,9 @@ func end_player_turn() -> void:
 	end_turn_button.disabled = true
 	_sfx("end_turn")
 	_animate_hand_discard()
+	# 意圖凍結：begin_enemy_phase 會推進 action index，凍結期間畫面維持本回合已預告的招，
+	# 避免敵人一出手意圖立刻換成下回合的（_start_player_turn 解凍）
+	_intent_frozen = true
 	# Multi-Enemy 模式：begin_enemy_phase 回傳每隻敵人的 action（陣列）
 	var actions: Array[Dictionary] = battle.begin_enemy_phase()
 	var prev_active_player: int = int(battle.state.get("active_player_index", 0))
