@@ -2845,9 +2845,11 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	if phased and enemy_data.phase_2_portrait_scale > 0.0:
 		scale_mult = enemy_data.phase_2_portrait_scale
 	# 多敵戰 cap 大型敵倍率：頭領級（scale>1）視覺高曾溢出版位 ~90px，
-	# 頭頂衝進意圖/浮字區、與鄰兵高低差過大（實機回報「位置上下不穩」觀感來源之一）
+	# 頭頂衝進意圖/浮字區、與鄰兵高低差過大。黑苗頭領是三體 Boss 戰的中央主體，
+	# 原作輪廓又寬矮；允許較高上限，避免實機中看起來與兩側苗兵同尺寸。
 	if total >= 3:
-		scale_mult = min(scale_mult, 1.12)
+		var multi_enemy_cap: float = 1.38 if enemy_data.id == "miao_chieftain" else 1.12
+		scale_mult = min(scale_mult, multi_enemy_cap)
 	elif total == 2:
 		scale_mult = min(scale_mult, 1.25)
 	var portrait_size: Vector2 = _enemy_portrait_size_for(total) * scale_mult
