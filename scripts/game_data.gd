@@ -560,7 +560,9 @@ static func _lin_yueru() -> CharacterData:
 		make_card("lyr_tianv", "飛花亂舞", "林月如", 1, "attack", "造成 4 點傷害，施加 1 層破綻，抽 1 張牌。", [{"kind": "damage", "amount": 4}, {"kind": "vulnerable", "amount": 1}, {"kind": "draw", "amount": 1}], "uncommon"),
 		make_card("lyr_tieyi", "鐵衣功", "林月如", 2, "skill", "獲得 15 點護體。", [{"kind": "block", "amount": 15}], "rare"),
 		# PAL1 初登場新增（她原作 Lv1 就會凝神歸元 HP 220 治療，是她的特色；art 暫借）
-		make_card("lyr_ningshen", "凝神歸元", "林月如", 1, "skill", "凝神運氣，回復 8 點生命。", [{"kind": "heal", "amount": 8}], "basic"),
+		# 2026-07-10 改消耗牌：1費回8無限重複×起手兩張=長戰永動機（違反支柱3），
+		# 每場戰鬥每張只能回一次血（先前口頭決議補落地）
+		make_card("lyr_ningshen", "凝神歸元", "林月如", 1, "skill", "凝神運氣，回復 8 點生命。打出後消耗。", [{"kind": "heal", "amount": 8}], "basic", "", false, true),
 		# 反擊流（鳳鳴刀／Thorns）：被攻擊時反彈傷害給攻擊者（不衰減，跨回合）
 		make_card("lyr_fenghuan", "鳳鳴反擊", "林月如", 1, "power", "本場戰鬥獲得 3 點荊棘（被攻擊時反彈傷害給攻擊者）。", [{"kind": "thorns", "amount": 3}], "uncommon"),
 		make_card("lyr_yuehua", "月華護體", "林月如", 1, "skill", "獲得 6 點護體與 1 點荊棘。", [{"kind": "block", "amount": 6}, {"kind": "thorns", "amount": 1}], "uncommon"),
