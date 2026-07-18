@@ -2647,10 +2647,13 @@ func _swap_to_phase_2_portrait() -> void:
 			if p2_scale > 0.0:
 				var total: int = (battle.state["enemies"] as Array).size()
 				var new_box: Vector2 = _enemy_portrait_size_for(total) * p2_scale
+				var new_layout_size: Vector2 = _enemy_wrap_layout_size(new_box, total)
 				if enemy_portrait_wrap != null and is_instance_valid(enemy_portrait_wrap):
-					enemy_portrait_wrap.custom_minimum_size = _enemy_wrap_layout_size(new_box, total)
+					enemy_portrait_wrap.custom_minimum_size = new_layout_size
 				enemy_portrait_image.set_meta("ground_box", new_box)
-			UIFactory.ground_portrait(enemy_portrait_image)  # 變身後重新貼地
+				_ground_enemy_portrait(enemy_portrait_image, new_box, new_layout_size)
+			else:
+				UIFactory.ground_portrait(enemy_portrait_image)
 	var phase_2_tint: Color = battle.enemy.phase_2_portrait_tint
 	if phase_2_tint != Color.WHITE:
 		enemy_portrait_image.modulate = phase_2_tint
@@ -2824,12 +2827,19 @@ func _enemy_portrait_size_for(total: int) -> Vector2:
 		scale_factor = 0.72
 	return Vector2(base_w * scale_factor, base_h * scale_factor)
 
-# boss / 大型敵人視覺可超過基準高度（portrait_scale > 1），但版面「保留」高度只到基準，
-# 多出的部分讓肖像往下溢出、由 name/hp 標籤與手牌列蓋住（boss 在手牌之下），
-# 避免高 boss 撐高 arena 把手牌列擠出畫面下緣（小怪 scale < 1 則維持原高、不放大）。
+# boss / 大型敵人視覺可超過基準高度（portrait_scale > 1），但版面「保留」高度只到基準。
+# 多出的部分改往上延伸，利用敵人區上方空間；不撐高 arena，也不把 HP／手牌列往下推。
 func _enemy_wrap_layout_size(visual_size: Vector2, total: int) -> Vector2:
 	var base_h: float = _enemy_portrait_size_for(total).y
 	return Vector2(visual_size.x, min(visual_size.y, base_h))
+
+
+# UIFactory.ground_portrait 會把內容底部貼到 visual_size.y；大型肖像的 layout 高度刻意較矮，
+# 因此還要把超出高度整體往上移，才能讓所有敵人的腳底落在同一條 layout 地面線。
+# 只改 child position，不改容器 minimum size，故戰鬥畫面總高度保持不變。
+func _ground_enemy_portrait(portrait: TextureRect, visual_size: Vector2, layout_size: Vector2) -> void:
+	UIFactory.ground_portrait(portrait)
+	portrait.position.y -= max(visual_size.y - layout_size.y, 0.0)
 
 func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	var slot: Dictionary = battle.state["enemies"][idx] as Dictionary
@@ -2891,8 +2901,8 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	intent_label.add_theme_constant_override("outline_size", 4)  # 疊在肖像上仍清晰
 	col.add_child(intent_label)
 	# portrait wrap（含 block badge）
-	# 版面只保留 layout_size（封頂在基準高度）；肖像照 portrait_size 全尺寸繪製、
-	# 超出 layout 的部分往下溢出、被下方標籤與手牌蓋住，避免高 boss 擠掉手牌列。
+	# 版面只保留 layout_size（封頂在基準高度）；肖像照 portrait_size 全尺寸繪製，
+	# 超出 layout 的部分往上延伸，避免高 boss 擠掉手牌列並利用敵人區頭上空間。
 	var layout_size: Vector2 = _enemy_wrap_layout_size(portrait_size, total)
 	var wrap: Control = Control.new()
 	wrap.custom_minimum_size = layout_size
@@ -2903,7 +2913,7 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	wrap.add_child(shadow)
 	var portrait: TextureRect = UIFactory.portrait_rect(portrait_path, portrait_size, true)
 	portrait.set_meta("ground_box", portrait_size)
-	UIFactory.ground_portrait(portrait)  # 底部對齊地面線（以視覺 box 為準，往下溢出）
+	_ground_enemy_portrait(portrait, portrait_size, layout_size)
 	portrait.modulate = portrait_tint_col
 	portrait.flip_h = not enemy_data.default_facing_left
 	wrap.add_child(portrait)
