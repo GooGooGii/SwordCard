@@ -3459,7 +3459,7 @@ func _test_lin_new_axis_cards(characters: Array[CharacterData], enemies: Array[E
 			lin = c
 			break
 	var want: Dictionary = {"lyr_xianyue": "attack", "lyr_fengminghui": "attack",
-		"lyr_tuodao": "skill", "lyr_jinguo": "skill", "lyr_jianzhen": "power"}
+		"lyr_jiujiebian": "skill", "lyr_jinguo": "skill", "lyr_jianzhen": "power"}
 	var found: Dictionary = {}
 	for card: CardData in lin.reward_pool:
 		if want.has(card.id):

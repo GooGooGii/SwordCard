@@ -590,8 +590,9 @@ static func _lin_yueru() -> CharacterData:
 		# 鳳鳴迴響（鳳鳴刀正史武器）＝荊棘軸主動 payoff：疊刺後的一擊，無荊棘時是死牌（經典 payoff 取捨）。
 		# 升級走減費慣例（效果無 amount 可升；1費→0費）
 		make_card("lyr_fengminghui", "鳳鳴迴響", "林月如", 1, "attack", "鳳鳴刀勢迴盪，造成等同自身荊棘兩倍的傷害（荊棘不消耗）。", [{"kind": "damage_from_thorns", "mult": 2}], "uncommon", "lyr_fenghuan", true),
-		# 拖刀計＝計策防禦：她整池原本零虛弱來源；虛弱同時餵索魂/弦月的 debuff 層數
-		make_card("lyr_tuodao", "拖刀計", "林月如", 1, "skill", "拖刀佯退誘敵，獲得 4 點護體，使敵人虛弱 2 層。", [{"kind": "block", "amount": 4}, {"kind": "weak", "amount": 2}], "uncommon", "lyr_shenfa"),
+		# 九截迴鞭＝計策防禦（正史武器：她初始長鞭、鞭系專屬「九截鞭」）：
+		# 她整池原本零虛弱來源；虛弱同時餵索魂/弦月的 debuff 層數
+		make_card("lyr_jiujiebian", "九截迴鞭", "林月如", 1, "skill", "九截鞭迴掃虛引誘敵，獲得 4 點護體，使敵人虛弱 2 層。", [{"kind": "block", "amount": 4}, {"kind": "weak", "amount": 2}], "uncommon", "lyr_shenfa"),
 		# 巾幗傲骨＝她的性格入牌：護咒抗性是她池中沒有的防禦維度
 		make_card("lyr_jinguo", "巾幗傲骨", "林月如", 1, "skill", "傲骨凜然不受挫，獲得 5 點護體與 1 層護咒（抵禦下一個負面狀態）。", [{"kind": "block", "amount": 5}, {"kind": "player_artifact", "amount": 1}], "uncommon", "lyr_tieyi"),
 		# 林家劍陣＝反擊軸引擎（每回合遞增荊棘），把荊棘從被動數值變成可搭建的成長軸
