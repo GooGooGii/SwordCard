@@ -125,6 +125,7 @@ var selected_ascension: int = 0
 var pending_seed: int = 0  # 0 = 隨機；非 0 = 下次 start_run 用此 seed 生地圖
 var selected_party_ids: Array[String] = []  # character_select 多選 buffer，1–3 人
 var _event_battle_on_win: Callable  # 非空時表示從事件觸發的戰鬥，勝利後執行 callback 而非正常流程
+var _pending_chained_boss: EnemyData = null  # 第四幕：鬼將軍勝利後接續赤鬼王，不先發獎勵／推進地圖
 var _after_boss_relic_choice: Callable  # boss 遺物選擇後的 continuation（potion drop + 推進地圖）
 var _boss_card_reward: bool = false  # 下一個 show_card_reward 是否為 boss 獎勵（三張稀有牌）
 var _after_card_reward: Callable  # card reward 選/跳過後的 continuation（預設回 progress screen）
@@ -678,6 +679,19 @@ func _set_event_background(event_variant: String = "") -> void:
 
 func _battle_background_path() -> String:
 	var fallback_path: String = "res://assets/art/battle_bg.png"
+	var boss_backgrounds: Dictionary = {
+		"miao_chieftain": "res://assets/art/battle_bg_boss_miao_chieftain_v1.png",
+		"ghost_general": "res://assets/art/battle_bg_boss_ghost_general_v1.png",
+		"tomb_general": "res://assets/art/battle_bg_boss_tomb_general_v2.png",
+	}
+	if battle != null:
+		var enemy_slots: Array = battle.state.get("enemies", []) as Array
+		for slot_value: Variant in enemy_slots:
+			var slot: Dictionary = slot_value as Dictionary
+			var enemy_id: String = String(slot.get("id", ""))
+			var boss_path: String = String(boss_backgrounds.get(enemy_id, ""))
+			if not boss_path.is_empty() and ResourceLoader.exists(boss_path):
+				return boss_path
 	if run_state == null:
 		return fallback_path
 	var act_index: int = clamp(int(run_state.act), 1, 8)
@@ -706,6 +720,7 @@ func _sfx(sfx_id: String) -> void:
 		am.play_sfx(sfx_id)
 
 func show_main_menu() -> void:
+	_pending_chained_boss = null  # 放棄／結束 run 時不可把第四幕中繼狀態帶進下一局
 	RunLogger.finish()  # 收尾任何進行中的 run log（無 active log 則 no-op）
 	selected_party_ids.clear()  # 進主選單清掉 character_select 的暫存隊伍
 	_hide_title_bar()
@@ -2292,13 +2307,37 @@ func choose_route_node(node_data: Dictionary, target_row: int = -1) -> void:
 		open_shop_node(bool(node_data.get("black_market", false)))
 	elif node_type == "boss":
 		assert(node_data.has("enemy"), "Boss 節點缺少 enemy 資料：%s" % node_data)
-		start_next_battle(node_data["enemy"] as EnemyData)
+		_start_boss_with_intro(node_data["enemy"] as EnemyData)
 	elif node_type == "elite":
 		assert(node_data.has("enemies"), "精英節點缺少 enemies 資料：%s" % node_data)
 		start_next_battle(node_data["enemies"] as Array, true)
 	else:
 		assert(node_data.has("enemies"), "戰鬥節點缺少 enemies 資料：%s" % node_data)
 		start_next_battle(node_data["enemies"] as Array)
+
+func _start_boss_with_intro(enemy: EnemyData) -> void:
+	# PAL1 正史雙層 Boss：先在墓室擊敗鬼將軍，再墜入血池對決赤鬼王。
+	if enemy.id == "tomb_general":
+		_pending_chained_boss = enemy.clone()
+		var ghost_general: EnemyData = GameData.enemy_by_id("zombie_general")
+		ghost_general.id = "ghost_general"
+		ghost_general.display_name = "鬼將軍"
+		ghost_general.portrait_path = "res://assets/art/enemies/zombie_general_pal1_v2.png"
+		ghost_general.portrait_scale = 1.55
+		ghost_general.default_facing_left = true
+		start_next_battle(ghost_general)
+		return
+	var intro: Dictionary = StoryData.boss_intro(enemy.id)
+	if intro.is_empty():
+		start_next_battle(enemy)
+		return
+	_show_story_card(
+		String(intro.get("kicker", "決戰之前")),
+		String(intro.get("title", enemy.display_name)),
+		intro.get("lines", []) as Array,
+		String(intro.get("background", _battle_background_path())),
+		func() -> void: start_next_battle(enemy)
+	)
 
 func start_next_battle(enemies: Variant, is_elite: bool = false) -> void:
 	_battle_is_elite = is_elite
@@ -2915,7 +2954,11 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	portrait.set_meta("ground_box", portrait_size)
 	_ground_enemy_portrait(portrait, portrait_size, layout_size)
 	portrait.modulate = portrait_tint_col
-	portrait.flip_h = not enemy_data.default_facing_left
+	# TextureRect.flip_h 在自訂 ground_portrait 尺寸／定位流程下沒有反映到最終畫面；
+	# 用明確的負 X 縮放，並把原點補回右緣，確保原圖朝右的敵人實際面向左側玩家。
+	if not enemy_data.default_facing_left:
+		portrait.scale.x = -1.0
+		portrait.position.x += portrait.size.x
 	wrap.add_child(portrait)
 	var badge: BlockBadge = BlockBadge.new()
 	var badge_size: float = 40.0 if total >= 2 else 48.0
@@ -4387,7 +4430,7 @@ func _maybe_show_act_intro() -> void:
 	)
 
 # 通用故事字卡 overlay：幕背景 + 暗角 + 幕名 + 數行文字，點一下淡出。
-func _show_story_card(kicker_text: String, title_text: String, lines: Array, bg_path: String) -> void:
+func _show_story_card(kicker_text: String, title_text: String, lines: Array, bg_path: String, on_done: Callable = Callable()) -> void:
 	var layer: CanvasLayer = CanvasLayer.new()
 	layer.layer = 120
 	add_child(layer)
@@ -4450,7 +4493,9 @@ func _show_story_card(kicker_text: String, title_text: String, lines: Array, bg_
 		fade_out.tween_property(rootc, "modulate:a", 0.0, 0.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 		fade_out.tween_callback(func() -> void:
 			if is_instance_valid(layer):
-				layer.queue_free()))
+				layer.queue_free()
+			if on_done.is_valid():
+				on_done.call()))
 
 # 隊友戰鬥台詞（BanterData）：肖像旁彈一句，本場同句不重複。
 func _show_banter(trigger: String, incoming_id: String, outgoing_id: String = "") -> void:
@@ -4609,6 +4654,23 @@ func _complete_battle_victory() -> void:
 		run_state.gold += gold
 		battle.add_log("獲得 %d 枚銅錢。" % gold)
 		cb.call()
+		return
+	# 第四幕第一層 Boss：只同步戰後 HP 並記錄擊敗，不發金錢／經驗／Boss 獎勵，
+	# 也不推進地圖；播放地裂血池劇情後立即建立赤鬼王第二戰。
+	if _pending_chained_boss != null and battle.enemies.any(func(e: EnemyData) -> bool: return e.id == "ghost_general"):
+		battle.complete_victory()
+		for defeated_e: EnemyData in battle.enemies:
+			Bestiary.mark_defeated(defeated_e.id)
+		var next_boss: EnemyData = _pending_chained_boss
+		_pending_chained_boss = null
+		var intro: Dictionary = StoryData.boss_intro(next_boss.id)
+		_show_story_card(
+			String(intro.get("kicker", "將軍塚・墓室深處")),
+			String(intro.get("title", "地裂血池")),
+			intro.get("lines", []) as Array,
+			String(intro.get("background", "res://assets/art/battle_bg_act_4.png")),
+			func() -> void: start_next_battle(next_boss)
+		)
 		return
 	battle.complete_victory()
 	var victor_idx: int = int(battle.state.get("active_player_index", 0))

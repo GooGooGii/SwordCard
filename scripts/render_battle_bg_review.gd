@@ -32,6 +32,7 @@ func _capture_act_battle(act: int, enemy_source: EnemyData, label: String, abs_d
 	main.start_run(party)
 	await process_frame
 	await process_frame
+	_populate_review_inventory(main.run_state)
 
 	main.run_state.act = act
 	# start_run() has already created the first act's click-to-dismiss story overlay.
@@ -45,7 +46,8 @@ func _capture_act_battle(act: int, enemy_source: EnemyData, label: String, abs_d
 	main.start_next_battle(enemy_source.clone())
 	await process_frame
 	await process_frame
-	await create_timer(0.15).timeout
+	# 等開戰遺物觸發文字／浮動數字結束，再截取穩定戰鬥 UI。
+	await create_timer(1.5).timeout
 
 	var image: Image = main.get_viewport().get_texture().get_image()
 	assert(image != null and not image.is_empty(), "Viewport capture failed for act %d" % act)
@@ -55,3 +57,16 @@ func _capture_act_battle(act: int, enemy_source: EnemyData, label: String, abs_d
 
 	main.queue_free()
 	await process_frame
+
+
+func _populate_review_inventory(state: RunState) -> void:
+	# 美術驗收使用接近中後期 run 的資訊密度：6 件遺物＋滿藥格，避免空白 UI 誤判空間。
+	for relic: RelicData in RelicCatalog.all():
+		if state.relics.size() >= 6:
+			break
+		if not state.has_relic(relic.id):
+			state.add_relic(relic.clone())
+	state.potions.clear()
+	var all_potions: Array[Dictionary] = PotionCatalog.all()
+	for i: int in range(min(state.effective_potion_slots(), all_potions.size())):
+		state.potions.append(all_potions[i].duplicate(true))

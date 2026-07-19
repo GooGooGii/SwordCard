@@ -10,7 +10,14 @@
 2. 先向使用者展示圖片，列出核心辨識特徵（輪廓、體型、服裝、兵器、配色、姿勢、環境語彙）。
 3. 使用者確認參考方向後才撰寫 prompt 與生成候選；確認前禁止繪圖。
 4. Prompt 必須逐項鎖定上述原作特徵，並明列禁用的泛用設計元素。
-5. 候選圖以版本化檔名保存，先做透明邊緣／構圖檢查及實機戰鬥渲染；通過後才可覆蓋正式資產。
+5. 候選圖以版本化檔名保存，先做透明邊緣／構圖檢查及實機戰鬥渲染；通過後才可覆蓋正式資產。實機渲染不得使用空白開局 UI：固定加入多件遺物並填滿全部藥品格，以接近實際 run 的資訊密度。允許大型 Boss 向上與藥品／遺物區重疊，但不得犧牲文字與操作可讀性。
+
+### 敵人肖像朝向驗收
+
+- `EnemyData.default_facing_left` 表示原圖本身是否朝左；原圖朝右時應設為 `false`，讓戰鬥 UI 翻轉後面向左側玩家。
+- 本專案的 `ground_portrait` 會自訂 TextureRect 尺寸與位置，單用 `flip_h` 曾在實機畫面失效。需要翻轉時採負 X scale 並補償 X position，實作以 `main.gd` 為準。
+- 每次新增或改動敵人朝向，必須輸出同場景的向左與向右實機對照圖；以臉部鼻尖、視線與胸口判斷，不能只看刀、披風等可能造成錯覺的外輪廓。
+- 兩張對照圖若沒有明顯鏡像差異，不得宣告修正完成，也不得提交正式資產。
 
 原作忠實度優先於「看起來更華麗」。例如苗人頭領的基準是胖苗：黑頭巾、濃鬍、黑紅寬袍、大彎刀與厚重體型；不可擅自加入羽冠、盾牌、毛皮披風或重甲。
 
@@ -144,6 +151,9 @@ Current generated backgrounds:
 - `main_menu_bg.png` — main menu and character select.
 - `battle_bg.png` — legacy fallback (used only if an act bg is missing; `main.gd:_battle_background_path`).
 - `battle_bg_act_1.png` … `battle_bg_act_8.png` — act 1–8 battles（遊戲以 `clamp(run_state.act, 1, 8)` 選圖，8 張全在線上）。
+- `battle_bg_boss_miao_chieftain_v1.png` — 苗人首領專用的餘杭客棧室內戰場；由 `_battle_background_path()` 依敵人 ID 優先選用。
+- `battle_bg_boss_ghost_general_v1.png` — 第四幕第一層鬼將軍專用墓室。
+- `battle_bg_boss_tomb_general_v1.png` — 第四幕第二層赤鬼王專用血池。
 - `event_bg.png` — route, rest, event, reward, result screens.
 - `map_bg_ink.png` — route map screen.
 

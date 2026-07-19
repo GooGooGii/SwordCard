@@ -59,11 +59,28 @@ const BOSS_OUTROS: Dictionary = {
 	"baiyue_lord": "拜月教主沉入水底，水魔獸的咆哮歸於寂靜。十里坡的少年走到了這裡——仙劍之路，至此功成。",
 }
 
+# Boss 開戰前的正史銜接；目前只在地圖 Boss 節點首次進入時播放，retry 不重播。
+const BOSS_INTROS: Dictionary = {
+	"tomb_general": {
+		"kicker": "將軍塚・墓室深處",
+		"title": "地裂血池",
+		"lines": [
+			"鬼將軍倒下，墓室卻沒有恢復寂靜。",
+			"石磚在轟鳴中崩裂，三人隨整片地面墜入地底血池。",
+			"血霧深處，操縱黑水鎮群屍的赤鬼王正守著土靈珠。",
+		],
+		"background": "res://assets/art/battle_bg_act_4.png",
+	},
+}
+
 static func act_intro(act: int) -> Dictionary:
 	return ACT_INTROS.get(act, {}) as Dictionary
 
 static func boss_outro(boss_id: String) -> String:
 	return String(BOSS_OUTROS.get(boss_id, ""))
+
+static func boss_intro(boss_id: String) -> Dictionary:
+	return BOSS_INTROS.get(boss_id, {}) as Dictionary
 
 # 終幕結局變體：依長尾旗標收束（優先序由上而下）。rs = RunState。
 static func ending_line(rs) -> String:

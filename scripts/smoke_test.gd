@@ -1086,8 +1086,8 @@ func _test_act_enemy_scaling(characters: Array[CharacterData], enemies: Array[En
 func _test_phase_gate(characters: Array[CharacterData]) -> void:
 	# Phase 2 不可跳過：未變身的 phase-2 boss 承受致死傷 → HP 鎖 1、立即變身、掛 phase_guard；
 	# guard 在敵人階段開始解除，之後可正常擊殺。（2026-07-10 難度反曲線收尾）
-	var boss_template: EnemyData = GameData.boss_for_act(4)  # 赤鬼王，有 phase_2_actions
-	_check(not boss_template.phase_2_actions.is_empty(), "act4 boss 應有 phase_2_actions（前提）")
+	var boss_template: EnemyData = GameData.boss_for_act(6)  # 鎮獄明王，有 phase_2_actions
+	_check(not boss_template.phase_2_actions.is_empty(), "act6 boss 應有 phase_2_actions（前提）")
 	var bc: BattleController = _make_multi_battle(characters[0], [boss_template])
 	var telegraphed: Dictionary = bc._action_for_enemy(0)  # 玩家出牌前看到的預告招（phase 1）
 	# 1) 單發過量傷害：不會死，鎖 1 HP 並變身
@@ -1125,7 +1125,7 @@ func _test_phase_gate(characters: Array[CharacterData]) -> void:
 	_check(int(bc.state["enemy_hp"]) == 0, "phase gate：guard 解除後應可擊殺，got hp=%d" % int(bc.state["enemy_hp"]))
 	_check(bc.is_victory(), "phase gate：擊殺後應判勝")
 	# 5) 非致死傷不受影響（一般玩家無感）
-	var bc2: BattleController = _make_multi_battle(characters[0], [GameData.boss_for_act(4)])
+	var bc2: BattleController = _make_multi_battle(characters[0], [GameData.boss_for_act(6)])
 	var max_hp2: int = int(bc2.state["enemy_max_hp"])
 	bc2.resolver._resolve_effect({"kind": "damage", "amount": 10}, bc2.state)
 	bc2._check_phase_transition()
@@ -1212,10 +1212,14 @@ func _test_ascension_persistence_and_modifiers() -> void:
 	_check(int(dmg_bc.state["player_hp"]) == 85, "enemy_damage_mult 1.5: 10 dmg ->15 (100->85), got %d" % int(dmg_bc.state["player_hp"]))
 
 func _test_boss_phase_transition(bosses: Array[EnemyData]) -> void:
-	# 每個 boss 都該有「第二階段機制」——phase_2 變身 或 successor 接續（隱龍窟雙妖）。
+	# 每個 boss 都該有第二階段機制；赤鬼王的第二層由 main.gd 串接鬼將軍，不放在 EnemyData phase。
 	for boss: EnemyData in bosses:
-		_check(not boss.phase_2_actions.is_empty() or not boss.successor.is_empty(),
+		_check(boss.id == "tomb_general" or not boss.phase_2_actions.is_empty() or not boss.successor.is_empty(),
 			"boss %s should have phase_2_actions or a successor" % boss.id)
+	var red_ghost: EnemyData = GameData.boss_for_act(4)
+	_check(red_ghost.phase_2_actions.is_empty() and red_ghost.phase_2_portrait_path.is_empty(),
+		"赤鬼王在鬼將軍前置戰後不應再有 phase 2")
+	_check(not StoryData.boss_intro("tomb_general").is_empty(), "赤鬼王雙層 Boss 應有地裂血池銜接劇情")
 	# 真實流程模擬：手工把 boss HP 打到 49%，下一張卡觸發 _check_phase_transition
 	var characters: Array[CharacterData] = GameData.characters()
 	var run_state: RunState = RunState.new()

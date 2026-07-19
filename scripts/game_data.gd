@@ -1498,8 +1498,9 @@ static func _miao_chieftain() -> EnemyData:
 	enemy.portrait_scale = 1.6  # boss：黑苗頭領（放大強化 Boss 壓迫感；超出部分往上利用敵人區空間）
 	enemy.display_name = "黑苗頭領"
 	enemy.max_hp = 96
-	enemy.portrait_path = "res://assets/art/enemies/miao_chieftain.png"
-	enemy.default_facing_left = true
+	enemy.portrait_path = "res://assets/art/enemies/miao_chieftain_pal1_v2.png"
+	# 此欄位描述「原圖是否已朝左」。新版原圖朝右，因此設 false，UI 會水平翻轉成朝向左側玩家。
+	enemy.default_facing_left = false
 	enemy.actions = [
 		{"intent": "苗刀劈砍 16", "effects": [{"kind": "damage", "amount": 16}]},
 		{"intent": "下蠱 蠱毒 4 + 破綻 1", "effects": [{"kind": "poison", "amount": 4}, {"kind": "vulnerable", "amount": 1}]},
@@ -1537,10 +1538,10 @@ static func _miao_soldier() -> EnemyData:
 static func _tomb_general() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "tomb_general"
-	enemy.portrait_scale = 1.4  # boss：赤鬼王（暫沿用舊圖，後續補正專屬立繪）
+	enemy.portrait_scale = 1.72  # 巨大上半身浮出血池，充分使用敵人區上方空間
 	enemy.display_name = "赤鬼王"
 	enemy.max_hp = 110
-	enemy.portrait_path = "res://assets/art/enemies/tomb_general.png"
+	enemy.portrait_path = "res://assets/art/enemies/tomb_general_pal1_v2.png"
 	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "血爪 18", "effects": [{"kind": "damage", "amount": 18}]},
@@ -1551,13 +1552,8 @@ static func _tomb_general() -> EnemyData:
 	# 機制（蓄力釋放，act 4 boss）：每 4 回合「赤鬼大斬」28 重擊，預警可見
 	enemy.ultimate_every = 4
 	enemy.ultimate_action = {"intent": "赤鬼大斬 28", "effects": [{"kind": "damage", "amount": 28}]}
-	enemy.phase_2_portrait_path = "res://assets/art/enemies/tomb_general_phase2.png"
-	enemy.phase_2_actions = [
-		{"intent": "血魔神功 28 + 虛弱 1", "effects": [{"kind": "damage", "amount": 28}, {"kind": "weak", "amount": 1}]},
-		{"intent": "炎咒 22 + 破綻 2", "effects": [{"kind": "damage", "amount": 22}, {"kind": "vulnerable", "amount": 2}]},
-		{"intent": "血池翻湧 蠱毒 6", "effects": [{"kind": "poison", "amount": 6}]},
-		{"intent": "妖血崩裂 34", "effects": [{"kind": "damage", "amount": 34}]}
-	]
+	# 第四幕已改為「鬼將軍 → 地裂血池劇情 → 赤鬼王」雙層 Boss；
+	# 赤鬼王本身不再使用半血變身，避免連續第三階段。
 	return enemy
 
 # 鎖妖塔 boss（第六幕）：PAL1 正史鎮獄明王，鎮守鎖妖塔、揭露靈兒人蛇身世之地。
