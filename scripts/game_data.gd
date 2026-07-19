@@ -552,7 +552,7 @@ static func _lin_yueru() -> CharacterData:
 		make_card("lyr_bianying", "劍影重重", "林月如", 1, "attack", "造成 4 點傷害兩次，施加 1 層破綻。", [{"kind": "damage", "amount": 4}, {"kind": "damage", "amount": 4}, {"kind": "vulnerable", "amount": 1}]),
 		make_card("lyr_shenfa", "月影身法", "林月如", 1, "skill", "獲得 7 點護體，抽 1 張牌。", [{"kind": "block", "amount": 7}, {"kind": "draw", "amount": 1}], "uncommon"),
 		make_card("lyr_juesha", "索命一劍", "林月如", 2, "attack", "造成 14 點傷害，施加 2 層破綻。", [{"kind": "damage", "amount": 14}, {"kind": "vulnerable", "amount": 2}], "uncommon"),
-		make_card("lyr_lianhuan", "亂雲連斬", "林月如", 1, "attack", "造成 3 點傷害三次。", [{"kind": "damage", "amount": 3}, {"kind": "damage", "amount": 3}, {"kind": "damage", "amount": 3}], "uncommon"),
+		# 2026-07-10 砍白開水：亂雲連斬（3×3 無特色，與銅錢鏢 4×3 重複；銅錢鏢是 PAL1 正典留下）
 		make_card("lyr_jinchan", "四兩撥千斤", "林月如", 1, "skill", "獲得 5 點護體，抽 2 張牌。", [{"kind": "block", "amount": 5}, {"kind": "draw", "amount": 2}], "rare"),
 		make_card("lyr_xuanjian", "旋劍花舞", "林月如", 1, "attack", "造成 5 點傷害兩次。", [{"kind": "damage", "amount": 5}, {"kind": "damage", "amount": 5}]),
 		make_card("lyr_kuaijian", "流光快劍", "林月如", 0, "attack", "造成 6 點傷害。", [{"kind": "damage", "amount": 6}], "uncommon"),
@@ -571,11 +571,11 @@ static func _lin_yueru() -> CharacterData:
 		make_card("lyr_tongqianbiao", "銅錢鏢", "林月如", 1, "attack", "擲出三枚銅錢鏢，造成 4 點傷害三次。", [{"kind": "damage", "amount": 4, "hits": 3}], "uncommon"),
 		make_card("lyr_wanlikuang", "萬里狂沙", "林月如", 2, "skill", "狂沙漫天，對全體敵人施加 3 層破綻，抽 1 張牌。", [{"kind": "vulnerable_all", "amount": 3}, {"kind": "draw", "amount": 1}], "rare"),
 		make_card("lyr_yuanlinggui", "元靈歸心術", "林月如", 2, "skill", "元靈歸心，回復 6 點生命並獲得 12 點護體。", [{"kind": "heal", "amount": 6}, {"kind": "block", "amount": 12}], "uncommon"),
-		# 連打牌組（0 費 / 減靈耗升級）：鞭劍連擊軸，art 暫借既有劍系卡
-		make_card("lyr_jici", "驚鴻一點", "林月如", 0, "attack", "造成 4 點傷害。", [{"kind": "damage", "amount": 4}]),
+		# 連打牌組（0 費）：鞭劍連擊軸
+		# 2026-07-10 砍白開水：驚鴻一點（0費4傷純數字，與流光快劍/拈花一劍三胞胎）、
+		# 鴛鴦雙劍（5×2 與旋劍花舞完全同款）
 		make_card("lyr_huaci", "拈花一劍", "林月如", 0, "attack", "造成 3 點傷害，抽 1 張牌。", [{"kind": "damage", "amount": 3}, {"kind": "draw", "amount": 1}], "uncommon"),
 		make_card("lyr_qiebushan", "凌波微步", "林月如", 0, "skill", "獲得 4 點護體。", [{"kind": "block", "amount": 4}]),
-		make_card("lyr_shuangjianci", "鴛鴦雙劍", "林月如", 1, "attack", "造成 5 點傷害兩次。", [{"kind": "damage", "amount": 5, "hits": 2}], "uncommon", "", true),
 		# 反擊軸（thorns 複用，做成 payoff）：荊棘流錨點
 		make_card("lyr_shuangren", "霜刃反擊", "林月如", 1, "skill", "凝霜於刃，獲得 8 點荊棘（被攻擊時反彈傷害給攻擊者）。", [{"kind": "thorns", "amount": 8}], "uncommon"),
 		# 連武架式 / 鐵骨（StS Demon Form 護體版 / Dexterity）
@@ -586,11 +586,12 @@ static func _lin_yueru() -> CharacterData:
 	]
 	var character: CharacterData = _character("lin_yueru", "林月如", 72, "鞭劍武學、連擊、反擊與內勁治療。", cards)
 	# PAL1 對齊：10 basic + 2 uncommon + 0 rare
+	# ⚠️ cards[N] 是位置索引：增刪上方卡片清單時，index 8（原亂雲連斬）以後的索引會位移
 	character.starting_deck = [
 		cards[0], cards[0], cards[0], cards[0],   # 4x 氣劍指 (初登場 basic 8dmg)
-		cards[15], cards[15],                      # 2x 凝神歸元 (初登場 basic heal8)
+		cards[14], cards[14],                      # 2x 凝神歸元 (初登場 basic heal8)
 		cards[4], cards[4],                        # 2x 回身反擊 (basic 8block+5dmg)
-		cards[10], cards[10],                      # 2x 旋劍花舞 (basic 5x2)
+		cards[9], cards[9],                        # 2x 旋劍花舞 (basic 5x2)
 		cards[1],                                   # 1x 一陽指 (PAL1 Lv7 uncommon 18dmg)
 		cards[6],                                   # 1x 月影身法 (uncommon 7block+draw1)
 	]

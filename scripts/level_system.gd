@@ -256,13 +256,13 @@ static func _lyr_unlocks() -> Dictionary:
 		],
 		# 乾坤一擲：原本在 Lv10 unlock，但 0c consume_energy 配合她的 burst 太 OP；
 		# 移出 unlock 表，只在 reward pool / shop 可取得（game_data.gd 中 lyr_qiankun 維持）
-		# Lv12 (PAL1 Lv20) — 斬龍訣：氣勁橫掃
-		# 此 unlock 版改名「裂龍式」與 reward pool 的「斬龍訣 (30 dmg)」區分，避免同名兩張卡
+		# Lv12 — 2026-07-10 換卡：原「裂龍式」（3費16傷白開水，且與烈龍衝擊撞 id lyr_lielong）
+		# → 索魂十三劍（破綻 payoff 錨點）：每 run 穩定拿到特色軸核心，呼應她堆破綻的身份
 		12: [
-			GameData.make_card("lyr_lielong", "裂龍式", "林月如", 3, "attack",
-				"氣勁橫掃前奏式，造成 16 點傷害。",
-				([{"kind": "damage", "amount": 16}] as Array[Dictionary]),
-				"rare"),
+			GameData.make_card("lyr_suohun", "索魂十三劍", "林月如", 2, "attack",
+				"趁敵頹勢連刺，造成 6 點傷害；敵人每層虛弱與破綻額外造成 3 點傷害。",
+				([{"kind": "damage_debuff_bonus", "amount": 6, "bonus_per_layer": 3}] as Array[Dictionary]),
+				"uncommon"),
 		],
 		# Lv22 (PAL1 Lv35) — 萬里狂沙：林家獨門絕招
 		22: [
