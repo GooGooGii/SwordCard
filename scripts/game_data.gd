@@ -390,7 +390,7 @@ static func boss_for_act(act: int) -> EnemyData:
 		2: return _miao_chieftain()     # 仙靈島：黑苗頭領（正史·血洗仙靈島擄靈兒）
 		3: return _zombie_general()     # 蘇州城：殭屍王
 		4: return _tomb_general()       # 將軍塚：赤鬼王
-		5: return _witch_queen()        # 試煉窟：火麒麟
+		5: return _witch_queen()        # 火麒麟洞：火眼麒麟
 		6: return _zhenyu_mingwang()    # 鎖妖塔：鎮獄明王（正史）
 		7: return _centipede_lord()     # 苗疆蠱土：石長老
 		8: return _baiyue_lord()        # 拜月決戰：拜月教主 → 水魔獸（phase 2）
@@ -1269,10 +1269,10 @@ static func _centipede_lord() -> EnemyData:
 static func _witch_queen() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "witch_queen"
-	enemy.portrait_scale = 1.3  # boss：火麒麟（暫沿用舊圖，後續補正專屬立繪）
+	enemy.portrait_scale = 1.85  # 原作低伏四足 Boss，橫向占滿敵人區
 	enemy.display_name = "火麒麟"
 	enemy.max_hp = 92
-	enemy.portrait_path = "res://assets/art/enemies/witch_queen.png"
+	enemy.portrait_path = "res://assets/art/enemies/fire_qilin_pal1_v1.png"
 	enemy.default_facing_left = true
 	enemy.actions = [
 		{"intent": "麒麟火 18", "effects": [{"kind": "damage", "amount": 18}]},
@@ -1283,23 +1283,7 @@ static func _witch_queen() -> EnemyData:
 			{"kind": "vulnerable", "amount": 1}
 		]}
 	]
-	enemy.phase_2_display_name = "火眼麒麟"
-	enemy.phase_2_portrait_path = "res://assets/art/enemies/witch_queen_phase2.png"
-	enemy.phase_2_actions = [
-		{"intent": "真火燎原 26 + 虛弱 1", "effects": [
-			{"kind": "damage", "amount": 26},
-			{"kind": "weak", "amount": 1}
-		]},
-		{"intent": "爆炎奔襲 21 + 破綻 2", "effects": [
-			{"kind": "damage", "amount": 21},
-			{"kind": "vulnerable", "amount": 2}
-		]},
-		{"intent": "焚天怒吼 16 + 破綻 3", "effects": [
-			{"kind": "damage", "amount": 16},
-			{"kind": "vulnerable", "amount": 3}
-		]},
-		{"intent": "地火護身 22", "effects": [{"kind": "block", "amount": 22}]}
-	]
+	# PAL1 中開戰時就已是火眼麒麟，戰後才化為麒麟老人；不使用半血變身。
 	# 機制（蓄力釋放，act 5 boss）：每 4 回合「炎獄吐息」30，預警可見
 	enemy.ultimate_every = 4
 	enemy.ultimate_action = {"intent": "炎獄吐息 30", "effects": [{"kind": "damage", "amount": 30}]}

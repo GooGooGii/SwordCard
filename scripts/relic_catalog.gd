@@ -87,6 +87,13 @@ static func weapons() -> Array[RelicData]:
 static func artifacts() -> Array[RelicData]:
 	return _artifacts()
 
+static func guaranteed_boss_relic(boss_id: String) -> RelicData:
+	var relic_id: String = ""
+	match boss_id:
+		"tomb_general": relic_id = "tuling_zhu"
+		"witch_queen": relic_id = "huoling_zhu_relic"
+	return by_id(relic_id) if not relic_id.is_empty() else null
+
 static func weapons_for_character(character_id: String) -> Array[RelicData]:
 	var out: Array[RelicData] = []
 	for r: RelicData in _weapons():
@@ -336,6 +343,15 @@ static func _weapons() -> Array[RelicData]:
 
 static func _artifacts() -> Array[RelicData]:
 	var l: Array[RelicData] = []
+	# PAL1 正史固定戰利品：不進 Boss 三選一，擊敗對應 Boss 後必定取得。
+	l.append(_make_artifact("tuling_zhu", "土靈珠",
+		"赤鬼王盤據血池所藏的五靈珠。每場戰鬥開始時獲得 12 點護體。",
+		"guaranteed:tomb_general",
+		[{"trigger": "battle_start", "effects": [{"kind": "self_block", "amount": 12}]}], Color("c99552")))
+	l.append(_make_artifact("huoling_zhu_relic", "火靈珠",
+		"火眼麒麟體內的五靈珠。每回合開始時對當前敵人造成 4 點傷害。",
+		"guaranteed:witch_queen",
+		[{"trigger": "turn_start", "effects": [{"kind": "enemy_damage", "amount": 4}]}], Color("ed5b3a")))
 	l.append(_make_artifact("baiyue_shenfu", "拜月神符",
 		"戰鬥開始敵人虛弱 3 層、破綻 3 層。每回合結束敵人 +1 層破綻。【附帶詛咒：邪印】",
 		"moon_worshipper",

@@ -177,3 +177,34 @@
 | 候選背景生成 | ✅ `battle_bg_boss_ghost_general_v1.png`（2026-07-19） |
 | 多遺物＋滿藥格實機驗收 | ✅ 已核可（2026-07-19） |
 | 正式資產替換／程式接入 | ✅ 鬼將軍專用墓室路由（2026-07-19） |
+---
+
+## 火眼麒麟 — 火麒麟洞後段
+
+### 原作場景參考（已實際查看）
+
+1. [95 版火麒麟洞與戰勝畫面](https://www.gamersky.com/handbook/201607/786402_46.shtml)：本地保存 `tmp/pal1_refs/fire_qilin/image258.jpg`、`image259.jpg`，可見紅色旋流狀洞底、黃色高熱中心與右側黑褐岩岸。
+2. [新仙劍火眼麒麟 Boss 圖鑑](https://www.gamersky.com/handbook/201507/620005_39.shtml)：本地保存 `boss_040.jpg`，可見 Boss 洞室是寬闊灰褐岩盤，四周生長大型黃橙晶柱，後壁由暖火光照亮。
+3. [火麒麟洞完整劇情攻略](https://gamegene.cn/wiki/364)：確認洞穴只有前後兩段，火眼麒麟位於後段；戰勝後取得火靈珠並化為麒麟老人。
+
+### 構圖與禁用元素
+
+- 玩家站位放在左側較暗、平坦的灰褐岩盤；火麒麟站位放在右側較亮的洞室深處。
+- 洞壁與地面以天然岩層為主，黃橙晶柱集中在邊緣和後景，不刺入戰鬥留白。
+- 光源來自晶柱、洞底熱氣與少量暗紅反光；不畫成整片熔岩湖。
+- 禁止試煉窟祭壇、五靈壁刻、人工石橋、王座、火山天空、宮殿與角色。
+- 16:9 PNG，無文字／水印；上中部遺物與藥品區保持低細節。
+
+### 候選生成 Prompt（已核可並執行）
+
+`PAL1-faithful Fire Qilin boss chamber inside the rear section of Fire Qilin Cave, based directly on verified PAL1 95-version and New Legend battle scenes: a broad natural dark gray-brown rock floor with a stable readable standing plane across the left and center, warmer cavern depth on the right for a large quadruped boss, clusters of tall translucent amber and yellow-orange mineral crystals growing only along the rear wall and outer edges, layered rough cave walls lit by restrained red-orange geothermal glow, faint heat haze and deep warm reflections, mature hand-painted Chinese ink-and-gouache game environment matching SwordCard, 16:9 PNG, no characters, no text, no watermark, no altar, no Five-Spirit carvings, no artificial stone bridge, no palace, no throne, no outdoor volcano, no full lava lake, keep the top-center relic and potion UI zone dark and low-detail.`
+
+### Gate 狀態
+
+| 項目 | 狀態 |
+|---|---|
+| 至少三張原作／可信攻略圖已實際查看 | ✅ 2026-07-19 |
+| 參考板向使用者展示 | ✅ 已核可（2026-07-19） |
+| 候選背景生成 | ✅ `battle_bg_boss_fire_qilin_v1.png`（2026-07-19） |
+| 多遺物＋滿藥格實機驗收 | ✅ 已核可（2026-07-19） |
+| 正式資產接入 | ✅ 第五幕火麒麟洞專用路由（2026-07-19） |

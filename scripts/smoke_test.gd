@@ -248,6 +248,7 @@ func _initialize() -> void:
 	_test_enemy_curse_infliction(characters[0], enemies[0])
 	_test_artifact_curse_on_acquire()
 	_test_boss_relic_choices(characters[0])
+	_test_guaranteed_spirit_pearl_rewards()
 	_test_boss_pool_artifacts(characters[0], enemies[0])
 	_test_boss_card_reward_rarity(characters)
 	_test_run_start_boons(characters[0])
@@ -1212,14 +1213,17 @@ func _test_ascension_persistence_and_modifiers() -> void:
 	_check(int(dmg_bc.state["player_hp"]) == 85, "enemy_damage_mult 1.5: 10 dmg ->15 (100->85), got %d" % int(dmg_bc.state["player_hp"]))
 
 func _test_boss_phase_transition(bosses: Array[EnemyData]) -> void:
-	# 每個 boss 都該有第二階段機制；赤鬼王的第二層由 main.gd 串接鬼將軍，不放在 EnemyData phase。
+	# 多數 boss 有第二階段；赤鬼王走雙層戰，火眼麒麟則依正史不在戰中變身。
 	for boss: EnemyData in bosses:
-		_check(boss.id == "tomb_general" or not boss.phase_2_actions.is_empty() or not boss.successor.is_empty(),
+		_check(boss.id in ["tomb_general", "witch_queen"] or not boss.phase_2_actions.is_empty() or not boss.successor.is_empty(),
 			"boss %s should have phase_2_actions or a successor" % boss.id)
 	var red_ghost: EnemyData = GameData.boss_for_act(4)
 	_check(red_ghost.phase_2_actions.is_empty() and red_ghost.phase_2_portrait_path.is_empty(),
 		"赤鬼王在鬼將軍前置戰後不應再有 phase 2")
 	_check(not StoryData.boss_intro("tomb_general").is_empty(), "赤鬼王雙層 Boss 應有地裂血池銜接劇情")
+	var fire_qilin: EnemyData = GameData.boss_for_act(5)
+	_check(fire_qilin.phase_2_actions.is_empty() and fire_qilin.phase_2_portrait_path.is_empty(),
+		"火眼麒麟開戰時即為獸形，戰後才化為麒麟老人")
 	# 真實流程模擬：手工把 boss HP 打到 49%，下一張卡觸發 _check_phase_transition
 	var characters: Array[CharacterData] = GameData.characters()
 	var run_state: RunState = RunState.new()
@@ -4140,6 +4144,18 @@ func _test_boss_relic_choices(character: CharacterData) -> void:
 			if c2.id == artifact.id:
 				artifact_in_choices2 = true
 		_check(not artifact_in_choices2, "already-owned artifact should not appear in choices2")
+
+func _test_guaranteed_spirit_pearl_rewards() -> void:
+	var earth: RelicData = RelicCatalog.guaranteed_boss_relic("tomb_general")
+	var fire: RelicData = RelicCatalog.guaranteed_boss_relic("witch_queen")
+	_check(earth != null and earth.id == "tuling_zhu", "Red Ghost King must guarantee the Earth Spirit Pearl")
+	_check(fire != null and fire.id == "huoling_zhu_relic", "Fire Qilin must guarantee the Fire Spirit Pearl")
+	_check(RelicCatalog.guaranteed_boss_relic("ghost_general") == null,
+		"Ghost General must not duplicate the Red Ghost King's Earth Spirit Pearl reward")
+	if earth != null:
+		_check(earth.boss_id == "guaranteed:tomb_general", "Earth Spirit Pearl must stay outside boss choice pools")
+	if fire != null:
+		_check(fire.boss_id == "guaranteed:witch_queen", "Fire Spirit Pearl must stay outside boss choice pools")
 
 func _test_boss_pool_artifacts(character: CharacterData, enemy: EnemyData) -> void:
 	# Batch C1：3 件 Boss 池神器（boss_id 空、legendary、每回合 +1 靈力＋run 層代價）

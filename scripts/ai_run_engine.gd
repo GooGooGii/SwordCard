@@ -552,6 +552,10 @@ func _on_victory() -> Dictionary:
 	_log("victory", {"gold": gold_reward, "boss": was_boss})
 	if was_boss:
 		run_state.grant_observe_tokens(RunState.OBSERVE_TOKEN_BOSS_REWARD)
+		var guaranteed_relic: RelicData = RelicCatalog.guaranteed_boss_relic(boss_id)
+		if guaranteed_relic != null and not run_state.has_relic(guaranteed_relic.id):
+			run_state.add_relic(guaranteed_relic)
+			_log("guaranteed_boss_relic", {"boss": boss_id, "relic": guaranteed_relic.display_name})
 		_ctx = {"boss_relics": _make_boss_relic_choices(boss_id), "after_boss": true}
 		_phase = "boss_relic"
 		return _view_boss_relic()

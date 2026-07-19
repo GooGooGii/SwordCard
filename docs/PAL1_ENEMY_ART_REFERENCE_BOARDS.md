@@ -87,7 +87,7 @@
 - 背景洞穴、地面或矩形底板；只保留角色與自然收尾的血浪／紅霧。
 - 文字、符紙字樣、UI、水印與大面積白色底。
 
-### 候選生成 Prompt（待核可）
+### 候選生成 Prompt（已核可並執行）
 
 `PAL1-faithful Red Ghost King full-body enemy portrait for a Godot card-battle game, derived directly from the verified New Legend of Sword and Fairy blood-pool confrontation and battle sprite: an enormous broad heavy upper body rising directly from a dark crimson blood pool, dramatically larger than a normal human, no visible legs or feet, waist and lower robe dissolving naturally into irregular spreading blood waves and low maroon mist, tall black ancient Chinese official hat with strong vertical ridges, pale gray corpse face with glowing dark-red eyes, thick black brows, fierce angry expression, black mustache and beard, subtle exposed fangs, massive charcoal-black and deep brown official robe with broad sleeves and layered dark-red and muted blue-gray collar trim, torso leaning toward screen-left player, one heavy arm braced low near the blood surface and the other reaching or spreading outward in accusation, mature hand-painted Chinese ink-and-gouache illustration matching SwordCard, strong readable boss silhouette at battle size, transparent background, no text, no watermark, no floor, no cave background, no throne, no weapon, no staff, no armor, no legs, no shoes, no fire, no magma, no Western vampire styling.`
 
@@ -101,3 +101,31 @@
 | 候選立繪生成 | ✅ `tomb_general_pal1_v2.png`（2026-07-19） |
 | 左右朝向與雙層 Boss 實機驗收 | ✅ 朝左版本搭配半血池背景已核可（2026-07-19） |
 | 正式資產接入 | ✅ 赤鬼王專用立繪與 `battle_bg_boss_tomb_general_v2.png`（2026-07-19） |
+---
+
+## 火眼麒麟（第五幕 Boss）
+
+### 原作參考與辨識元素
+
+1. [新仙劍火眼麒麟實際戰鬥圖](https://www.gamersky.com/handbook/201507/620005_39.shtml)：本地 `tmp/pal1_refs/fire_qilin/boss_040.jpg`。
+2. [95 版火麒麟洞戰勝畫面](https://www.gamersky.com/handbook/201607/786402_46.shtml)：本地 `image258.jpg`、`image259.jpg`。
+3. [火麒麟洞劇情流程](https://gamegene.cn/wiki/364)：確認其為守護火靈珠、戰後化為麒麟老人的火眼麒麟。
+
+- 四足低伏、厚重而修長的中國麒麟輪廓；龍首、鹿角／獨角、鬃毛、長尾和清楚獸爪。
+- 主色是熾紅、朱橙與金黃，背脊和鬃毛像內部發熱，但身體仍是實體瑞獸，不是純火焰元素怪。
+- 正式站在右側，頭部、胸口與撲擊動勢朝向畫面左側玩家。
+- 禁止西式獅子、惡魔角、鎧甲、鞍具、翅膀、人形、三頭蜥蜴或全身被火焰遮沒。
+
+### 候選生成 Prompt（已核可並執行）
+
+`PAL1-faithful Fire-Eyed Qilin enemy portrait derived directly from the verified New Legend of Sword and Fairy battle sprite: a huge low-crouching four-legged Chinese qilin with a long heavy body, fierce dragon-like head, swept antler-like horn, thick flame-shaped mane, long curved tail and powerful clawed feet, solid anatomical body in saturated vermilion red, ember orange and molten gold with dark crimson shadow planes, glowing yellow-red eyes, body and attack momentum clearly facing screen-left toward the player, mature hand-painted Chinese ink-and-gouache illustration matching SwordCard, transparent background, no text, no watermark, no ground, no cave background, no rider, no armor, no saddle, no wings, no Western lion, no demon, no humanoid, no three heads, not made entirely of flames.`
+
+### Gate 狀態
+
+| 項目 | 狀態 |
+|---|---|
+| 原作圖已實際查看 | ✅ 2026-07-19 |
+| 參考板向使用者展示 | ✅ 已核可（2026-07-19） |
+| 候選立繪生成 | ✅ `fire_qilin_pal1_v1.png`（2026-07-19） |
+| 左右朝向實機驗收 | ✅ 朝左版本已核可（2026-07-19） |
+| 正式資產接入 | ✅ 第五幕火眼麒麟專用立繪（2026-07-19） |

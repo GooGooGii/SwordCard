@@ -683,6 +683,7 @@ func _battle_background_path() -> String:
 		"miao_chieftain": "res://assets/art/battle_bg_boss_miao_chieftain_v1.png",
 		"ghost_general": "res://assets/art/battle_bg_boss_ghost_general_v1.png",
 		"tomb_general": "res://assets/art/battle_bg_boss_tomb_general_v2.png",
+		"witch_queen": "res://assets/art/battle_bg_boss_fire_qilin_v1.png",
 	}
 	if battle != null:
 		var enemy_slots: Array = battle.state.get("enemies", []) as Array
@@ -4718,6 +4719,10 @@ func _complete_battle_victory() -> void:
 				return
 			# Event Branching P5：boss 勝利補 1 個 observe token
 			run_state.grant_observe_tokens(RunState.OBSERVE_TOKEN_BOSS_REWARD)
+			var guaranteed_relic: RelicData = RelicCatalog.guaranteed_boss_relic(boss_id_for_drop)
+			if guaranteed_relic != null and not run_state.has_relic(guaranteed_relic.id):
+				_add_relic_with_curse_effect(guaranteed_relic)
+				battle.add_log("取得固定戰利品「%s」。" % guaranteed_relic.display_name)
 			var choices: Array[RelicData] = _make_boss_relic_choices(boss_id_for_drop)
 			# Boss 流程：遺物三選一 → 稀有卡三選一 → potion drop → 推進地圖
 			# （boss 永遠是該幕最後節點，故 card reward 必須在 act 轉場前插入）
