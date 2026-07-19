@@ -1,7 +1,7 @@
 class_name RelicCatalog
 extends RefCounted
 
-# 71 件裝備：55 通用 + 10 角色專武 + 6 神器
+# 73 件裝備：56 通用 + 10 角色專武 + 7 神器
 
 # C2：掉落/商店稀有度權重（對齊 STS 50/33/17 概念，本作用 45/30/20/5）
 const RARITY_WEIGHTS: Dictionary = {"common": 45, "uncommon": 30, "rare": 20, "legendary": 5}
@@ -296,6 +296,11 @@ static func _generals() -> Array[RelicData]:
 	l.append(_make("yehuo_lu", "業火爐", "每消耗 1 張牌，對敵人造成 3 點直接傷害。", "rare",
 		[{"trigger": "card_exhausted", "effects": [{"kind": "enemy_damage", "amount": 3}]}], Color("e2552a")))
 	l[l.size() - 1].pool_requires = {"deck_min": {"match": "exhaust", "count": 2}}
+	# 消耗流核心引擎（StS Dead Branch「樹枝」式；PAL1 正史：蘇州支線布包交宋氏所贈，
+	# 附靈葫咒可把殘血敵人收入葫蘆——此處改寫為「消耗的牌被收入葫蘆，煉化出新招」）
+	l.append(_make("zijin_hulu", "紫金葫蘆", "每消耗 1 張牌，隨機煉出一張本派招式加入手牌（手牌滿 10 張則不加）。", "rare",
+		[{"trigger": "card_exhausted", "effects": [{"kind": "self_add_random_card", "amount": 1}]}], Color("9a66d8")))
+	l[l.size() - 1].pool_requires = {"deck_min": {"match": "exhaust", "count": 2}}
 	return l
 
 static func _weapons() -> Array[RelicData]:
@@ -401,4 +406,10 @@ static func _artifacts() -> Array[RelicData]:
 		"",
 		[{"trigger": "turn_start", "effects": [{"kind": "self_energy", "amount": 1}]},
 		{"trigger": "permanent", "effects": [{"kind": "shop_discount", "amount": -30}]}], Color("d8c8e8")))
+	# 一次性重構賭博（StS Pandora's Box 式；PAL1 正史：鎖妖塔道具孟婆湯，入喉忘前塵）：
+	# 取得當下全隊所有基礎牌各自轉化為隨機本派招式（acquire trigger，結算在 RunState._apply_acquire_triggers）。
+	l.append(_make_artifact("meng_po_tang", "孟婆湯",
+		"一飲忘前塵。取得時，全隊牌組中所有基礎牌立即轉化為隨機的本派招式（詛咒不受影響）。",
+		"",
+		[{"trigger": "acquire", "effects": [{"kind": "transform_basic_cards", "amount": 1}]}], Color("7d90a8")))
 	return l

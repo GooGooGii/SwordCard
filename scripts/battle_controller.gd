@@ -1492,6 +1492,17 @@ func _apply_trigger_effects(effects: Array, relic_name: String) -> void:
 			"self_artifact":
 				state["player_artifact"] = int(state.get("player_artifact", 0)) + amount
 				add_log("【%s】結起 %d 層護咒（擋負面狀態）。" % [relic_name, amount])
+			"self_add_random_card":
+				# 紫金葫蘆（StS Dead Branch 式）：隨機把 active 角色獎勵池的招式（本場臨時副本）收入手牌。
+				# 手牌上限 10（對齊 StS）：滿了不加，避免焚盡訣一次消耗多張時手牌無限膨脹。
+				if deck != null and character != null and not character.reward_pool.is_empty():
+					for _i: int in range(amount):
+						if deck.hand.size() >= 10:
+							add_log("【%s】手牌已滿，煉出的招式散逸了。" % relic_name)
+							break
+						var conjured: CardData = character.reward_pool[randi() % character.reward_pool.size()].clone()
+						deck.add_to_hand(conjured)
+						add_log("【%s】煉出「%s」收入手牌！" % [relic_name, conjured.display_name])
 			"enemy_damage":
 				var dmg: int = amount + int(state.get("damage_out_bonus", 0))
 				var blocked: int = min(int(state["enemy_block"]), dmg)

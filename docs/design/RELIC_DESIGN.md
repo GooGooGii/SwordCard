@@ -77,6 +77,17 @@ main.gd `_make_boss_relic_choices`、ai_run_engine 對應處、smoke `_test_boss
 - 代價全落 run 層、可用路線/習慣繞開（少休息 / 不靠戰鬥治療 / 少逛商店），對齊 STS 取捨深度。
 - 與通寶錢（shop_discount +8）自然疊加抵銷，dict 疊加語意不變。
 
+#### C1 追加（2026-07-19）：孟婆湯——Boss 池的一次性重構賭博（STS Pandora's Box 模板）
+
+第 4 件 Boss 池神器 `meng_po_tang`（legendary、`boss_id=""`），模板與能量系三件套不同：
+**取得當下**全隊牌組中所有基礎牌（`rarity=="basic"`，詛咒牌排除）各自轉化為該角色獎勵池的隨機招式，張數不變。
+正史依據：鎖妖塔道具孟婆湯——一飲忘前塵，忘卻基礎劍招、隨機悟出新招。
+
+- 實作走既有 `acquire` trigger（`RunState._apply_acquire_triggers` 新 kind `transform_basic_cards`），
+  讀檔還原直接 append 不經 `add_relic`，不會重複觸發；同 id 重複取得被「不重複拿」短路，亦不會二次轉化。
+- 組隊時全隊各自轉化（各從自己的 reward_pool 抽），維持每副 deck 的角色合法性。
+- 風險輪廓對齊 STS：越早拿賭越大（基礎牌越多）、後期拿影響遞減——與能量系「固定收益＋固定代價」形成 Boss 三選一的型態差異。
+
 ### C2. 掉落/商店稀有度權重（對齊 STS 50/33/17）
 
 現況：`_try_random_relic_drop` / `_pick_shop_relic_ids`（main.gd 與 ai_run_engine 鏡像）從 generals 均勻抽，

@@ -42,6 +42,10 @@ func exhaust_card(card: CardData) -> void:
 		hand.erase(card)
 	exhausted_pile.append(card)
 
+# 直接把一張牌（本場臨時副本）塞進手牌，不經過抽牌堆。紫金葫蘆等「生成牌」效果用。
+func add_to_hand(card: CardData) -> void:
+	hand.append(card)
+
 # 能力牌（STS 風格）：打完即本場消失，不進任何 pile。
 # 不影響 run_state.deck 持久副本（每場 setup() 重新從那邊 clone）。
 func consume_card(card: CardData) -> void:

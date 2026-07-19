@@ -165,6 +165,8 @@ func _initialize() -> void:
 	_test_archetype_relics(characters[0], enemies[0])
 	# 消耗流 archetype + build-enabler 藥品 2026-06
 	_test_exhaust_archetype(characters[0], enemies[0])
+	_test_zijin_hulu(characters[0], enemies[0])
+	_test_meng_po_tang(characters[0])
 	_test_build_enabler_potions(characters[0], enemies[0])
 	# 敵人機制 2026-06：自療(enemy_heal) / 漸怒(enemy_strength 累積攻擊力) / 穿甲(pierce 無視護體)
 	_test_enemy_heal_and_strength(characters[0], enemies[0])
@@ -2690,6 +2692,70 @@ func _test_exhaust_archetype(character: CharacterData, enemy: EnemyData) -> void
 	_check(bc2.deck.exhausted_pile.size() == n, "焚盡訣: %d 張進消耗堆, got %d" % [n, bc2.deck.exhausted_pile.size()])
 	_check(int(bc2.state["enemy_hp"]) == 300 - 5 * n, "焚盡訣: %d 張 ×5 傷, got %d" % [n, int(bc2.state["enemy_hp"])])
 
+func _test_zijin_hulu(character: CharacterData, enemy: EnemyData) -> void:
+	# 紫金葫蘆（StS Dead Branch 式）：每消耗 1 張牌 → 隨機煉出一張本派招式入手；手牌滿 10 不加。
+	var relic: RelicData = RelicCatalog.by_id("zijin_hulu")
+	_check(relic != null, "zijin_hulu 應存在於遺物目錄")
+	if relic == null:
+		return
+	var dm: Dictionary = relic.pool_requires.get("deck_min", {}) as Dictionary
+	_check(String(dm.get("match", "")) == "exhaust" and int(dm.get("count", 0)) == 2, "zijin_hulu 應有消耗卡 >=2 的條件式入池限制")
+	var bc: BattleController = _make_multi_battle(character, [enemy])
+	bc.start_turn()
+	bc.run_state.relics.append(relic.clone())
+	var before: int = bc.deck.hand.size()
+	bc._on_card_exhausted()
+	_check(bc.deck.hand.size() == before + 1, "紫金葫蘆: 消耗 1 牌手牌應 +1, %d → %d" % [before, bc.deck.hand.size()])
+	var conjured: CardData = bc.deck.hand[bc.deck.hand.size() - 1]
+	var pool_ids: Array[String] = []
+	for c: CardData in character.reward_pool:
+		pool_ids.append(c.id)
+	_check(pool_ids.has(conjured.id), "紫金葫蘆: 煉出的牌應來自角色獎勵池, got %s" % conjured.id)
+	# 手牌滿 10 張時不再加（StS Dead Branch 同規則）
+	while bc.deck.hand.size() < 10:
+		bc.deck.add_to_hand(character.reward_pool[0].clone())
+	bc._on_card_exhausted()
+	_check(bc.deck.hand.size() == 10, "紫金葫蘆: 手牌滿 10 不應再加, got %d" % bc.deck.hand.size())
+
+func _test_meng_po_tang(character: CharacterData) -> void:
+	# 孟婆湯（StS Pandora's Box 式）：取得時全隊基礎牌轉化為隨機本派招式；詛咒不動、張數不變。
+	var relic: RelicData = RelicCatalog.by_id("meng_po_tang")
+	_check(relic != null, "meng_po_tang 應存在於遺物目錄")
+	if relic == null:
+		return
+	_check(relic.slot == "artifact" and relic.boss_id == "", "孟婆湯應為 Boss 池補位神器（artifact、boss_id 空）")
+	var rs: RunState = RunState.new()
+	rs.init_for(character)
+	var d: Array = rs.character_decks[0] as Array
+	var curse: CardData = CurseCatalog.make_card("tong_ji")
+	_check(curse != null, "測試前提：tong_ji 詛咒應存在")
+	if curse != null:
+		d.append(curse)
+	var size_before: int = d.size()
+	var basic_idx: Array[int] = []
+	for j: int in range(d.size()):
+		var c: CardData = d[j] as CardData
+		if c.rarity == "basic" and c.card_type != "curse":
+			basic_idx.append(j)
+	_check(basic_idx.size() > 0, "測試前提：起始牌組應含基礎牌")
+	var pool_ids: Array[String] = []
+	for pc: CardData in character.reward_pool:
+		pool_ids.append(pc.id)
+	rs.add_relic(relic.clone())
+	_check(d.size() == size_before, "孟婆湯: 牌組張數不應改變, %d → %d" % [size_before, d.size()])
+	for j: int in basic_idx:
+		var t: CardData = d[j] as CardData
+		_check(pool_ids.has(t.id), "孟婆湯: 基礎牌槽位 %d 應轉化為獎勵池招式, got %s" % [j, t.id])
+	if curse != null:
+		_check(CurseCatalog.is_curse(d[d.size() - 1] as CardData), "孟婆湯: 詛咒牌不應被轉化")
+	# 重複 add 同 id（不重複拿）不應二次轉化：先記錄現狀再 add 一次
+	var snapshot: Array[String] = []
+	for c2_v: Variant in d:
+		snapshot.append((c2_v as CardData).id)
+	rs.add_relic(relic.clone())
+	for j2: int in range(d.size()):
+		_check((d[j2] as CardData).id == snapshot[j2], "孟婆湯: 重複取得不應再次轉化（槽位 %d）" % j2)
+
 func _test_build_enabler_potions(character: CharacterData, enemy: EnemyData) -> void:
 	# 分身丹：下一張攻擊/技能牌效果結算兩次
 	var bc: BattleController = _make_multi_battle(character, [enemy])
@@ -4254,8 +4320,10 @@ func _test_boss_pool_artifacts(character: CharacterData, enemy: EnemyData) -> vo
 	_check(has_pool_relic, "boss-pool artifacts should appear as fallback when boss-specific artifact is owned")
 
 	# fallback generals：boss 專屬 + 全部 Boss 池神器都已持有時
-	for id2: String in pool_ids:
-		rs.add_relic(RelicCatalog.by_id(id2).clone())
+	# （動態掃目錄而非只加 pool_ids 三件——孟婆湯等後續 Boss 池神器也要一併持有）
+	for bp_own: RelicData in RelicCatalog.artifacts():
+		if bp_own.boss_id == "":
+			rs.add_relic(bp_own.clone())
 	var fallback_choices: Array[RelicData] = []
 	for bp3: RelicData in RelicCatalog.artifacts():
 		if bp3.boss_id == "" and not rs.has_relic(bp3.id):

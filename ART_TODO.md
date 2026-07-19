@@ -226,6 +226,14 @@
 - `anu_guxue_shixin` (蠱血噬心) - 🟢 已完成專屬水墨圖
 - `lyr_suohun` (索魂十三劍) - 🟢 已完成專屬水墨圖
 
+### 🟢 已完成專屬卡圖（5 張，2026-07-20 新增 — 林月如補強特色卡）
+已為林月如補齊獨立專屬水墨卡圖，並在 `scripts/game_data.gd` 中移除代碼中的借圖 `art_id`：
+- `lyr_xianyue` (弦月斬) - 🟢 已完成專屬水墨圖
+- `lyr_fengminghui` (鳳鳴迴響) - 🟢 已完成專墨圖
+- `lyr_jiujiebian` (九截迴鞭) - 🟢 已完成專屬水墨圖
+- `lyr_jinguo` (巾幗傲骨) - 🟢 已完成專屬水墨圖
+- `lyr_jianzhen` (林家劍陣) - 🟢 已完成專屬水墨圖
+
 ### 🔴 待重製無門派卡圖（6 張，2026-06-11 盤點，額度受限待補）
 因 AI 繪圖額度耗盡，暫時保留舊有卡圖。待額度恢復後需重製以符合「無人物、無文字/印章」規範：
 - `cl_qimendunjia` (奇門遁甲) - 🔴 待重製（目前含有英文標籤 QIAN, KUN 等）
@@ -604,6 +612,31 @@ Boss 三選一補位用的 legendary「+1 靈力＋代價」神器（`docs/desig
 | `wangyou_san` | 忘憂散 | 🟢 已完成（散開的藥粉紙包、迷離香霧，暖白粉霧帶一絲不祥紫） |
 | `zhuqi_jiuhulu` | 朱漆酒葫蘆 | 🟢 已完成（酒劍仙的朱漆酒葫蘆，朱紅亮漆、酒氣化金光） |
 | `shengling_zhu` | 聖靈珠 | 🟢 已完成（七彩內蘊的聖靈寶珠，聖光斂於珠心、法相莊嚴） |
+
+### 十六之三、紫金葫蘆（🟢 已完成，2026-07-19 消耗流遺物批次）
+
+StS Dead Branch 式消耗流遺物（rare；PAL1 正史：蘇州支線布包交宋氏所贈，附靈葫咒可收妖入葫）。
+規格同上（`assets/art/relics/zijin_hulu.png`、去背水墨 RGBA、主體居中）。目前遊戲內已正式使用新資產。
+
+| id | 名稱 | 類型 | 狀態 / 建議意象 |
+|---|---|---|---|
+| `zijin_hulu` | 紫金葫蘆 | rare 消耗流引擎 | 🟢 已完成（紫金雙色寶葫蘆：紫檀色葫身、鎏金箍與瓶口，葫口逸出一縷收攝萬物的紫金靈氣，氣流中隱約可見被煉化的符卡虛影；與 `zhuqi_jiuhulu` 朱漆酒葫蘆明確區隔——本件是法寶不是酒器，無酒氣、無朱紅漆面） |
+
+建議 prompt（沿用單體資產四段式）：
+
+> Transparent-background relic icon asset for a Godot card-battle game, 512x512 PNG, isolated subject, clean silhouette, readable at small game UI size, centered composition with safe margins, no text, no watermark, no frame, no background scene.
+> Subject: a legendary purple-gold treasure gourd (紫金葫蘆) from classic Chinese xianxia (PAL1-inspired), a magical artifact that captures and refines spirits — not a wine flask.
+> Visual design: double-gourd shape in deep purple-lacquered wood with gleaming gold bands and a gold-rimmed mouth; a wisp of violet-gold spirit qi curling out of the mouth, faint ghostly talisman-card silhouettes dissolving into the swirl; 2D hand-painted Chinese ink-wash style, watercolor texture, clean ink outlines, restrained low-saturation colors with highlights only in the qi glow.
+> Negative: not a red-lacquered wine gourd, no rope or drinking cup, not Western fantasy, not cute mascot, not photorealistic, no heavy glow effects covering the silhouette.
+
+### 十六之四、孟婆湯（🟢 已完成，2026-07-19 Boss 池追加批次）
+
+一次性重構賭博（StS Pandora's Box 式；PAL1 正史：鎖妖塔道具孟婆湯，入喉忘前塵）。
+規格同上（`assets/art/relics/meng_po_tang.png`、去背水墨 RGBA、主體居中）。目前遊戲內已正式使用新資產。
+
+| id | 名稱 | 類型 | 狀態 / 建議意象 |
+|---|---|---|---|
+| `meng_po_tang` | 孟婆湯 | legendary 神器 | 🟢 已完成（古樸粗陶茶盞，盛裝青綠半透藥湯，裊裊升起幽藍忘川霧氣，霧氣中帶有卡牌消逝的殘影） |
 
 ---
 

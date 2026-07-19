@@ -259,6 +259,18 @@ func _apply_acquire_triggers(relic: RelicData) -> void:
 					if not character_max_hps.is_empty():
 						character_max_hps[0] += amount
 						character_hps[0] += amount
+				"transform_basic_cards":
+					# 孟婆湯（StS Pandora's Box 式）：全隊牌組中所有基礎牌（rarity=="basic"），
+					# 各自轉化為該角色獎勵池的隨機招式（張數不變）。詛咒牌 rarity 也是 basic，須排除。
+					for ci: int in range(mini(characters.size(), character_decks.size())):
+						var pool: Array[CardData] = characters[ci].reward_pool
+						if pool.is_empty():
+							continue
+						var d: Array = character_decks[ci] as Array
+						for j: int in range(d.size()):
+							var card: CardData = d[j] as CardData
+							if card != null and card.rarity == "basic" and card.card_type != "curse":
+								d[j] = pool[randi() % pool.size()].clone()
 
 func heal(amount: int) -> void:
 	# 對 active 角色補血（rest_node / event 的原本語意：補當前玩家）
