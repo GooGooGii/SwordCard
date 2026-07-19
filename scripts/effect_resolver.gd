@@ -512,6 +512,23 @@ func _resolve_effect(effect: Dictionary, state: Dictionary, from_enemy: bool = f
 			# Thorns 荊棘反擊：被攻擊時反彈傷害（不衰減，跨回合保留）
 			state["player_thorns"] = int(state.get("player_thorns", 0)) + amount
 			log_lines.append("獲得 %d 點荊棘。" % amount)
+		"thorns_per_turn":
+			# 荊棘引擎（林月如 林家劍陣）：持久能力，每回合開始 +amount 荊棘。
+			# tick 在 BattleController.start_turn（與 power_per_turn / block_per_turn 同處）。
+			state["thorns_per_turn"] = int(state.get("thorns_per_turn", 0)) + amount
+			log_lines.append("林家劍陣佈下：每回合開始獲得 %d 點荊棘。" % amount)
+		"damage_from_thorns":
+			# 荊棘 payoff（林月如 鳳鳴迴響）：主動出擊，傷害 = 自身荊棘 × mult。
+			# 荊棘「不」消耗（持續反彈），獎勵疊刺後的主動一擊；走標準傷害管線。
+			var ft_mult: int = int(effect.get("mult", 2))
+			var ft_raw: int = int(state.get("player_thorns", 0)) * ft_mult
+			var ft_mod: int = max(0, ft_raw + int(state["player_power"]) - int(state["player_weak"])) + int(state.get("damage_out_bonus", 0))
+			if int(state["enemy_vulnerable"]) > 0:
+				ft_mod = int(ceil(ft_mod * 1.5))
+			var ft_blocked: int = min(int(state["enemy_block"]), ft_mod)
+			state["enemy_block"] = int(state["enemy_block"]) - ft_blocked
+			state["enemy_hp"] = max(0, int(state["enemy_hp"]) - (ft_mod - ft_blocked))
+			log_lines.append("荊棘之勢反刺，造成 %d 點傷害。" % (ft_mod - ft_blocked))
 		"damage_debuff_bonus":
 			# 杖流 payoff：對 debuff 敵加傷。基礎 amount + bonus_per_layer × (weak + vuln 層數)
 			# 計算 base 後走標準傷害管線（power/weak/vuln/block）。

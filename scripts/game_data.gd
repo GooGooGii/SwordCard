@@ -583,6 +583,19 @@ static func _lin_yueru() -> CharacterData:
 		make_card("lyr_tiegu", "鐵骨樁", "林月如", 1, "power", "紮穩鐵骨樁步，本場戰鬥每次獲得護體額外 +2。", [{"kind": "self_block_bonus", "amount": 2}], "uncommon"),
 		# debuff payoff（破綻/虛弱越多打越痛）：呼應她的萬里狂沙/索命一劍堆破綻 → 一劍爆發。
 		make_card("lyr_suohun", "索魂十三劍", "林月如", 2, "attack", "趁敵頹勢連刺，造成 6 點傷害；敵人每層虛弱與破綻額外造成 3 點傷害。", [{"kind": "damage_debuff_bonus", "amount": 6, "bonus_per_layer": 3}], "uncommon"),
+		# 2026-07-10 特色補牌（玩家回饋「牌太少且大半是攻擊」）：補強三條身份軸，5 張中僅 2 攻。
+		# ⚠️ 一律附加在陣列末尾——starting_deck 用 cards[N] 位置索引，插中間會位移（見上方警告）。
+		# 弦月斬＝正史絕招（PAL1_CANON 招式表），破綻軸收尾技：與索魂十三劍（不耗層）成「蹭/收」取捨
+		make_card("lyr_xianyue", "弦月斬", "林月如", 2, "attack", "林家絕技弦月一斬，造成 8 點傷害，並引爆敵人全部虛弱與破綻，每層額外造成 6 點傷害。", [{"kind": "damage", "amount": 8}, {"kind": "consume_debuff_damage", "amount": 6}], "rare", "lyr_zhanlong"),
+		# 鳳鳴迴響（鳳鳴刀正史武器）＝荊棘軸主動 payoff：疊刺後的一擊，無荊棘時是死牌（經典 payoff 取捨）。
+		# 升級走減費慣例（效果無 amount 可升；1費→0費）
+		make_card("lyr_fengminghui", "鳳鳴迴響", "林月如", 1, "attack", "鳳鳴刀勢迴盪，造成等同自身荊棘兩倍的傷害（荊棘不消耗）。", [{"kind": "damage_from_thorns", "mult": 2}], "uncommon", "lyr_fenghuan", true),
+		# 拖刀計＝計策防禦：她整池原本零虛弱來源；虛弱同時餵索魂/弦月的 debuff 層數
+		make_card("lyr_tuodao", "拖刀計", "林月如", 1, "skill", "拖刀佯退誘敵，獲得 4 點護體，使敵人虛弱 2 層。", [{"kind": "block", "amount": 4}, {"kind": "weak", "amount": 2}], "uncommon", "lyr_shenfa"),
+		# 巾幗傲骨＝她的性格入牌：護咒抗性是她池中沒有的防禦維度
+		make_card("lyr_jinguo", "巾幗傲骨", "林月如", 1, "skill", "傲骨凜然不受挫，獲得 5 點護體與 1 層護咒（抵禦下一個負面狀態）。", [{"kind": "block", "amount": 5}, {"kind": "player_artifact", "amount": 1}], "uncommon", "lyr_tieyi"),
+		# 林家劍陣＝反擊軸引擎（每回合遞增荊棘），把荊棘從被動數值變成可搭建的成長軸
+		make_card("lyr_jianzhen", "林家劍陣", "林月如", 1, "power", "佈下林家劍陣，本場戰鬥每回合開始獲得 1 點荊棘。", [{"kind": "thorns_per_turn", "amount": 1}], "rare", "lyr_shuangren"),
 	]
 	var character: CharacterData = _character("lin_yueru", "林月如", 72, "鞭劍武學、連擊、反擊與內勁治療。", cards)
 	# PAL1 對齊：10 basic + 2 uncommon + 0 rare

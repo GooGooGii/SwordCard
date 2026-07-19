@@ -209,6 +209,7 @@ func _initialize() -> void:
 	_test_anu_blade_cards(characters)
 	_test_thorns_reflects_to_attacker(characters, enemies)
 	_test_lin_thorns_cards(characters)
+	_test_lin_new_axis_cards(characters, enemies)
 	_test_damage_debuff_bonus(characters, enemies)
 	_test_zhao_staff_payoff_cards(characters)
 	_test_damage_all_multi_hit(characters, enemies)
@@ -3449,6 +3450,41 @@ func _test_lin_thorns_cards(characters: Array[CharacterData]) -> void:
 	var dao: RelicData = RelicCatalog.by_id("fengming_dao")
 	_check(dao != null, "鳳鳴刀遺物存在")
 	_check(dao.character_id == "lin_yueru", "鳳鳴刀屬於 lin")
+
+func _test_lin_new_axis_cards(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
+	# 2026-07-10 特色補牌：5 張新卡入池 + damage_from_thorns / thorns_per_turn 兩個新 kind 功能
+	var lin: CharacterData = null
+	for c: CharacterData in characters:
+		if c.id == "lin_yueru":
+			lin = c
+			break
+	var want: Dictionary = {"lyr_xianyue": "attack", "lyr_fengminghui": "attack",
+		"lyr_tuodao": "skill", "lyr_jinguo": "skill", "lyr_jianzhen": "power"}
+	var found: Dictionary = {}
+	for card: CardData in lin.reward_pool:
+		if want.has(card.id):
+			found[card.id] = true
+			_check(card.card_type == String(want[card.id]), "%s 應為 %s" % [card.id, want[card.id]])
+	_check(found.size() == want.size(), "lin 特色補牌 5 張應全在 reward pool，found %d" % found.size())
+	# damage_from_thorns：荊棘 5 × mult 2 = 10 傷；荊棘不消耗
+	var bc: BattleController = _make_multi_battle(characters[0], [enemies[0]])
+	bc.start_turn()
+	bc.state["player_thorns"] = 5
+	bc.state["enemy_hp"] = 100
+	bc.state["enemy_block"] = 0
+	bc.state["enemy_vulnerable"] = 0
+	bc.state["enemy_thorns"] = 0
+	bc.state["player_power"] = 0
+	bc.state["player_weak"] = 0
+	bc.resolver._resolve_effect({"kind": "damage_from_thorns", "mult": 2}, bc.state)
+	_check(int(bc.state["enemy_hp"]) == 90, "damage_from_thorns: 5荊棘×2=10傷 100-10=90, got %d" % int(bc.state["enemy_hp"]))
+	_check(int(bc.state["player_thorns"]) == 5, "damage_from_thorns: 荊棘不消耗, got %d" % int(bc.state["player_thorns"]))
+	# thorns_per_turn：resolve 累積引擎 → 下回合開始 +1 荊棘
+	bc.state["player_thorns"] = 0
+	bc.resolver._resolve_effect({"kind": "thorns_per_turn", "amount": 1}, bc.state)
+	_check(int(bc.state["thorns_per_turn"]) == 1, "thorns_per_turn 引擎應累積 1, got %d" % int(bc.state.get("thorns_per_turn", 0)))
+	bc.start_turn()
+	_check(int(bc.state["player_thorns"]) == 1, "start_turn 應 tick +1 荊棘, got %d" % int(bc.state["player_thorns"]))
 
 func _test_power_card_consumed_on_play(characters: Array[CharacterData], enemies: Array[EnemyData]) -> void:
 	# 能力牌 STS 規則：打完本場消失，不進任何 pile（draw/hand/discard/exhausted 都沒有）

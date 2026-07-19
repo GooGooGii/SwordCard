@@ -206,6 +206,7 @@ func setup(rs: RunState, _legacy_character: CharacterData, chosen_enemy: Variant
 		"corpse_poison": false,  # 屍蠱：中毒敵人死亡時殘餘蠱毒隨機轉移給其他敵人
 		"power_per_turn": 0,  # 靈犀訣（Demon Form）：每回合開始 +N 力量
 		"block_per_turn": 0,  # 靈光普照（Metallicize）：每回合開始 +N 護體
+		"thorns_per_turn": 0,  # 林家劍陣：每回合開始 +N 荊棘
 		"end_turn_damage": 0,  # 五雷轟頂（Combust）：每回合「開始」對全體敵人造成 N 傷害（key 名沿用，結算在 start_turn）
 		"next_attack_mult": 1,  # 蓄劍式（Vigor）：下一張攻擊傷害倍率（damage 路徑消耗）
 		"block_per_attack": 0,  # 劍舞架式：每出一張攻擊牌獲得 N 護體（play_card 讀取）
@@ -780,6 +781,9 @@ func start_turn() -> Dictionary:
 	if int(state.get("block_per_turn", 0)) > 0:
 		state["player_block"] = int(state["player_block"]) + int(state["block_per_turn"])
 		add_log("靈光普照：獲得 %d 護體。" % int(state["block_per_turn"]))
+	if int(state.get("thorns_per_turn", 0)) > 0:
+		state["player_thorns"] = int(state.get("player_thorns", 0)) + int(state["thorns_per_turn"])
+		add_log("林家劍陣：荊棘 +%d。" % int(state["thorns_per_turn"]))
 	# 敵人護體不在玩家回合開始清（那會在玩家攻擊前就把敵人剛防的護體抹掉、使敵人防守白費）。
 	# 改在 begin_enemy_phase（敵人自己回合開始）清 → StS 規則：護體在「擁有者回合開始」清空。
 	state["pending_draw"] = 0

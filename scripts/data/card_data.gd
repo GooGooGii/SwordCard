@@ -136,7 +136,8 @@ func _should_upgrade_amount(kind: String) -> bool:
 		"block_on_exhaust",
 		"damage_debuff_bonus",
 		"damage_debuff_bonus_all",
-		"damage_poison_bonus"
+		"damage_poison_bonus",
+		"thorns_per_turn"
 	]
 
 func to_dict() -> Dictionary:
