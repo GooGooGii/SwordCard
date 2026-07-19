@@ -2425,7 +2425,9 @@ func _build_battle_scene() -> void:
 	# 後排 + 隊長綁成一個「隊伍站位」群組：負分隔讓隊長肖像疊在後排前面、
 	# 後排從隊長身後斜向探出，形成有景深的陣形（而非並排的獨立格子）。
 	# Phase A3 敵我收攏：左右各加彈性邊距，把玩家/敵群從貼邊拉向中央（對峙感）。
-	# stretch_ratio 左 0.35 / 中 1.0 / 右 0.45 → 玩家中心 ~23%、敵群中心 ~72%。
+	# 左側與中央使用彈性空間；敵群右側只保留固定 10 px 安全距離。
+	# 敵人欄本身有很大的 minimum width，僅修改 stretch ratio 幾乎不會產生可見位移，
+	# 因此右側不可再使用 EXPAND_FILL，否則會把敵群重新推回畫面中央。
 	var edge_left: Control = Control.new()
 	edge_left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	edge_left.size_flags_stretch_ratio = 0.35
@@ -2446,8 +2448,7 @@ func _build_battle_scene() -> void:
 	arena.add_child(spacer)
 	_build_enemy_row(arena)
 	var edge_right: Control = Control.new()
-	edge_right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	edge_right.size_flags_stretch_ratio = 0.45
+	edge_right.custom_minimum_size = Vector2(10, 0)
 	edge_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	arena.add_child(edge_right)
 	var bottom: HBoxContainer = HBoxContainer.new()
@@ -2899,7 +2900,13 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	# 頭頂衝進意圖/浮字區、與鄰兵高低差過大。黑苗頭領是三體 Boss 戰的中央主體，
 	# 原作輪廓又寬矮；允許較高上限，避免實機中看起來與兩側苗兵同尺寸。
 	if total >= 3:
-		var multi_enemy_cap: float = 1.38 if enemy_data.id == "miao_chieftain" else 1.12
+		var multi_enemy_cap: float = 1.12
+		if enemy_data.id == "miao_chieftain":
+			multi_enemy_cap = 1.38
+		elif enemy_data.id == "miao_soldier":
+			multi_enemy_cap = 1.35
+		elif enemy_data.id == "centipede_lord":
+			multi_enemy_cap = 2.05
 		scale_mult = min(scale_mult, multi_enemy_cap)
 	elif total == 2:
 		scale_mult = min(scale_mult, 1.25)
@@ -2983,7 +2990,13 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 	var hp_value: Label = UIFactory.card_label("",
 		12 if (_battle_compact or total >= 2) else 14,
 		ThemeColors.TEXT_LIGHT, HORIZONTAL_ALIGNMENT_CENTER)
-	col.add_child(_hp_bar_with_overlay(hp_bar, hp_value))
+	var hp_wrap: Control = _hp_bar_with_overlay(hp_bar, hp_value)
+	if total >= 3:
+		# Portrait columns may overlap to form a compact/diagonal enemy formation,
+		# but combat information must remain three distinct readable units.
+		hp_wrap.custom_minimum_size.x = min(portrait_size.x * 0.62, 175.0)
+		hp_wrap.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	col.add_child(hp_wrap)
 	# Phase B3 狀態 chips：圓底色塊＋符號＋數字 橫排（取代直書文字）
 	var status_line: HBoxContainer = UIFactory.status_chip_row(20.0 if (_battle_compact or total >= 2) else 24.0)
 	col.add_child(status_line)
@@ -2998,11 +3011,13 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 		"portrait": portrait,
 		"name_label": name_label,
 		"hp_bar": hp_bar,
+		"hp_wrap": hp_wrap,
 		"hp_value": hp_value,
 		"block_badge": badge,
 		"status_line": status_line,
 		"feedback_label": feedback_label,
 		"intent_label": intent_label,
+		"intent_icon_row": intent_icon_row,
 		"intent_icons": intent_icons,
 		"enemy_idx": idx,
 	}
