@@ -1228,7 +1228,11 @@ func _test_boss_phase_transition(bosses: Array[EnemyData]) -> void:
 	var characters: Array[CharacterData] = GameData.characters()
 	var run_state: RunState = RunState.new()
 	run_state.init_for(characters[0])
-	var boss: EnemyData = bosses[0].clone()
+	# 明確驗證 PAL1 終戰的「拜月教主 → 水魔獸」，不可依賴 bosses() 陣列順序。
+	var boss: EnemyData = GameData.boss_for_act(8)
+	_check(boss.id == "baiyue_lord" and not boss.phase_2_actions.is_empty(),
+		"act8 boss 應為具 phase 2 的拜月教主")
+	boss = boss.clone()
 	var bc: BattleController = BattleController.new()
 	bc.setup(run_state, characters[0], boss)
 	_check(not bc.phased, "fresh battle should not be phased")

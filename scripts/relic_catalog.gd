@@ -376,6 +376,10 @@ static func _artifacts() -> Array[RelicData]:
 		"每回合結束對敵人施加 2 層蠱毒並回復 4 生命。",
 		"zombie_general",
 		[{"trigger": "turn_end", "effects": [{"kind": "enemy_poison", "amount": 2}, {"kind": "self_heal", "amount": 4}]}], Color("90c878")))
+	l.append(_make_artifact("guijiang_hufu", "鬼將虎符",
+		"戰鬥開始獲得 12 點護體，並使敵人虛弱 1 層。",
+		"ghost_general",
+		[{"trigger": "battle_start", "effects": [{"kind": "self_block", "amount": 12}, {"kind": "enemy_weak", "amount": 1}]}], Color("9a8068")))
 	l.append(_make_artifact("baiyue_jiaozhi", "拜月教旨",
 		"每回合開始多抽 1 張牌並回復 1 靈力。【附帶詛咒：通緝】",
 		"baiyue_lord",

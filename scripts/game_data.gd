@@ -1545,11 +1545,12 @@ static func _tomb_general() -> EnemyData:
 static func _zhenyu_mingwang() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "zhenyu_mingwang"
-	enemy.portrait_scale = 1.5  # boss：鎮獄明王（巨型）
+	enemy.portrait_scale = 1.9  # 六臂明王充分使用敵人區上方空間
 	enemy.display_name = "鎮獄明王"
 	enemy.max_hp = 124
-	enemy.portrait_path = "res://assets/art/enemies/zhenyu_mingwang.png"
-	enemy.default_facing_left = true
+	enemy.portrait_path = "res://assets/art/enemies/zhenyu_mingwang_pal1_v3.png"
+	# 原圖頭部與高膝朝右；正式戰場水平翻轉後，攻擊軸朝向左側玩家。
+	enemy.default_facing_left = false
 	enemy.actions = [
 		{"intent": "明王怒喝 20 + 破綻 1", "effects": [{"kind": "damage", "amount": 20}, {"kind": "vulnerable", "amount": 1}]},
 		{"intent": "鎖妖鐵鏈 16 + 虛弱 2", "effects": [{"kind": "damage", "amount": 16}, {"kind": "weak", "amount": 2}]},

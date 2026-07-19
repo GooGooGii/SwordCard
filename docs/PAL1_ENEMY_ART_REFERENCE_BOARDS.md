@@ -129,3 +129,42 @@
 | 候選立繪生成 | ✅ `fire_qilin_pal1_v1.png`（2026-07-19） |
 | 左右朝向實機驗收 | ✅ 朝左版本已核可（2026-07-19） |
 | 正式資產接入 | ✅ 第五幕火眼麒麟專用立繪（2026-07-19） |
+---
+
+## 鎮獄明王（第六幕 Boss）
+
+### 原作參考（已實際查看）
+
+1. [新仙劍鎮獄明王實際戰鬥圖](https://www.gamersky.com/handbook/201507/620005_28.shtml)：本地 `tmp/pal1_refs/zhenyu_mingwang/boss_029.jpg`。
+2. [95 版鎮獄明王戰鬥流程](https://www.gamersky.com/handbook/201607/786402_24.shtml)：本地 `scene_138.jpg`、`scene_139.jpg` 等。
+3. [仙劍系列鬼怪圖鑑：鎮獄明王](https://www.gamersky.com/handbook/201608/798962_2.shtml)：確認核心辨識為三眼六臂、二郎神與哪吒式神將形象。
+
+### 原作可辨識元素
+
+- 巨大、寬肩、裸上身的神將身軀，盤腿或半浮坐姿，整體比英雄大數倍。
+- 正面額頭有第三眼；黑色怒髮向上張開，濃黑眉、長鬚與威怒面孔。
+- 明確六臂，手臂以扇形向兩側與上方張開；多數手握拳或結印，不依靠武器辨識。
+- 下身穿藍綠、紅、金相間的短裙與斜跨披帶，金色腰飾；胸腹大面積裸露。
+- 正式位於右側時，臉、胸口與主要手勢朝向畫面左側玩家。
+
+### 現役立繪問題與禁用元素
+
+- 現役是全身金甲、多武器、四臂觀感，較像原創天將；遮住原作裸胸、三眼與六臂核心。
+- 禁止全覆式盔甲、降魔杵、彎刀、鎖鏈武器、火焰光輪、披風與站立衝鋒姿勢。
+- 禁止西式惡魔、骷髏王、機械手臂、八臂以上、缺少第三眼或缺少六臂。
+- 透明背景；無地面、陰影底板、文字、UI 或水印。
+
+### 候選生成 Prompt（待核可）
+
+`PAL1-faithful Zhenyu Mingwang transparent enemy portrait derived directly from the verified New Legend and DOS/95 battle sprites: an enormous broad-shouldered bare-chested divine jailer in a grounded cross-legged or half-floating seated pose, exactly six muscular arms fanning clearly upward and sideways with mostly clenched fists or stern mudra gestures, no handheld weapons, a clearly visible third eye centered on the forehead, wild black hair rising behind a small restrained gold crown, thick black eyebrows, fierce human face, long black mustache and beard, blue-green red and gold layered short battle skirt and diagonal ceremonial sash, gold waist ornaments, mature hand-painted Chinese ink-and-gouache illustration matching SwordCard, powerful readable silhouette at battle size, body face and primary gestures directed toward screen-left player, transparent background, no text, no watermark, no floor, no full-body armor, no polearm, no sword, no chains, no fire halo, no Western demon, exactly six arms.`
+
+### Gate 狀態
+
+| 項目 | 狀態 |
+|---|---|
+| 原作圖已實際查看 | ✅ 2026-07-19 |
+| 現役差異分析完成 | ✅ 2026-07-19 |
+| 參考板向使用者展示 | ✅ 已核可（2026-07-19） |
+| 候選立繪生成 | ✅ `zhenyu_mingwang_pal1_v3.png`（2026-07-19） |
+| 左右朝向實機驗收 | ✅ 頭部與高膝同側朝向玩家（2026-07-19） |
+| 正式資產接入 | ✅ 第六幕鎮獄明王專用立繪（2026-07-19） |

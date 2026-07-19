@@ -54,6 +54,7 @@ const BOSS_OUTROS: Dictionary = {
 	"witch_queen": "火麒麟長嘯歸山，靈獸的試煉就此作結。",
 	"tomb_general": "赤鬼王化作飛灰，將軍塚的亡魂終得安眠。",
 	"zombie_general": "屍王倒下，邪氣如潮水般退去。",
+	"ghost_general": "鬼將軍的甲冑轟然倒地，墓室深處卻傳來地裂般的巨響。",
 	"zhenyu_mingwang": "明王法相歸寂，鎖妖塔的封印露出了它守護千年的秘密。",
 	"moon_worshipper": "拜月教徒潰散奔逃，教壇的月徽碎了一地。",
 	"baiyue_lord": "拜月教主沉入水底，水魔獸的咆哮歸於寂靜。十里坡的少年走到了這裡——仙劍之路，至此功成。",

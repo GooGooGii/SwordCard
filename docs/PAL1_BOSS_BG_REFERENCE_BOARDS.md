@@ -208,3 +208,42 @@
 | 候選背景生成 | ✅ `battle_bg_boss_fire_qilin_v1.png`（2026-07-19） |
 | 多遺物＋滿藥格實機驗收 | ✅ 已核可（2026-07-19） |
 | 正式資產接入 | ✅ 第五幕火麒麟洞專用路由（2026-07-19） |
+---
+
+## 鎮獄明王 — 鎖妖塔內石坪
+
+### 原作場景參考（已實際查看）
+
+1. [新仙劍鎮獄明王 Boss 圖鑑](https://www.gamersky.com/handbook/201507/620005_28.shtml)：本地保存 `tmp/pal1_refs/zhenyu_mingwang/boss_029.jpg`；戰場為大面積灰色長方石磚平台，平台外緣接粗糙岩壁與黑暗空腔。
+2. [95 版鎖妖塔鎮獄明王完整戰鬥](https://www.gamersky.com/handbook/201607/786402_24.shtml)：本地保存 `scene_138.jpg` 至 `scene_143.jpg`；確認 DOS／95 戰鬥底色是暗紅水平紋理，沒有王座、祭壇或華麗魔王宮。
+3. [DOS 鎖妖塔迷宮詳圖](https://old.palhero.net/200211/players/pal_map/pal_map.htm)：區分鎮獄明王所在塔內層與更深處的化妖池／七星磐龍柱；龍柱不能提前成為明王戰主景。
+
+### 原作可辨識元素與構圖
+
+- **場景定位：** 鎖妖塔內部的寬闊石坪，不是塔底化妖池，也不是七星磐龍柱戰場。
+- **地面：** 中央至下中段由磨損的冷灰長方石磚組成，接縫清楚但不畫大型發光法陣。
+- **邊緣：** 平台兩側可露出破碎岩緣、垂直塔壁與向下黑暗空腔，暗示塔內高度。
+- **建築語彙：** 遠景只保留厚重石牆、少量斷裂鐵鏈、窄門或向上空腔；裝飾克制。
+- **光線：** 冷灰主光，極少量暗紅封印反光呼應 95 版；人物輪廓必須清楚。
+- 玩家站左、明王站右；中央及下中段保留戰鬥空間，上中部遺物與藥品區低細節。
+
+### 禁用元素
+
+- 巨型盤龍柱作為左右門柱、七星龍柱陣、化妖水池或水面。
+- 王座、魔王城、佛寺金殿、祭壇、巨大法陣、滿牆藍色鬼火。
+- 戶外天空、山景、熔岩、血池、遍地骷髏或哥德式地牢。
+- 任何角色、敵人、文字、UI 或水印。
+
+### 候選生成 Prompt（待核可）
+
+`PAL1-faithful Zhenyu Mingwang boss battle background inside the mid-lower interior of the Demon-Locking Tower, based directly on verified New Legend and DOS/95 battle scenes: a broad elevated platform of worn cold-gray rectangular stone tiles spanning the center and lower middle, stable readable standing planes for the player on the left and one enormous boss on the right, broken rough rock edges at the far sides dropping into a deep black vertical tower void, restrained massive stone walls and a narrow dark upper cavity in the rear, only a few old broken iron chains and subtle dull-red sealing reflections, oppressive ancient tower height, mature hand-painted Chinese ink-and-gouache environment matching SwordCard, 16:9 PNG, no characters, no text, no watermark, no throne, no altar, no glowing magic circle, no giant dragon pillars, no Seven-Star Coiling Dragon formation, no demon-dissolving pool, no blue-flame braziers, no gothic castle, keep the top-center relic and potion UI zone dark and low-detail.`
+
+### Gate 狀態
+
+| 項目 | 狀態 |
+|---|---|
+| 至少三組原作／可信攻略圖已實際查看 | ✅ 2026-07-19 |
+| 參考板向使用者展示 | ✅ 已核可（2026-07-19） |
+| 候選背景生成 | ✅ `battle_bg_boss_zhenyu_mingwang_v3.png`（2026-07-19） |
+| 多遺物＋滿藥格實機驗收 | ✅ 左下站立石坪擴張版已核可（2026-07-19） |
+| 正式資產接入 | ✅ 第六幕鎮獄明王專用路由（2026-07-19） |

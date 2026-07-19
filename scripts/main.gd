@@ -684,6 +684,7 @@ func _battle_background_path() -> String:
 		"ghost_general": "res://assets/art/battle_bg_boss_ghost_general_v1.png",
 		"tomb_general": "res://assets/art/battle_bg_boss_tomb_general_v2.png",
 		"witch_queen": "res://assets/art/battle_bg_boss_fire_qilin_v1.png",
+		"zhenyu_mingwang": "res://assets/art/battle_bg_boss_zhenyu_mingwang_v3.png",
 	}
 	if battle != null:
 		var enemy_slots: Array = battle.state.get("enemies", []) as Array
