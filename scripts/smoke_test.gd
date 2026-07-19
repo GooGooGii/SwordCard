@@ -3143,8 +3143,11 @@ func _test_multi_enemy_stepwise_resolution(characters: Array[CharacterData], ene
 func _test_multi_enemy_per_enemy_phase(characters: Array[CharacterData]) -> void:
 	# 每個敵獨立 phase 2 切換：bandit 沒有 phase_2 → 永不 phased；boss 有
 	# 用兩個 boss（拜月教主 + 殭屍大帥）測試
-	var moon: EnemyData = GameData.boss_for_act(5)  # 拜月教主
-	var zombie: EnemyData = GameData.boss_for_act(2)  # 殭屍大帥
+	# 明確依敵人／幕次取值，不依賴八幕改造前的舊 Act 對應。
+	var moon: EnemyData = GameData.boss_for_act(8)  # 拜月教主 → 水魔獸
+	var zombie: EnemyData = GameData.enemy_by_id("zombie_general")  # 殭屍大帥
+	_check(not moon.phase_2_actions.is_empty() and not zombie.phase_2_actions.is_empty(),
+		"multi-enemy phase test requires two phase-2 bosses")
 	var bc: BattleController = _make_multi_battle(characters[0], [moon, zombie])
 	# 把 enemies[0] (moon) HP 砍到 < 50%
 	var slot0: Dictionary = bc.state["enemies"][0] as Dictionary
