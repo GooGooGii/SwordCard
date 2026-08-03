@@ -1461,7 +1461,7 @@ static func _baiyue_lord() -> EnemyData:
 	var enemy: EnemyData = EnemyData.new()
 	enemy.id = "baiyue_lord"
 	enemy.portrait_scale = 1.25      # phase 1：拜月教主（人形）
-	enemy.phase_2_portrait_scale = 2.0  # phase 2：水魔獸現世，遠比主角巨大
+	enemy.phase_2_portrait_scale = 2.65  # phase 2：拜月與八首水魔獸合體，佔據終戰主視覺
 	enemy.display_name = "拜月教主"
 	enemy.max_hp = 136
 	enemy.portrait_path = "res://assets/art/enemies/baiyue_lord.png"
@@ -1479,7 +1479,8 @@ static func _baiyue_lord() -> EnemyData:
 		{"kind": "damage", "amount": 24}, {"kind": "enemy_heal", "amount": 12}]}
 	# Phase 2：召出水魔獸（PAL1 原作終局妖獸）
 	enemy.phase_2_display_name = "水魔獸"
-	enemy.phase_2_portrait_path = "res://assets/art/enemies/baiyue_lord_phase2.png"
+	enemy.phase_2_portrait_path = "res://assets/art/enemies/baiyue_water_beast_pal1_v1.png"
+	enemy.phase_2_background_path = "res://assets/art/battle_bg_boss_baiyue_water_beast_v1.png"
 	enemy.phase_2_actions = [
 		{"intent": "海嘯襲擊 31 + 虛弱 2", "effects": [{"kind": "damage", "amount": 31}, {"kind": "weak", "amount": 2}]},
 		{"intent": "水妖蝕魂 蠱毒 9 + 破綻 2", "effects": [{"kind": "poison", "amount": 9}, {"kind": "vulnerable", "amount": 2}]},

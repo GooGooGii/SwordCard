@@ -1235,6 +1235,12 @@ func _test_boss_phase_transition(bosses: Array[EnemyData]) -> void:
 	var boss: EnemyData = GameData.boss_for_act(8)
 	_check(boss.id == "baiyue_lord" and not boss.phase_2_actions.is_empty(),
 		"act8 boss 應為具 phase 2 的拜月教主")
+	_check(boss.phase_2_portrait_path == "res://assets/art/enemies/baiyue_water_beast_pal1_v1.png",
+		"拜月 phase 2 應使用已核可的 PAL1 水魔獸肖像")
+	_check(boss.phase_2_background_path == "res://assets/art/battle_bg_boss_baiyue_water_beast_v1.png",
+		"拜月 phase 2 應使用已核可的水底戰鬥背景")
+	_check(ResourceLoader.exists(boss.phase_2_portrait_path) and ResourceLoader.exists(boss.phase_2_background_path),
+		"拜月 phase 2 肖像與背景資源應存在")
 	boss = boss.clone()
 	var bc: BattleController = BattleController.new()
 	bc.setup(run_state, characters[0], boss)

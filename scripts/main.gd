@@ -2679,6 +2679,9 @@ func _swap_to_phase_2_portrait() -> void:
 		return
 	if battle == null or battle.enemy == null:
 		return
+	var phase_2_background_path: String = battle.enemy.phase_2_background_path
+	if not phase_2_background_path.is_empty() and ResourceLoader.exists(phase_2_background_path):
+		_set_background(phase_2_background_path)
 	var phase_2_path: String = battle.enemy.phase_2_portrait_path
 	if not phase_2_path.is_empty():
 		var tex: Texture2D = UIFactory.load_texture(phase_2_path)
@@ -2699,6 +2702,37 @@ func _swap_to_phase_2_portrait() -> void:
 	var phase_2_tint: Color = battle.enemy.phase_2_portrait_tint
 	if phase_2_tint != Color.WHITE:
 		enemy_portrait_image.modulate = phase_2_tint
+	if battle.enemy.id == "baiyue_lord":
+		_position_baiyue_phase_2_intent()
+
+func _position_baiyue_phase_2_intent() -> void:
+	if enemy_widgets.is_empty() or enemy_portrait_image == null or enemy_portrait_image.texture == null:
+		return
+	var widget: Dictionary = enemy_widgets[battle._active_enemy_index()]
+	var intent_row: HBoxContainer = widget.get("intent_icon_row") as HBoxContainer
+	var intent_label: Label = widget.get("intent_label") as Label
+	if intent_row == null or intent_label == null:
+		return
+	var old_parent: Container = intent_row.get_parent() as Container
+	if old_parent != null and not intent_row.has_meta("phase_2_overlay"):
+		var spacer: Control = Control.new()
+		spacer.custom_minimum_size = Vector2(0, intent_row.get_combined_minimum_size().y + intent_label.get_combined_minimum_size().y + 4.0)
+		old_parent.add_child(spacer)
+		old_parent.move_child(spacer, min(intent_row.get_index(), intent_label.get_index()))
+		intent_row.reparent(self)
+		intent_label.reparent(self)
+		intent_row.set_meta("phase_2_overlay", true)
+	intent_row.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	intent_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	var overlay_width: float = 112.0
+	var viewport_size: Vector2 = get_viewport_rect().size
+	var overlay_x: float = viewport_size.x * 0.765 - overlay_width * 0.5
+	intent_row.size = Vector2(overlay_width, 30.0)
+	intent_row.position = Vector2(overlay_x, 62.0)
+	intent_label.size = Vector2(overlay_width, 28.0)
+	intent_label.position = Vector2(overlay_x, 88.0)
+	intent_row.z_index = 20
+	intent_label.z_index = 20
 
 func _spawn_phase_reveal_text(name: String) -> void:
 	if enemy_portrait_wrap == null or not is_instance_valid(enemy_portrait_wrap):

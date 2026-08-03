@@ -9,6 +9,7 @@ extends Resource
 @export var phase_2_actions: Array[Dictionary] = []  # boss HP < 50% 切換到的招式組，空 = 不進入二階段
 @export var phase_2_display_name: String = ""  # 進入 phase 2 時改顯示的名字（如「水魔獸」）；空 = 沿用 display_name
 @export var phase_2_portrait_path: String = ""  # 進入 phase 2 時換的肖像；空 = 沿用 portrait_path
+@export var phase_2_background_path: String = ""  # 進入 phase 2 時換的戰鬥背景；空 = 沿用目前背景
 @export var phase_2_portrait_tint: Color = Color.WHITE  # phase 2 額外色調（Color.WHITE = 不變色）
 @export var portrait_tint: Color = Color.WHITE
 @export var portrait_scale: float = 1.0      # 肖像相對標準框的倍率（boss / 大型妖獸 > 1，小兵可 < 1）
@@ -39,6 +40,7 @@ func clone() -> EnemyData:
 	copy.phase_2_actions = phase_2_actions.duplicate(true)
 	copy.phase_2_display_name = phase_2_display_name
 	copy.phase_2_portrait_path = phase_2_portrait_path
+	copy.phase_2_background_path = phase_2_background_path
 	copy.phase_2_portrait_tint = phase_2_portrait_tint
 	copy.portrait_tint = portrait_tint
 	copy.portrait_scale = portrait_scale
@@ -66,6 +68,7 @@ func to_dict() -> Dictionary:
 		"phase_2_actions": phase_2_actions.duplicate(true),
 		"phase_2_display_name": phase_2_display_name,
 		"phase_2_portrait_path": phase_2_portrait_path,
+		"phase_2_background_path": phase_2_background_path,
 		"phase_2_portrait_tint": [phase_2_portrait_tint.r, phase_2_portrait_tint.g, phase_2_portrait_tint.b, phase_2_portrait_tint.a],
 		"portrait_tint": [portrait_tint.r, portrait_tint.g, portrait_tint.b, portrait_tint.a],
 		"portrait_scale": portrait_scale,
@@ -81,6 +84,7 @@ static func from_dict(data: Dictionary) -> EnemyData:
 	enemy.portrait_path = String(data.get("portrait_path", ""))
 	enemy.phase_2_display_name = String(data.get("phase_2_display_name", ""))
 	enemy.phase_2_portrait_path = String(data.get("phase_2_portrait_path", ""))
+	enemy.phase_2_background_path = String(data.get("phase_2_background_path", ""))
 	var p2_tint_data: Array = data.get("phase_2_portrait_tint", []) as Array
 	if p2_tint_data.size() >= 3:
 		enemy.phase_2_portrait_tint = Color(
