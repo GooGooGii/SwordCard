@@ -290,6 +290,7 @@ static func ground_shadow(width: float, floats: bool = false) -> Control:
 	c.custom_minimum_size = Vector2(w, h)
 	c.size = Vector2(w, h)
 	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	c.set_meta("ground_shadow", true)  # BattleStage3D 接手呈現時改用真實陰影，會把這個藏起來
 	c.draw.connect(func() -> void:
 		var pts: PackedVector2Array = PackedVector2Array()
 		var center: Vector2 = Vector2(w * 0.5, h * 0.5)

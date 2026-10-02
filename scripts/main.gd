@@ -77,6 +77,7 @@ var _selected_hand_card: CardData = null
 var _potion_buttons: Array[Button] = []
 var _battle_potion_strip: HBoxContainer = null
 var _in_battle: bool = false  # 是否正處於戰鬥場景（battle 物件會殘留，不能用 battle!=null 判斷）
+var _battle_stage: BattleStage3D = null  # 3D 戰場層（背景圖之上、root UI 之下）；只在戰鬥畫面存在
 var _potion_popup: Control = null  # 戰鬥中藥品說明彈窗（單一實例，避免疊開）；overlay 為全螢幕 Control
 var _potion_overlay: HBoxContainer = null
 var _potion_overlay_buttons: Array[Button] = []
@@ -604,6 +605,10 @@ func _clear_root() -> void:
 	_pose_timer = null
 	_temporary_player_pose = ""
 	_capture_transition_snapshot()
+	# 截圖之後才拆 3D 戰場層（淡出快照仍含 3D 角色）
+	if _battle_stage != null and is_instance_valid(_battle_stage):
+		_battle_stage.queue_free()
+	_battle_stage = null
 	active_map_scroll = null
 	_map_drag_candidate = false
 	_map_dragging = false
@@ -830,6 +835,12 @@ func _build_minimal_main_menu(ultra_compact: bool, compact_layout: bool, viewpor
 	ach_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	ach_button.pressed.connect(show_achievements)
 	record_row.add_child(ach_button)
+	var preview_3d_button: Button = UIFactory.main_menu_button("3D 試作", false, minor_height, minor_font_size)
+	preview_3d_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	preview_3d_button.tooltip_text = "查看可旋轉鏡頭的 3D 戰場與李逍遙造型草模；不影響存檔"
+	preview_3d_button.pressed.connect(func() -> void:
+		get_tree().change_scene_to_file("res://scenes/battle_3d_prototype.tscn"))
+	record_row.add_child(preview_3d_button)
 	action_box.add_child(record_row)
 
 	var ascension_picker: Control = _build_ascension_picker(compact_layout, ultra_compact)
@@ -2398,6 +2409,10 @@ func _build_battle_scene() -> void:
 	_set_background(_battle_background_path())
 	_clear_root()  # 會把 _in_battle 設回 false
 	_in_battle = true  # 進入戰鬥場景（_clear_root 之後再設，故維持 true）
+	# 3D 戰場層：插在背景圖與 root 之間；下面建立的肖像會登記給它，改由 3D 呈現
+	_battle_stage = BattleStage3D.new()
+	add_child(_battle_stage)
+	move_child(_battle_stage, background_rect.get_index() + 1)
 	_show_title_bar()
 	if _potion_overlay != null:
 		_potion_overlay.visible = false
@@ -2540,6 +2555,7 @@ func _bench_portrait(index: int, player_data: Dictionary, rank: int) -> Control:
 	else:
 		portrait.modulate = Color(0.08, 0.09, 0.13, 0.92)  # 倒下 = 暗色剪影
 	wrap.add_child(portrait)
+	_stage_track("bench_%d" % index, portrait, character.id, "idle" if alive else "downed")
 	# 細 HP pip（取代原本的金邊盒 + 文字 HP），貼在肖像底部
 	if alive:
 		wrap.add_child(_bench_hp_pip(psize, float(hp) / float(max(1, max_hp_v))))
@@ -3003,6 +3019,7 @@ func _build_single_enemy_widget(idx: int, total: int) -> Dictionary:
 		portrait.scale.x = -1.0
 		portrait.position.x += portrait.size.x
 	wrap.add_child(portrait)
+	_stage_track("enemy_%d" % idx, portrait, "", "idle", enemy_data.floats)
 	var badge: BlockBadge = BlockBadge.new()
 	var badge_size: float = 40.0 if total >= 2 else 48.0
 	badge.custom_minimum_size = Vector2(badge_size, badge_size + 8)
@@ -8503,6 +8520,7 @@ func _refresh_battle(animate_draw: bool = false) -> void:
 			if tex != null:
 				player_portrait_image.texture = tex
 				UIFactory.ground_portrait(player_portrait_image)  # 換姿勢後重新貼地
+			_stage_track("player", player_portrait_image, battle.character.id, pose)
 	if player_hp_bar != null and is_instance_valid(player_hp_bar) and player_hp_value != null and is_instance_valid(player_hp_value):
 		_refresh_combatant_hp(player_hp_bar, player_hp_value, int(battle.state["player_hp"]), int(battle.state["player_max_hp"]))
 		_update_poison_preview(player_hp_bar, int(battle.state["player_hp"]), int(battle.state["player_max_hp"]), int(battle.state["player_poison"]))
@@ -9344,6 +9362,11 @@ func _button(text: String) -> Button:
 	button.add_theme_font_size_override("font_size", 18)
 	UIFactory.style_button(button)
 	return button
+
+# 把戰鬥肖像交給 3D 戰場層呈現（2D 版面、點擊、tween 不變，只換成 3D 繪製）
+func _stage_track(key: String, portrait: TextureRect, character_id: String = "", pose: String = "idle", floats: bool = false) -> void:
+	if _battle_stage != null and is_instance_valid(_battle_stage) and portrait != null:
+		_battle_stage.track(key, portrait, character_id, pose, floats)
 
 func _get_active_player_pose() -> String:
 	if _temporary_player_pose != "":

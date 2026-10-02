@@ -13,6 +13,7 @@
 | 改 CLAUDE.md 或 `docs/harness/` 檔案 | `docs/harness/MAINTENANCE.md`（有紅線，先讀） |
 | 在這個環境第一次跑 session | `docs/harness/LETTER.md` |
 | 動組隊 / 藥品 / 多敵 / 戰鬥 UX 細節 | `docs/design/PARTY_MODE.md`、`POTIONS.md`、`MULTI_ENEMY.md`、`BATTLE_UX_SYSTEMS.md` |
+| 動 3D 戰場層 / 3D 角色模型 | `docs/THREE_D_PROTOTYPE.md` |
 | 新增卡 / 敵人 / 事件（先查正史） | `docs/PAL1_CANON.md` |
 | 平衡調整 | `docs/BALANCE_REPORT.md` |
 | AI 親玩整個 run 評平衡 | `docs/AI_BALANCE_HARNESS.md` |
@@ -126,6 +127,7 @@ scripts/
   pause_menu.gd          暫停選單（CanvasLayer）
   hand_fan.gd            手牌扇形排列
   battle_controller.gd   戰鬥流程（回合、出牌、敵人動作、多敵、召喚、party sync）
+  battle_stage_3d.gd     3D 戰場層：追蹤 2D 肖像站位，改用 3D 模型 / 立繪 Sprite3D＋真實陰影呈現
   effect_resolver.gd     卡片/敵人 effect → state mutation
   deck_manager.gd        抽牌堆/棄牌堆/手牌
   run_state.gd           跨節點的 run 狀態（角色、HP、deck、relics、地圖、藥品）
@@ -272,6 +274,8 @@ main.gd
 - **新增卡牌必須有美術**：smoke test assert 每張獎勵卡 `art_path` 存在。新卡要嘛放 `assets/art/cards/<id>.png`，要嘛 `make_card(..., art_id="既有卡id")` 借圖，否則直接 abort（→ 假卡死）
 - **.import 檔不要 .gitignore**：CI 首次匯入找不到配置、build 掛掉。`.gitattributes` 已規範換行，不要手動覆蓋
 - **不要把 `assert()` 用在正式邏輯**：release build 會剝掉，副作用丟失
+- **smoke test 裡不要呼叫需要「已進樹」的 API**：SceneTree 的 `_initialize` 期間 root 還沒進樹，`root.add_child` 的節點呼叫 `Camera3D.project_ray_*`、`get_global_transform()` 會噴 `ERROR: ... not inside scene`（CI tripwire 擋）。也不能為此加 `await`（watchdog 依賴同步）。做法：讓被測模組自己算（例：`BattleStage3D` 的針孔投影＋`_canvas_xform` 樹外退路）。（2026-10-02）
+- **透明 3D 地面收影不要用 `StandardMaterial3D.shadow_to_opacity`**：深色 albedo 時 alpha 會被環境光項封頂成 0，且任何無影燈都會把陰影歸零 → 整片看不到。改用自訂 shader 在 `light()` 寫 `ALPHA = max(ALPHA, (1.0 - ATTENUATION) * k)`（見 `battle_stage_3d.gd` 的 `SHADOW_CATCHER_SHADER`）。（2026-10-02）
 - **不要在 `_clear_root()` 後立刻存取舊 UI 變數**：`queue_free()` 延遲釋放但變數已 dangling，下一行重建就好
 
 ## 已完成功能（摘要＋指路；動它們之前先讀對應設計檔）
