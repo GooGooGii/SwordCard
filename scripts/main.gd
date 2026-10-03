@@ -2413,6 +2413,7 @@ func _build_battle_scene() -> void:
 	_battle_stage = BattleStage3D.new()
 	add_child(_battle_stage)
 	move_child(_battle_stage, background_rect.get_index() + 1)
+	_battle_stage.track_backdrop(background_rect)  # 手繪背景改投影到 3D 場景；Boss 換背景會自動跟上
 	_show_title_bar()
 	if _potion_overlay != null:
 		_potion_overlay.visible = false

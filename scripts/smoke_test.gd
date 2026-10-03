@@ -2318,6 +2318,12 @@ func _test_battle_stage_3d(characters: Array[CharacterData]) -> void:
 	portrait.set_meta("ground_box", box)
 	UIFactory.ground_portrait(portrait)
 	wrap.add_child(portrait)
+	# 正式設定：精緻模型完成前沒有角色登記 3D 模型 → 李逍遙也是手繪立繪
+	stage.track("player", portrait, li.id, "idle")
+	_check(not stage.uses_model("player"), "li_xiaoyao should use the painted portrait until a refined model is registered")
+	# 模型路徑：暫時注入草模（測完還原）
+	BattleStage3D.character_models = {"li_xiaoyao": BattleStage3D.BLOCKOUT_MODEL}
+	stage.track("player", portrait, "", "idle")
 	stage.track("player", portrait, li.id, "attack")
 	stage.sync_now()
 	_check(stage.actor_count() == 1, "stage should track 1 actor, got %d" % stage.actor_count())
@@ -2345,11 +2351,40 @@ func _test_battle_stage_3d(characters: Array[CharacterData]) -> void:
 	_check(not stage.uses_model("enemy_0"), "enemies without a model should stand as portrait sprites")
 	stage.track("player", portrait, characters[1].id, "idle")
 	_check(not stage.uses_model("player"), "switching to a character without a model should fall back to the portrait")
+	BattleStage3D.character_models = BattleStage3D.CHARACTER_MODELS
 	enemy_wrap.free()
 	stage.sync_now()
 	_check(stage.actor_count() == 1, "freed portraits should drop their 3D actor, got %d" % stage.actor_count())
-	holder.free()
+	# 3D 場景：第 1 幕手繪背景投影到代理幾何（地面＋遠景牆＋4 張卡片）
+	var cover: Rect2 = BattleScenery3D.cover_rect(Vector2(1672, 941), Vector2(1280, 720))
+	_check(cover.get_center().distance_to(Vector2(640, 360)) < 0.5 and cover.size.x >= 1279.5 and cover.size.y >= 719.5,
+		"cover_rect should center and cover the canvas like KEEP_ASPECT_COVERED, got %s" % cover)
+	var backdrop: TextureRect = TextureRect.new()
+	backdrop.texture = load("res://assets/art/battle_bg_act_1.png") as Texture2D
+	holder.add_child(backdrop)
+	stage.track_backdrop(backdrop)
+	stage.set_motion_time(BattleStage3D.INTRO_TIME)  # 開場結束、環繞尚未開始 → 鏡頭在靜止位置
+	stage.sync_now()
+	_check(is_zero_approx(backdrop.self_modulate.a), "tracked backdrop should stop drawing in 2D")
+	_check(stage.scenery().proxy_count() == 6, "act 1 scenery should build ground + wall + 4 cards, got %d" % stage.scenery().proxy_count())
+	_check(stage.scenery().wall_z() < stage.actor_root_position("player").z - 2.0, "backdrop wall should stand behind the actors")
+	for proxy: Node in stage.scenery().get_children():
+		if String(proxy.name).begins_with("Card"):
+			var proxy_z: float = ((proxy as MeshInstance3D).mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX] as PackedVector3Array)[0].z
+			_check(proxy_z > stage.scenery().wall_z(), "%s should stand in front of the backdrop wall (z=%f, wall=%f)" % [proxy.name, proxy_z, stage.scenery().wall_z()])
+	_check(stage.ground_to_screen(stage.screen_to_ground(feet)).distance_to(feet) < 1.0, "rest camera should keep actors on their 2D feet")
+	_check(UIFactory.shake_listener.get_object() == stage, "stage should hook UIFactory.shake_node for camera shake")
+	stage._on_ui_shake(4.0, 0.2)
+	_check(is_zero_approx(stage._shake_left), "light 2D shakes should not move the 3D camera")
+	stage._on_ui_shake(18.0, 0.4)
+	_check(stage._shake_left > 0.0, "heavy 2D shakes should also shake the 3D camera")
+	backdrop.texture = load("res://assets/art/battle_bg_act_2.png") as Texture2D  # 如 Boss 變身換背景
+	stage.sync_now()
+	_check(stage.scenery().get_child_count() == 2, "backdrop swap should rebuild to the default layout at once, got %d nodes" % stage.scenery().get_child_count())
 	stage.free()
+	_check(is_equal_approx(backdrop.self_modulate.a, 1.0), "leaving battle should hand the backdrop back to 2D")
+	_check(not UIFactory.shake_listener.is_valid(), "leaving battle should unhook the camera shake")
+	holder.free()
 
 func _test_potion_jincan_wang(characters: Array[CharacterData], enemy: EnemyData) -> void:
 	var main_script = load("res://scripts/main.gd")

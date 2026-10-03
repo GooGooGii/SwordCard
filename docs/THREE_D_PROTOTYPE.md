@@ -4,12 +4,16 @@
 
 使用者選定的架構：**3D 戰場層**——卡牌、藥品、遺物、回合、存檔邏輯完全不動，只把戰場中央的角色改用 3D 呈現。實作在 `scripts/battle_stage_3d.gd`（`BattleStage3D`）。
 
-- **圖層**：`background_rect`（PAL1 手繪背景）→ `BattleStage3D`（3D）→ `root`（血條、意圖、手牌等 2D UI）。`_build_battle_scene()` 建立，`_clear_root()` 在淡出截圖後釋放，所以只在戰鬥畫面存在。
+- **圖層**：`background_rect`（戰鬥中不繪製，貼圖交給 3D 場景投影）→ `BattleStage3D`（3D 場景＋角色）→ `root`（血條、意圖、手牌等 2D UI）。`_build_battle_scene()` 建立，`_clear_root()` 在淡出截圖後釋放，所以只在戰鬥畫面存在。
 - **站位仍由 2D 版面決定**：`main.gd` 照舊建立每個肖像 TextureRect，再用 `_stage_track(key, portrait, character_id, pose, floats)` 交給 3D 層（key：`player`、`bench_<i>`、`enemy_<i>`）。3D 層每幀把肖像框投影到 3D 地面：腳底＝wrap 底邊中央。2D 肖像只設 `self_modulate.a = 0` 不畫，版面、點擊、拖牌瞄準照常；shake / dash / flash / 淡出 / 陣亡變暗等 tween 都作用在 2D wrap 上，3D 層每幀讀位置與 modulate 鏡像過去。
-- **有模型的角色**（`BattleStage3D.CHARACTER_MODELS`）：3D 模型站在腳底點，身高對齊 2D 框高，套 `pose_targets()` 六姿勢（跟著 `_get_active_player_pose()`：出牌→攻擊／施法、護體→擋格、HP≤25%→命危、倒下）。目前只有李逍遙（`li_xiaoyao_blockout.glb`，面向 60°）。
+- **有模型的角色**（`BattleStage3D.CHARACTER_MODELS`）：3D 模型站在腳底點，身高對齊 2D 框高，套 `pose_targets()` 六姿勢（跟著 `_get_active_player_pose()`：出牌→攻擊／施法、護體→擋格、HP≤25%→命危、倒下）。**目前沒有登記任何角色**：2026-10-02 使用者看過實機截圖後判定 Blender 草模太醜，李逍遙改回手繪立繪，待精緻模型完成再登記（草模仍留在 `BLOCKOUT_MODEL` 供 smoke test 覆蓋模型路徑）。
 - **其他角色與敵人**：原立繪做成面向鏡頭的 Sprite3D，投影後與 2D 框完全重合（換姿勢、Boss 變身換圖都直接讀肖像當下的 texture）。另用 alpha-cut 的同圖只負責投影。
-- **地面與光**：地面是只收陰影的透明面（自訂 shader，見 CLAUDE.md 地雷），背景仍是手繪圖。主光從鏡頭左前上方打、影子往右後方落；不能往鏡頭方向落（會藏在血條後面），也不能純側光（立繪板子的影子會縮成一條線）。補光用 cull mask 避開地面層。
+- **地面與光**：投影地面上疊一層只收陰影的透明面（自訂 shader，見 CLAUDE.md 地雷），直立卡片用同一材質當 next_pass 收影。主光從鏡頭左前上方打、影子往右後方落；不能往鏡頭方向落（會藏在血條後面），也不能純側光（立繪板子的影子會縮成一條線）。補光用 cull mask 避開地面層。
 - **解析度**：SubViewport 以實體像素渲染（`get_final_transform()` 的縮放），canvas_items 放大的視窗與手機上不會比 2D 糊；輸出是 premultiplied alpha，TextureRect 用 `BLEND_MODE_PREMULT_ALPHA`。
+- **3D 場景（2026-10-02）**：`scripts/battle_scenery_3d.gd`（`BattleScenery3D`）把手繪背景從「靜止鏡頭」投影到 3D 代理幾何上（matte painting 手法）：地面＋遠景牆，加上個別背景登記的直立卡片（建物、石階、前景草叢）。`main.gd` 用 `_battle_stage.track_backdrop(background_rect)` 交出背景，2D 背景改為不繪製，Boss 變身換背景時自動重建。
+  - **版面資料**：`BattleScenery3D.LAYOUTS` 以原圖 uv 描述，`wall_v`＝地面與遠景牆交界（場地最遠的邊），`cards`＝`[u0, v_top, u1, v_bottom]` 底邊貼地的直立面。沒登記的背景用 `DEFAULT_LAYOUT`（`wall_v` 0.52、無卡片）；目前只有第 1 幕竹林有專屬卡片。前景卡片的 `v_top` 要放在 0.7 以下，不然真實深度會擋住角色的腳。
+  - **鏡頭**：開場從左上滑入（1.8 秒）、待機緩慢環繞、重擊震動（`UIFactory.shake_listener` 掛勾，2D shake ≥10px 才帶動）。環繞是平移後轉頭盯住角色站位深度的支點，所以角色那層幾乎不動、近景與遠景反向位移。角色每幀用當下鏡頭重解站位，永遠對齊 2D 血條。實際鏡頭比投影源放大 6%（`VIEW_ZOOM`）當安全邊，避免看到原圖範圍外的拉長邊緣；加大 `INTRO_OFFSET`／`SWAY_AMPLITUDE` 前要確認近景位移仍小於這個安全邊。
+  - **驗收數據**：鏡頭靜止時與原本 2D 背景逐像素平均差 0.46/255（加 `VIEW_ZOOM` 前量測）；環繞兩端涼亭相對角色位移約 20–30px。
 - **新增角色模型**：GLB 放 `assets/models/`，原點在腳底、面向 +Z、手臂節點命名 `LeftArmPivot` / `RightArmPivot`（沒有也能用，只是手臂不動），再在 `CHARACTER_MODELS` 加一筆 `{"path", "yaw"}`。
 - **驗證**：smoke `_test_battle_stage_3d`（模型/立繪切換、2D 隱藏、投影互逆、肖像釋放）；畫面用 `godot --path . -s render_battle_ui.gd`。
 
@@ -65,3 +69,23 @@ godot --path . res://scenes/battle_3d_prototype.tscn
 目前最完整的靜態候選：`assets/models/candidates/li_xiaoyao_crossover_composite_with_sword_v2.glb`（約 8 MB，頭、身與劍分件包含在同一 GLB）。可在 Godot 開啟 `scenes/character_3d_candidate.tscn`，用按鈕查看四面或拖曳旋轉；實機截圖在 `docs/3d_previews/candidate_li_xiaoyao_crossover_v7_sword/`。截圖由 Godot 4.6 mobile renderer 輸出，不是 2D 概念圖。`tools/blender/trim_li_xiaoyao_triposr_body.py` 與 `tools/blender/assemble_li_xiaoyao_candidate.py` 記錄裁切、組合步驟。
 
 **品質判斷：可作造型／比例討論，不可當正式角色。** 對照使用者的聯動圖，黑色高馬尾、棕金披肩、深褐外衣、白袖白褲與向下持劍大致可辨；但臉部仍不如原參考精細，側面髮尾與披肩接縫僵硬，背面多數是單圖模型推測，劍格只是簡化重建。GLB 目前約 16.2 萬頂點、20.6 萬面，未減面、未綁骨架，不能做待命／攻擊／格擋動畫；Android 效能也尚未驗證。頭與身雖同封裝在 GLB，幾何並未焊接，頸部需要正式修模。正式替換前仍需更好的多視角建模、人工修臉／背面、重拓樸、骨架與完整戰鬥 UI（藥品滿格、多件遺物）驗收。
+
+### 第二輪：多視角精緻模型管線（2026-10-02～03，已暫停：專案轉向重新設計，見 docs/REDESIGN.md）
+
+使用者看過實機截圖後判定 Blender 草模太醜，選擇重做精緻模型。期間李逍遙用手繪立繪（`BattleStage3D.CHARACTER_MODELS` 清空）。全程在本機執行，不需要線上帳號：
+
+1. **參考圖**：把 `source_art/3d/candidates/li_xiaoyao_crossover_turnaround_4view_v1.png` 切成四張，用 rembg（birefnet-general）去背，輸出到 `source_art/3d/candidates/li_xiaoyao_mv_v1/`，含白底的 `front/left/back/right.png` 和去背的 `*_rgba.png`。**注意：這張設定圖的實際順序是「正、右、背、左」**，跟生成指令寫的相反；判斷依據是腰帶結在角色左腰，第 4 格看得到。Hunyuan3D 的 `left` 指人物面向畫面左邊、露出自己的左側身，已對照官方範例 `assets/example_mv_images/1` 確認。
+2. **形體**：用 `tools/comfyui/hunyuan3d_mv.py` 呼叫 ComfyUI 內建節點 `Hunyuan3Dv2ConditioningMultiView`。模型是 `hunyuan3d-dit-v2-mv-turbo`，官方範例用 5 步、octree 380，輸出只有形體的 GLB。
+3. **後製**：`tools/blender/build_li_xiaoyao_hy3d.py`（Blender 5.2）依序執行：
+   - 清碎塊、轉正、統一身高 1.8、減面到約 3 萬面
+   - Smart UV 展開
+   - 四張參考圖依法線加權投影，烘焙成 2048 貼圖
+   - 用 `JOINTS` 表建骨架，並用 bone heat 自動綁權重；失敗的頂點改綁最近的骨頭
+   - 掛上方塊組成的佩劍
+   - 用 `POSES` 表做六個姿勢動作
+   - 匯出 GLB，`--preview` 可另存各姿勢預覽圖
+4. **上場**：`BattleStage3D` 偵測到模型含 AnimationPlayer 時，姿勢改由動畫混合切換（動畫名＝姿勢名），只保留 `yaw` 面向。驗收截圖給使用者看過、使用者同意後，才登記回 `CHARACTER_MODELS`。
+
+已知限制：投影貼圖沒有處理遮擋，例如正面圖中手臂擋住的軀幹會沾到手臂的顏色。臉部細節受限於參考圖解析度。披巾會被手臂骨頭帶動。
+
+**結果（2026-10-03）**：管線跑通。Hunyuan3D-2mv turbo 在 RTX 4050 6GB 上生成形體約 160 秒（需用 `tools/comfyui/launch_without_av.py` 啟動 ComfyUI，原因是本機應用程式控制原則封鎖了 PyAV DLL）。後製時發現三個問題：surface-net 網格有大量非流形邊，要先體素重建才能減面；bone heat 遇到零碎小島會失敗，要先清碎塊；手和衣擺黏在一起，手臂大幅動作會被扯成板片，最後改成「御劍流」姿勢：手臂只做小幅動作，劍是獨立骨頭。成品 `source_art/3d/candidates/li_xiaoyao_hy3d_v1/li_xiaoyao_hy3d_v1.glb` 約 3 萬三角面、2048 貼圖、六姿勢，**未登記上場**。

@@ -127,7 +127,8 @@ scripts/
   pause_menu.gd          暫停選單（CanvasLayer）
   hand_fan.gd            手牌扇形排列
   battle_controller.gd   戰鬥流程（回合、出牌、敵人動作、多敵、召喚、party sync）
-  battle_stage_3d.gd     3D 戰場層：追蹤 2D 肖像站位，改用 3D 模型 / 立繪 Sprite3D＋真實陰影呈現
+  battle_stage_3d.gd     3D 戰場層：追蹤 2D 肖像站位，改用 3D 模型 / 立繪 Sprite3D＋真實陰影呈現；鏡頭運動
+  battle_scenery_3d.gd   3D 場景：手繪背景投影到代理幾何（地面／遠景牆／卡片），各背景版面在 LAYOUTS
   effect_resolver.gd     卡片/敵人 effect → state mutation
   deck_manager.gd        抽牌堆/棄牌堆/手牌
   run_state.gd           跨節點的 run 狀態（角色、HP、deck、relics、地圖、藥品）

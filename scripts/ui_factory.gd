@@ -385,9 +385,14 @@ static func _end_pos_fx(node: Control) -> void:
 	if parent is Container:
 		(parent as Container).queue_sort()
 
+## BattleStage3D 在戰鬥中註冊：重擊的 shake 同步帶動 3D 鏡頭（不需改各呼叫點）
+static var shake_listener: Callable = Callable()
+
 static func shake_node(node: Control, intensity: float = 8.0, duration: float = 0.25) -> void:
 	if node == null:
 		return
+	if shake_listener.is_valid():
+		shake_listener.call(intensity, duration)
 	var orig_pos: Vector2 = _reset_pos_fx(node)
 	var steps: int = 5
 	var step_duration: float = duration / float(steps + 1)

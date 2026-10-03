@@ -5,18 +5,37 @@ extends TextureRect
 ##
 ## 站位與動畫仍由 2D 版面決定：HBox 排版、shake / dash / flash tween 照舊作用在肖像 wrap 上。
 ## 這裡每幀把被追蹤的肖像框投影到 3D 地面，改由 3D 角色呈現：
-## - CHARACTER_MODELS 有登記的角色 → 3D 模型＋六姿勢（idle/attack/block/cast/low_hp/downed）
+## - character_models（預設＝CHARACTER_MODELS）有登記的角色 → 3D 模型＋六姿勢（idle/attack/block/cast/low_hp/downed）
 ## - 其他角色與敵人 → 原立繪 Sprite3D 立在地面上，投影後與 2D 框完全重合
-## 地面是只收陰影的透明面，所以背景仍是原本的手繪場景；2D 橢圓腳影改由真實陰影取代。
+## 場景：track_backdrop() 交來的手繪背景由 BattleScenery3D 投影到 3D 代理幾何上（地面／遠景牆／卡片），
+## 地面另有只收陰影的透明面，2D 橢圓腳影改由真實陰影取代。
+## 鏡頭：開場滑入、待機緩慢環繞、重擊震動（UIFactory.shake_node 掛勾）。環繞的支點在角色站位深度，
+## 角色每幀以「當下鏡頭」重解站位，所以永遠對齊 2D 血條；近景地面與遠景往相反方向動，產生視差。
 ## 用 SubViewport＋TextureRect（而非 SubViewportContainer）是為了以實體解析度渲染，
 ## 在 canvas_items 放大的視窗／手機上不會比 2D 立繪糊。
 
-const CHARACTER_MODELS: Dictionary = {
-	"li_xiaoyao": {"path": "res://assets/models/li_xiaoyao_blockout.glb", "yaw": 60.0},
-}
-const CAMERA_FOV: float = 40.0
+## 正式戰鬥使用 3D 模型的角色（其餘用手繪立繪 Sprite3D）。
+## 2026-10-02 起暫時清空：Blender 草模與手繪立繪風格差太多（使用者判定太醜），
+## 李逍遙改回手繪，等精緻模型（多視角圖生 3D＋骨架＋六姿勢）完成再登記回來，格式：
+##   "li_xiaoyao": {"path": "res://assets/models/<模型>.glb", "yaw": 60.0}
+const CHARACTER_MODELS: Dictionary = {}
+const BLOCKOUT_MODEL: Dictionary = {"path": "res://assets/models/li_xiaoyao_blockout.glb", "yaw": 60.0}
+## 實際查表用；smoke test 會暫時注入 BLOCKOUT_MODEL 以覆蓋模型路徑
+static var character_models: Dictionary = CHARACTER_MODELS
+const CAMERA_FOV: float = 40.0  # 靜止鏡頭＝手繪背景投影源的垂直 fov
+## 實際鏡頭比投影源略放大，留出安全邊：鏡頭環繞／開場位移時不會看到原圖範圍外（邊緣會被拉成直條）
+const VIEW_ZOOM: float = 1.06
+const VIEW_FOV: float = 2.0 * atan(tan(CAMERA_FOV * PI / 360.0) / VIEW_ZOOM) * 180.0 / PI
 const CAMERA_HEIGHT: float = 2.6
 const CAMERA_PITCH: float = -10.0  # 地平線約落在畫面 26% 高，對齊手繪背景的遠山
+const PIVOT_DEPTH: float = 9.0  # 環繞支點深度＝角色腳底那一列（v≈0.65）的深度
+const INTRO_OFFSET: Vector2 = Vector2(-0.3, 0.28)  # 開場從左上方滑入（鏡頭空間 x/y）；近景位移須小於 VIEW_ZOOM 安全邊
+const INTRO_TIME: float = 1.8
+const SWAY_AMPLITUDE: Vector2 = Vector2(0.22, 0.07)
+const SWAY_PERIOD: Vector2 = Vector2(11.0, 7.3)
+const SWAY_RAMP: float = 2.0  # 開場結束後環繞幅度淡入秒數
+const SHAKE_MIN_INTENSITY: float = 10.0  # 2D shake 至少這麼重（px）才帶動鏡頭
+const SHAKE_WORLD_PER_PIXEL: float = 0.0035
 const NO_GROUND_DEPTH: float = 14.0  # 腳底高於地平線（理論上不會）時的退路深度
 const POSE_TIME: float = 0.18
 const BLOB_WIDTH_RATIO: float = 0.55  # 與 UIFactory.ground_shadow 的 0.55 一致
@@ -46,10 +65,20 @@ static var _blob_texture: GradientTexture2D
 
 var _viewport: SubViewport
 var _camera: Camera3D
-var _camera_origin: Vector3 = Vector3(0.0, CAMERA_HEIGHT, 0.0)
-var _camera_basis: Basis = Basis.from_euler(Vector3(deg_to_rad(CAMERA_PITCH), 0.0, 0.0))
+## 靜止鏡頭：手繪背景的投影源，也是開場/環繞/震動的基準
+var _rest: Transform3D = Transform3D(Basis.from_euler(Vector3(deg_to_rad(CAMERA_PITCH), 0.0, 0.0)), Vector3(0.0, CAMERA_HEIGHT, 0.0))
+## 當下鏡頭（每幀由 _update_camera_motion 更新）；角色站位一律用它解，才會對齊 2D 版面
+var _camera_origin: Vector3 = _rest.origin
+var _camera_basis: Basis = _rest.basis
 var _world: Node3D  # 位於原點、無旋轉縮放 → 子節點的 local transform 就是世界座標
+var _scenery: BattleScenery3D
+var _shadow_pass: ShaderMaterial
+var _backdrop: TextureRect = null
 var _actors: Dictionary = {}  # key -> actor Dictionary（見 _create_actor）
+var _motion_time: float = 0.0
+var _shake_left: float = 0.0
+var _shake_duration: float = 0.0
+var _shake_amplitude: float = 0.0
 
 
 func _init() -> void:
@@ -64,6 +93,16 @@ func _init() -> void:
 	blend.blend_mode = CanvasItemMaterial.BLEND_MODE_PREMULT_ALPHA
 	material = blend
 	_build_world()
+	UIFactory.shake_listener = _on_ui_shake
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		# 離開戰鬥：背景交還 2D 繪製、拆掉震動掛勾
+		if _backdrop != null and is_instance_valid(_backdrop):
+			_backdrop.self_modulate.a = 1.0
+		if UIFactory.shake_listener.get_object() == self:
+			UIFactory.shake_listener = Callable()
 
 
 func _ready() -> void:
@@ -71,7 +110,9 @@ func _ready() -> void:
 	_update_viewport_size()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_motion_time += delta
+	_shake_left = max(0.0, _shake_left - delta)
 	sync_now()
 
 
@@ -94,8 +135,28 @@ func track(key: String, portrait: TextureRect, character_id: String = "", pose: 
 	_set_actor_pose(actor, pose)
 
 
+## 手繪背景交給 3D 場景投影；背景換圖（Boss 變身）時自動重建。
+func track_backdrop(backdrop: TextureRect) -> void:
+	_backdrop = backdrop
+	if backdrop != null:
+		backdrop.self_modulate.a = 0.0  # 由 3D 場景畫；離開戰鬥時（PREDELETE）還原
+
+
+func scenery() -> BattleScenery3D:
+	return _scenery
+
+
+## 測試／截圖用：把鏡頭運動時間撥到指定秒數（INTRO_TIME = 剛好靜止）。
+func set_motion_time(seconds: float) -> void:
+	_motion_time = seconds
+	_shake_left = 0.0
+
+
 func sync_now() -> void:
 	_update_viewport_size()
+	_update_camera_motion()
+	if _backdrop != null and is_instance_valid(_backdrop):
+		_scenery.build(_backdrop.texture, size, _rest, CAMERA_FOV, GROUND_LAYER, _shadow_pass)
 	var stale: Array[String] = []
 	for key: String in _actors:
 		var actor: Dictionary = _actors[key]
@@ -141,7 +202,7 @@ func ground_to_screen(world_point: Vector3) -> Vector2:
 	var extent: Vector2 = size.max(Vector2.ONE)
 	var view: Vector3 = _camera_basis.inverse() * (world_point - _camera_origin)
 	var depth: float = max(0.001, -view.z)
-	var tan_half: float = tan(deg_to_rad(CAMERA_FOV * 0.5))
+	var tan_half: float = tan(deg_to_rad(VIEW_FOV * 0.5))
 	var ndc: Vector2 = Vector2(view.x / depth / (tan_half * extent.x / extent.y), view.y / depth / tan_half)
 	var local: Vector2 = Vector2((ndc.x + 1.0) * 0.5 * extent.x, (1.0 - ndc.y) * 0.5 * extent.y)
 	return local + _canvas_xform(self).origin
@@ -232,22 +293,27 @@ func _build_world() -> void:
 	var plane: PlaneMesh = PlaneMesh.new()
 	plane.size = Vector2(80.0, 80.0)
 	ground.mesh = plane
-	ground.position = Vector3(0.0, 0.0, -20.0)
+	ground.position = Vector3(0.0, 0.002, -20.0)  # 略高於投影地面，避免 z-fighting
 	ground.layers = GROUND_LAYER
 	ground.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var catcher_shader: Shader = Shader.new()
 	catcher_shader.code = SHADOW_CATCHER_SHADER
-	var catcher: ShaderMaterial = ShaderMaterial.new()
-	catcher.shader = catcher_shader
-	catcher.render_priority = -20
-	ground.material_override = catcher
+	_shadow_pass = ShaderMaterial.new()
+	_shadow_pass.shader = catcher_shader
+	_shadow_pass.render_priority = -20
+	ground.material_override = _shadow_pass
 	_world.add_child(ground)
+
+	# 手繪背景投影到代理幾何（track_backdrop 之後才有內容）；直立面共用同一個收影材質當 next_pass
+	_scenery = BattleScenery3D.new()
+	_scenery.name = "Scenery"
+	_world.add_child(_scenery)
 
 	_camera = Camera3D.new()
 	_camera.name = "StageCamera"
-	_camera.fov = CAMERA_FOV
-	_camera.keep_aspect = Camera3D.KEEP_HEIGHT  # 與 _camera_space_ray 的投影模型一致
-	_camera.transform = Transform3D(_camera_basis, _camera_origin)
+	_camera.fov = VIEW_FOV
+	_camera.keep_aspect = Camera3D.KEEP_HEIGHT  # 與 BattleScenery3D.camera_space_ray 的投影模型一致
+	_camera.transform = _rest
 	_camera.current = true
 	_world.add_child(_camera)
 
@@ -299,7 +365,7 @@ func _remove_actor(key: String) -> void:
 
 
 func _set_actor_model(actor: Dictionary, character_id: String) -> void:
-	var wanted: String = character_id if CHARACTER_MODELS.has(character_id) else ""
+	var wanted: String = character_id if character_models.has(character_id) else ""
 	if String(actor["model_id"]) == wanted:
 		return
 	var old_model: Variant = actor.get("model")
@@ -307,12 +373,13 @@ func _set_actor_model(actor: Dictionary, character_id: String) -> void:
 		(old_model as Node).queue_free()
 	actor["model"] = null
 	actor["body"] = null
+	actor["anim"] = null
 	actor["model_id"] = wanted
 	actor["meshes"] = []
 	actor["pose"] = ""  # 換模型後姿勢要立即重套
 	if wanted.is_empty():
 		return
-	var spec: Dictionary = CHARACTER_MODELS[wanted]
+	var spec: Dictionary = character_models[wanted]
 	var packed: PackedScene = _load_model(String(spec["path"]))
 	if packed == null:
 		actor["model_id"] = ""
@@ -338,6 +405,8 @@ func _set_actor_model(actor: Dictionary, character_id: String) -> void:
 	actor["model_height"] = _model_height(body, meshes)
 	actor["left_arm"] = body.find_child("LeftArmPivot", true, false) as Node3D
 	actor["right_arm"] = body.find_child("RightArmPivot", true, false) as Node3D
+	var players: Array[Node] = body.find_children("*", "AnimationPlayer", true, false)
+	actor["anim"] = players[0] as AnimationPlayer if not players.is_empty() else null
 
 
 func _set_actor_pose(actor: Dictionary, pose: String) -> void:
@@ -351,6 +420,18 @@ func _set_actor_pose(actor: Dictionary, pose: String) -> void:
 	var previous: Variant = actor.get("pose_tween")
 	if previous is Tween and (previous as Tween).is_valid():
 		(previous as Tween).kill()
+	# 有骨架動畫的模型（tools/blender/build_li_xiaoyao_hy3d.py 匯出，動畫名＝姿勢名）：
+	# 只保留面向，姿勢交給 AnimationPlayer 混合切換
+	var anim: AnimationPlayer = actor.get("anim") as AnimationPlayer
+	if anim != null:
+		body.rotation_degrees = Vector3(0.0, float(actor["yaw"]), 0.0)
+		body.position = Vector3.ZERO
+		var clip: String = pose if anim.has_animation(pose) else "idle"
+		if anim.has_animation(clip):
+			anim.play(clip, 0.0 if instant else POSE_TIME)
+			if instant:
+				anim.seek(0.0, true)
+		return
 	var targets: Dictionary = pose_targets(pose, float(actor["yaw"]))
 	var left_arm: Node3D = actor.get("left_arm") as Node3D
 	var right_arm: Node3D = actor.get("right_arm") as Node3D
@@ -506,14 +587,40 @@ func _canvas_pixel_scale() -> Vector2:
 
 
 ## 鏡頭空間射線（未正規化，z = -1 → 乘上深度 d 就是沿鏡頭前方 d 的點）。
-## 與 _camera 的設定（KEEP_HEIGHT、垂直 fov）是同一個針孔模型；自己算而不呼叫
-## Camera3D.project_ray_*，才能在節點進樹前（smoke test 的同步 _initialize）使用。
+## 自己算而不呼叫 Camera3D.project_ray_*，才能在節點進樹前（smoke test 的同步 _initialize）使用。
 func _camera_space_ray(canvas_point: Vector2) -> Vector3:
-	var extent: Vector2 = size.max(Vector2.ONE)
-	var local: Vector2 = canvas_point - _canvas_xform(self).origin
-	var tan_half: float = tan(deg_to_rad(CAMERA_FOV * 0.5))
-	var ndc: Vector2 = Vector2(local.x / extent.x * 2.0 - 1.0, 1.0 - local.y / extent.y * 2.0)
-	return Vector3(ndc.x * tan_half * extent.x / extent.y, ndc.y * tan_half, -1.0)
+	return BattleScenery3D.camera_space_ray(canvas_point - _canvas_xform(self).origin, size, VIEW_FOV)
+
+
+## 開場滑入＋待機環繞＋震動。環繞＝平移後轉頭盯住站位深度的支點，
+## 支點那一層（角色腳底）在畫面上幾乎不動，近景與遠景往相反方向移 → 視差。
+func _update_camera_motion() -> void:
+	var intro_left: float = 1.0 - clamp(_motion_time / INTRO_TIME, 0.0, 1.0)
+	var offset: Vector2 = INTRO_OFFSET * intro_left * intro_left * intro_left  # ease-out cubic
+	var sway_time: float = max(0.0, _motion_time - INTRO_TIME)
+	var sway_weight: float = clamp(sway_time / SWAY_RAMP, 0.0, 1.0)
+	offset += Vector2(sin(TAU * sway_time / SWAY_PERIOD.x) * SWAY_AMPLITUDE.x,
+		sin(TAU * sway_time / SWAY_PERIOD.y) * SWAY_AMPLITUDE.y) * sway_weight
+	var origin: Vector3 = _rest.origin + _rest.basis * Vector3(offset.x, offset.y, 0.0)
+	var pivot: Vector3 = _rest.origin + _rest.basis * Vector3(0.0, 0.0, -PIVOT_DEPTH)
+	var basis: Basis = Basis.looking_at(pivot - origin, Vector3.UP)
+	if _shake_left > 0.0 and _shake_duration > 0.0:
+		var falloff: float = _shake_left / _shake_duration
+		origin += basis * Vector3(randf_range(-1.0, 1.0), randf_range(-0.6, 0.6), 0.0) * _shake_amplitude * falloff
+	_camera_origin = origin
+	_camera_basis = basis
+	_camera.transform = Transform3D(basis, origin)
+
+
+## UIFactory.shake_node 的掛勾：重擊（≥ SHAKE_MIN_INTENSITY px）時鏡頭跟著震。
+func _on_ui_shake(intensity: float, duration: float) -> void:
+	if intensity < SHAKE_MIN_INTENSITY:
+		return
+	var amplitude: float = intensity * SHAKE_WORLD_PER_PIXEL
+	if _shake_left <= 0.0 or amplitude >= _shake_amplitude * (_shake_left / max(0.001, _shake_duration)):
+		_shake_amplitude = amplitude
+		_shake_duration = max(0.05, duration)
+		_shake_left = _shake_duration
 
 
 ## 腳底那條畫面水平線打到地面的深度；無 roll 的鏡頭下同一列深度相同。
@@ -529,7 +636,7 @@ func _point_at_depth(canvas_point: Vector2, depth: float) -> Vector3:
 
 
 func _world_per_canvas_pixel(depth: float) -> float:
-	return 2.0 * depth * tan(deg_to_rad(CAMERA_FOV * 0.5)) / max(1.0, size.y)
+	return 2.0 * depth * tan(deg_to_rad(VIEW_FOV * 0.5)) / max(1.0, size.y)
 
 
 ## 進樹時就是 get_global_transform；進樹前（測試）沿父鏈累乘 local transform。
