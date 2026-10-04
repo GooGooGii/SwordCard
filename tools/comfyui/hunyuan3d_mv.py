@@ -35,6 +35,8 @@ def workflow(images: dict[str, str], seed: int, steps: int, cfg: float, octree: 
     }
     cond_inputs: dict[str, list] = {}
     for view in VIEWS:
+        if view not in images:
+            continue  # 缺的視角不接（節點的四個輸入都是 optional）
         nodes[f"load_{view}"] = {"class_type": "LoadImage", "inputs": {"image": images[view]}}
         nodes[f"enc_{view}"] = {
             "class_type": "CLIPVisionEncode",
@@ -85,10 +87,13 @@ def main() -> int:
     for view in VIEWS:
         src = args.views_dir / f"{view}.png"
         if not src.exists():
-            print(f"缺少 {src}")
-            return 1
+            continue
         shutil.copy(src, input_dir / src.name)
         images[view] = f"{tag}/{src.name}"
+    if "front" not in images:
+        print(f"至少要有 {args.views_dir / 'front.png'}")
+        return 1
+    print(f"views: {', '.join(images)}")
 
     prefix = f"3d/{tag}"
     prompt = workflow(images, args.seed, args.steps, args.cfg, args.octree, prefix)

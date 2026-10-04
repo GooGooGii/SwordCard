@@ -14,6 +14,7 @@
 | 在這個環境第一次跑 session | `docs/harness/LETTER.md` |
 | 動組隊 / 藥品 / 多敵 / 戰鬥 UX 細節 | `docs/design/PARTY_MODE.md`、`POTIONS.md`、`MULTI_ENEMY.md`、`BATTLE_UX_SYSTEMS.md` |
 | 動 3D 戰場層 / 3D 角色模型 | `docs/THREE_D_PROTOTYPE.md` |
+| **重新設計（2026-10-03 起的新方向：章節式敘事卡牌 RPG、TypeScript 網頁）** | `docs/REDESIGN.md`（舊 SwordCard 程式碼不沿用） |
 | 新增卡 / 敵人 / 事件（先查正史） | `docs/PAL1_CANON.md` |
 | 平衡調整 | `docs/BALANCE_REPORT.md` |
 | AI 親玩整個 run 評平衡 | `docs/AI_BALANCE_HARNESS.md` |
