@@ -1,0 +1,170 @@
+{
+  "sceneCount": 23,
+  "readyAssets": 23,
+  "pendingAssets": 0,
+  "complete3D": 23,
+  "complete3DPercent": 100,
+  "scenes": [
+    {
+      "id": "shilipo",
+      "name": "十里坡",
+      "ready": true,
+      "environment": "shilipo",
+      "plannedAssetUrl": "/assets/battle/shilipo.jpg"
+    },
+    {
+      "id": "yuhang_inn",
+      "name": "餘杭客棧",
+      "ready": true,
+      "environment": "yuhang_inn",
+      "plannedAssetUrl": "/assets/battle/yuhang_inn.jpg"
+    },
+    {
+      "id": "xianling",
+      "name": "仙靈島",
+      "ready": true,
+      "environment": "xianling",
+      "plannedAssetUrl": "/assets/battle/xianling.jpg"
+    },
+    {
+      "id": "suzhou_road",
+      "name": "蘇州城外",
+      "ready": true,
+      "environment": "suzhou_road",
+      "plannedAssetUrl": "/assets/battle/suzhou_road.jpg"
+    },
+    {
+      "id": "lin_arena",
+      "name": "林家堡擂台",
+      "ready": true,
+      "environment": "lin_arena",
+      "plannedAssetUrl": "/assets/battle/lin_arena.jpg"
+    },
+    {
+      "id": "yinlong_cave",
+      "name": "隱龍窟",
+      "ready": true,
+      "environment": "yinlong_cave",
+      "plannedAssetUrl": "/assets/battle/yinlong_cave.jpg"
+    },
+    {
+      "id": "baihe",
+      "name": "白河村",
+      "ready": true,
+      "environment": "baihe",
+      "plannedAssetUrl": "/assets/battle/baihe.jpg"
+    },
+    {
+      "id": "graveyard",
+      "name": "亂葬崗",
+      "ready": true,
+      "environment": "graveyard",
+      "plannedAssetUrl": "/assets/battle/graveyard.jpg"
+    },
+    {
+      "id": "general_tomb",
+      "name": "將軍塚",
+      "ready": true,
+      "environment": "general_tomb",
+      "plannedAssetUrl": "/assets/battle/general_tomb.jpg"
+    },
+    {
+      "id": "blood_pool",
+      "name": "血池",
+      "ready": true,
+      "environment": "blood_pool",
+      "plannedAssetUrl": "/assets/battle/blood_pool.jpg"
+    },
+    {
+      "id": "guiyin",
+      "name": "鬼陰山",
+      "ready": true,
+      "environment": "guiyin",
+      "plannedAssetUrl": "/assets/battle/guiyin.jpg"
+    },
+    {
+      "id": "yangzhou",
+      "name": "揚州夜街",
+      "ready": true,
+      "environment": "yangzhou",
+      "plannedAssetUrl": "/assets/battle/yangzhou.jpg"
+    },
+    {
+      "id": "toad_hill",
+      "name": "蛤蟆山",
+      "ready": true,
+      "environment": "toad_hill",
+      "plannedAssetUrl": "/assets/battle/toad_hill.jpg"
+    },
+    {
+      "id": "ministry",
+      "name": "京城尚書府",
+      "ready": true,
+      "environment": "ministry",
+      "plannedAssetUrl": "/assets/battle/ministry.jpg"
+    },
+    {
+      "id": "spider_forest",
+      "name": "黑蜘蛛森林",
+      "ready": true,
+      "environment": "spider_forest",
+      "plannedAssetUrl": "/assets/battle/spider_forest.jpg"
+    },
+    {
+      "id": "demon_tower",
+      "name": "鎖妖塔",
+      "ready": true,
+      "environment": "demon_tower",
+      "plannedAssetUrl": "/assets/battle/demon_tower.jpg"
+    },
+    {
+      "id": "tower_top",
+      "name": "鎖妖塔頂",
+      "ready": true,
+      "environment": "tower_top",
+      "plannedAssetUrl": "/assets/battle/tower_top.jpg"
+    },
+    {
+      "id": "sacred_forest",
+      "name": "靈山神木林",
+      "ready": true,
+      "environment": "sacred_forest",
+      "plannedAssetUrl": "/assets/battle/sacred_forest.jpg"
+    },
+    {
+      "id": "qilin_cave",
+      "name": "火麒麟洞",
+      "ready": true,
+      "environment": "qilin_cave",
+      "plannedAssetUrl": "/assets/battle/qilin_cave.jpg"
+    },
+    {
+      "id": "water_maze",
+      "name": "水底迷宮",
+      "ready": true,
+      "environment": "water_maze",
+      "plannedAssetUrl": "/assets/battle/water_maze.jpg"
+    },
+    {
+      "id": "trial_cave",
+      "name": "試煉窟",
+      "ready": true,
+      "environment": "trial_cave",
+      "plannedAssetUrl": "/assets/battle/trial_cave.jpg"
+    },
+    {
+      "id": "nuwa_temple",
+      "name": "女媧神殿",
+      "ready": true,
+      "environment": "nuwa_temple",
+      "plannedAssetUrl": "/assets/battle/nuwa_temple.jpg"
+    },
+    {
+      "id": "nanzhao_palace",
+      "name": "南詔王宮",
+      "ready": true,
+      "environment": "nanzhao_palace",
+      "plannedAssetUrl": "/assets/battle/nanzhao_palace.jpg"
+    }
+  ]
+}

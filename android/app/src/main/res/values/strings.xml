@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SwordCard</string>
+    <string name="title_activity_main">SwordCard</string>
+    <string name="package_name">tw.fan.xiaoyao</string>
+    <string name="custom_url_scheme">tw.fan.xiaoyao</string>
+</resources>

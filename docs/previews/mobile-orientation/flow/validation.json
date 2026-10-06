@@ -1,0 +1,36 @@
+{
+  "base": "http://localhost:5174/",
+  "viewport": {
+    "width": 844,
+    "height": 390
+  },
+  "deviceScaleFactor": 2,
+  "input": "touch",
+  "steps": [
+    "touch 新故事 → 第 1 欄",
+    "劇情觸控 29 次、地圖節點 2 次 → 第一場戰鬥",
+    "重載 → 舊的回憶 → 第 1 欄 → 接續戰鬥"
+  ],
+  "errors": [],
+  "checks": [
+    "正常入口已看見劇情、地圖並進入第一場戰鬥",
+    "自動存檔包含戰鬥",
+    "重載後讀檔保留 seed、進度、隊伍 HP／牌組、銅錢及完整戰鬥狀態",
+    "UI 匯出實際寫入剪貼簿，內容與已存戰鬥一致",
+    "第二個 browser context 沒有原存檔",
+    "錯誤匯入不寫入第 3 欄",
+    "有效匯入立即啟用第 3 欄",
+    "乾淨 context 匯入後能讀入原戰鬥，全部關鍵欄位一致",
+    "瀏覽器錯誤為 0"
+  ],
+  "passed": true,
+  "saveSummary": {
+    "chapter": 0,
+    "node": "p_maze",
+    "party": [
+      "li_xiaoyao"
+    ],
+    "coins": 0,
+    "exportedBytes": 2516
+  }
+}

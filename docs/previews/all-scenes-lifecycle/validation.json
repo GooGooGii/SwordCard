@@ -1,0 +1,384 @@
+{
+  "cycles": [
+    {
+      "i": 0,
+      "plain": {
+        "fps": 60,
+        "worstMs": 25,
+        "calls": 4,
+        "triangles": 12244,
+        "dpr": 1,
+        "geometries": 4,
+        "textures": 3,
+        "programs": 3,
+        "frame": 158
+      },
+      "blood": {
+        "fps": 57,
+        "worstMs": 72,
+        "calls": 10,
+        "triangles": 15180,
+        "dpr": 1,
+        "geometries": 10,
+        "textures": 3,
+        "programs": 6,
+        "frame": 274
+      }
+    },
+    {
+      "i": 1,
+      "plain": {
+        "fps": 60,
+        "worstMs": 30,
+        "calls": 4,
+        "triangles": 12244,
+        "dpr": 1,
+        "geometries": 4,
+        "textures": 3,
+        "programs": 3,
+        "frame": 389
+      },
+      "blood": {
+        "fps": 57,
+        "worstMs": 69,
+        "calls": 10,
+        "triangles": 15180,
+        "dpr": 1,
+        "geometries": 10,
+        "textures": 3,
+        "programs": 6,
+        "frame": 504
+      }
+    },
+    {
+      "i": 2,
+      "plain": {
+        "fps": 60,
+        "worstMs": 27,
+        "calls": 4,
+        "triangles": 12244,
+        "dpr": 1,
+        "geometries": 4,
+        "textures": 3,
+        "programs": 3,
+        "frame": 619
+      },
+      "blood": {
+        "fps": 57,
+        "worstMs": 67,
+        "calls": 10,
+        "triangles": 15180,
+        "dpr": 1,
+        "geometries": 10,
+        "textures": 3,
+        "programs": 6,
+        "frame": 734
+      }
+    },
+    {
+      "i": 3,
+      "plain": {
+        "fps": 60,
+        "worstMs": 30,
+        "calls": 4,
+        "triangles": 12244,
+        "dpr": 1,
+        "geometries": 4,
+        "textures": 3,
+        "programs": 3,
+        "frame": 849
+      },
+      "blood": {
+        "fps": 57,
+        "worstMs": 69,
+        "calls": 10,
+        "triangles": 15180,
+        "dpr": 1,
+        "geometries": 10,
+        "textures": 3,
+        "programs": 6,
+        "frame": 965
+      }
+    },
+    {
+      "i": 4,
+      "plain": {
+        "fps": 60,
+        "worstMs": 25,
+        "calls": 4,
+        "triangles": 12244,
+        "dpr": 1,
+        "geometries": 4,
+        "textures": 3,
+        "programs": 3,
+        "frame": 1081
+      },
+      "blood": {
+        "fps": 57,
+        "worstMs": 70,
+        "calls": 10,
+        "triangles": 15180,
+        "dpr": 1,
+        "geometries": 10,
+        "textures": 3,
+        "programs": 6,
+        "frame": 1198
+      }
+    },
+    {
+      "i": 5,
+      "plain": {
+        "fps": 60,
+        "worstMs": 24,
+        "calls": 4,
+        "triangles": 12244,
+        "dpr": 1,
+        "geometries": 4,
+        "textures": 3,
+        "programs": 3,
+        "frame": 1313
+      },
+      "blood": {
+        "fps": 57,
+        "worstMs": 67,
+        "calls": 10,
+        "triangles": 15180,
+        "dpr": 1,
+        "geometries": 10,
+        "textures": 3,
+        "programs": 6,
+        "frame": 1429
+      }
+    },
+    {
+      "i": 6,
+      "plain": {
+        "fps": 60,
+        "worstMs": 28,
+        "calls": 4,
+        "triangles": 12244,
+        "dpr": 1,
+        "geometries": 4,
+        "textures": 3,
+        "programs": 3,
+        "frame": 1544
+      },
+      "blood": {
+        "fps": 57,
+        "worstMs": 70,
+        "calls": 10,
+        "triangles": 15180,
+        "dpr": 1,
+        "geometries": 10,
+        "textures": 3,
+        "programs": 6,
+        "frame": 1659
+      }
+    },
+    {
+      "i": 7,
+      "plain": {
+        "fps": 60,
+        "worstMs": 23,
+        "calls": 4,
+        "triangles": 12244,
+        "dpr": 1,
+        "geometries": 4,
+        "textures": 3,
+        "programs": 3,
+        "frame": 1773
+      },
+      "blood": {
+        "fps": 57,
+        "worstMs": 70,
+        "calls": 10,
+        "triangles": 15180,
+        "dpr": 1,
+        "geometries": 10,
+        "textures": 3,
+        "programs": 6,
+        "frame": 1888
+      }
+    },
+    {
+      "i": 8,
+      "plain": {
+        "fps": 59,
+        "worstMs": 39,
+        "calls": 4,
+        "triangles": 12244,
+        "dpr": 1,
+        "geometries": 4,
+        "textures": 3,
+        "programs": 3,
+        "frame": 2003
+      },
+      "blood": {
+        "fps": 57,
+        "worstMs": 68,
+        "calls": 10,
+        "triangles": 15180,
+        "dpr": 1,
+        "geometries": 10,
+        "textures": 3,
+        "programs": 6,
+        "frame": 2119
+      }
+    },
+    {
+      "i": 9,
+      "plain": {
+        "fps": 59,
+        "worstMs": 36,
+        "calls": 4,
+        "triangles": 12244,
+        "dpr": 1,
+        "geometries": 4,
+        "textures": 3,
+        "programs": 3,
+        "frame": 2233
+      },
+      "blood": {
+        "fps": 57,
+        "worstMs": 69,
+        "calls": 10,
+        "triangles": 15180,
+        "dpr": 1,
+        "geometries": 10,
+        "textures": 3,
+        "programs": 6,
+        "frame": 2349
+      }
+    },
+    {
+      "i": 10,
+      "plain": {
+        "fps": 58,
+        "worstMs": 42,
+        "calls": 4,
+        "triangles": 12244,
+        "dpr": 1,
+        "geometries": 4,
+        "textures": 3,
+        "programs": 3,
+        "frame": 2464
+      },
+      "blood": {
+        "fps": 56,
+        "worstMs": 85,
+        "calls": 10,
+        "triangles": 15180,
+        "dpr": 1,
+        "geometries": 10,
+        "textures": 3,
+        "programs": 6,
+        "frame": 2578
+      }
+    },
+    {
+      "i": 11,
+      "plain": {
+        "fps": 60,
+        "worstMs": 24,
+        "calls": 4,
+        "triangles": 12244,
+        "dpr": 1,
+        "geometries": 4,
+        "textures": 3,
+        "programs": 3,
+        "frame": 2693
+      },
+      "blood": {
+        "fps": 56,
+        "worstMs": 77,
+        "calls": 10,
+        "triangles": 15180,
+        "dpr": 1,
+        "geometries": 10,
+        "textures": 3,
+        "programs": 6,
+        "frame": 2809
+      }
+    },
+    {
+      "i": 12,
+      "plain": {
+        "fps": 60,
+        "worstMs": 28,
+        "calls": 4,
+        "triangles": 12244,
+        "dpr": 1,
+        "geometries": 4,
+        "textures": 3,
+        "programs": 3,
+        "frame": 2924
+      },
+      "blood": {
+        "fps": 57,
+        "worstMs": 71,
+        "calls": 10,
+        "triangles": 15180,
+        "dpr": 1,
+        "geometries": 10,
+        "textures": 3,
+        "programs": 6,
+        "frame": 3039
+      }
+    },
+    {
+      "i": 13,
+      "plain": {
+        "fps": 59,
+        "worstMs": 39,
+        "calls": 4,
+        "triangles": 12244,
+        "dpr": 1,
+        "geometries": 4,
+        "textures": 3,
+        "programs": 3,
+        "frame": 3154
+      },
+      "blood": {
+        "fps": 56,
+        "worstMs": 88,
+        "calls": 10,
+        "triangles": 15180,
+        "dpr": 1,
+        "geometries": 10,
+        "textures": 3,
+        "programs": 6,
+        "frame": 3271
+      }
+    }
+  ],
+  "errors": [],
+  "checks": [
+    "14 次場景往返共用同一 Canvas，暖機後 geometry／texture／program 數穩定",
+    "隱藏舞台停止持續渲染與效能取樣",
+    "恢復顯示後同一 Canvas 繼續渲染",
+    "高／低畫質切換、省電 DPR1，0 瀏覽器錯誤"
+  ],
+  "passed": true,
+  "highQuality": {
+    "fps": 16,
+    "worstMs": 740,
+    "calls": 27,
+    "triangles": 15197,
+    "dpr": 1.5,
+    "geometries": 11,
+    "textures": 20,
+    "programs": 16,
+    "frame": 3444
+  },
+  "lowQuality": {
+    "fps": 60,
+    "worstMs": 19,
+    "calls": 27,
+    "triangles": 15197,
+    "dpr": 1,
+    "geometries": 10,
+    "textures": 3,
+    "programs": 12,
+    "frame": 3590
+  }
+}

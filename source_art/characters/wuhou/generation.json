@@ -1,0 +1,16 @@
+{
+  "id": "wuhou",
+  "date": "2026-10-05",
+  "references": "docs/art-references/characters/README.md",
+  "sheet": "sheet_pal1_v1.png",
+  "views": "front / left / back / right, 1024²",
+  "meshGenerator": "Hunyuan3D MV turbo",
+  "checkpoint": "hunyuan3d-dit-v2-mv-turbo.safetensors",
+  "seed": 202610053,
+  "steps": 5,
+  "octree": 320,
+  "pipeline": "tools/blender/build_character.py + rig.json",
+  "candidate": "raw_candidate_pal1_v1.glb",
+  "final": "public/assets/characters/wuhou.glb",
+  "sha256": "3afb45f5a8271b1eac259f4f9bed45c613b321225e14f7f6b177d1e62473cdef"
+}

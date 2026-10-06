@@ -1,47 +1,49 @@
-# Godot local/editor cache
-.godot/
-
-# Godot export output
-export/
-exports/
-build/
-builds/
-*.pck
-*.zip
-*.exe
-*.apk
-*.aab
-*.ipa
-
-# OS/editor noise
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+.vite/
+*.log
 .DS_Store
 Thumbs.db
-desktop.ini
-.vscode/
-.idea/
+# 美術工作檔（大型原始輸出另存 source_art/，只把定稿放進 public/assets/）
+source_art/**/raw_*
+
+# 開發用替身素材（不入庫）
+public/assets/dev/
+*.tsbuildinfo
+capture_out/
+/hosting/
+
+# 由 tools/art/build_jobs.py 產生
+tools/art/jobs/
+
+# 批次 2D 原圖（卡圖、立繪、頭像）可由 tools/art 依提示詞＋固定種子重跑，不入庫；遊戲用的縮圖在 public/assets/
+source_art/cards/
+source_art/enemies/
+source_art/portraits/
+source_art/characters/*_standee.png
+source_art/story/
+source_art/maps/
+source_art/cards_v1/
+source_art/cards_test/
+source_art/battle/
+/tools/blender/__pycache__/
+
+# 保留在本機的舊引擎快取、附件與工作輸出，不加入新版 Git
+.godot/
 .claude/
 .jdk17/
-
-# Scratch / experimental output
-tmp/
-
-# 美術後處理工具的二進位與模型（下載方式見 tools/art_post.py 檔頭）
-tools/bin/
-
-# AI balance harness 暫存協定檔（單開根目錄 / 多開 _ai_runs/<session>/）
-_ai_view.json
-_ai_cmd.json
-_ai_result.json
-_ai_transcript.json
-_ai_err.txt
+.codex-remote-attachments/
 _ai_runs/
+_ai_*.json
 _run_log.jsonl
+_relic_popup_preview.png
+.gitattributes.bak
+/tmp/
+/build/
+/assets/
+/source_art/li_xiaoyao_3d/
 
-# render-probe 暫存截圖
-_*.png
-
-# 暫存：smoke/輸出記錄
-smoke_out.txt
-imp.txt
-dump.txt
-noop.txt
+/tools/bin/

@@ -1,0 +1,10 @@
+{
+  "checks": [
+    "success: fullscreen → lock ordering / fallback / landscape overlay hidden",
+    "denied: fullscreen → lock ordering / fallback / landscape overlay hidden",
+    "fullscreen-denied: fullscreen → lock ordering / fallback / landscape overlay hidden",
+    "unsupported: fullscreen → lock ordering / fallback / landscape overlay hidden",
+    "desktop: no orientation overlay"
+  ],
+  "errors": []
+}

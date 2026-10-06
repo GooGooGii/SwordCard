@@ -1,0 +1,67 @@
+{
+  "captures": [
+    {
+      "id": "yueru",
+      "mobile": false,
+      "party": [
+        "li_xiaoyao",
+        "zhao_linger",
+        "lin_yueru"
+      ],
+      "outside": [],
+      "cards": 8,
+      "path": "docs/previews/characters/four-style-d-final/production/yueru-desktop.png"
+    },
+    {
+      "id": "anu-wuhou",
+      "mobile": false,
+      "party": [
+        "li_xiaoyao",
+        "anu",
+        "wuhou"
+      ],
+      "outside": [],
+      "cards": 8,
+      "path": "docs/previews/characters/four-style-d-final/production/anu-wuhou-desktop.png"
+    },
+    {
+      "id": "yueru",
+      "mobile": true,
+      "party": [
+        "li_xiaoyao",
+        "zhao_linger",
+        "lin_yueru"
+      ],
+      "outside": [],
+      "cards": 8,
+      "path": "docs/previews/characters/four-style-d-final/production/yueru-mobile.png"
+    },
+    {
+      "id": "anu-wuhou",
+      "mobile": true,
+      "party": [
+        "li_xiaoyao",
+        "anu",
+        "wuhou"
+      ],
+      "outside": [],
+      "cards": 8,
+      "path": "docs/previews/characters/four-style-d-final/production/anu-wuhou-mobile.png"
+    }
+  ],
+  "errors": [],
+  "models": [
+    "http://127.0.0.1:5176/assets/characters/li_xiaoyao_style_d_ready_v2.glb",
+    "http://127.0.0.1:5176/assets/characters/zhao_linger_style_d_v3.glb",
+    "http://127.0.0.1:5176/assets/characters/lin_yueru_style_d_v4.glb",
+    "http://127.0.0.1:5176/assets/characters/li_xiaoyao_style_d_ready_v2.glb",
+    "http://127.0.0.1:5176/assets/characters/anu_style_d_v3.glb",
+    "http://127.0.0.1:5176/assets/characters/wuhou_style_d_v3.glb",
+    "http://127.0.0.1:5176/assets/characters/li_xiaoyao_style_d_ready_v2.glb",
+    "http://127.0.0.1:5176/assets/characters/zhao_linger_style_d_v3.glb",
+    "http://127.0.0.1:5176/assets/characters/lin_yueru_style_d_v4.glb",
+    "http://127.0.0.1:5176/assets/characters/li_xiaoyao_style_d_ready_v2.glb",
+    "http://127.0.0.1:5176/assets/characters/anu_style_d_v3.glb",
+    "http://127.0.0.1:5176/assets/characters/wuhou_style_d_v3.glb"
+  ]
+}

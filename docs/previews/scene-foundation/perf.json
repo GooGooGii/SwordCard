@@ -1,0 +1,18 @@
+{
+  "url": "http://localhost:5173/?perf",
+  "perfRest": {
+    "fps": 54,
+    "worstMs": 66,
+    "calls": 47,
+    "triangles": 90213,
+    "dpr": 1
+  },
+  "perfAfter": {
+    "fps": 56,
+    "worstMs": 50,
+    "calls": 47,
+    "triangles": 90213,
+    "dpr": 1
+  },
+  "errors": []
+}

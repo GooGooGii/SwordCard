@@ -1,0 +1,8 @@
+.mobile-orientation { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 24px; background: rgba(16, 13, 11, .97); color: #eee1c5; text-align: center; }
+.mobile-orientation-panel { max-width: 320px; padding: 28px 20px; border: 1px solid #8b7342; border-radius: 10px; background: #231c14; }
+.mobile-orientation h2 { margin: 12px 0; font-size: 26px; font-weight: normal; }
+.mobile-orientation p { line-height: 1.7; }
+.mobile-orientation-phone { font-size: 54px; color: #c9ac68; }
+.mobile-orientation button { display: block; width: 100%; min-height: 48px; margin-top: 18px; padding: 10px; border: 1px solid #c9ac68; border-radius: 6px; background: #59432a; color: #fff1d0; font: inherit; }
+.mobile-orientation button:disabled { opacity: .6; }
+.mobile-orientation .mobile-orientation-skip { margin-top: 10px; background: transparent; border-color: transparent; color: #c4b99f; }

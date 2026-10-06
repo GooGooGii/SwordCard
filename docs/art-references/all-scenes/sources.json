@@ -1,0 +1,156 @@
+[
+  {
+    "id": "shilipo",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch1-07-level-up.webp",
+    "file": "shilipo.webp",
+    "referenceType": "battle"
+  },
+  {
+    "id": "yuhang_inn",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch1-16-siege-start.webp",
+    "file": "yuhang_inn.webp",
+    "referenceType": "battle"
+  },
+  {
+    "id": "xianling",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch1-04-island-path-battle.webp",
+    "file": "xianling.webp",
+    "referenceType": "battle"
+  },
+  {
+    "id": "suzhou_road",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch2-01-meet-yueru.webp",
+    "file": "suzhou_road.webp",
+    "referenceType": "exploration"
+  },
+  {
+    "id": "lin_arena",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch2-07-contest-battle-start.webp",
+    "file": "lin_arena.webp",
+    "referenceType": "battle"
+  },
+  {
+    "id": "yinlong_cave",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch2-19-halfsnake-boss-start.webp",
+    "file": "yinlong_cave.webp",
+    "referenceType": "battle"
+  },
+  {
+    "id": "baihe",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch3-01-baihe-village-start.webp",
+    "file": "baihe.webp",
+    "referenceType": "exploration"
+  },
+  {
+    "id": "graveyard",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch3-17-luanzang-incense.webp",
+    "file": "graveyard.webp",
+    "referenceType": "exploration"
+  },
+  {
+    "id": "general_tomb",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch3-23-jiangshiwang-start.webp",
+    "file": "general_tomb.webp",
+    "referenceType": "battle"
+  },
+  {
+    "id": "guiyin",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch3-31-shizhanglao-start.webp",
+    "file": "guiyin.webp",
+    "referenceType": "battle"
+  },
+  {
+    "id": "yangzhou",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch4-04-thief-battle.webp",
+    "file": "yangzhou.webp",
+    "referenceType": "battle"
+  },
+  {
+    "id": "toad_hill",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch4-20-jinchan-start.webp",
+    "file": "toad_hill.webp",
+    "referenceType": "battle"
+  },
+  {
+    "id": "ministry",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch5-17-diejing-battle-start.webp",
+    "file": "ministry.webp",
+    "referenceType": "battle"
+  },
+  {
+    "id": "spider_forest",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch5-20-heizhizhu-battle-start.webp",
+    "file": "spider_forest.webp",
+    "referenceType": "battle"
+  },
+  {
+    "id": "demon_tower",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch6-10-jianlaotou-start.webp",
+    "file": "demon_tower.webp",
+    "referenceType": "battle"
+  },
+  {
+    "id": "tower_top",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch6-24-mingwang-start.webp",
+    "file": "tower_top.webp",
+    "referenceType": "battle"
+  },
+  {
+    "id": "sacred_forest",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch7-06-fenghuang-start.webp",
+    "file": "sacred_forest.webp",
+    "referenceType": "battle"
+  },
+  {
+    "id": "qilin_cave",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch7-20-huoqilin-start.webp",
+    "file": "qilin_cave.webp",
+    "referenceType": "battle"
+  },
+  {
+    "id": "water_maze",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch8-09-shuimoshou-battle.webp",
+    "file": "water_maze.webp",
+    "referenceType": "battle"
+  },
+  {
+    "id": "trial_cave",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch8-19-shiliankuwai-enter.webp",
+    "file": "trial_cave.webp",
+    "referenceType": "exploration"
+  },
+  {
+    "id": "nuwa_temple",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch8-23-niugui-battle.webp",
+    "file": "nuwa_temple.webp",
+    "referenceType": "battle"
+  },
+  {
+    "id": "nanzhao_palace",
+    "version": "PAL1 DOS",
+    "url": "https://codingman.cc/images/pal-dos-walkthrough/ch8-39-baiyue-battle-start.webp",
+    "file": "nanzhao_palace.webp",
+    "referenceType": "battle"
+  }
+]

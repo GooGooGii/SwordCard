@@ -1,0 +1,471 @@
+[
+  {
+    "name": "desktop",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "quality": "high",
+    "url": "http://localhost:5173/?dev=3:c3_bloodpool&scenery=blood_pool&scenePerf",
+    "fixture": null,
+    "perfRest": {
+      "fps": 52,
+      "worstMs": 160,
+      "calls": 49,
+      "triangles": 64589,
+      "dpr": 1
+    },
+    "perfAfter": {
+      "fps": 60,
+      "worstMs": 24,
+      "calls": 49,
+      "triangles": 64589,
+      "dpr": 1
+    },
+    "layout": {
+      "hudOutside": [],
+      "handOutside": [
+        {
+          "selector": ".bt-card",
+          "text": "2九截鞭攻擊・林月如造成 3 點傷害 5 次。",
+          "x": 337,
+          "y": 548,
+          "right": 504,
+          "bottom": 760
+        },
+        {
+          "selector": ".bt-card",
+          "text": "1護身技能・李逍遙獲得 5 點護體。",
+          "x": 454,
+          "y": 544,
+          "right": 607,
+          "bottom": 747
+        },
+        {
+          "selector": ".bt-card",
+          "text": "1林家架式技能・林月如獲得 5 點護體。",
+          "x": 571,
+          "y": 540,
+          "right": 709,
+          "bottom": 733
+        },
+        {
+          "selector": ".bt-card",
+          "text": "1風越女劍攻擊・林月如造成 9 點傷害。抽 1 張牌。",
+          "x": 673,
+          "y": 544,
+          "right": 826,
+          "bottom": 747
+        },
+        {
+          "selector": ".bt-card",
+          "text": "2水風雪冰天仙術・趙靈兒對所有敵人造成 6 點傷害。使所有敵人弱化 2。",
+          "x": 776,
+          "y": 548,
+          "right": 943,
+          "bottom": 760
+        }
+      ],
+      "candidate": "blood_pool"
+    },
+    "playedCard": true,
+    "errors": [],
+    "passed": true
+  },
+  {
+    "name": "mobile",
+    "viewport": {
+      "width": 844,
+      "height": 390
+    },
+    "quality": "high",
+    "url": "http://localhost:5173/?dev=3:c3_bloodpool&scenery=blood_pool&scenePerf",
+    "fixture": null,
+    "perfRest": {
+      "fps": 53,
+      "worstMs": 136,
+      "calls": 49,
+      "triangles": 64589,
+      "dpr": 1.5
+    },
+    "perfAfter": {
+      "fps": 55,
+      "worstMs": 128,
+      "calls": 49,
+      "triangles": 64589,
+      "dpr": 1.5
+    },
+    "layout": {
+      "hudOutside": [],
+      "handOutside": [
+        {
+          "selector": ".bt-card",
+          "text": "2九截鞭攻擊・林月如造成 3 點傷害 5 次。",
+          "x": 233,
+          "y": 303,
+          "right": 349,
+          "bottom": 450
+        },
+        {
+          "selector": ".bt-card",
+          "text": "1護身技能・李逍遙獲得 5 點護體。",
+          "x": 303,
+          "y": 297,
+          "right": 410,
+          "bottom": 438
+        },
+        {
+          "selector": ".bt-card",
+          "text": "1林家架式技能・林月如獲得 5 點護體。",
+          "x": 374,
+          "y": 291,
+          "right": 470,
+          "bottom": 425
+        },
+        {
+          "selector": ".bt-card",
+          "text": "1風越女劍攻擊・林月如造成 9 點傷害。抽 1 張牌。",
+          "x": 434,
+          "y": 297,
+          "right": 541,
+          "bottom": 438
+        },
+        {
+          "selector": ".bt-card",
+          "text": "2水風雪冰天仙術・趙靈兒對所有敵人造成 6 點傷害。使所有敵人弱化 2。",
+          "x": 495,
+          "y": 303,
+          "right": 611,
+          "bottom": 450
+        }
+      ],
+      "candidate": "blood_pool"
+    },
+    "playedCard": true,
+    "errors": [],
+    "passed": true
+  },
+  {
+    "name": "mobile-low",
+    "viewport": {
+      "width": 844,
+      "height": 390
+    },
+    "quality": "low",
+    "url": "http://localhost:5173/?dev=3:c3_bloodpool&scenery=blood_pool&scenePerf",
+    "fixture": null,
+    "perfRest": {
+      "fps": 57,
+      "worstMs": 67,
+      "calls": 32,
+      "triangles": 64572,
+      "dpr": 1
+    },
+    "perfAfter": {
+      "fps": 61,
+      "worstMs": 21,
+      "calls": 32,
+      "triangles": 64572,
+      "dpr": 1
+    },
+    "layout": {
+      "hudOutside": [],
+      "handOutside": [
+        {
+          "selector": ".bt-card",
+          "text": "2九截鞭攻擊・林月如造成 3 點傷害 5 次。",
+          "x": 233,
+          "y": 303,
+          "right": 349,
+          "bottom": 450
+        },
+        {
+          "selector": ".bt-card",
+          "text": "1護身技能・李逍遙獲得 5 點護體。",
+          "x": 303,
+          "y": 297,
+          "right": 410,
+          "bottom": 438
+        },
+        {
+          "selector": ".bt-card",
+          "text": "1林家架式技能・林月如獲得 5 點護體。",
+          "x": 374,
+          "y": 291,
+          "right": 470,
+          "bottom": 425
+        },
+        {
+          "selector": ".bt-card",
+          "text": "1風越女劍攻擊・林月如造成 9 點傷害。抽 1 張牌。",
+          "x": 434,
+          "y": 297,
+          "right": 541,
+          "bottom": 438
+        },
+        {
+          "selector": ".bt-card",
+          "text": "2水風雪冰天仙術・趙靈兒對所有敵人造成 6 點傷害。使所有敵人弱化 2。",
+          "x": 495,
+          "y": 303,
+          "right": 611,
+          "bottom": 450
+        }
+      ],
+      "candidate": "blood_pool"
+    },
+    "playedCard": true,
+    "errors": [],
+    "passed": true
+  },
+  {
+    "name": "desktop-crowded",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "quality": "high",
+    "url": "http://localhost:5173/?scenery=blood_pool&scenePerf",
+    "fixture": {
+      "party": [
+        "li_xiaoyao",
+        "lin_yueru",
+        "zhao_linger"
+      ],
+      "medicines": [
+        "止血草",
+        "金創藥",
+        "雄黃酒"
+      ],
+      "relics": [
+        "wine_gourd",
+        "jade_buddha",
+        "wind_pearl",
+        "thunder_pearl",
+        "earth_pearl",
+        "seven_star_sword"
+      ],
+      "handCount": 8,
+      "budget": {
+        "mainDrawCalls": 9,
+        "shadowDrawCalls": 0,
+        "drawCalls": 9,
+        "triangles": 4426,
+        "withinBudget": true,
+        "violations": []
+      }
+    },
+    "perfRest": {
+      "fps": 60,
+      "worstMs": 18,
+      "calls": 49,
+      "triangles": 64589,
+      "dpr": 1
+    },
+    "perfAfter": {
+      "fps": 54,
+      "worstMs": 123,
+      "calls": 49,
+      "triangles": 64589,
+      "dpr": 1
+    },
+    "layout": {
+      "hudOutside": [],
+      "handOutside": [
+        {
+          "selector": ".bt-card",
+          "text": "2九截鞭攻擊・林月如造成 4 點傷害 5 次。",
+          "x": 164,
+          "y": 556,
+          "right": 349,
+          "bottom": 779
+        },
+        {
+          "selector": ".bt-card",
+          "text": "1護身技能・李逍遙獲得 5 點護體。",
+          "x": 279,
+          "y": 551,
+          "right": 453,
+          "bottom": 767
+        },
+        {
+          "selector": ".bt-card",
+          "text": "1雙鞭連擊攻擊・林月如造成 5 點傷害 2 次。",
+          "x": 396,
+          "y": 546,
+          "right": 556,
+          "bottom": 754
+        },
+        {
+          "selector": ".bt-card",
+          "text": "0止血草道具・無主一名隊友回復 10 點生命。消耗。",
+          "x": 512,
+          "y": 542,
+          "right": 658,
+          "bottom": 740
+        },
+        {
+          "selector": ".bt-card",
+          "text": "0金創藥道具・無主一名隊友回復 20 點生命。消耗。",
+          "x": 622,
+          "y": 542,
+          "right": 768,
+          "bottom": 740
+        },
+        {
+          "selector": ".bt-card",
+          "text": "0雄黃酒道具・無主解除全隊的弱化、破綻與中毒。抽 1 張牌。消耗。",
+          "x": 724,
+          "y": 546,
+          "right": 884,
+          "bottom": 754
+        },
+        {
+          "selector": ".bt-card",
+          "text": "1雙鞭連擊攻擊・林月如造成 5 點傷害 2 次。",
+          "x": 827,
+          "y": 551,
+          "right": 1001,
+          "bottom": 767
+        },
+        {
+          "selector": ".bt-card",
+          "text": "2女媧祈願技能・趙靈兒全隊回復 6 點生命。",
+          "x": 931,
+          "y": 556,
+          "right": 1116,
+          "bottom": 779
+        }
+      ],
+      "candidate": "blood_pool"
+    },
+    "playedCard": true,
+    "errors": [],
+    "passed": true
+  },
+  {
+    "name": "mobile-crowded",
+    "viewport": {
+      "width": 844,
+      "height": 390
+    },
+    "quality": "high",
+    "url": "http://localhost:5173/?scenery=blood_pool&scenePerf",
+    "fixture": {
+      "party": [
+        "li_xiaoyao",
+        "lin_yueru",
+        "zhao_linger"
+      ],
+      "medicines": [
+        "止血草",
+        "金創藥",
+        "雄黃酒"
+      ],
+      "relics": [
+        "wine_gourd",
+        "jade_buddha",
+        "wind_pearl",
+        "thunder_pearl",
+        "earth_pearl",
+        "seven_star_sword"
+      ],
+      "handCount": 8,
+      "budget": {
+        "mainDrawCalls": 9,
+        "shadowDrawCalls": 0,
+        "drawCalls": 9,
+        "triangles": 4426,
+        "withinBudget": true,
+        "violations": []
+      }
+    },
+    "perfRest": {
+      "fps": 53,
+      "worstMs": 134,
+      "calls": 49,
+      "triangles": 64589,
+      "dpr": 1.5
+    },
+    "perfAfter": {
+      "fps": 60,
+      "worstMs": 21,
+      "calls": 49,
+      "triangles": 64589,
+      "dpr": 1.5
+    },
+    "layout": {
+      "hudOutside": [],
+      "handOutside": [
+        {
+          "selector": ".bt-card",
+          "text": "2九截鞭攻擊・林月如造成 4 點傷害 5 次。",
+          "x": 128,
+          "y": 312,
+          "right": 257,
+          "bottom": 467
+        },
+        {
+          "selector": ".bt-card",
+          "text": "1護身技能・李逍遙獲得 5 點護體。",
+          "x": 198,
+          "y": 306,
+          "right": 318,
+          "bottom": 456
+        },
+        {
+          "selector": ".bt-card",
+          "text": "1雙鞭連擊攻擊・林月如造成 5 點傷害 2 次。",
+          "x": 268,
+          "y": 300,
+          "right": 379,
+          "bottom": 444
+        },
+        {
+          "selector": ".bt-card",
+          "text": "0止血草道具・無主一名隊友回復 10 點生命。消耗。",
+          "x": 338,
+          "y": 294,
+          "right": 440,
+          "bottom": 432
+        },
+        {
+          "selector": ".bt-card",
+          "text": "0金創藥道具・無主一名隊友回復 20 點生命。消耗。",
+          "x": 404,
+          "y": 294,
+          "right": 506,
+          "bottom": 432
+        },
+        {
+          "selector": ".bt-card",
+          "text": "0雄黃酒道具・無主解除全隊的弱化、破綻與中毒。抽 1 張牌。消耗。",
+          "x": 465,
+          "y": 300,
+          "right": 576,
+          "bottom": 444
+        },
+        {
+          "selector": ".bt-card",
+          "text": "1雙鞭連擊攻擊・林月如造成 5 點傷害 2 次。",
+          "x": 526,
+          "y": 306,
+          "right": 646,
+          "bottom": 456
+        },
+        {
+          "selector": ".bt-card",
+          "text": "2女媧祈願技能・趙靈兒全隊回復 6 點生命。",
+          "x": 587,
+          "y": 312,
+          "right": 716,
+          "bottom": 467
+        }
+      ],
+      "candidate": "blood_pool"
+    },
+    "playedCard": true,
+    "errors": [],
+    "passed": true
+  }
+]

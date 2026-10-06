@@ -1,0 +1,16 @@
+{
+  "id": "lin_yueru",
+  "date": "2026-10-05",
+  "references": "docs/art-references/characters/README.md",
+  "sheet": "sheet_pal1_v1.png",
+  "views": "front / left / back / right, 1024²",
+  "meshGenerator": "Hunyuan3D MV turbo",
+  "checkpoint": "hunyuan3d-dit-v2-mv-turbo.safetensors",
+  "seed": 202610051,
+  "steps": 5,
+  "octree": 320,
+  "pipeline": "tools/blender/build_character.py + rig.json",
+  "candidate": "raw_candidate_pal1_v1.glb",
+  "final": "public/assets/characters/lin_yueru.glb",
+  "sha256": "098a4357860d7740ad74a5a6ffc734beb518cf2b7a1e477f7c03aa8a15e4141e"
+}

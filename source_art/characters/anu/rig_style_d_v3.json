@@ -1,0 +1,342 @@
+{
+  "id": "anu",
+  "raw": "raw_style_d_healed_v3.glb",
+  "views": "views_style_d_v1",
+  "out": "raw_candidate_style_d_v3.glb",
+  "height": 1.55,
+  "front_axis": "-Y",
+  "faces": 14000,
+  "remesh": 0.0035,
+  "texture_size": 2048,
+  "joints": {
+    "pelvis": [
+      0,
+      0.49
+    ],
+    "spine": [
+      0,
+      0.58
+    ],
+    "chest": [
+      0,
+      0.7
+    ],
+    "neck": [
+      0,
+      0.78
+    ],
+    "head": [
+      0,
+      0.84
+    ],
+    "head_top": [
+      0,
+      0.99
+    ],
+    "shoulder": [
+      0.1,
+      0.73
+    ],
+    "elbow": [
+      0.18,
+      0.615
+    ],
+    "wrist": [
+      0.235,
+      0.49
+    ],
+    "hand_tip": [
+      0.25,
+      0.43
+    ],
+    "hip": [
+      0.055,
+      0.49
+    ],
+    "knee": [
+      0.08,
+      0.255
+    ],
+    "ankle": [
+      0.09,
+      0.035
+    ]
+  },
+  "weapon": {
+    "kind": "dao",
+    "length": 0.3,
+    "style": "pal1"
+  },
+  "poses": {
+    "relax": {
+      "upper_arm.L": [
+        0.4,
+        -0.05,
+        -0.915
+      ],
+      "forearm.L": [
+        0.22,
+        -0.23,
+        -0.948
+      ],
+      "upper_arm.R": [
+        -0.4,
+        -0.05,
+        -0.915
+      ],
+      "forearm.R": [
+        -0.22,
+        -0.23,
+        -0.948
+      ],
+      "hand.R": [
+        -0.15,
+        -0.18,
+        -0.972
+      ],
+      "_weapon": "hand",
+      "hand.L": [
+        0.15,
+        -0.18,
+        -0.972
+      ]
+    },
+    "breath": {
+      "chest": [
+        0.0,
+        0.03,
+        1.0
+      ],
+      "head": [
+        0.0,
+        -0.03,
+        1.0
+      ],
+      "upper_arm.L": [
+        0.4,
+        -0.05,
+        -0.915
+      ],
+      "forearm.L": [
+        0.22,
+        -0.23,
+        -0.948
+      ],
+      "upper_arm.R": [
+        -0.4,
+        -0.05,
+        -0.915
+      ],
+      "forearm.R": [
+        -0.22,
+        -0.23,
+        -0.948
+      ],
+      "hand.R": [
+        -0.15,
+        -0.18,
+        -0.972
+      ],
+      "_weapon": "hand",
+      "hand.L": [
+        0.15,
+        -0.18,
+        -0.972
+      ]
+    },
+    "gather": {
+      "chest": [
+        0.0,
+        0.06,
+        1.0
+      ],
+      "head": [
+        0.0,
+        0.08,
+        1.0
+      ],
+      "upper_arm.L": [
+        0.35,
+        -0.3,
+        -0.89
+      ],
+      "forearm.L": [
+        0.05,
+        -0.75,
+        -0.66
+      ],
+      "hand.L": [
+        -0.1,
+        -0.8,
+        -0.59
+      ],
+      "upper_arm.R": [
+        -0.35,
+        -0.3,
+        -0.89
+      ],
+      "forearm.R": [
+        -0.05,
+        -0.75,
+        -0.66
+      ],
+      "hand.R": [
+        0.1,
+        -0.8,
+        -0.59
+      ],
+      "_weapon": "hand"
+    },
+    "release": {
+      "spine": [
+        0.0,
+        -0.12,
+        0.99
+      ],
+      "chest": [
+        0.0,
+        -0.15,
+        0.99
+      ],
+      "head": [
+        0.0,
+        -0.05,
+        1.0
+      ],
+      "upper_arm.L": [
+        0.3,
+        -0.75,
+        -0.59
+      ],
+      "forearm.L": [
+        0.2,
+        -0.95,
+        -0.24
+      ],
+      "hand.L": [
+        0.15,
+        -0.95,
+        0.27
+      ],
+      "upper_arm.R": [
+        -0.35,
+        0.1,
+        -0.93
+      ],
+      "forearm.R": [
+        -0.25,
+        -0.1,
+        -0.96
+      ],
+      "_weapon": "hand"
+    },
+    "recoil": {
+      "_pelvis": [
+        0.0,
+        0.05,
+        0.0
+      ],
+      "spine": [
+        0.0,
+        0.2,
+        0.98
+      ],
+      "chest": [
+        0.0,
+        0.22,
+        0.98
+      ],
+      "head": [
+        0.0,
+        0.28,
+        0.96
+      ],
+      "upper_arm.L": [
+        0.4,
+        -0.2,
+        -0.89
+      ],
+      "forearm.L": [
+        0.2,
+        -0.6,
+        -0.77
+      ],
+      "upper_arm.R": [
+        -0.4,
+        -0.2,
+        -0.89
+      ],
+      "forearm.R": [
+        -0.2,
+        -0.6,
+        -0.77
+      ],
+      "_weapon": "hand"
+    }
+  },
+  "actions": {
+    "idle": {
+      "loop": true,
+      "keys": [
+        [
+          1,
+          "relax"
+        ],
+        [
+          33,
+          "breath"
+        ],
+        [
+          66,
+          "relax"
+        ]
+      ]
+    },
+    "attack": {
+      "loop": false,
+      "keys": [
+        [
+          1,
+          "relax"
+        ],
+        [
+          9,
+          "gather"
+        ],
+        [
+          16,
+          "release"
+        ],
+        [
+          28,
+          "release"
+        ],
+        [
+          40,
+          "relax"
+        ]
+      ]
+    },
+    "hit": {
+      "loop": false,
+      "keys": [
+        [
+          1,
+          "relax"
+        ],
+        [
+          4,
+          "recoil"
+        ],
+        [
+          16,
+          "relax"
+        ]
+      ]
+    }
+  },
+  "garment_waist": 0.49,
+  "projection_visibility_floor": 0,
+  "surface_smooth_iterations": 2,
+  "surface_smooth_factor": 0.45
+}

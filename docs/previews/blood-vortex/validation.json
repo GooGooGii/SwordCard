@@ -1,0 +1,354 @@
+[
+  {
+    "name": "official-art",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "quality": "high",
+    "url": "http://localhost:5173/?scenePerf",
+    "fixture": {
+      "party": [
+        "li_xiaoyao",
+        "lin_yueru",
+        "zhao_linger"
+      ],
+      "medicines": [
+        "止血草",
+        "金創藥",
+        "雄黃酒"
+      ],
+      "relics": [
+        "wine_gourd",
+        "jade_buddha",
+        "wind_pearl",
+        "thunder_pearl",
+        "earth_pearl",
+        "seven_star_sword"
+      ],
+      "handCount": 8,
+      "budget": {
+        "mainDrawCalls": 9,
+        "shadowDrawCalls": 0,
+        "drawCalls": 9,
+        "triangles": 15178,
+        "withinBudget": true,
+        "violations": []
+      }
+    },
+    "candidateResponses": [
+      {
+        "url": "http://localhost:5173/assets/enemies/red_ghost_king.webp",
+        "status": 200
+      },
+      {
+        "url": "http://localhost:5173/assets/enemies/red_ghost_king.webp",
+        "status": 200
+      }
+    ],
+    "layout": {
+      "hudOutside": [],
+      "intentLeftOfBody": true,
+      "scenery": null,
+      "bossArt": null
+    },
+    "medicineChecks": [],
+    "hpBefore": [
+      "55 / 84",
+      "40 / 80",
+      "54 / 70",
+      "160 / 160"
+    ],
+    "hpAfter": [
+      "75 / 84",
+      "40 / 80",
+      "54 / 70",
+      "160 / 160"
+    ],
+    "hpAfterAttack": [
+      "75 / 84",
+      "40 / 80",
+      "54 / 70",
+      "150 / 160"
+    ],
+    "consumed": true,
+    "healed": true,
+    "damagedBoss": true,
+    "errors": [],
+    "passed": true
+  },
+  {
+    "name": "desktop",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "quality": "high",
+    "url": "http://localhost:5173/?scenery=blood_pool&scenePerf",
+    "fixture": {
+      "party": [
+        "li_xiaoyao",
+        "lin_yueru",
+        "zhao_linger"
+      ],
+      "medicines": [
+        "止血草",
+        "金創藥",
+        "雄黃酒"
+      ],
+      "relics": [
+        "wine_gourd",
+        "jade_buddha",
+        "wind_pearl",
+        "thunder_pearl",
+        "earth_pearl",
+        "seven_star_sword"
+      ],
+      "handCount": 8,
+      "budget": {
+        "mainDrawCalls": 9,
+        "shadowDrawCalls": 0,
+        "drawCalls": 9,
+        "triangles": 15178,
+        "withinBudget": true,
+        "violations": []
+      }
+    },
+    "candidateResponses": [
+      {
+        "url": "http://localhost:5173/assets/enemies/red_ghost_king.webp",
+        "status": 200
+      },
+      {
+        "url": "http://localhost:5173/assets/enemies/red_ghost_king.webp",
+        "status": 200
+      }
+    ],
+    "layout": {
+      "hudOutside": [],
+      "intentLeftOfBody": true,
+      "scenery": "blood_pool",
+      "bossArt": null
+    },
+    "perf": {
+      "fps": 60,
+      "worstMs": 19,
+      "calls": 49,
+      "triangles": 75341,
+      "dpr": 1
+    },
+    "medicineChecks": [],
+    "hpBefore": [
+      "55 / 84",
+      "40 / 80",
+      "54 / 70",
+      "160 / 160"
+    ],
+    "hpAfter": [
+      "75 / 84",
+      "40 / 80",
+      "54 / 70",
+      "160 / 160"
+    ],
+    "hpAfterAttack": [
+      "75 / 84",
+      "40 / 80",
+      "54 / 70",
+      "150 / 160"
+    ],
+    "consumed": true,
+    "healed": true,
+    "damagedBoss": true,
+    "errors": [],
+    "passed": true
+  },
+  {
+    "name": "mobile",
+    "viewport": {
+      "width": 844,
+      "height": 390
+    },
+    "quality": "high",
+    "url": "http://localhost:5173/?scenery=blood_pool&scenePerf",
+    "fixture": {
+      "party": [
+        "li_xiaoyao",
+        "lin_yueru",
+        "zhao_linger"
+      ],
+      "medicines": [
+        "止血草",
+        "金創藥",
+        "雄黃酒"
+      ],
+      "relics": [
+        "wine_gourd",
+        "jade_buddha",
+        "wind_pearl",
+        "thunder_pearl",
+        "earth_pearl",
+        "seven_star_sword"
+      ],
+      "handCount": 8,
+      "budget": {
+        "mainDrawCalls": 9,
+        "shadowDrawCalls": 0,
+        "drawCalls": 9,
+        "triangles": 15178,
+        "withinBudget": true,
+        "violations": []
+      }
+    },
+    "candidateResponses": [
+      {
+        "url": "http://localhost:5173/assets/enemies/red_ghost_king.webp",
+        "status": 200
+      },
+      {
+        "url": "http://localhost:5173/assets/enemies/red_ghost_king.webp",
+        "status": 200
+      }
+    ],
+    "layout": {
+      "hudOutside": [],
+      "intentLeftOfBody": true,
+      "scenery": "blood_pool",
+      "bossArt": null
+    },
+    "perf": {
+      "fps": 50,
+      "worstMs": 192,
+      "calls": 49,
+      "triangles": 75341,
+      "dpr": 1.5
+    },
+    "medicineChecks": [
+      {
+        "medicine": "止血草",
+        "text": "0\n止血草\n道具・無主\n一名隊友回復 10 點生命。消耗。",
+        "inside": true,
+        "releaseDidNotPlay": true
+      },
+      {
+        "medicine": "金創藥",
+        "text": "0\n金創藥\n道具・無主\n一名隊友回復 20 點生命。消耗。",
+        "inside": true,
+        "releaseDidNotPlay": true
+      },
+      {
+        "medicine": "雄黃酒",
+        "text": "0\n雄黃酒\n道具・無主\n解除全隊的弱化、破綻與中毒。抽 1 張牌。消耗。",
+        "inside": true,
+        "releaseDidNotPlay": true
+      }
+    ],
+    "hpBefore": [
+      "55 / 84",
+      "40 / 80",
+      "54 / 70",
+      "160 / 160"
+    ],
+    "hpAfter": [
+      "75 / 84",
+      "40 / 80",
+      "54 / 70",
+      "160 / 160"
+    ],
+    "hpAfterAttack": [
+      "75 / 84",
+      "40 / 80",
+      "54 / 70",
+      "150 / 160"
+    ],
+    "consumed": true,
+    "healed": true,
+    "damagedBoss": true,
+    "errors": [],
+    "passed": true
+  },
+  {
+    "name": "mobile-low",
+    "viewport": {
+      "width": 844,
+      "height": 390
+    },
+    "quality": "low",
+    "url": "http://localhost:5173/?scenery=blood_pool&scenePerf",
+    "fixture": {
+      "party": [
+        "li_xiaoyao",
+        "lin_yueru",
+        "zhao_linger"
+      ],
+      "medicines": [
+        "止血草",
+        "金創藥",
+        "雄黃酒"
+      ],
+      "relics": [
+        "wine_gourd",
+        "jade_buddha",
+        "wind_pearl",
+        "thunder_pearl",
+        "earth_pearl",
+        "seven_star_sword"
+      ],
+      "handCount": 8,
+      "budget": {
+        "mainDrawCalls": 9,
+        "shadowDrawCalls": 0,
+        "drawCalls": 9,
+        "triangles": 15178,
+        "withinBudget": true,
+        "violations": []
+      }
+    },
+    "candidateResponses": [
+      {
+        "url": "http://localhost:5173/assets/enemies/red_ghost_king.webp",
+        "status": 200
+      },
+      {
+        "url": "http://localhost:5173/assets/enemies/red_ghost_king.webp",
+        "status": 200
+      }
+    ],
+    "layout": {
+      "hudOutside": [],
+      "intentLeftOfBody": true,
+      "scenery": "blood_pool",
+      "bossArt": null
+    },
+    "perf": {
+      "fps": 55,
+      "worstMs": 113,
+      "calls": 32,
+      "triangles": 75324,
+      "dpr": 1
+    },
+    "medicineChecks": [],
+    "hpBefore": [
+      "55 / 84",
+      "40 / 80",
+      "54 / 70",
+      "160 / 160"
+    ],
+    "hpAfter": [
+      "75 / 84",
+      "40 / 80",
+      "54 / 70",
+      "160 / 160"
+    ],
+    "hpAfterAttack": [
+      "75 / 84",
+      "40 / 80",
+      "54 / 70",
+      "150 / 160"
+    ],
+    "consumed": true,
+    "healed": true,
+    "damagedBoss": true,
+    "errors": [],
+    "passed": true
+  }
+]

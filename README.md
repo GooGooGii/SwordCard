@@ -1,76 +1,24 @@
 # SwordCard
 
-Godot 4 仙劍1 同人卡牌戰鬥原型。這個專案是私人學習/展示用途，不處理公開發行、商用上架或素材授權。
+仙劍一私人粉絲向卡牌敘事遊戲。新版以 Three.js、React Three Fiber、React 與 TypeScript 製作；與先前 Godot 原型是同一個遊戲，沿用原 Git 歷史及 [SwordCard 儲存庫](https://github.com/GooGooGii/SwordCard)。
 
-## 已實作
+## 開發
 
-- 主選單、角色選擇、戰鬥、勝敗結算。
-- 初步美術背景：
-  - 主選單/角色選擇背景
-  - 戰鬥背景
-  - 路線/事件/獎勵/結算背景
-- 4 層小型冒險流程：前三層會隨機生成地圖節點與路線，第 4 層固定拜月教徒小 Boss。
-- 路線節點包含戰鬥、休息、奇遇事件與商店。
-- 每次開局都會重抽地圖路徑，玩家只能沿著已連通的節點前進。
-- 地圖會顯示節點圖示與連線，已選路線和可前往路線會高亮。
-- 休息節點會回復 25% 最大生命。
-- 奇遇事件有多種變體，可選擇回血、失血獲得卡牌、或取得本輪增傷。
-- 奇遇事件可選擇洗髓，從目前牌組移除 1 張牌。
-- 戰鬥勝利會獲得銅錢，可在商店購買卡牌。
-- 商店有機率變成黑店；黑店價格較高，但會販售品質較好的升級卡。
-- 休息與奇遇事件可升級 1 張牌，升級卡會顯示 `+` 並強化數值效果。
-- 戰鬥勝利後 3 選 1 卡牌獎勵，可加入目前牌組。
-- 獎勵卡會避免同一次選卡出現同名重複。
-- 冒險中會保留目前 HP 與牌組變化。
-- 進度畫面、戰鬥中、選卡獎勵畫面都可查看目前牌組，並顯示重複卡統計。
-- 牌組檢視會顯示可升級張數。
-- 四名角色：李逍遙、趙靈兒、林月如、阿奴。
-- 四名角色被動能力。
-- Slay the Spire 式單場戰鬥：抽牌、靈力、出牌、棄牌、洗牌、敵人意圖。
-- 改善後的戰鬥 HUD 與卡牌 UI：
-  - 攻擊、技能、能力牌有不同顏色。
-  - 卡牌會依稀有度與升級狀態顯示卡框徽章。
-  - 不可支付卡牌會變灰。
-  - 敵人意圖與玩家狀態更容易掃讀。
-  - 一般按鈕與面板已有基礎樣式。
-- 戰鬥回饋：
-  - 造成傷害、治療、護體與狀態變化會在角色/敵人面板短暫提示。
-  - 敵人回合會先顯示招式與效果摘要，短暫停頓後才結算。
-  - 敵人意圖會顯示 `[攻擊]`、`[防守]`、`[異常]` 文字標籤。
-- 狀態與效果：傷害、護體、治療、蠱毒、虛弱、破綻、抽牌、回靈、反噬、戰鬥增傷。
-- 仙劍1 風格招式卡牌資料與多名一般敵人。
+```sh
+npm ci
+npm run dev
+npm run build
+npm test
+```
 
-## 執行
+`src/core` 為遊戲規則，`src/content` 為章節／卡牌內容，`src/ui` 為介面，`src/stage` 為 3D 場景，`public/assets` 為正式素材。主角使用正常比例 STYLE D；不採用被拒的 Q 版候選。
 
-1. 用 Godot 4 開啟此資料夾。
-2. 執行主場景 `res://scenes/main.tscn`。
-3. 選擇角色後即可進入路線選擇與連續戰鬥。
+協作入口：[AGENTS.md](AGENTS.md)、[TASKS.md](TASKS.md)、[CLAUDE.md](CLAUDE.md)。所有後續開發在本儲存庫進行，舊 Godot 版本可從 `e2b3f41` 及之前的歷史恢復。
 
-## 匯出
+## 手機
 
-### 本機匯出（手動）
+`npm run android:build` 可建置 Android 包裝版，需要 Android SDK／JDK。顯示名稱統一為 SwordCard；既有 Android appId 與 localStorage 舊鍵保留，以維持既有應用程式及存檔相容性。
 
-- `export_presets.cfg` 已包含 Windows Desktop 與 Android 草稿。
-- Android 匯出仍需在 Godot Editor 內設定 Android SDK、debug keystore 與 export templates。
-- Windows 匯出需安裝 Godot export templates。
+既有私人試玩站沿用原網址及權限。此輪是 Git 儲存庫整合；推送程式碼與 Sites 發布是不同步驟。
 
-### GitHub Actions 自動建構
-
-| Workflow | 自動觸發 | 狀態 |
-|----------|---------|------|
-| **Build Windows EXE** ([build-windows.yml](.github/workflows/build-windows.yml)) | push 到 main | ✅ 可用 |
-| **Build Android APK** ([build-android.yml](.github/workflows/build-android.yml)) | 僅手動觸發 | ⚠ CI 卡關，本機匯出見 [docs/android-export-local.md](docs/android-export-local.md) |
-
-**取得 Windows EXE**：
-1. push 後到 [Actions 頁](https://github.com/GooGooGii/SwordCard/actions)
-2. 點最新「Build Windows EXE」執行
-3. 拉到底，Artifacts 區下載 `SwordCard-Windows` (~63MB zip)
-4. 解壓得到 `SwordCard.exe` + `SwordCard.pck`，雙擊執行
-
-**Android APK**：CI 內 Godot 4.x 對 Android 匯出有一個不印訊息的 silent validation（試過 4.3 / 4.4 / 4.6.3、Docker / 非 Docker、firebelley action、各種 SDK 版本）。請參考 [docs/android-export-local.md](docs/android-export-local.md) 在本機（有圖形界面）匯出。
-
-## 下一步
-
-- 補卡牌框與更精緻的節點圖示。
-- 戰鬥音效。
-- 自訂啟動圖示與 splash。
+遷移細節：[docs/REPOSITORY_MIGRATION.md](docs/REPOSITORY_MIGRATION.md)。

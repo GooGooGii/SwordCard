@@ -1,0 +1,41 @@
+{
+  "mobile": true,
+  "input": "CDP touch",
+  "card": "劍招",
+  "legalTargets": 1,
+  "observations": [
+    {
+      "case": "single-target first tap",
+      "selected": 1,
+      "hand": 8
+    },
+    {
+      "case": "single-target second tap",
+      "selected": 0,
+      "hand": 8
+    },
+    {
+      "case": "direct drag without preselection",
+      "activeDropZones": 0,
+      "hit": "",
+      "cardTransform": "matrix(1.08, 0, 0, 1.08, 0, -35.2)",
+      "dropPointerEvents": "none"
+    },
+    {
+      "case": "direct drag release",
+      "hand": 8,
+      "cardStillPresent": true
+    },
+    {
+      "case": "drag after selection",
+      "activeDropZones": 1,
+      "hitTarget": "enemy:0",
+      "cardTransform": "matrix(1.08, 0, 0, 1.08, 0, -35.2)"
+    },
+    {
+      "case": "selected drag release",
+      "hand": 7
+    }
+  ],
+  "errors": []
+}

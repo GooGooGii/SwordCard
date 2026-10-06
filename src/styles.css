@@ -1,0 +1,359 @@
+:root {
+  --ink: #1a1712;
+  --paper: #f1e7d0;
+  --paper-dark: #d9c8a3;
+  --gold: #c8a45c;
+  --cinnabar: #b23a2a;
+  --brush: "LXGW WenKai TC", "Noto Serif TC", "PMingLiU", serif;
+  --body: "Noto Serif TC", "PMingLiU", serif;
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--body);
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.app {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.screen-slot { position: absolute; inset: 0; }
+.screen-slot[hidden] { display: none; }
+
+/* PAL1 DOS 起始選單：真實 3D 靜物、黑底暖光、中央兩行選項。 */
+.title-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 240px;
+  overflow: hidden;
+  background: #030302;
+  animation: unfold-title 1.1s ease-out both;
+}
+.title-stage { position: absolute; inset: 0; }
+.title-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 64%, transparent 35%, #0008 90%, #000b);
+}
+.title-wordmark {
+  position: absolute;
+  top: max(24px, env(safe-area-inset-top));
+  left: max(32px, env(safe-area-inset-left));
+  color: #baa47e;
+  font-family: "KaiTi", "DFKai-SB", "BiauKai", var(--brush);
+  font-size: 32px;
+  letter-spacing: 0.24em;
+  opacity: 0.75;
+  pointer-events: none;
+}
+.title-wordmark span {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--body);
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: #887d67;
+}
+.title-choices {
+  position: absolute;
+  top: 43%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.story-choice {
+  position: relative;
+  min-width: 220px;
+  min-height: 48px;
+  border: 0;
+  background: none;
+  padding: 5px 20px;
+  font-family: "KaiTi", "DFKai-SB", "BiauKai", var(--brush);
+  font-size: clamp(24px, 3.1vw, 36px);
+  line-height: 1.35;
+  letter-spacing: 0.14em;
+  color: #ded3be;
+  text-shadow: 0 2px 3px #000, 0 0 12px #000;
+  cursor: pointer;
+  transition: color 0.2s, text-shadow 0.2s;
+}
+.story-choice.new-story { color: #e5c979; }
+.story-choice:not(:disabled):hover,
+.story-choice:focus-visible {
+  color: #fff0b3;
+  text-shadow: 0 0 15px #c1934870, 0 2px 3px #000;
+  outline: none;
+}
+.story-choice:focus-visible::before { content: "›"; position: absolute; left: 0; }
+.story-choice:disabled { color: #8b8578; cursor: default; }
+.memory-hint {
+  margin: 15px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #b6a88c;
+  text-shadow: 0 1px 5px #000;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.title-choices:hover .memory-hint,
+.title-choices:focus-within .memory-hint { opacity: 1; }
+.title-edition {
+  position: absolute;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  right: max(24px, env(safe-area-inset-right));
+  color: #746852;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+}
+.title-loading, .battle-loading {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: #bca379;
+  font-family: var(--brush);
+  letter-spacing: 0.2em;
+  background: #030302;
+}
+.back-to-title {
+  position: absolute;
+  top: max(36px, env(safe-area-inset-top));
+  left: max(14px, env(safe-area-inset-left));
+  color: #e9dbc1;
+  font: 12px var(--body);
+  padding: 7px 12px;
+  border: 1px solid #b89a6066;
+  border-radius: 4px;
+  background: #1b1710b3;
+  cursor: pointer;
+}
+.back-to-title:disabled, .reset:disabled { opacity: 0.5; cursor: default; }
+@keyframes unfold-title { from { opacity: 0; } to { opacity: 1; } }
+@media (max-height: 480px) {
+  .title-wordmark { top: 15px; left: 20px; font-size: 24px; }
+  .title-wordmark span { margin-top: 4px; font-size: 9px; }
+  .title-choices { top: 39%; }
+  .story-choice { font-size: 27px; min-height: 44px; }
+  .memory-hint { margin-top: 6px; }
+  .title-edition { bottom: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .title-screen { animation: none; }
+  .story-choice, .memory-hint { transition: none; }
+}
+
+.hud {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  font-family: var(--brush);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  opacity: 0.75;
+  pointer-events: none;
+  text-shadow: 0 1px 3px #000a;
+}
+
+/* ── 血條與名字（掛在 3D 角色腳下） ─────────────────────────── */
+.hp {
+  position: relative;
+  width: 132px;
+  height: 14px;
+  border-radius: 7px;
+  background: #1c1610cc;
+  border: 1px solid #c8a45c99;
+  overflow: hidden;
+}
+.hp-fill {
+  height: 100%;
+  background: linear-gradient(180deg, #d9573f, #a3301f);
+  transition: width 0.35s ease-out;
+}
+.hp-text {
+  position: absolute;
+  inset: 0;
+  font-size: 11px;
+  line-height: 14px;
+  text-align: center;
+  color: #fff6e6;
+  text-shadow: 0 1px 2px #000;
+}
+.actor-name {
+  margin-top: 3px;
+  text-align: center;
+  font-family: var(--brush);
+  font-size: 13px;
+  color: #f4e6c4;
+  text-shadow: 0 1px 3px #000c;
+  white-space: nowrap;
+}
+
+/* 血池的金白水面較亮，保留姓名邊緣的對比。 */
+.bt:has([data-scene-environment="blood_pool"]) .actor-name {
+  text-shadow: -1px -1px 0 #281707, 1px -1px 0 #281707,
+    -1px 1px 0 #281707, 1px 1px 0 #281707, 0 2px 4px #000;
+}
+
+.popup {
+  font-family: var(--brush);
+  font-size: 34px;
+  font-weight: 700;
+  color: #ffe8c2;
+  -webkit-text-stroke: 1px #6b1d10;
+  text-shadow: 0 2px 6px #000a;
+  animation: popup-rise 0.9s ease-out forwards;
+}
+@keyframes popup-rise {
+  from { transform: translateY(0) scale(0.7); opacity: 0; }
+  20% { transform: translateY(-6px) scale(1.15); opacity: 1; }
+  to { transform: translateY(-46px) scale(1); opacity: 0; }
+}
+
+/* ── 真氣印章 ─────────────────────────────────────────────── */
+.qi-seal {
+  position: absolute;
+  left: 22px;
+  bottom: 26px;
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  font-family: var(--brush);
+  font-size: 34px;
+  color: #fff3e0;
+  background: radial-gradient(circle at 40% 35%, #cf4a35, #8e2618);
+  border: 2px solid #f0d9a8aa;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px #000a, inset 0 0 10px #0005;
+  transform: rotate(-4deg);
+}
+
+.perf {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  padding: 4px 10px;
+  font: 12px/1.4 ui-monospace, Consolas, monospace;
+  color: #d8f5c8;
+  background: #000a;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.reset {
+  position: absolute;
+  right: 18px;
+  bottom: 30px;
+  padding: 10px 18px;
+  font-family: var(--brush);
+  font-size: 16px;
+  color: var(--paper);
+  background: #3b2a1cdd;
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+}
+
+/* ── 手牌 ─────────────────────────────────────────────────── */
+.hand {
+  position: absolute;
+  left: 50%;
+  bottom: -26px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0;
+}
+
+.card {
+  position: relative;
+  width: 132px;
+  height: 188px;
+  margin: 0 -10px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, var(--paper), var(--paper-dark));
+  border: 2px solid #8a6a3a;
+  box-shadow: 0 6px 18px #000b, inset 0 0 0 3px #f8efdc;
+  color: #2a2016;
+  transform-origin: 50% 120%;
+  transition: transform 0.18s ease-out, box-shadow 0.18s;
+  touch-action: none;
+  cursor: grab;
+}
+.card-ready {
+  box-shadow: 0 0 0 3px #f5c86a, 0 0 26px #f5c86a99, 0 6px 18px #000b;
+}
+.card-disabled {
+  filter: grayscale(0.7) brightness(0.75);
+  cursor: not-allowed;
+}
+.card-art {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 26px;
+  height: 78px;
+  border-radius: 4px;
+  background: linear-gradient(160deg, #7f8f86, #45524c);
+  background-size: cover;
+  background-position: center;
+  border: 1px solid #6d5432;
+}
+.card-cost {
+  position: absolute;
+  left: -8px;
+  top: -8px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  font-family: var(--brush);
+  font-size: 18px;
+  color: #fff3e0;
+  background: var(--cinnabar);
+  border-radius: 6px;
+  transform: rotate(-6deg);
+  box-shadow: 0 2px 6px #0008;
+}
+.card-name {
+  position: absolute;
+  top: 4px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--brush);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.card-type {
+  position: absolute;
+  top: 108px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 11px;
+  color: #7a5a30;
+}
+.card-text {
+  position: absolute;
+  top: 126px;
+  left: 10px;
+  right: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+}

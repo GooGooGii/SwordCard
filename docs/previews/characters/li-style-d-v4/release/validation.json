@@ -1,0 +1,67 @@
+{
+  "captures": [
+    {
+      "id": "yueru",
+      "mobile": false,
+      "party": [
+        "li_xiaoyao",
+        "zhao_linger",
+        "lin_yueru"
+      ],
+      "outside": [],
+      "cards": 8,
+      "path": "docs/previews/characters/li-style-d-v4/release/yueru-desktop.png"
+    },
+    {
+      "id": "anu-wuhou",
+      "mobile": false,
+      "party": [
+        "li_xiaoyao",
+        "anu",
+        "wuhou"
+      ],
+      "outside": [],
+      "cards": 8,
+      "path": "docs/previews/characters/li-style-d-v4/release/anu-wuhou-desktop.png"
+    },
+    {
+      "id": "yueru",
+      "mobile": true,
+      "party": [
+        "li_xiaoyao",
+        "zhao_linger",
+        "lin_yueru"
+      ],
+      "outside": [],
+      "cards": 8,
+      "path": "docs/previews/characters/li-style-d-v4/release/yueru-mobile.png"
+    },
+    {
+      "id": "anu-wuhou",
+      "mobile": true,
+      "party": [
+        "li_xiaoyao",
+        "anu",
+        "wuhou"
+      ],
+      "outside": [],
+      "cards": 8,
+      "path": "docs/previews/characters/li-style-d-v4/release/anu-wuhou-mobile.png"
+    }
+  ],
+  "errors": [],
+  "models": [
+    "http://localhost:5175/assets/characters/li_xiaoyao.glb",
+    "http://localhost:5175/assets/characters/zhao_linger.glb",
+    "http://localhost:5175/assets/characters/lin_yueru.glb",
+    "http://localhost:5175/assets/characters/li_xiaoyao.glb",
+    "http://localhost:5175/assets/characters/anu.glb",
+    "http://localhost:5175/assets/characters/wuhou.glb",
+    "http://localhost:5175/assets/characters/li_xiaoyao.glb",
+    "http://localhost:5175/assets/characters/zhao_linger.glb",
+    "http://localhost:5175/assets/characters/lin_yueru.glb",
+    "http://localhost:5175/assets/characters/li_xiaoyao.glb",
+    "http://localhost:5175/assets/characters/anu.glb",
+    "http://localhost:5175/assets/characters/wuhou.glb"
+  ]
+}

@@ -1,0 +1,80 @@
+[
+  {
+    "name": "official-art",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "quality": "high",
+    "url": "http://localhost:5174/?scenePerf",
+    "fixture": {
+      "party": [
+        "li_xiaoyao",
+        "lin_yueru",
+        "zhao_linger"
+      ],
+      "medicines": [
+        "止血草",
+        "金創藥",
+        "雄黃酒"
+      ],
+      "relics": [
+        "wine_gourd",
+        "jade_buddha",
+        "wind_pearl",
+        "thunder_pearl",
+        "earth_pearl",
+        "seven_star_sword"
+      ],
+      "handCount": 8,
+      "budget": {
+        "mainDrawCalls": 9,
+        "shadowDrawCalls": 0,
+        "drawCalls": 9,
+        "triangles": 15178,
+        "withinBudget": true,
+        "violations": []
+      }
+    },
+    "candidateResponses": [
+      {
+        "url": "http://localhost:5174/assets/enemies/red_ghost_king.webp",
+        "status": 200
+      },
+      {
+        "url": "http://localhost:5174/assets/enemies/red_ghost_king.webp",
+        "status": 200
+      }
+    ],
+    "layout": {
+      "hudOutside": [],
+      "intentLeftOfBody": true,
+      "scenery": null,
+      "bossArt": null
+    },
+    "medicineChecks": [],
+    "hpBefore": [
+      "55 / 84",
+      "40 / 80",
+      "54 / 70",
+      "160 / 160"
+    ],
+    "hpAfter": [
+      "75 / 84",
+      "40 / 80",
+      "54 / 70",
+      "160 / 160"
+    ],
+    "hpAfterAttack": [
+      "75 / 84",
+      "40 / 80",
+      "54 / 70",
+      "150 / 160"
+    ],
+    "consumed": true,
+    "healed": true,
+    "damagedBoss": true,
+    "errors": [],
+    "passed": true
+  }
+]
