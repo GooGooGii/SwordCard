@@ -1,4 +1,5 @@
 import { useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import { soleTarget } from "./targets";
 import { canPlay, effectiveCard, previewCard } from "../../core/battle";
 import type { BattleState, CardDef, CardInstance } from "../../core/types";
 import { game } from "../../game/store";
@@ -71,6 +72,13 @@ export function Hand({ battle, disabled, selected, onSelect, onHover, hover, onP
   const tryPlay = (card: CardInstance, def: CardDef, target: TargetRef | null, draggedUp: boolean): boolean => {
     const kind = needsTarget(def);
     if (kind) {
+      // 往上拖但沒拖到目標：只有一個合法目標就直接打它
+      if ((!target || target.side !== kind) && draggedUp) {
+        const only = soleTarget(game.db, battle, card.uid, needsTarget(def));
+        if (only === null) return false;
+        onPlay(card.uid, only);
+        return true;
+      }
       if (!target || target.side !== kind) return false;
       if (canPlay(game.db, battle, card.uid, target.index)) return false;
       onPlay(card.uid, target.index);
@@ -112,9 +120,13 @@ export function Hand({ battle, disabled, selected, onSelect, onHover, hover, onP
     if (!d || d.uid !== card.uid) return;
     const moved = Math.hypot(d.dx, d.dy);
     if (moved < TAP_PX) {
-      // 點選：同一張再點一次＝打出不用選目標的牌
-      if (selected === card.uid && !needsTarget(def) && !canPlay(game.db, battle, card.uid, null)) onPlay(card.uid, null);
-      else onSelect(selected === card.uid ? null : card.uid);
+      // 點選：同一張再點一次＝打出（不用選目標的牌，或合法目標只有一個的牌）
+      if (selected === card.uid) {
+        if (!needsTarget(def) && !canPlay(game.db, battle, card.uid, null)) return onPlay(card.uid, null);
+        const only = soleTarget(game.db, battle, card.uid, needsTarget(def));
+        if (only !== null) return onPlay(card.uid, only);
+      }
+      onSelect(selected === card.uid ? null : card.uid);
       return;
     }
     const target = targetAt(e.clientX, e.clientY);

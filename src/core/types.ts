@@ -4,21 +4,45 @@
 
 export type CharId = "li_xiaoyao" | "zhao_linger" | "lin_yueru" | "anu" | "wuhou";
 export type Element = "wind" | "thunder" | "water" | "fire" | "earth";
-export type DebuffStatus = "weak" | "vulnerable" | "poison" | "break";
+/** 仙劍一的控制類狀態：定身（跳過行動）、封印（不能施法）、昏睡（跳過行動，受傷即醒）、混亂（目標錯亂） */
+export type ControlStatus = "stun" | "seal" | "sleep" | "confuse";
+export type DebuffStatus = "weak" | "vulnerable" | "poison" | "break" | ControlStatus;
 export type Status = DebuffStatus | "strength";
 
 // ── 卡牌 ────────────────────────────────────────────────────────────────────
 
-export type CardType = "attack" | "skill" | "spell" | "item" | "combo";
+/** power＝心法：打出後整場戰鬥常駐，靠觸發條件生效（殺戮尖塔的能力牌） */
+export type CardType = "attack" | "skill" | "spell" | "item" | "combo" | "power";
 export type CardTarget = "enemy" | "all_enemies" | "self" | "ally" | "party" | "none";
 export type Rarity = "starter" | "common" | "uncommon" | "rare" | "special";
 
 /** 效果的作用對象：卡牌的「選定目標」或其他固定範圍 */
 export type EffectScope = "target" | "self" | "party" | "all_enemies";
 
+/** 流派層數（戰鬥內計數）：zhijin 指勁（月如）、swordqi 劍意（逍遙）…由資料自訂 key */
+export type StackKey = string;
+/** 傷害依層數加成：每層 +amount；consume 為 true 時結算後清空該層數 */
+export interface StackBonus {
+  key: StackKey;
+  amount: number;
+  consume?: boolean;
+}
+
 export type Effect =
-  | { kind: "damage"; amount: number; hits?: number }
-  | { kind: "damage_all"; amount: number; hits?: number }
+  | { kind: "damage"; amount: number; hits?: number; per?: StackBonus }
+  | { kind: "damage_all"; amount: number; hits?: number; per?: StackBonus }
+  /** 累積流派層數 */
+  | { kind: "stack"; key: StackKey; amount: number }
+  /** 得到銅錢（戰後帶回行程） */
+  | { kind: "gain_coins"; amount: number }
+  /** 花銅錢（戰鬥外的錢；不夠就不能出這張牌）：銅錢鏢、乾坤一擲 */
+  | { kind: "spend_coins"; amount: number }
+  /** 引爆目標的中毒：造成 中毒層數 × multiplier 的傷害，並清除中毒（爆炸蠱） */
+  | { kind: "detonate"; multiplier: number }
+  /** 斬殺：非頭目且血量低於 below% 直接擊倒；否則造成 fallback 點傷害（奪魂） */
+  | { kind: "execute"; below: number; fallback: number }
+  /** 收妖煉藥：非頭目且血量低於 below% 時收進葫蘆（擊倒並得到一瓶藥）（靈葫咒） */
+  | { kind: "capture"; below: number }
   | { kind: "block"; amount: number; to?: EffectScope }
   | { kind: "heal"; amount: number; to?: EffectScope }
   | { kind: "draw"; amount: number }
@@ -38,9 +62,47 @@ export type Effect =
   | { kind: "add_card"; card: string; count?: number }
   | { kind: "upgrade_hand" };
 
+// ── 觸發（心法與法寶共用）──────────────────────────────────────────────────
+
+/**
+ * 觸發時機：turn_start／turn_end 我方回合開始、結束；play 打出一張牌（可篩選）；
+ * kill 擊倒敵人；hurt 隊員受到傷害；poison_tick 敵人中毒結算；counter 隊員反擊。
+ */
+export type TriggerOn = "turn_start" | "turn_end" | "play" | "kill" | "hurt" | "poison_tick" | "counter";
+
+export interface Trigger {
+  on: TriggerOn;
+  /** play 的篩選條件 */
+  type?: CardType;
+  element?: Element;
+  owner?: CharId;
+  /** 每 N 次才生效一次（例：每打出第 3 張攻擊牌） */
+  every?: number;
+  /** 單體效果打誰：front 最前面的敵人、random 隨機敵人、source 觸發的那名敵人（kill／hurt／poison_tick／counter） */
+  target?: "front" | "random" | "source";
+  effects: Effect[];
+}
+
+export interface PowerDef {
+  triggers: Trigger[];
+}
+
+/** 戰鬥中生效的心法或法寶 */
+export interface ActivePower {
+  id: string;
+  name: string;
+  source: "card" | "relic";
+  owner: CharId | null;
+  triggers: Trigger[];
+  /** 每個觸發各自的計數（every 用） */
+  counters: number[];
+}
+
 export interface CardCore {
   cost: number;
   effects: Effect[];
+  /** 心法牌的常駐效果 */
+  power?: PowerDef;
   exhaust?: boolean;
   retain?: boolean;
 }
@@ -62,8 +124,14 @@ export interface CardDef extends CardCore {
   art?: string;
   /** 正史依據（招式、事件或道具），內容審查用 */
   canon: string;
+  /** 流派（docs/ARCHETYPES.md）：獎勵依流派加權、牌面顯示；沒有＝通用 */
+  archetype?: string;
   /** 卡面附加說明（自動產生的效果文字之後） */
   note?: string;
+  /** 狀態牌／詛咒牌：不能打出 */
+  unplayable?: boolean;
+  /** 回合結束時還在手上會發生的事（例：纏絲讓持有者失去生命） */
+  inHandAtTurnEnd?: Effect[];
 }
 
 export interface CardInstance {
@@ -91,10 +159,14 @@ export interface CharacterDef {
 
 export type IntentKind = "attack" | "attack_all" | "block" | "buff" | "debuff" | "summon" | "heal" | "charge";
 
+/** 單體招式挑誰打：random 隨機、weakest 血量比例最低、strongest 血最多、caster 施法者（靈兒、阿奴、巫后）、front 最前面 */
+export type MoveTargeting = "random" | "weakest" | "strongest" | "caster" | "front";
+
 export interface MoveDef {
   id: string;
   name: string;
   intent: IntentKind;
+  targeting?: MoveTargeting;
   damage?: number;
   hits?: number;
   block?: number;
@@ -102,6 +174,8 @@ export interface MoveDef {
   apply?: { status: DebuffStatus; amount: number; to: "target" | "party" };
   heal?: number;
   summon?: string;
+  /** 把狀態牌塞進我方棄牌堆（殺戮尖塔的傷口、暈眩、詛咒） */
+  addCard?: { card: string; count: number };
 }
 
 export type Passive =
@@ -145,6 +219,13 @@ export interface StatusBag {
   weak: number;
   vulnerable: number;
   poison: number;
+  /** 控制類狀態（回合數）。可選欄位：舊存檔的戰鬥狀態沒有這些欄位 */
+  stun?: number;
+  seal?: number;
+  sleep?: number;
+  confuse?: number;
+  /** 定身／昏睡剛解除後的抗性回合：期間不會再被定身或昏睡（防鎖死） */
+  steady?: number;
 }
 
 export interface PartyMemberState {
@@ -182,6 +263,8 @@ export interface EnemyState {
   phase2: boolean;
   stolen: number;
   dead: boolean;
+  /** 最近出過的招式（新到舊，最多 2 個）：避免同一招連出三次 */
+  history?: string[];
 }
 
 export interface ChainState {
@@ -218,6 +301,14 @@ export interface BattleState {
   outcome: BattleOutcome;
   /** 難度：敵人 HP 倍率 */
   enemyHpScale: number;
+  /** 生效中的心法與法寶觸發（舊存檔沒有這個欄位） */
+  powers?: ActivePower[];
+  /** 藥品欄（null＝空格；舊存檔沒有） */
+  potions?: (string | null)[];
+  /** 流派層數（舊存檔沒有） */
+  stacks?: Record<StackKey, number>;
+  /** 戰鬥開始時身上的銅錢（花銅錢的牌從這裡扣；結算時以 coinsGained 帶回行程，可為負） */
+  purse?: number;
 }
 
 // ── 事件（給 3D 舞台與 HUD 播放） ─────────────────────────────────────────────
@@ -248,10 +339,26 @@ export type BattleEvent =
   | { type: "fly_sword"; target: Ref; amount: number }
   | { type: "counter"; actor: Ref; target: Ref; amount: number }
   | { type: "draw"; count: number }
-  | { type: "outcome"; outcome: BattleOutcome };
+  | { type: "outcome"; outcome: BattleOutcome }
+  | { type: "power"; id: string; name: string; actor: Ref | null }
+  | { type: "stack"; key: StackKey; amount: number }
+  | { type: "capture"; target: Ref; potion: string | null }
+  | { type: "potion"; id: string; actor: Ref | null; target: Ref | null };
+
+/** 藥品：不佔牌組、不花真氣，隨時可用一次（REDESIGN 戰鬥強化） */
+export interface PotionDef {
+  id: string;
+  name: string;
+  target: CardTarget;
+  effects: Effect[];
+  rarity: "common" | "uncommon" | "rare";
+  canon: string;
+  art?: string;
+}
 
 export interface ContentDb {
   cards: Record<string, CardDef>;
+  potions?: Record<string, PotionDef>;
   enemies: Record<string, EnemyDef>;
   characters: Record<CharId, CharacterDef>;
 }

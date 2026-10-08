@@ -1,4 +1,4 @@
-import type { BattleState, CardInstance, CharId, Effect } from "../types";
+import type { Trigger, BattleState, CardInstance, CharId, Effect } from "../types";
 
 /**
  * 行程（整局遊戲）的資料型別：章節、節點、劇本、獎勵、法寶、存檔狀態。
@@ -108,6 +108,10 @@ export interface RelicDef {
   art?: string;
   /** 每場戰鬥開始時結算（由 HP 最高的隊員「出手」） */
   battleStart?: Effect[];
+  /** 戰鬥中的觸發效果（與心法同一套：每打出第 N 張攻擊牌、每擊倒敵人…） */
+  triggers?: Trigger[];
+  /** 稀有度：一般、稀有、頭目（頭目法寶強但有代價），劇情法寶不進隨機獎勵 */
+  tier?: "common" | "rare" | "boss" | "story";
   /** 常駐修正 */
   handSize?: number;
   maxQi?: number;
@@ -137,8 +141,8 @@ export type Pending =
   | { kind: "story"; nodeId: string; storyId: string; then: "map" | "battle" | "after_battle" }
   | { kind: "battle"; nodeId: string; battle: BattleState; attempt: number }
   | { kind: "battle_lost"; nodeId: string; attempt: number }
-  | { kind: "reward"; nodeId: string; coins: number; loot: string[]; choices: string[][]; relic: string | null; outcomeNote: string }
-  | { kind: "inn"; nodeId: string; stock: { card: string; price: number; sold: boolean }[]; rested: boolean; removed: number; upgraded: number }
+  | { kind: "reward"; nodeId: string; coins: number; loot: string[]; choices: string[][]; relic: string | null; outcomeNote: string; potion?: string | null }
+  | { kind: "inn"; nodeId: string; stock: { card: string; price: number; sold: boolean }[]; rested: boolean; removed: number; upgraded: number; potions?: { potion: string; price: number; sold: boolean }[] }
   | { kind: "chapter_intro"; chapter: number }
   | { kind: "ending" };
 
@@ -158,6 +162,8 @@ export interface RunState {
   shared: CardInstance[];
   coins: number;
   relics: string[];
+  /** 藥品欄（3 格，null＝空；舊存檔沒有這個欄位） */
+  potions?: (string | null)[];
   bonds: Partial<Record<CharId, number>>;
   flags: Record<string, boolean>;
   nextUid: number;

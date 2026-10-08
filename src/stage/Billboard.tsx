@@ -7,9 +7,11 @@ import * as THREE from "three";
  * 2D 立繪立在 3D 舞台上（非人形、長袍等 3D 綁骨做不好的角色用，REDESIGN §6.1）。
  * - 板子永遠面向鏡頭（只繞 Y 軸轉，保持直立），用 alpha-test 投出真實陰影
  * - 動作用程式做：待命呼吸（縮放）／浮游（上下）、出招（往前撲）、受擊（後仰＋閃光）
+ * - 有姿勢圖（poses）時，該動作期間換成對應的圖（主角的攻擊、施法、護身、受擊）
  */
 export interface BillboardProps {
   url: string;
+  poses?: Partial<Record<string, string>>;
   position: [number, number, number];
   height: number;
   /** 原圖裡角色朝左還是朝右 */
@@ -23,15 +25,20 @@ export interface BillboardProps {
 
 const FLASH_SECONDS = 0.16;
 
-export function Billboard({ url, position, height, imageFacesLeft, facing, floats = false, clip, hitFlash }: BillboardProps) {
+export function Billboard({ url, poses, position, height, imageFacesLeft, facing, floats = false, clip, hitFlash }: BillboardProps) {
   // 原圖朝向和要面向的方向不同時，水平翻轉
   const mirror = imageFacesLeft === (facing === 1);
-  const texture = useTexture(url);
-  texture.colorSpace = THREE.SRGBColorSpace;
+  const poseEntries = Object.entries(poses ?? {}).filter((e): e is [string, string] => !!e[1]);
+  // 所有姿勢一次載入，換姿勢時不閃爍
+  const textures = useTexture([url, ...poseEntries.map(([, u]) => u)]);
+  for (const tex of textures) tex.colorSpace = THREE.SRGBColorSpace;
+  const poseIndex = poseEntries.findIndex(([name]) => name === clip);
+  const texture = textures[poseIndex + 1] ?? textures[0]!;
   const { camera } = useThree();
   const pivot = useRef<THREE.Group>(null);
   const body = useRef<THREE.Mesh>(null);
   const image = texture.image as { width: number; height: number };
+  // 姿勢圖和站姿的寬高比不同：以「高度一致」縮放，寬度跟著圖
   const width = height * (image.width / image.height);
 
   const material = useMemo(
@@ -78,19 +85,21 @@ export function Billboard({ url, position, height, imageFacesLeft, facing, float
     let tilt = 0;
     let squash = 1 + Math.sin(t * 2.0) * 0.012;
     const k = clipTime.current;
+    // 有姿勢圖時程式動作減半（圖本身已經是出招／受擊的樣子）
+    const posed = poseIndex >= 0 ? 0.5 : 1;
     if (clip === "attack") {
       const lunge = Math.sin(Math.min(1, k / 0.5) * Math.PI); // 撲出去再回來
       offsetX = lunge * 0.9 * facing;
-      tilt = -lunge * 0.18 * facing;
+      tilt = -lunge * 0.18 * facing * posed;
     } else if (clip === "hit") {
       const recoil = Math.max(0, 1 - k / 0.35);
       offsetX = -recoil * 0.18 * facing;
-      tilt = recoil * 0.12 * facing;
+      tilt = recoil * 0.12 * facing * posed;
       squash *= 1 - recoil * 0.05;
     }
     b.position.set(offsetX, height / 2 + offsetY, 0);
     b.rotation.z = tilt;
-    b.scale.set(mirror ? -1 : 1, squash, 1);
+    b.scale.set((mirror ? -1 : 1) * width, squash, 1);
 
     if (flashLeft.current > 0) {
       flashLeft.current = Math.max(0, flashLeft.current - delta);
@@ -104,7 +113,7 @@ export function Billboard({ url, position, height, imageFacesLeft, facing, float
   return (
     <group ref={pivot} position={position}>
       <mesh ref={body} material={material} customDepthMaterial={shadowMaterial} castShadow>
-        <planeGeometry args={[width, height]} />
+        <planeGeometry args={[1, height]} />
       </mesh>
     </group>
   );

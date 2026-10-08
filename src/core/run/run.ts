@@ -2,6 +2,8 @@ import { startBattle } from "../battle";
 import { makeCtx, finish } from "../battle/context";
 import { resolveEffects } from "../battle/effects";
 import { actorFor } from "../battle/setup";
+import { POTION_SLOTS } from "../battle/potions";
+import { Rng } from "../rng";
 import type { BattleEvent, BattleState, CardDef, CharId } from "../types";
 import {
   battleDeck,
@@ -41,6 +43,7 @@ export function newRun(db: GameDb, seed: number, difficulty: Difficulty): RunSta
     shared: [],
     coins: 0,
     relics: [],
+    potions: Array(POTION_SLOTS).fill(null),
     bonds: {},
     flags: {},
     nextUid: 1,
@@ -119,6 +122,12 @@ export function beginBattle(db: GameDb, run: RunState, nodeId: string, attempt: 
   state.handSize += relics.reduce((s, r) => s + (r.handSize ?? 0), 0);
   state.maxQi += relics.reduce((s, r) => s + (r.maxQi ?? 0), 0);
   state.comboMax = Math.max(2, state.comboMax + relics.reduce((s, r) => s + (r.comboMax ?? 0), 0));
+  state.potions = [...(next.potions ?? Array(POTION_SLOTS).fill(null))];
+  state.purse = next.coins;
+  // 法寶的觸發效果：和心法一樣放進戰鬥狀態
+  state.powers = relics
+    .filter((r) => r.triggers?.length)
+    .map((r) => ({ id: r.id, name: r.name, source: "relic" as const, owner: null, triggers: r.triggers!, counters: r.triggers!.map(() => 0) }));
   let battle = state;
   const starts = relics.flatMap((r) => r.battleStart ?? []);
   if (starts.length) battle = applyBattleStart(db, battle, starts);
@@ -171,21 +180,46 @@ export function concludeBattle(db: GameDb, run: RunState): RunState {
   const base = spec.boss ? chapter.coins.boss : spec.elite ? chapter.coins.elite : chapter.coins.normal;
   const failed = outcome === "survive_failed";
   const coins = Math.round((base + battle.coinsGained) * (failed ? 0.5 : 1)) + (spec.reward?.coins ?? 0);
-  next.coins += coins;
+  next.coins = Math.max(0, next.coins + coins);
   for (const id of battle.loot) addCardToRun(db, next, id);
   if (spec.reward) grantReward(db, next, { ...spec.reward, coins: 0, relic: undefined, cardChoices: 0 }, nodeId);
   const groups = failed ? 0 : (spec.reward?.cardChoices ?? 1);
+  // 藥品：戰鬥中用掉的就沒了；勝利有機會掉一瓶（有空格才拿得到）
+  next.potions = [...(battle.potions ?? next.potions ?? Array(POTION_SLOTS).fill(null))];
+  const potion = failed ? null : rollPotionDrop(db, next, nodeId, spec.boss ? 1 : spec.elite ? 0.6 : 0.35);
+  if (potion) next.potions[next.potions.indexOf(null)] = potion;
   next.pending = {
     kind: "reward",
     nodeId,
     coins,
     loot: battle.loot,
     choices: rollCardChoices(db, next, nodeId, groups),
-    relic: spec.reward?.relic ?? null,
+    relic: spec.reward?.relic ?? (spec.elite && !failed ? rollRelicDrop(db, next, nodeId) : null),
     outcomeNote: outcome === "survived" ? "撐過來了" : failed ? "雖然倒下，故事仍繼續" : "勝利",
+    potion,
   };
   delete next.losses[nodeId];
   return next;
+}
+
+const POTION_WEIGHT = { common: 6, uncommon: 3, rare: 1 } as const;
+
+/** 精英戰掉落法寶：一般 75%、稀有 25%，不重複；都拿過了就沒有 */
+function rollRelicDrop(db: GameDb, run: RunState, nodeId: string): string | null {
+  const pool = Object.values(db.relics).filter((r) => (r.tier === "common" || r.tier === "rare") && !run.relics.includes(r.id));
+  if (pool.length === 0) return null;
+  const rng = new Rng(nodeSeed(run, nodeId, 0) ^ 0x2545f491);
+  return rng.weighted(pool.map((r) => ({ value: r.id, weight: r.tier === "common" ? 3 : 1 }))) ?? null;
+}
+
+/** 戰後掉落藥品：依機率、稀有度加權；藥品欄滿了就沒有 */
+function rollPotionDrop(db: GameDb, run: RunState, nodeId: string, chance: number): string | null {
+  if (!run.potions?.includes(null)) return null;
+  const pool = Object.values(db.potions ?? {});
+  if (pool.length === 0) return null;
+  const rng = new Rng(nodeSeed(run, nodeId, 0) ^ 0x5f3759df);
+  if (rng.next() >= chance) return null;
+  return rng.weighted(pool.map((p) => ({ value: p.id, weight: POTION_WEIGHT[p.rarity] })));
 }
 
 /** 戰敗後重來：HP 至少回到 60%；assist＝這場改用劇情難度 */

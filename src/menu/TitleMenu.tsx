@@ -1,6 +1,4 @@
-import { lazy, Suspense } from "react";
-
-const TitleStillLife = lazy(() => import("./TitleStillLife"));
+import { TitleCinematic } from "./TitleCinematic";
 
 interface TitleMenuProps {
   active: boolean;
@@ -13,22 +11,20 @@ interface TitleMenuProps {
   allowMemoryImport?: boolean;
 }
 
-export function TitleMenu({ active, hasMemory, onNewStory, onContinue, memoryHint, allowMemoryImport = false }: TitleMenuProps) {
+// 2026-10-06 起改用電影感靜物圖（TitleCinematic）；原本的即時 3D 靜物（TitleStillLife）保留檔案、不再載入。
+export function TitleMenu({ hasMemory, onNewStory, onContinue, memoryHint, allowMemoryImport = false }: TitleMenuProps) {
   return (
     <main className="title-screen" aria-label="SwordCard 起始選單">
-      <div className="title-stage" aria-hidden="true">
-        <Suspense fallback={<div className="title-loading">展卷中…</div>}>
-          <TitleStillLife active={active} />
-        </Suspense>
-      </div>
+      <TitleCinematic>
+        <nav className="title-choices" aria-label="故事選擇">
+          <button className="story-choice new-story" onClick={onNewStory}>新的故事</button>
+          <button className="story-choice" disabled={!hasMemory && !allowMemoryImport} onClick={onContinue} title={memoryHint ?? (hasMemory ? "接續本機保存的戰鬥原型" : "尚無本機回憶")}>舊的回憶</button>
+        </nav>
+      </TitleCinematic>
       <div className="title-vignette" aria-hidden="true" />
-      <div className="title-wordmark" aria-label="SwordCard">SwordCard<span>仙劍一・卡牌敘事</span></div>
-      <nav className="title-choices" aria-label="故事選擇">
-        <button className="story-choice new-story" onClick={onNewStory}>新的故事</button>
-        <button className="story-choice" disabled={!hasMemory && !allowMemoryImport} onClick={onContinue} title={memoryHint ?? (hasMemory ? "接續本機保存的戰鬥原型" : "尚無本機回憶")}>舊的回憶</button>
-        <p className="memory-hint">{memoryHint ?? (hasMemory ? "接續此裝置上的戰鬥原型" : "尚無回憶，從新的故事開始")}</p>
-      </nav>
-      <span className="title-edition">私人同人原型</span>
+      <div className="title-wordmark" aria-label="SwordCard">SwordCard<span>仙劍奇俠傳・卡牌敘事</span></div>
+      <p className="memory-hint">{memoryHint ?? (hasMemory ? "接續此裝置上的戰鬥原型" : "尚無回憶，從新的故事開始")}</p>
+      <span className="title-edition">私人同人作品</span>
     </main>
   );
 }

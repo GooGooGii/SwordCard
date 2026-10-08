@@ -29,7 +29,10 @@ const fragmentShader = /* glsl */ `
   void main() {
     vec4 clip = projectorViewProjection * vec4(vWorld, 1.0);
     vec2 screen01 = clip.xy / clip.w * 0.5 + 0.5;
-    gl_FragColor = texture2D(painting, cover.xy + screen01 * cover.zw);
+    // 鏡頭推移超出原圖時鏡射取樣，避免邊緣像素被拉成長條
+    vec2 uv = cover.xy + screen01 * cover.zw;
+    uv = 1.0 - abs(1.0 - mod(uv, 2.0));
+    gl_FragColor = texture2D(painting, uv);
     #include <colorspace_fragment>
   }
 `;

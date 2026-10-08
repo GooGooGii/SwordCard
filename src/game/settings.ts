@@ -14,15 +14,20 @@ export interface Settings {
   fontScale: 1 | 1.15 | 1.3;
   /** 戰鬥中主角的呈現：3D 模型，或 2D 全身立繪（和卡圖同一套畫風、手機較省電） */
   partyStyle: "3d" | "2d";
+  /** 美術版本：2＝電影感 CG（2026-10-06）。舊設定升到 2 時改用 2D 立繪，因為 3D 模型還是舊畫風 */
+  artVersion?: number;
 }
 
 const KEY = "xiaoyao.settings";
-const DEFAULTS: Settings = { music: 0.6, sfx: 0.8, textSpeed: 40, autoPlay: false, animSpeed: 1, quality: "high", fontScale: 1, partyStyle: "3d" };
+const DEFAULTS: Settings = { music: 0.6, sfx: 0.8, textSpeed: 40, autoPlay: false, animSpeed: 1, quality: "high", fontScale: 1, partyStyle: "2d", artVersion: 2 };
 
 function load(): Settings {
   try {
     const raw = window.localStorage.getItem(KEY);
-    return raw ? { ...DEFAULTS, ...(JSON.parse(raw) as Partial<Settings>) } : DEFAULTS;
+    if (!raw) return DEFAULTS;
+    const saved = JSON.parse(raw) as Partial<Settings>;
+    const merged = { ...DEFAULTS, ...saved };
+    return (saved.artVersion ?? 1) < 2 ? { ...merged, partyStyle: "2d", artVersion: 2 } : merged;
   } catch {
     return DEFAULTS;
   }

@@ -1,4 +1,4 @@
-import { canPlay, computeDamage, effectiveCard, endTurn, playCard } from "../../src/core/battle";
+import { canPlay, canUsePotion, computeDamage, effectiveCard, endTurn, playCard, usePotion } from "../../src/core/battle";
 import type { BattleState, ContentDb, EnemyState } from "../../src/core/types";
 
 /**
@@ -69,9 +69,32 @@ function targetsFor(db: ContentDb, s: BattleState, uid: number): (number | null)
   return [null];
 }
 
+/**
+ * 用藥（簡單規則，像一般玩家）：有人倒下或血量低於三成就用回復／復活藥；
+ * 頭目戰把攻擊類、增益類藥品用掉；一般戰鬥只在危急時用。
+ */
+function usePotions(db: ContentDb, start: BattleState): BattleState {
+  let s = start;
+  const boss = s.enemies.some((e) => !e.dead && db.enemies[e.defId]?.isBoss);
+  (s.potions ?? []).forEach((id, slot) => {
+    if (!id || s.outcome !== "ongoing") return;
+    const p = db.potions?.[id];
+    if (!p) return;
+    const heals = p.effects.some((e) => e.kind === "heal" || e.kind === "revive");
+    const lowest = s.party.reduce((best, m, i) => (m.hp / m.maxHp < s.party[best]!.hp / s.party[best]!.maxHp ? i : best), 0);
+    const danger = s.party.some((m) => m.downed || m.hp < m.maxHp * 0.3);
+    let target: number | null = null;
+    if (p.target === "ally") target = s.party.findIndex((m) => m.downed) >= 0 && p.effects.some((e) => e.kind === "revive") ? s.party.findIndex((m) => m.downed) : lowest;
+    if (p.target === "enemy") target = s.enemies.findIndex((e) => !e.dead && !db.enemies[e.defId]?.isField);
+    const want = heals ? danger : boss;
+    if (want && !canUsePotion(db, s, slot, target)) s = usePotion(db, s, slot, target).state;
+  });
+  return s;
+}
+
 /** 打完一整個回合（出到沒有好牌為止），回傳回合結束後的狀態 */
 export function playTurn(db: ContentDb, start: BattleState): { state: BattleState; played: number } {
-  let s = start;
+  let s = usePotions(db, start);
   let played = 0;
   for (let guard = 0; guard < 20 && s.outcome === "ongoing"; guard++) {
     const base = score(db, s);

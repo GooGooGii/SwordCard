@@ -1,13 +1,15 @@
 import type { CardDef } from "../../core/types";
 import { THOUGHT_CARD } from "../../core/cards";
 import { ANU_CARDS, WUHOU_CARDS } from "./anu";
+import { COLORLESS_CARDS } from "./colorless";
+import { STATUS_CARDS } from "./status";
 import { byId } from "./helpers";
 import { ITEM_CARDS } from "./items";
 import { LI_CARDS } from "./li_xiaoyao";
 import { YUERU_CARDS } from "./lin_yueru";
 import { LINGER_CARDS } from "./zhao_linger";
 
-export const ALL_CARDS: CardDef[] = [...LI_CARDS, ...LINGER_CARDS, ...YUERU_CARDS, ...ANU_CARDS, ...WUHOU_CARDS, ...ITEM_CARDS, THOUGHT_CARD];
+export const ALL_CARDS: CardDef[] = [...LI_CARDS, ...LINGER_CARDS, ...YUERU_CARDS, ...ANU_CARDS, ...WUHOU_CARDS, ...COLORLESS_CARDS, ...STATUS_CARDS, ...ITEM_CARDS, THOUGHT_CARD];
 
 export const CARDS: Record<string, CardDef> = byId(ALL_CARDS);
 

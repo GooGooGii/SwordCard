@@ -15,8 +15,6 @@ export const PRICES = {
   rare: 105,
   removeBase: 50,
   removeStep: 25,
-  upgradeBase: 40,
-  upgradeStep: 15,
 } as const;
 
 type InnPending = Extract<Pending, { kind: "inn" }>;
@@ -47,7 +45,38 @@ export function openInn(db: GameDb, run: RunState, nodeId: string): InnPending {
     seen.add(card.id);
     stock.push({ card: card.id, price: Math.round(PRICES[rarity] * discount(db, run)), sold: false });
   }
-  return { kind: "inn", nodeId, stock, rested: false, removed: 0, upgraded: 0 };
+  // 無主牌一張（殺戮尖塔商店的無色牌）：比同稀有度貴兩成
+  const colorless = Object.values(db.cards).filter((c) => c.owner === null && ["common", "uncommon", "rare"].includes(c.rarity) && c.type !== "item");
+  if (colorless.length > 0) {
+    const c = rng.pick(colorless);
+    stock.push({ card: c.id, price: Math.round(PRICES[c.rarity as "common" | "uncommon" | "rare"] * 1.2 * discount(db, run)), sold: false });
+  }
+  // 藥品兩瓶
+  const potionPool = Object.values(db.potions ?? {});
+  const potions: InnPending["potions"] = [];
+  for (let k = 0; k < 2 && potionPool.length > 0; k++) {
+    const p = rng.weighted(potionPool.map((x) => ({ value: x, weight: x.rarity === "common" ? 6 : x.rarity === "uncommon" ? 3 : 1 })));
+    potions.push({ potion: p.id, price: Math.round(POTION_PRICES[p.rarity] * discount(db, run)), sold: false });
+  }
+  return { kind: "inn", nodeId, stock, rested: false, removed: 0, upgraded: 0, potions };
+}
+
+export const POTION_PRICES = { common: 35, uncommon: 55, rare: 85 } as const;
+
+/** 買藥：藥品欄要有空格 */
+export function buyPotion(db: GameDb, run: RunState, index: number): RunState {
+  const next = structuredClone(run);
+  const item = inn(next).potions?.[index];
+  if (!item || item.sold) throw new Error("buyPotion: not available");
+  if (next.coins < item.price) throw new Error("buyPotion: 銅錢不足");
+  const slots = next.potions ?? [null, null, null];
+  const free = slots.indexOf(null);
+  if (free < 0) throw new Error("buyPotion: 藥品欄滿了");
+  slots[free] = item.potion;
+  next.potions = slots;
+  next.coins -= item.price;
+  item.sold = true;
+  return next;
 }
 
 function inn(run: RunState): InnPending {
@@ -59,15 +88,33 @@ export function removePrice(db: GameDb, run: RunState): number {
   return Math.round((PRICES.removeBase + PRICES.removeStep * inn(run).removed) * discount(db, run));
 }
 
-export function upgradePrice(db: GameDb, run: RunState): number {
-  return Math.round((PRICES.upgradeBase + PRICES.upgradeStep * inn(run).upgraded) * discount(db, run));
-}
+/**
+ * 客棧歇腳二選一（殺戮尖塔的營火，2026-10-08 使用者要求升級機制）：
+ * 休息＝全隊回復最大生命的 30%；練功＝免費升級一張牌。兩者只能選一個（p.rested 表示今晚已經歇過）。
+ */
+export const REST_HEAL = 0.3;
 
 export function rest(run: RunState): RunState {
   const next = structuredClone(run);
   const p = inn(next);
-  if (p.rested) throw new Error("already rested");
-  for (const id of next.party) member(next, id).hp = member(next, id).maxHp;
+  if (p.rested) throw new Error("rest: 今晚已經歇過了");
+  for (const id of next.party) {
+    const m = member(next, id);
+    m.hp = Math.min(m.maxHp, m.hp + Math.ceil(m.maxHp * REST_HEAL));
+  }
+  p.rested = true;
+  return next;
+}
+
+/** 練功：免費升級一張牌（和休息二選一） */
+export function train(db: GameDb, run: RunState, uid: number): RunState {
+  const next = structuredClone(run);
+  const p = inn(next);
+  if (p.rested) throw new Error("train: 今晚已經歇過了");
+  const card = [...next.party.flatMap((id) => member(next, id).deck), ...next.shared].find((c) => c.uid === uid);
+  if (!card || card.upgraded || !db.cards[card.defId]?.upgrade) throw new Error("train: 這張牌不能升級");
+  card.upgraded = true;
+  p.upgraded += 1;
   p.rested = true;
   return next;
 }
@@ -103,18 +150,6 @@ export function removeCard(db: GameDb, run: RunState, uid: number): RunState {
   inn(next).removed += 1;
   for (const id of next.party) member(next, id).deck = member(next, id).deck.filter((c) => c.uid !== uid);
   next.shared = next.shared.filter((c) => c.uid !== uid);
-  return next;
-}
-
-export function upgradeCard(db: GameDb, run: RunState, uid: number): RunState {
-  const price = upgradePrice(db, run);
-  if (run.coins < price) throw new Error("upgradeCard: 銅錢不足");
-  const next = structuredClone(run);
-  const card = [...next.party.flatMap((id) => member(next, id).deck), ...next.shared].find((c) => c.uid === uid);
-  if (!card || card.upgraded || !db.cards[card.defId]?.upgrade) throw new Error("upgradeCard: 這張牌不能升級");
-  card.upgraded = true;
-  next.coins -= price;
-  inn(next).upgraded += 1;
   return next;
 }
 

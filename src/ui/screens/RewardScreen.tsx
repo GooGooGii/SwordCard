@@ -4,12 +4,14 @@ import { takeReward, type RunState } from "../../core/run";
 import { game } from "../../game/store";
 import { playSfx } from "../../platform/audio";
 import { CardFace } from "../common/CardFace";
+import { potionText } from "../battle/PotionBar";
 
 /** 戰後獎勵：銅錢、偷到的東西、法寶，每組三選一（可跳過換 10 文，REDESIGN §2） */
 export function RewardScreen({ run }: { run: RunState }) {
   const p = run.pending as Extract<RunState["pending"], { kind: "reward" }>;
   const [picks, setPicks] = useState<(string | null | undefined)[]>(() => p.choices.map(() => undefined));
   const relic = p.relic ? game.db.relics[p.relic] : null;
+  const potion = p.potion ? game.db.potions?.[p.potion] : undefined;
   const allChosen = picks.every((x) => x !== undefined);
 
   const confirm = () => {
@@ -30,6 +32,11 @@ export function RewardScreen({ run }: { run: RunState }) {
               偷到：{cardDef(game.db, id).name}
             </span>
           ))}
+          {potion ? (
+            <span className="rw-item" title={potion.canon}>
+              藥品：<b>{potion.name}</b>　{potionText(potion)}
+            </span>
+          ) : null}
           {relic ? (
             <span className="rw-relic" title={relic.canon}>
               法寶：<b>{relic.name}</b>　{relic.text}

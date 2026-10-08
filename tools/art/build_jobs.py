@@ -10,9 +10,14 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 JOBS = HERE / "jobs"
 
-STYLE = ("Chinese xianxia fantasy card illustration in a detailed painted environment, never a plain studio backdrop, "
-         "semi-realistic painterly digital painting with visible brushwork, soft cinematic lighting, rich harmonious colors, "
-         "dramatic dynamic composition, polished game art, no text, no letters, no watermark, no border")
+import sys
+sys.path.insert(0, str(HERE))
+from cine_cast import CAST  # noqa: E402
+
+# 2026-10-06 起改電影感 CG 風格（使用者指定）；角色造型與劇情頭像共用 cine_cast.py
+STYLE = ("cinematic 3D CG key art from a next-gen 3A Chinese wuxia game, Unreal Engine 5 quality, detailed environment, "
+         "realistic materials, dramatic cinematic lighting, dynamic action composition, rich harmonious colors, "
+         "not cartoon, not anime, no text, no letters, no watermark, no border")
 
 # 卡圖的場景：第一版全都落在「霧夜竹林＋樓閣」，看起來每張都一樣。依屬性挑場景，沒有屬性的依卡名雜湊挑，
 # 場景都取自仙劍一的旅程（十里坡、仙靈島、蘇州、隱龍窟、鎖妖塔、苗疆…），並且日夜晴雨錯開。
@@ -34,20 +39,17 @@ ENVS = [
     "in a snowy pine forest on Shushan mountain",
     "at a seaside fishing harbor in the morning",
     "in a moonlit graveyard with ghost fire",
-    "on a desert road with dunes under a clear blue sky",
+    "on an ancient sandy caravan trail between desert dunes under a clear blue sky, no paved road, no road markings",
     "in an ancient temple hall with golden Buddha statues and incense smoke",
 ]
 
 # 角色造型（與 3D 模型、劇情立繪共用同一份描述，REDESIGN §6.1 同一張臉原則）
 COSTUMES = {
-    "LXY": "Li Xiaoyao, a cheerful 18-year-old Chinese young swordsman with a high black ponytail tied with a light blue ribbon, "
-           "light blue-grey cross-collar short jacket over a white inner robe, dark brown sash, dark navy trousers",
-    "LER": "Zhao Linger, a gentle 16-year-old Chinese girl with very long straight black hair and two small hair loops tied with light blue ribbons, "
-           "light blue and white layered hanfu dress with a pink sash",
-    "LYR": "Lin Yueru, a spirited 18-year-old Chinese swordswoman with a long black ponytail tied with a crimson ribbon, "
-           "crimson and white fitted martial outfit with a sash, confident eyes",
-    "ANU": "Anu, a lively 16-year-old girl of the Miao (Hmong) ethnic minority of southwest China with East Asian features, an ornate silver headdress and silver necklaces, "
-           "deep purple and indigo embroidered Miao jacket and pleated skirt, bright eyes",
+    "LXY": CAST["li_xiaoyao"],
+    "LER": CAST["zhao_linger"],
+    "LYR": CAST["lin_yueru"],
+    "ANU": CAST["anu"],
+    # 巫后：使用者指示先不重做造型，沿用舊描述
     "WUHOU": "the Queen of Nanzhao, a dignified beautiful woman in flowing white and water-blue royal robes with a silver crown",
 }
 
@@ -93,7 +95,7 @@ def cards() -> list[dict]:
     jobs = []
     for card_id, scene in prompts.items():
         jobs.append({
-            "out": f"source_art/cards/{card_id}.png",
+            "out": f"source_art/cine/cards/{card_id}.png",
             "prompt": f"{expand(scene)}, {card_env(card_id, scene)}. {STYLE}" + (f", {FULL_BLEED}." if card_id in RESEED else "."),
             "width": 960,
             "height": 640,

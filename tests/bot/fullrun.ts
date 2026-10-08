@@ -12,8 +12,7 @@ import {
   retryBattle,
   takeReward,
   updateBattle,
-  upgradeCard,
-  upgradePrice,
+  train,
   type GameDb,
   type RunState,
 } from "../../src/core/run";
@@ -51,7 +50,12 @@ const partyHp = (run: RunState) => run.party.reduce((s, id) => s + member(run, i
 const partyMax = (run: RunState) => run.party.reduce((s, id) => s + member(run, id).maxHp, 0);
 const deckSize = (run: RunState) => run.party.reduce((s, id) => s + member(run, id).deck.length, 0) + run.shared.length;
 
-export function playGame(db: GameDb, seed: number, mode: "normal" | "worst", maxSteps = 4000): RunReport {
+/**
+ * favor：偏好的流派（docs/ARCHETYPES.md 的 archetype key）。給了就模擬「專心走這條流派」的玩家：
+ * 選牌、買牌、練功都先挑這個流派的牌；沒有才照普通玩家。用來比較各流派的強弱（流派平衡）。
+ */
+export function playGame(db: GameDb, seed: number, mode: "normal" | "worst", maxSteps = 4000, favor?: string): RunReport {
+  const favored = (id: string | null | undefined) => !!favor && !!id && db.cards[id]?.archetype === favor;
   let run = newRun(db, seed, "standard");
   const battles: BattleRecord[] = [];
   let defeats = 0;
@@ -104,16 +108,21 @@ export function playGame(db: GameDb, seed: number, mode: "normal" | "worst", max
         break;
       }
       case "reward":
-        run = takeReward(db, run, p.choices.map((g) => (mode === "worst" ? null : (g[0] ?? null))));
+        run = takeReward(db, run, p.choices.map((g) => (mode === "worst" ? null : (g.find(favored) ?? g[0] ?? null))));
         break;
       case "inn": {
-        if (!p.rested && run.party.some((id) => member(run, id).hp < member(run, id).maxHp)) run = rest(run);
+        // 歇腳二選一：血量低於七成休息，否則練功（最差牌組一律休息）
+        const hurt = run.party.some((id) => member(run, id).hp < member(run, id).maxHp * 0.7);
+        const candidate = run.party.flatMap((id) => member(run, id).deck).find((c) => !c.upgraded && db.cards[c.defId]?.upgrade && favored(c.defId))
+          ?? run.party.flatMap((id) => member(run, id).deck).find((c) => !c.upgraded && db.cards[c.defId]?.upgrade && db.cards[c.defId]!.rarity !== "starter")
+          ?? run.party.flatMap((id) => member(run, id).deck).find((c) => !c.upgraded && db.cards[c.defId]?.upgrade);
+        if (!p.rested && (hurt || mode === "worst" || !candidate)) {
+          if (run.party.some((id) => member(run, id).hp < member(run, id).maxHp)) run = rest(run);
+        } else if (!p.rested && candidate) run = train(db, run, candidate.uid);
         if (mode === "normal") {
-          // 先升級（便宜又穩），再買一張買得起的牌
           const inn = () => run.pending as Extract<RunState["pending"], { kind: "inn" }>;
-          const candidate = run.party.flatMap((id) => member(run, id).deck).find((c) => !c.upgraded && db.cards[c.defId]?.upgrade && db.cards[c.defId]!.rarity !== "starter");
-          if (candidate && run.coins >= upgradePrice(db, run)) run = upgradeCard(db, run, candidate.uid);
-          const buy = inn().stock.findIndex((s) => !s.sold && s.price <= run.coins);
+          const preferred = inn().stock.findIndex((s) => !s.sold && s.price <= run.coins && favored(s.card));
+          const buy = preferred >= 0 ? preferred : favor ? -1 : inn().stock.findIndex((s) => !s.sold && s.price <= run.coins);
           if (buy >= 0) run = buyCard(db, run, buy);
         }
         run = leaveInn(db, run);

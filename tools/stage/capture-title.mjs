@@ -1,4 +1,4 @@
-// 起始選單截圖：等延遲載入、字型與 Canvas 完成，不保存「展卷中」畫面。
+// 起始選單截圖：等背景圖與字型載入完成再截。
 // 先 npm run dev，再 node tools/stage/capture-title.mjs
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";
@@ -23,8 +23,8 @@ try {
     await page.goto(process.env.TITLE_QA_URL ?? "http://localhost:5173/");
     const skip = page.getByRole("button", { name: "先繼續查看" });
     if (await skip.isVisible()) await skip.click();
-    await page.locator(".title-stage canvas").waitFor({ state: "visible", timeout: 60000 });
-    await page.locator(".title-loading").waitFor({ state: "hidden", timeout: 60000 });
+    await page.locator(".title-cine-bg").waitFor({ state: "visible", timeout: 60000 });
+    await page.waitForFunction(() => document.querySelector(".title-cine-bg")?.complete, null, { timeout: 60000 });
     await page.evaluate(() => document.fonts.ready);
     await page.waitForTimeout(3000);
     await page.screenshot({ path: join(outDir, `title-menu-${name}.jpg`), type: "jpeg", quality: 90 });

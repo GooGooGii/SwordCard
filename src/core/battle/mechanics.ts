@@ -1,6 +1,8 @@
 import type { DebuffStatus, Element, StatusBag } from "../types";
 import { checkOutcome, enemyRef, partyRef, type Ctx } from "./context";
 import { absorb, computeDamage } from "./damage";
+import { addCtl, grantSteady, isControl, resistsDisable, wake } from "./control";
+import { fireTriggers } from "./triggers";
 import { newEnemy } from "./setup";
 
 export const HAND_LIMIT = 10;
@@ -54,6 +56,7 @@ export function hitEnemy(ctx: Ctx, index: number, opts: HitOptions): "strong" | 
     chainBonus: opts.chainBonus,
   });
   const { hpLoss, blocked } = absorb(enemy, amount);
+  if (hpLoss > 0) wake(enemy.status);
   ctx.events.push({
     type: "damage",
     target: enemyRef(index),
@@ -84,7 +87,7 @@ export function settleEnemyHp(ctx: Ctx, index: number): void {
     ctx.s.enemies[index] = newEnemy(ctx.db, def.successor, ctx.s.nextUid++, ctx.s.enemyHpScale);
     ctx.events.push({ type: "summon", target: enemyRef(index) });
   }
-  checkOutcome(ctx);
+  if (!checkOutcome(ctx) && !def.isField) fireTriggers(ctx, "kill", { enemyIndex: index });
 }
 
 export function addBreak(ctx: Ctx, index: number, stacks: number): void {
@@ -111,8 +114,18 @@ export function applyToEnemy(ctx: Ctx, index: number, status: DebuffStatus, amou
     addBreak(ctx, index, amount);
     return;
   }
-  enemy.status[status] += amount;
-  ctx.events.push({ type: "status", target: enemyRef(index), status, amount: enemy.status[status] });
+  if (isControl(status) && resistsDisable(enemy.status, status, ctx.db.enemies[enemy.defId]!.isBoss)) return;
+  const total = isControl(status) ? addCtl(enemy.status, status, amount) : (enemy.status[status] += amount);
+  ctx.events.push({ type: "status", target: enemyRef(index), status, amount: total });
+}
+
+/** 對隊員施加負面狀態（敵人的妨礙招式）。破勢只用在敵人身上。 */
+export function applyToMember(ctx: Ctx, index: number, status: DebuffStatus, amount: number): void {
+  const m = ctx.s.party[index];
+  if (!m || m.downed || status === "break") return;
+  if (isControl(status) && resistsDisable(m.status, status)) return;
+  const total = isControl(status) ? addCtl(m.status, status, amount) : (m.status[status] += amount);
+  ctx.events.push({ type: "status", target: partyRef(index), status, amount: total });
 }
 
 // ── 對隊員 ───────────────────────────────────────────────────────────────────
@@ -124,14 +137,17 @@ export function hitMember(ctx: Ctx, memberIndex: number, base: number, enemyInde
   if (!member || member.downed || !enemy) return 0;
   const { amount } = computeDamage({ base, attacker: enemy.status, defender: member.status, halved });
   const { hpLoss, blocked } = absorb(member, amount);
+  if (hpLoss > 0) wake(member.status);
   ctx.events.push({ type: "damage", target: partyRef(memberIndex), amount: hpLoss, blocked, effective: "normal", source: enemyRef(enemyIndex) });
   if (member.counter > 0 && !enemy.dead) {
     const counter = member.counter;
     const loss = absorb(enemy, counter);
     ctx.events.push({ type: "counter", actor: partyRef(memberIndex), target: enemyRef(enemyIndex), amount: loss.hpLoss });
     settleEnemyHp(ctx, enemyIndex);
+    fireTriggers(ctx, "counter", { enemyIndex });
   }
   settleMemberHp(ctx, memberIndex);
+  if (hpLoss > 0 && !member.downed) fireTriggers(ctx, "hurt", { memberIndex, enemyIndex });
   return hpLoss;
 }
 
@@ -154,14 +170,30 @@ export function tickPoison(ctx: Ctx, side: "party" | "enemy", index: number): vo
   const amount = Math.min(unit.hp, unit.status.poison);
   unit.hp -= amount;
   unit.status.poison -= 1;
+  if (amount > 0) wake(unit.status);
   const target = side === "party" ? partyRef(index) : enemyRef(index);
   ctx.events.push({ type: "damage", target, amount, blocked: 0, effective: "normal", source: null });
   if (side === "party") settleMemberHp(ctx, index);
-  else settleEnemyHp(ctx, index);
+  else {
+    settleEnemyHp(ctx, index);
+    if (amount > 0) fireTriggers(ctx, "poison_tick", { enemyIndex: index });
+  }
 }
 
-/** 弱化、破綻在單位自己的回合結束時 -1 */
-export function decayStatus(status: StatusBag): void {
+/**
+ * 弱化、破綻、封印、混亂在單位自己的回合結束時 -1。
+ * 定身、昏睡：敵人在「被跳過的那次行動」消耗（enemy.ts）；隊員在自己的回合結束時 -1（includeSkip）。
+ */
+export function decayStatus(status: StatusBag, includeSkip = false): void {
   if (status.weak > 0) status.weak -= 1;
   if (status.vulnerable > 0) status.vulnerable -= 1;
+  if ((status.seal ?? 0) > 0) status.seal! -= 1;
+  if ((status.confuse ?? 0) > 0) status.confuse! -= 1;
+  if ((status.steady ?? 0) > 0) status.steady! -= 1;
+  if (includeSkip) {
+    const disabled = (status.stun ?? 0) > 0 || (status.sleep ?? 0) > 0;
+    if ((status.stun ?? 0) > 0) status.stun! -= 1;
+    if ((status.sleep ?? 0) > 0) status.sleep! -= 1;
+    if (disabled) grantSteady(status);
+  }
 }

@@ -19,6 +19,8 @@ export interface StageActor {
   id: string;
   /** 3D 模型（.glb）或 2D 立繪（.png，立在 3D 舞台上）；依副檔名判斷 */
   url: string;
+  /** 2D 立繪的姿勢圖（attack／cast／guard／hit…）；該動作有圖就換圖，沒有就用 url 加程式動作 */
+  poses?: Partial<Record<string, string>>;
   /** 2D 立繪專用：原圖是否朝左、要在畫面上面向哪邊、是否浮空 */
   imageFacesLeft?: boolean;
   facing?: 1 | -1;
@@ -271,6 +273,7 @@ export function BattleStage({ active = true, sceneId, backdropUrl, backdropLayou
               ) : (
                 <Billboard
                   url={a.url}
+                  poses={a.poses}
                   position={[0, 0, 0]}
                   height={a.height}
                   imageFacesLeft={a.imageFacesLeft ?? true}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
-import { canPlay, effectiveCard, computeDamage, endTurn, playCard, type BattleStep } from "../../core/battle";
+import { canPlay, effectiveCard, computeDamage, endTurn, playCard, type BattleStep, usePotion, canUsePotion } from "../../core/battle";
 import { cardDef } from "../../core/cards";
 import { describeIntent, STATUS_NAME } from "../../core/describe";
 import { concludeBattle, nodeOf, updateBattle, type RunState } from "../../core/run";
@@ -9,12 +9,14 @@ import { useSettings } from "../../game/settings";
 import { game } from "../../game/store";
 import { playMusic, playSfx } from "../../platform/audio";
 import { BattleStage, type StageActor, type StageAnchor } from "../../stage/BattleStage";
+import { HERO_POSES } from "../../content/heroArt";
 import type { CombatImpactEvent } from "../../stage/CombatImpact";
 import { lungePoint, slotPosition, sideCenter, yawToward, type Vec3 } from "../../stage/formation";
 import { GameMenu } from "../common/GameMenu";
 import { useMenuRequest } from "../common/useEscape";
 import { useAssets } from "../common/useAsset";
 import { BattleHud } from "./BattleHud";
+import { PotionBar, PowerList, potionTargetKind } from "./PotionBar";
 import { Hand, needsTarget, type TargetRef } from "./Hand";
 import { snapshot, toBeats, type Beat, type FxKind, type Shown } from "./playback";
 import { StageOverlay, type OverlayLayer } from "./StageOverlay";
@@ -37,6 +39,9 @@ function statusChips(status: StatusBag, extra: { block: number; counter?: number
   if (status.weak) chips.push({ key: "weak", text: `${STATUS_NAME.weak} ${status.weak}`, cls: "debuff" });
   if (status.vulnerable) chips.push({ key: "vul", text: `${STATUS_NAME.vulnerable} ${status.vulnerable}`, cls: "debuff" });
   if (status.poison) chips.push({ key: "poison", text: `${STATUS_NAME.poison} ${status.poison}`, cls: "poison" });
+  for (const c of ["stun", "seal", "sleep", "confuse"] as const) {
+    if (status[c]) chips.push({ key: c, text: `${STATUS_NAME[c]} ${status[c]}`, cls: "control" });
+  }
   if (extra.counter) chips.push({ key: "counter", text: `反擊 ${extra.counter}`, cls: "buff" });
   if (extra.breakStacks) chips.push({ key: "break", text: `破勢 ${extra.breakStacks}/${extra.breakThreshold}`, cls: "break" });
   return (
@@ -230,9 +235,25 @@ export function BattleScreen({ run }: { run: RunState }) {
     commit(playCard(game.db, battle, uid, target), 1);
   };
 
+  const [selectedPotion, setSelectedPotion] = useState<number | null>(null);
+  const onUsePotion = (slot: number, target: number | null) => {
+    if (busy || battle.outcome !== "ongoing" || canUsePotion(game.db, battle, slot, target)) return;
+    setSelectedPotion(null);
+    commit(usePotion(game.db, battle, slot, target), 0);
+  };
+  const selectCard = (uid: number | null) => {
+    setSelected(uid);
+    if (uid !== null) setSelectedPotion(null);
+  };
+  const selectPotion = (slot: number | null) => {
+    setSelectedPotion(slot);
+    if (slot !== null) setSelected(null);
+  };
+
   const onEndTurn = () => {
     if (busy || battle.outcome !== "ongoing") return;
     setSelected(null);
+    setSelectedPotion(null);
     commit(endTurn(game.db, battle), 0);
   };
 
@@ -243,6 +264,7 @@ export function BattleScreen({ run }: { run: RunState }) {
       if (e.key === "e" || e.key === "E") onEndTurn();
       if (e.key === "Escape") {
         setSelected(null);
+        setSelectedPotion(null);
         setTips(null);
       }
     };
@@ -252,13 +274,16 @@ export function BattleScreen({ run }: { run: RunState }) {
 
   // 點選出牌：選了一張要選目標的牌，點目標區塊就打出
   const selectedCard = selected !== null ? battle.hand.find((c) => c.uid === selected) : undefined;
-  const selectedKind = selectedCard ? needsTarget(effectiveCard(game.db, battle, selectedCard)) : null;
+  const potionKind = selectedPotion !== null ? potionTargetKind(game.db.potions?.[battle.potions?.[selectedPotion] ?? ""]) : null;
+  const selectedKind = selectedCard ? needsTarget(effectiveCard(game.db, battle, selectedCard)) : potionKind;
   const targetingKind = dragKind ?? selectedKind;
   const onTargetClick = (e: MouseEvent<HTMLDivElement>) => {
     const el = (e.target as HTMLElement).closest("[data-target]") as HTMLElement | null;
-    if (!el || selected === null || !selectedKind) return;
+    if (!el || !selectedKind) return;
     const [side, index] = el.dataset.target!.split(":");
-    if (side === (selectedKind === "enemy" ? "enemy" : "party")) onPlay(selected, Number(index));
+    if (side !== (selectedKind === "enemy" ? "enemy" : "party")) return;
+    if (selectedPotion !== null) onUsePotion(selectedPotion, Number(index));
+    else if (selected !== null) onPlay(selected, Number(index));
   };
 
   const actors: StageActor[] = useMemo(() => {
@@ -273,6 +298,8 @@ export function BattleScreen({ run }: { run: RunState }) {
       list.push({
         id: `p-${m.charId}`,
         url: partyUrls[i] ?? PARTY_FALLBACK,
+        // 2D 立繪才有姿勢圖（3D 模型用自己的動畫）
+        poses: partyUrls[i] === ch.standee ? HERO_POSES[m.charId] : undefined,
         imageFacesLeft: true,
         facing: -1,
         position: pos,
@@ -370,6 +397,7 @@ export function BattleScreen({ run }: { run: RunState }) {
       <div className="bt-stage">
         <BattleStage
           sceneId={spec.ground}
+          backdropUrl={`/assets/battle/${spec.ground}.jpg`}
           actors={actors}
           focus={focus}
           popups={[]}
@@ -402,6 +430,8 @@ export function BattleScreen({ run }: { run: RunState }) {
         </div>
       ) : null}
       <BattleHud battle={battle} onMenu={() => setMenu(true)} />
+      <PowerList battle={battle} />
+      <PotionBar battle={battle} selected={selectedPotion} disabled={busy || done} onSelect={selectPotion} onUse={(slot) => onUsePotion(slot, null)} />
       {banner ? (
         <div key={banner.key} className={`bt-banner bt-banner-${banner.kind}`}>
           {banner.text}
@@ -411,7 +441,7 @@ export function BattleScreen({ run }: { run: RunState }) {
         <span>{battle.qi}</span>
         <small>/{battle.maxQi}</small>
       </div>
-      <Hand battle={battle} disabled={busy || done} selected={selected} onSelect={setSelected} hover={hover} onHover={setHover} onPlay={onPlay} onDragKind={setDragKind} />
+      <Hand battle={battle} disabled={busy || done} selected={selected} onSelect={selectCard} hover={hover} onHover={setHover} onPlay={onPlay} onDragKind={setDragKind} />
       <button type="button" className="ui-btn primary bt-end" disabled={busy || done} onClick={onEndTurn}>
         結束回合
       </button>

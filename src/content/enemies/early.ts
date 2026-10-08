@@ -33,7 +33,7 @@ export const EARLY_ENEMIES: EnemyDef[] = [
 
   // ── 第一章 ──
   enemy({ id: "knife_thug", name: "刀手", maxHp: 38, height: 1.75,
-    moves: [rally("taunt", "叫囂", 2), hit("blade_qi", "劍氣斬", 11)],
+    moves: [rally("taunt", "叫囂", 2), { ...hit("blade_qi", "劍氣斬", 11), targeting: "weakest" }],
     canon: "蘇州街頭的無賴「刀手」：劍氣斬" }),
   enemy({ id: "kick_thug", name: "羅漢腿", maxHp: 40, height: 1.75,
     moves: [hit("kicks", "連環腿", 5, 2), guard("stance", "馬步", 5)],
@@ -73,6 +73,6 @@ export const EARLY_ENEMIES: EnemyDef[] = [
     successor: "fox_spirit", stealable: ["item_soulincense"],
     canon: "隱龍窟「半人蛇」：一回合動兩次，第四回合常用弦月斬；死後狐狸精接續（REDESIGN §4.5）" }),
   enemy({ id: "fox_spirit", name: "狐狸精", maxHp: 96, element: "thunder", height: 1.8, isBoss: true,
-    moves: [hit("thunder", "雷咒", 12), call("bees", "召蜂", "bee"), sweep("five_thunder", "五雷咒", 8), mend("dream", "回夢", 14)],
+    moves: [{ ...hit("thunder", "雷咒", 12), targeting: "caster" }, call("bees", "召蜂", "bee"), sweep("five_thunder", "五雷咒", 8), mend("dream", "回夢", 14)],
     canon: "隱龍窟「狐狸精」：雷咒、五雷咒、回夢，會召喚蜜蜂" }),
 ];

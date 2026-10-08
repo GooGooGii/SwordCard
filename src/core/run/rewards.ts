@@ -36,6 +36,16 @@ export function upgradeRandom(db: GameDb, run: RunState, count: number, salt: st
 
 const REWARD_RARITIES: Rarity[] = ["common", "uncommon", "rare"];
 
+/**
+ * 流派加權（殺戮尖塔的「越拿越容易成形」）：牌組裡同流派的牌越多，這個流派的牌越容易出現；
+ * 每張 +0.35，最多三倍，沒有流派的牌固定 1。
+ */
+export function archetypeWeight(db: GameDb, run: RunState, archetype: string | undefined): number {
+  if (!archetype) return 1;
+  const owned = run.party.flatMap((id) => member(run, id).deck).filter((c) => db.cards[c.defId]?.archetype === archetype).length;
+  return Math.min(3, 1 + owned * 0.35);
+}
+
 /** 戰後選牌：每組 3 張不重複，主人輪流取自在場隊員，稀有度依本章權重。 */
 export function rollCardChoices(db: GameDb, run: RunState, nodeId: string, groups: number): string[][] {
   const chapter = chapterOf(db, run);
@@ -50,7 +60,7 @@ export function rollCardChoices(db: GameDb, run: RunState, nodeId: string, group
       const rarity = rng.weighted(REWARD_RARITIES.map((r) => ({ value: r, weight: chapter.rarity[r as "common" | "uncommon" | "rare"] })));
       const pool = Object.values(db.cards).filter((c) => c.owner === owner && c.rarity === rarity && !picked.includes(c.id));
       if (pool.length === 0) continue;
-      picked.push(rng.pick(pool).id);
+      picked.push(rng.weighted(pool.map((c) => ({ value: c.id, weight: archetypeWeight(db, run, c.archetype) }))));
     }
     out.push(picked);
   }

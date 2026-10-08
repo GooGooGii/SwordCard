@@ -3,6 +3,7 @@ import { CARDS, STARTERS } from "./cards";
 import { CHAPTERS } from "./chapters";
 import { CHARACTERS } from "./characters";
 import { ENEMIES } from "./enemies";
+import { POTIONS } from "./potions";
 import { RELICS } from "./relics";
 import { STORIES } from "./stories";
 
@@ -14,5 +15,6 @@ export const GAME_DB: GameDb = {
   chapters: CHAPTERS,
   stories: STORIES,
   relics: RELICS,
+  potions: POTIONS,
   starters: Object.fromEntries(Object.entries(STARTERS).map(([id, list]) => [id, [...list]])) as GameDb["starters"],
 };

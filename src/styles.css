@@ -157,6 +157,85 @@ body,
   .story-choice, .memory-hint { transition: none; }
 }
 
+/* 電影感起始畫面（TitleCinematic）：16:9 背景以 cover 填滿，竹簡上的墨字跟著圖縮放（cqw＝背景寬的 1%）。 */
+.title-screen { container-type: size; }
+.title-cine {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100cqw, 177.78cqh);
+  aspect-ratio: 16 / 9;
+  transform: translate(-50%, -50%);
+  container-type: inline-size;
+  overflow: hidden;
+}
+.title-cine-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+}
+.title-cine-embers span {
+  position: absolute;
+  bottom: -2%;
+  width: 0.28cqw;
+  height: 0.28cqw;
+  border-radius: 50%;
+  background: #ffb35c;
+  box-shadow: 0 0 0.8cqw #ff8a2a;
+  opacity: 0;
+  animation: title-ember linear infinite;
+}
+/* 竹簡的位置與透視（對應 title_bg.jpg 的竹簡） */
+.title-cine-scroll {
+  position: absolute;
+  left: 50.2%;
+  top: 63%;
+  transform: translate(-50%, -50%) rotate(-11deg) skewX(-14deg);
+}
+.title-cine .title-choices {
+  position: static;
+  transform: none;
+  gap: 0.2cqw;
+}
+.title-cine .story-choice {
+  min-width: 0;
+  min-height: 0;
+  padding: 0.2cqw 1.2cqw;
+  font-family: "LXGW WenKai TC", var(--brush);
+  font-weight: 700;
+  font-size: 3cqw;
+  letter-spacing: 0.22em;
+  color: #2b1a0e;
+  text-shadow: 0 0 1px #2b1a0e80;
+  mix-blend-mode: multiply;
+}
+.title-cine .story-choice.new-story { color: #2b1a0e; }
+.title-cine .story-choice:not(:disabled):hover,
+.title-cine .story-choice:focus-visible { color: #7a1d10; text-shadow: 0 0 1px #7a1d1080; }
+.title-cine .story-choice:focus-visible::before { left: -0.6cqw; }
+.title-cine .story-choice:disabled { color: #6e5b44; opacity: 0.55; }
+.title-screen > .memory-hint {
+  position: absolute;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  margin: 0;
+  opacity: 0.8;
+}
+@media (max-width: 520px) { .title-screen > .title-edition { display: none; } }
+.title-screen .title-wordmark { color: #e8c98a; opacity: 0.9; text-shadow: 0 2px 8px #000c; }
+@keyframes title-ember {
+  0% { opacity: 0; transform: translate(0, 0); }
+  15% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(4cqw, -60cqw); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .title-cine-embers span { animation: none; }
+}
+
 .hud {
   position: absolute;
   top: 10px;

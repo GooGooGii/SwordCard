@@ -1,0 +1,1001 @@
+{
+ "li_strike": {
+  "name": "劍招",
+  "owner": "li_xiaoyao",
+  "element": null,
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "starter",
+  "target": "enemy"
+ },
+ "li_guard": {
+  "name": "護身",
+  "owner": "li_xiaoyao",
+  "element": null,
+  "type": "skill",
+  "motion": "guard",
+  "rarity": "starter",
+  "target": "self"
+ },
+ "li_steal": {
+  "name": "飛龍探雲手",
+  "owner": "li_xiaoyao",
+  "element": null,
+  "type": "skill",
+  "motion": "strike",
+  "rarity": "starter",
+  "target": "enemy"
+ },
+ "li_fly": {
+  "name": "御劍術",
+  "owner": "li_xiaoyao",
+  "element": null,
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "starter",
+  "target": "enemy"
+ },
+ "li_chain": {
+  "name": "連環劍",
+  "owner": "li_xiaoyao",
+  "element": null,
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "common",
+  "target": "enemy"
+ },
+ "li_cloudstep": {
+  "name": "仙風雲體術",
+  "owner": "li_xiaoyao",
+  "element": null,
+  "type": "skill",
+  "motion": "guard",
+  "rarity": "common",
+  "target": "self"
+ },
+ "li_moonstep": {
+  "name": "醉仙望月步",
+  "owner": "li_xiaoyao",
+  "element": null,
+  "type": "skill",
+  "motion": "guard",
+  "rarity": "common",
+  "target": "self"
+ },
+ "li_wind_talisman": {
+  "name": "風靈符",
+  "owner": "li_xiaoyao",
+  "element": "wind",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "common",
+  "target": "enemy"
+ },
+ "li_thunder_talisman": {
+  "name": "雷靈符",
+  "owner": "li_xiaoyao",
+  "element": "thunder",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "common",
+  "target": "enemy"
+ },
+ "li_fire_talisman": {
+  "name": "火靈符",
+  "owner": "li_xiaoyao",
+  "element": "fire",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "common",
+  "target": "enemy"
+ },
+ "li_earth_talisman": {
+  "name": "土靈符",
+  "owner": "li_xiaoyao",
+  "element": "earth",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "common",
+  "target": "enemy"
+ },
+ "li_water_talisman": {
+  "name": "水靈符",
+  "owner": "li_xiaoyao",
+  "element": "water",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "common",
+  "target": "enemy"
+ },
+ "li_icemind": {
+  "name": "冰心訣",
+  "owner": "li_xiaoyao",
+  "element": null,
+  "type": "skill",
+  "motion": "guard",
+  "rarity": "common",
+  "target": "self"
+ },
+ "li_sneak": {
+  "name": "趁隙",
+  "owner": "li_xiaoyao",
+  "element": null,
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "common",
+  "target": "enemy"
+ },
+ "li_myriad": {
+  "name": "萬劍訣",
+  "owner": "li_xiaoyao",
+  "element": "wind",
+  "type": "attack",
+  "motion": "cast",
+  "rarity": "uncommon",
+  "target": "all_enemies"
+ },
+ "li_tiangang": {
+  "name": "天罡戰氣",
+  "owner": "li_xiaoyao",
+  "element": null,
+  "type": "skill",
+  "motion": "guard",
+  "rarity": "uncommon",
+  "target": "self"
+ },
+ "li_swordqi": {
+  "name": "劍氣縱橫",
+  "owner": "li_xiaoyao",
+  "element": null,
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "uncommon",
+  "target": "enemy"
+ },
+ "li_flyrain": {
+  "name": "御劍伏魔",
+  "owner": "li_xiaoyao",
+  "element": null,
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "uncommon",
+  "target": "enemy"
+ },
+ "li_swap": {
+  "name": "偷天換日",
+  "owner": "li_xiaoyao",
+  "element": null,
+  "type": "skill",
+  "motion": "strike",
+  "rarity": "uncommon",
+  "target": "enemy"
+ },
+ "li_tianshi": {
+  "name": "天師符法",
+  "owner": "li_xiaoyao",
+  "element": null,
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "uncommon",
+  "target": "enemy"
+ },
+ "li_wine": {
+  "name": "醉意",
+  "owner": "li_xiaoyao",
+  "element": null,
+  "type": "skill",
+  "motion": "guard",
+  "rarity": "uncommon",
+  "target": "self"
+ },
+ "li_heavensword": {
+  "name": "天劍",
+  "owner": "li_xiaoyao",
+  "element": null,
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "rare",
+  "target": "enemy"
+ },
+ "li_swordgod": {
+  "name": "劍神",
+  "owner": "li_xiaoyao",
+  "element": "earth",
+  "type": "attack",
+  "motion": "cast",
+  "rarity": "rare",
+  "target": "all_enemies"
+ },
+ "li_winegod": {
+  "name": "酒神",
+  "owner": "li_xiaoyao",
+  "element": "fire",
+  "type": "attack",
+  "motion": "cast",
+  "rarity": "rare",
+  "target": "all_enemies"
+ },
+ "li_combo": {
+  "name": "合體氣功",
+  "owner": "li_xiaoyao",
+  "element": null,
+  "type": "combo",
+  "motion": "cast",
+  "rarity": "special",
+  "target": "all_enemies"
+ },
+ "ling_wind": {
+  "name": "風咒",
+  "owner": "zhao_linger",
+  "element": "wind",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "starter",
+  "target": "enemy"
+ },
+ "ling_thunder": {
+  "name": "雷咒",
+  "owner": "zhao_linger",
+  "element": "thunder",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "starter",
+  "target": "enemy"
+ },
+ "ling_ice": {
+  "name": "冰咒",
+  "owner": "zhao_linger",
+  "element": "water",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "starter",
+  "target": "enemy"
+ },
+ "ling_flame": {
+  "name": "炎咒",
+  "owner": "zhao_linger",
+  "element": "fire",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "starter",
+  "target": "enemy"
+ },
+ "ling_earth": {
+  "name": "土咒",
+  "owner": "zhao_linger",
+  "element": "earth",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "starter",
+  "target": "enemy"
+ },
+ "ling_mercy": {
+  "name": "觀音咒",
+  "owner": "zhao_linger",
+  "element": null,
+  "type": "skill",
+  "motion": "cast",
+  "rarity": "starter",
+  "target": "ally"
+ },
+ "ling_guard": {
+  "name": "靈護",
+  "owner": "zhao_linger",
+  "element": null,
+  "type": "skill",
+  "motion": "cast",
+  "rarity": "starter",
+  "target": "ally"
+ },
+ "ling_whirl": {
+  "name": "旋風咒",
+  "owner": "zhao_linger",
+  "element": "wind",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "common",
+  "target": "all_enemies"
+ },
+ "ling_fivethunder": {
+  "name": "五雷咒",
+  "owner": "zhao_linger",
+  "element": "thunder",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "common",
+  "target": "enemy"
+ },
+ "ling_darkice": {
+  "name": "玄冰咒",
+  "owner": "zhao_linger",
+  "element": "water",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "common",
+  "target": "enemy"
+ },
+ "ling_burn": {
+  "name": "炎殺咒",
+  "owner": "zhao_linger",
+  "element": "fire",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "common",
+  "target": "enemy"
+ },
+ "ling_rock": {
+  "name": "飛岩術",
+  "owner": "zhao_linger",
+  "element": "earth",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "common",
+  "target": "enemy"
+ },
+ "ling_focus": {
+  "name": "凝神",
+  "owner": "zhao_linger",
+  "element": null,
+  "type": "skill",
+  "motion": "cast",
+  "rarity": "common",
+  "target": "none"
+ },
+ "ling_shield_all": {
+  "name": "水月護法",
+  "owner": "zhao_linger",
+  "element": "water",
+  "type": "skill",
+  "motion": "cast",
+  "rarity": "common",
+  "target": "party"
+ },
+ "ling_tempest": {
+  "name": "風捲殘雲",
+  "owner": "zhao_linger",
+  "element": "wind",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "uncommon",
+  "target": "all_enemies"
+ },
+ "ling_skythunder": {
+  "name": "天雷破",
+  "owner": "zhao_linger",
+  "element": "thunder",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "uncommon",
+  "target": "enemy"
+ },
+ "ling_blizzard": {
+  "name": "風雪冰天",
+  "owner": "zhao_linger",
+  "element": "water",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "uncommon",
+  "target": "all_enemies"
+ },
+ "ling_earthfire": {
+  "name": "地烈火",
+  "owner": "zhao_linger",
+  "element": "fire",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "uncommon",
+  "target": "all_enemies"
+ },
+ "ling_mountain": {
+  "name": "泰山壓頂",
+  "owner": "zhao_linger",
+  "element": "earth",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "uncommon",
+  "target": "enemy"
+ },
+ "ling_revive": {
+  "name": "還魂咒",
+  "owner": "zhao_linger",
+  "element": null,
+  "type": "skill",
+  "motion": "cast",
+  "rarity": "uncommon",
+  "target": "ally"
+ },
+ "ling_prayer": {
+  "name": "女媧祈願",
+  "owner": "zhao_linger",
+  "element": null,
+  "type": "skill",
+  "motion": "cast",
+  "rarity": "uncommon",
+  "target": "party"
+ },
+ "ling_dreamsnake": {
+  "name": "夢蛇",
+  "owner": "zhao_linger",
+  "element": null,
+  "type": "skill",
+  "motion": "cast",
+  "rarity": "rare",
+  "target": "self"
+ },
+ "ling_thundergod": {
+  "name": "雷神",
+  "owner": "zhao_linger",
+  "element": "thunder",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "rare",
+  "target": "all_enemies"
+ },
+ "ling_windgod": {
+  "name": "風神",
+  "owner": "zhao_linger",
+  "element": "wind",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "rare",
+  "target": "all_enemies"
+ },
+ "ling_snowdemon": {
+  "name": "雪妖",
+  "owner": "zhao_linger",
+  "element": "water",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "rare",
+  "target": "enemy"
+ },
+ "ling_combo": {
+  "name": "爆炸",
+  "owner": "zhao_linger",
+  "element": null,
+  "type": "combo",
+  "motion": "cast",
+  "rarity": "special",
+  "target": "all_enemies"
+ },
+ "yue_whip": {
+  "name": "長鞭",
+  "owner": "lin_yueru",
+  "element": null,
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "starter",
+  "target": "enemy"
+ },
+ "yue_guard": {
+  "name": "林家架式",
+  "owner": "lin_yueru",
+  "element": null,
+  "type": "skill",
+  "motion": "guard",
+  "rarity": "starter",
+  "target": "self"
+ },
+ "yue_return": {
+  "name": "回馬鞭",
+  "owner": "lin_yueru",
+  "element": null,
+  "type": "skill",
+  "motion": "guard",
+  "rarity": "starter",
+  "target": "self"
+ },
+ "yue_double": {
+  "name": "雙鞭連擊",
+  "owner": "lin_yueru",
+  "element": null,
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "common",
+  "target": "enemy"
+ },
+ "yue_sweep": {
+  "name": "橫掃千軍",
+  "owner": "lin_yueru",
+  "element": null,
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "common",
+  "target": "all_enemies"
+ },
+ "yue_bind": {
+  "name": "纏鞭",
+  "owner": "lin_yueru",
+  "element": null,
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "common",
+  "target": "enemy"
+ },
+ "yue_parry": {
+  "name": "以守為攻",
+  "owner": "lin_yueru",
+  "element": null,
+  "type": "skill",
+  "motion": "guard",
+  "rarity": "common",
+  "target": "self"
+ },
+ "yue_temper": {
+  "name": "大小姐脾氣",
+  "owner": "lin_yueru",
+  "element": null,
+  "type": "skill",
+  "motion": "guard",
+  "rarity": "common",
+  "target": "self"
+ },
+ "yue_thrust": {
+  "name": "林家劍法",
+  "owner": "lin_yueru",
+  "element": null,
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "common",
+  "target": "enemy"
+ },
+ "yue_breath": {
+  "name": "調息",
+  "owner": "lin_yueru",
+  "element": null,
+  "type": "skill",
+  "motion": "guard",
+  "rarity": "common",
+  "target": "self"
+ },
+ "yue_ninewhip": {
+  "name": "九截鞭",
+  "owner": "lin_yueru",
+  "element": null,
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "uncommon",
+  "target": "enemy"
+ },
+ "yue_yuenu": {
+  "name": "越女劍",
+  "owner": "lin_yueru",
+  "element": "wind",
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "uncommon",
+  "target": "enemy"
+ },
+ "yue_arena": {
+  "name": "擂台",
+  "owner": "lin_yueru",
+  "element": null,
+  "type": "skill",
+  "motion": "strike",
+  "rarity": "uncommon",
+  "target": "enemy"
+ },
+ "yue_wall": {
+  "name": "銅牆鐵壁",
+  "owner": "lin_yueru",
+  "element": null,
+  "type": "skill",
+  "motion": "guard",
+  "rarity": "uncommon",
+  "target": "ally"
+ },
+ "yue_rally": {
+  "name": "林家堡號令",
+  "owner": "lin_yueru",
+  "element": null,
+  "type": "skill",
+  "motion": "guard",
+  "rarity": "uncommon",
+  "target": "party"
+ },
+ "yue_stormwhip": {
+  "name": "鞭影如潮",
+  "owner": "lin_yueru",
+  "element": null,
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "uncommon",
+  "target": "all_enemies"
+ },
+ "yue_goldsnake": {
+  "name": "金蛇鞭",
+  "owner": "lin_yueru",
+  "element": "fire",
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "rare",
+  "target": "all_enemies"
+ },
+ "yue_phoenix": {
+  "name": "鳳鳴刀",
+  "owner": "lin_yueru",
+  "element": "fire",
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "rare",
+  "target": "enemy"
+ },
+ "yue_vow": {
+  "name": "此生不渝",
+  "owner": "lin_yueru",
+  "element": null,
+  "type": "skill",
+  "motion": "guard",
+  "rarity": "rare",
+  "target": "party"
+ },
+ "yue_combo": {
+  "name": "弦月斬",
+  "owner": "lin_yueru",
+  "element": null,
+  "type": "combo",
+  "motion": "cast",
+  "rarity": "special",
+  "target": "all_enemies"
+ },
+ "yue_memory": {
+  "name": "月如的長鞭",
+  "owner": null,
+  "element": null,
+  "type": "item",
+  "motion": "guard",
+  "rarity": "special",
+  "target": "party"
+ },
+ "anu_blade": {
+  "name": "苗刀",
+  "owner": "anu",
+  "element": null,
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "starter",
+  "target": "enemy"
+ },
+ "anu_guard": {
+  "name": "銀飾護身",
+  "owner": "anu",
+  "element": null,
+  "type": "skill",
+  "motion": "guard",
+  "rarity": "starter",
+  "target": "self"
+ },
+ "anu_gu": {
+  "name": "放蠱",
+  "owner": "anu",
+  "element": null,
+  "type": "skill",
+  "motion": "cast",
+  "rarity": "starter",
+  "target": "none"
+ },
+ "anu_medicine": {
+  "name": "巫醫",
+  "owner": "anu",
+  "element": null,
+  "type": "skill",
+  "motion": "cast",
+  "rarity": "starter",
+  "target": "ally"
+ },
+ "anu_poisonblade": {
+  "name": "淬毒刀",
+  "owner": "anu",
+  "element": null,
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "common",
+  "target": "enemy"
+ },
+ "anu_exorcise": {
+  "name": "驅鬼符",
+  "owner": "anu",
+  "element": "fire",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "common",
+  "target": "enemy"
+ },
+ "anu_soul": {
+  "name": "攝魂",
+  "owner": "anu",
+  "element": "water",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "common",
+  "target": "enemy"
+ },
+ "anu_swarm": {
+  "name": "萬蟲噬",
+  "owner": "anu",
+  "element": null,
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "common",
+  "target": "all_enemies"
+ },
+ "anu_dance": {
+  "name": "苗疆祭舞",
+  "owner": "anu",
+  "element": null,
+  "type": "skill",
+  "motion": "cast",
+  "rarity": "common",
+  "target": "party"
+ },
+ "anu_silver": {
+  "name": "銀蠶絲",
+  "owner": "anu",
+  "element": null,
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "common",
+  "target": "enemy"
+ },
+ "anu_goldsilk": {
+  "name": "金蠶蠱",
+  "owner": "anu",
+  "element": null,
+  "type": "skill",
+  "motion": "cast",
+  "rarity": "uncommon",
+  "target": "none"
+ },
+ "anu_bloodgu": {
+  "name": "血蠱",
+  "owner": "anu",
+  "element": null,
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "uncommon",
+  "target": "enemy"
+ },
+ "anu_xuanming": {
+  "name": "玄冥寶刀",
+  "owner": "anu",
+  "element": "water",
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "uncommon",
+  "target": "enemy"
+ },
+ "anu_ghostward": {
+  "name": "鬼降",
+  "owner": "anu",
+  "element": null,
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "uncommon",
+  "target": "all_enemies"
+ },
+ "anu_soulcall": {
+  "name": "招魂",
+  "owner": "anu",
+  "element": null,
+  "type": "skill",
+  "motion": "cast",
+  "rarity": "uncommon",
+  "target": "ally"
+ },
+ "anu_snakestaff": {
+  "name": "冥蛇杖",
+  "owner": "anu",
+  "element": "earth",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "uncommon",
+  "target": "enemy"
+ },
+ "anu_moonblade": {
+  "name": "巫月神刀",
+  "owner": "anu",
+  "element": null,
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "rare",
+  "target": "enemy"
+ },
+ "anu_myriadgu": {
+  "name": "萬蠱蝕天",
+  "owner": "anu",
+  "element": null,
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "rare",
+  "target": "all_enemies"
+ },
+ "anu_grandma": {
+  "name": "聖姑真傳",
+  "owner": "anu",
+  "element": null,
+  "type": "skill",
+  "motion": "cast",
+  "rarity": "rare",
+  "target": "party"
+ },
+ "anu_combo": {
+  "name": "天女散花",
+  "owner": "anu",
+  "element": null,
+  "type": "combo",
+  "motion": "cast",
+  "rarity": "special",
+  "target": "all_enemies"
+ },
+ "wuhou_staff": {
+  "name": "天蛇杖",
+  "owner": "wuhou",
+  "element": "water",
+  "type": "attack",
+  "motion": "strike",
+  "rarity": "special",
+  "target": "enemy"
+ },
+ "wuhou_ward": {
+  "name": "水月庇佑",
+  "owner": "wuhou",
+  "element": "water",
+  "type": "skill",
+  "motion": "guard",
+  "rarity": "special",
+  "target": "party"
+ },
+ "wuhou_seal": {
+  "name": "封印咒",
+  "owner": "wuhou",
+  "element": "earth",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "special",
+  "target": "enemy"
+ },
+ "wuhou_nuwa": {
+  "name": "女媧神咒",
+  "owner": "wuhou",
+  "element": "thunder",
+  "type": "spell",
+  "motion": "cast",
+  "rarity": "special",
+  "target": "all_enemies"
+ },
+ "wuhou_mercy": {
+  "name": "慈母心",
+  "owner": "wuhou",
+  "element": null,
+  "type": "skill",
+  "motion": "cast",
+  "rarity": "special",
+  "target": "ally"
+ },
+ "wuhou_combo": {
+  "name": "爆炸蠱",
+  "owner": "wuhou",
+  "element": null,
+  "type": "combo",
+  "motion": "cast",
+  "rarity": "special",
+  "target": "all_enemies"
+ },
+ "item_herb": {
+  "name": "止血草",
+  "owner": null,
+  "element": null,
+  "type": "item",
+  "motion": "guard",
+  "rarity": "special",
+  "target": "ally"
+ },
+ "item_salve": {
+  "name": "金創藥",
+  "owner": null,
+  "element": null,
+  "type": "item",
+  "motion": "guard",
+  "rarity": "special",
+  "target": "ally"
+ },
+ "item_soulincense": {
+  "name": "還魂香",
+  "owner": null,
+  "element": null,
+  "type": "item",
+  "motion": "guard",
+  "rarity": "special",
+  "target": "ally"
+ },
+ "item_talisman": {
+  "name": "天師符",
+  "owner": null,
+  "element": null,
+  "type": "item",
+  "motion": "guard",
+  "rarity": "special",
+  "target": "enemy"
+ },
+ "item_incense": {
+  "name": "驅魔香",
+  "owner": null,
+  "element": null,
+  "type": "item",
+  "motion": "guard",
+  "rarity": "special",
+  "target": "all_enemies"
+ },
+ "item_realgar": {
+  "name": "雄黃酒",
+  "owner": null,
+  "element": null,
+  "type": "item",
+  "motion": "guard",
+  "rarity": "special",
+  "target": "party"
+ },
+ "item_coins": {
+  "name": "乾坤一擲",
+  "owner": null,
+  "element": null,
+  "type": "item",
+  "motion": "guard",
+  "rarity": "special",
+  "target": "all_enemies"
+ },
+ "item_bodhi": {
+  "name": "玉菩提",
+  "owner": null,
+  "element": null,
+  "type": "item",
+  "motion": "guard",
+  "rarity": "special",
+  "target": "party"
+ },
+ "item_zijin": {
+  "name": "紫金丹",
+  "owner": null,
+  "element": null,
+  "type": "item",
+  "motion": "guard",
+  "rarity": "special",
+  "target": "ally"
+ },
+ "item_wine": {
+  "name": "女兒紅",
+  "owner": null,
+  "element": null,
+  "type": "item",
+  "motion": "guard",
+  "rarity": "special",
+  "target": "self"
+ },
+ "item_trialfruit": {
+  "name": "試煉果",
+  "owner": null,
+  "element": null,
+  "type": "item",
+  "motion": "guard",
+  "rarity": "special",
+  "target": "party"
+ },
+ "item_bomb": {
+  "name": "火雷珠",
+  "owner": null,
+  "element": "fire",
+  "type": "item",
+  "motion": "guard",
+  "rarity": "special",
+  "target": "enemy"
+ },
+ "thought": {
+  "name": "心念",
+  "owner": null,
+  "element": null,
+  "type": "skill",
+  "motion": "cast",
+  "rarity": "special",
+  "target": "none"
+ }
+}

@@ -18,7 +18,7 @@ import {
   retryBattle,
   takeReward,
   updateBattle,
-  upgradeCard,
+  train,
   type GameDb,
   type RunState,
 } from "../../src/core/run";
@@ -188,11 +188,11 @@ describe("行程流程", () => {
 });
 
 describe("客棧", () => {
-  it("休息回滿、只能一次", () => {
+  it("休息回復最大生命的 30%、只能一次", () => {
     let run = toInn();
     run.members.li_xiaoyao!.hp = 10;
     run = rest(run);
-    expect(run.members.li_xiaoyao!.hp).toBe(50);
+    expect(run.members.li_xiaoyao!.hp).toBe(25);
     expect(() => rest(run)).toThrow();
   });
 
@@ -200,7 +200,8 @@ describe("客棧", () => {
     let run = toInn();
     run.coins = 500;
     if (run.pending.kind !== "inn") throw new Error();
-    expect(run.pending.stock).toHaveLength(3);
+    // 角色牌 3 張＋無主牌 1 張（fixture 沒有無主牌時只有 3 張）
+    expect(run.pending.stock.length).toBeGreaterThanOrEqual(3);
     const price = run.pending.stock[0]!.price;
     run = buyCard(db, run, 0);
     expect(run.coins).toBe(500 - price);
@@ -215,13 +216,15 @@ describe("客棧", () => {
     expect(ling.length).toBeGreaterThanOrEqual(8);
   });
 
-  it("升級：同一張不能升兩次", () => {
+  it("練功免費升級一張牌，和休息二選一", () => {
     let run = toInn();
-    run.coins = 500;
+    const coins = run.coins;
     const uid = run.members.li_xiaoyao!.deck.find((c) => c.defId === "li_a")!.uid;
-    run = upgradeCard(db, run, uid);
+    run = train(db, run, uid);
     expect(run.members.li_xiaoyao!.deck.find((c) => c.uid === uid)!.upgraded).toBe(true);
-    expect(() => upgradeCard(db, run, uid)).toThrow();
+    expect(run.coins).toBe(coins);
+    expect(() => rest(run)).toThrow();
+    expect(() => train(db, run, run.members.li_xiaoyao!.deck[1]!.uid)).toThrow();
   });
 });
 

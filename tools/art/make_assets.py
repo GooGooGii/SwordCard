@@ -12,11 +12,20 @@ import json
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+import sys
+sys.path.insert(0, str(HERE))
+from cine_cast import CAST  # noqa: E402
 
+# 主角當敵人出場（比武招親的月如）時用同一份造型
+LYR = CAST["lin_yueru"].replace(" Sword hilt with red scabbard behind her back.", "")
+
+# 2026-10-06 起全遊戲改電影感 CG 風格（使用者指定學習 3A 同人影片；角色造型見 cine_cast.py）。
+# 原圖改放 source_art/cine/，發布路徑不變，遊戲程式不用改。
+CINE = ("3D CG render from a next-gen 3A Chinese wuxia game cinematic, Unreal Engine 5 quality, "
+        "realistic materials and textures, cinematic lighting, ancient China, no modern objects")
 STANDEE = ("full body game enemy standee, three-quarter view facing right, whole body visible from head to feet, "
-           "isolated on a plain flat light grey background, no ground, no shadow, Chinese xianxia fantasy, "
-           "semi-realistic painterly digital painting with visible brushwork, soft lighting, rich colors, "
-           "polished game art, no text, no watermark")
+           f"isolated on a plain flat light grey background, no ground, no shadow, Chinese xianxia fantasy creature design, {CINE}, "
+           "not cartoon, not anime, no text, no watermark")
 PORTRAIT = ("waist-up character portrait for a visual novel, facing slightly to the side, looking toward the viewer, "
             "isolated on a plain flat light grey background, Chinese xianxia fantasy, semi-realistic painterly digital painting, "
             "visible brushwork, soft cinematic lighting, polished game art, no text, no watermark")
@@ -35,8 +44,8 @@ ENEMIES: dict[str, tuple[str, str]] = {
     # 第一章
     "knife_thug": ("a scruffy Chinese street thug with a saber, ragged grey clothes, sneering", "tall"),
     "kick_thug": ("a burly Chinese street ruffian martial artist in a kicking stance, bare arms, brown clothes", "tall"),
-    "yueru_whip": ("Lin Yueru, a spirited 18-year-old Chinese swordswoman with a long black ponytail tied with a crimson ribbon, crimson and white fitted martial outfit, cracking a long golden whip, angry fierce expression", "tall"),
-    "yueru_sword": ("Lin Yueru, a spirited 18-year-old Chinese swordswoman with a long black ponytail tied with a crimson ribbon, crimson and white fitted martial outfit, holding a slender sword in a dueling stance, determined", "tall"),
+    "yueru_whip": (LYR + ", cracking a long whip, fierce duel stance", "tall"),
+    "yueru_sword": (LYR + ", holding a long slender jian sword, fierce duel stance", "tall"),
     "snake_linger": ("a gentle girl with very long black hair whose lower body is a huge white serpent tail with shimmering scales, goddess Nuwa lineage, sad golden eyes, moonlight", "tall"),
     # 第二章
     "furball": ("a round black furry puffball monster with big eyes and tiny fangs", "wide"),
@@ -165,7 +174,7 @@ def enemy_jobs() -> list[dict]:
         if eid == "red_ghost_king":
             standee = STANDEE.replace("whole body visible from head to feet", "entire high cap and crouched robe silhouette visible, no water or vortex baked into the cutout")
         jobs.append({
-            "out": f"source_art/enemies/{eid}.png",
+            "out": f"source_art/cine/enemies/{eid}.png",
             "prompt": f"{desc}. {standee}.",
             "width": w,
             "height": h,
@@ -220,11 +229,11 @@ def standee_jobs() -> list[dict]:
     ]
 
 
-SCENE = ("wide establishing shot background painting for a visual novel, eye level, no people, no characters, "
-         "Chinese xianxia fantasy, ancient China, semi-realistic painterly digital painting with visible brushwork, "
-         "soft cinematic lighting, rich harmonious colors, calm lower third, no text, no watermark")
-MAP = ("hand-painted antique Chinese silk scroll map seen from above, ink and mineral pigments on aged silk, "
-       "mountains rivers and landmarks drawn as small illustrations, no text, no labels, no letters, no watermark")
+SCENE = ("wide establishing shot environment for a visual novel background, eye level, completely deserted scene with nobody anywhere, no people, no characters, no silhouettes, any signs, plaques and banners are blank without writing, "
+         f"Chinese xianxia fantasy, {CINE}, atmospheric depth, calm lower third, no text, no letters, no watermark")
+MAP = ("aerial bird's-eye view of a miniature 3D terrain diorama map of ancient China, sculpted mountains, rivers, forests, "
+       f"tiny detailed landmark buildings, soft cinematic sunlight and clouds, tilt-shift, {CINE}, "
+       "no text, no labels, no letters, no roads drawn as lines, no watermark")
 
 # 劇情背景（docs/ART_LIST.md，src/content/backgrounds.ts）
 STORY: dict[str, str] = {
@@ -236,8 +245,8 @@ STORY: dict[str, str] = {
     "shilipo_path": "a mountain path on a grassy hillside called Shilipo, wildflowers, distant mountains, bushes with buzzing bees, sunny afternoon",
     "mountain_temple": "inside a ruined small mountain god temple, broken roof tiles with light beams, an altar table, faded deity statue, cobwebs",
     "shuiyue_ruin": "the ruined Shuiyue Palace after a massacre, collapsed doors, burnt gauze curtains, scattered weapons, overcast grey sky, no bodies",
-    "suzhou_outskirts": "a road outside ancient Suzhou with willow trees, a stone bridge over a canal, a small tea stall, the city wall in the distance",
-    "suzhou_street": "a busy ancient Suzhou street with a red silk martial arts contest stage in the middle, banners, distant crowd silhouettes",
+    "suzhou_outskirts": "an unpaved dirt country road of ancient China with cart ruts outside Suzhou, willow trees, an arched stone bridge over a canal, a small thatched tea stall, the old city wall in the distance, no asphalt, no road markings",
+    "suzhou_street": "an ancient Suzhou street at early morning before anyone arrives, a red silk martial arts contest stage in the middle, blank red banners, empty stalls",
     "lin_manor": "the courtyard of a grand martial arts clan manor, a training ground with weapon racks, high walls, elegant halls",
     "yinlong_cave": "a damp cold limestone cave with stalactites, dripping water, eerie green glow, rock walls like snake scales",
     "baihe_village": "a quiet village by a misty white river with bamboo houses and a water wheel",
@@ -285,11 +294,12 @@ MAPS: dict[str, str] = {
 
 GROUND = ("seen from a high camera angle looking down at about 50 degrees, the ground fills the entire frame, "
           "no sky, no horizon, the middle of the frame is an open clear area, tall objects only near the edges, "
-          "light from the upper left, painterly Chinese fantasy game battle background, semi-realistic digital painting, "
-          "visible brushwork, rich colors, no people, no characters, no text, no watermark")
+          f"light from the upper left, Chinese fantasy game battle arena ground, {CINE}, "
+          "completely deserted, no people, no characters, no silhouettes, no text, no watermark")
 
 # 戰場地面（SCENE-001 第一版，TASKS 交付規格 B）；Codex 之後可依原作參照覆蓋精修
 BATTLE: dict[str, str] = {
+    "shilipo": "a grassy hillside path of packed earth with wildflowers and small rocks, bushes and a few trees at the edges",
     "yuhang_inn": "the wooden plank floor inside an old Chinese inn, tables benches and wine jars pushed to the edges",
     "xianling": "lush fairy island grass with scattered peach blossom petals, a winding stone path, small clear pools near the edges",
     "suzhou_road": "an ancient road of packed earth and worn paving stones outside Suzhou, willow trees and a canal bank at the edges",
@@ -318,7 +328,7 @@ BATTLE: dict[str, str] = {
 def battle_jobs() -> list[dict]:
     return [
         {
-            "out": f"source_art/battle/{sid}.png",
+            "out": f"source_art/cine/battle/{sid}.png",
             "prompt": f"{desc}, {GROUND}.",
             "width": 1600,
             "height": 896,
@@ -331,7 +341,7 @@ def battle_jobs() -> list[dict]:
 def story_jobs() -> list[dict]:
     return [
         {
-            "out": f"source_art/story/{sid}.png",
+            "out": f"source_art/cine/story/{sid}.png",
             "prompt": f"{desc}. {SCENE}.",
             "width": 1536,
             "height": 864,
@@ -344,7 +354,7 @@ def story_jobs() -> list[dict]:
 def map_jobs() -> list[dict]:
     return [
         {
-            "out": f"source_art/maps/{cid}.png",
+            "out": f"source_art/cine/maps/{cid}.png",
             "prompt": f"{desc}. {MAP}.",
             "width": 1536,
             "height": 864,
@@ -355,7 +365,8 @@ def map_jobs() -> list[dict]:
 
 
 def main() -> None:
-    out = {"standees": standee_jobs(), "enemies": enemy_jobs(), "portraits": portrait_jobs(), "story": story_jobs(), "maps": map_jobs(), "battle": battle_jobs()}
+    # 主角立繪與劇情頭像改由 cine_cast.py／portraits_cine.py 產生（同一張臉、多表情）
+    out = {"enemies": enemy_jobs(), "story": story_jobs(), "maps": map_jobs(), "battle": battle_jobs()}
     (HERE / "prompts" / "assets.json").write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
     print({k: len(v) for k, v in out.items()})
 

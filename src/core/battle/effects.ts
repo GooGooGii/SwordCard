@@ -1,7 +1,8 @@
-import type { CardDef, Effect, EffectScope } from "../types";
+import type { CardDef, Effect, EffectScope, StackBonus } from "../types";
 import { enemyRef, partyRef, type Ctx } from "./context";
-import { addBreak, applyToEnemy, drawCards, GU_LIMIT, HAND_LIMIT, hitEnemy, settleMemberHp } from "./mechanics";
+import { addBreak, applyToEnemy, drawCards, GU_LIMIT, HAND_LIMIT, hitEnemy, settleEnemyHp, settleMemberHp } from "./mechanics";
 import { aliveEnemies, aliveParty } from "./setup";
+import { clearControl } from "./control";
 
 export interface PlayContext {
   card: CardDef;
@@ -51,22 +52,101 @@ function strike(ctx: Ctx, play: PlayContext, index: number, base: number, broke:
   }
 }
 
+/** 傷害依流派層數加成（指勁、劍意…） */
+/** 特殊 key「qi」＝目前剩下的真氣（酒神：用全身真氣爆發） */
+function withStacks(ctx: Ctx, base: number, per: StackBonus | undefined): number {
+  if (!per) return base;
+  const n = per.key === "qi" ? ctx.s.qi : (ctx.s.stacks?.[per.key] ?? 0);
+  return base + n * per.amount;
+}
+
+function consumeStacks(ctx: Ctx, per: StackBonus | undefined): void {
+  if (per?.consume && per.key === "qi") {
+    ctx.s.qi = 0;
+    return;
+  }
+  if (per?.consume && ctx.s.stacks?.[per.key]) {
+    ctx.s.stacks[per.key] = 0;
+    ctx.events.push({ type: "stack", key: per.key, amount: 0 });
+  }
+}
+
+const CAPTURE_POTIONS: readonly string[] = ["common", "uncommon"];
+
 function resolveOne(ctx: Ctx, play: PlayContext, effect: Effect, broke: Set<number>, result: EffectResult): void {
   const { s } = ctx;
   switch (effect.kind) {
     case "damage": {
+      const amount = withStacks(ctx, effect.amount, effect.per);
       for (let h = 0; h < (effect.hits ?? 1); h++) {
         const t = play.target;
         if (t === null || s.enemies[t]?.dead) break;
-        strike(ctx, play, t, effect.amount, broke);
+        strike(ctx, play, t, amount, broke);
       }
+      consumeStacks(ctx, effect.per);
       return;
     }
     case "damage_all": {
+      const amount = withStacks(ctx, effect.amount, effect.per);
       for (let h = 0; h < (effect.hits ?? 1); h++) {
-        for (const i of aliveEnemies(ctx.db, s, true)) strike(ctx, play, i, effect.amount, broke);
-        if (s.outcome !== "ongoing") return;
+        for (const i of aliveEnemies(ctx.db, s, true)) strike(ctx, play, i, amount, broke);
+        if (s.outcome !== "ongoing") break;
       }
+      consumeStacks(ctx, effect.per);
+      return;
+    }
+    case "stack": {
+      const stacks = (s.stacks ??= {});
+      stacks[effect.key] = Math.max(0, (stacks[effect.key] ?? 0) + effect.amount);
+      ctx.events.push({ type: "stack", key: effect.key, amount: stacks[effect.key]! });
+      return;
+    }
+    case "gain_coins": {
+      s.purse = (s.purse ?? 0) + effect.amount;
+      s.coinsGained += effect.amount;
+      return;
+    }
+    case "spend_coins": {
+      s.purse = Math.max(0, (s.purse ?? 0) - effect.amount);
+      s.coinsGained -= effect.amount;
+      return;
+    }
+    case "detonate": {
+      const t = play.target;
+      const enemy = t !== null ? s.enemies[t] : undefined;
+      if (t === null || !enemy || enemy.dead || enemy.status.poison <= 0) return;
+      const amount = enemy.status.poison * effect.multiplier;
+      enemy.status.poison = 0;
+      ctx.events.push({ type: "status", target: enemyRef(t), status: "poison", amount: 0 });
+      hitEnemy(ctx, t, { base: amount, attacker: null, sourceIndex: play.actor });
+      return;
+    }
+    case "execute": {
+      const t = play.target;
+      const enemy = t !== null ? s.enemies[t] : undefined;
+      if (t === null || !enemy || enemy.dead) return;
+      const def = ctx.db.enemies[enemy.defId]!;
+      if (!def.isBoss && !def.isField && enemy.hp * 100 < enemy.maxHp * effect.below) {
+        ctx.events.push({ type: "damage", target: enemyRef(t), amount: enemy.hp, blocked: 0, effective: "normal", source: play.actor === null ? null : partyRef(play.actor) });
+        enemy.hp = 0;
+        settleEnemyHp(ctx, t);
+      } else strike(ctx, play, t, effect.fallback, broke);
+      return;
+    }
+    case "capture": {
+      const t = play.target;
+      const enemy = t !== null ? s.enemies[t] : undefined;
+      if (t === null || !enemy || enemy.dead) return;
+      const def = ctx.db.enemies[enemy.defId]!;
+      if (def.isBoss || def.isField || enemy.hp * 100 > enemy.maxHp * effect.below) return;
+      // 收進紫金葫蘆：擊倒，煉成一瓶藥（藥品欄有空格才拿得到）
+      const pool = Object.values(ctx.db.potions ?? {}).filter((p) => CAPTURE_POTIONS.includes(p.rarity));
+      const slot = s.potions?.indexOf(null) ?? -1;
+      const potion = slot >= 0 && pool.length > 0 ? ctx.rng.pick(pool).id : null;
+      if (potion !== null) s.potions![slot] = potion;
+      ctx.events.push({ type: "capture", target: enemyRef(t), potion });
+      enemy.hp = 0;
+      settleEnemyHp(ctx, t);
       return;
     }
     case "block": {
@@ -114,7 +194,14 @@ function resolveOne(ctx: Ctx, play: PlayContext, effect: Effect, broke: Set<numb
         st.weak = 0;
         st.vulnerable = 0;
         st.poison = 0;
+        clearControl(st);
         ctx.events.push({ type: "status", target: partyRef(i), status: "poison", amount: 0 });
+      }
+      // 手上的狀態牌（纏絲、屍毒）一併移除
+      const junk = s.hand.filter((c) => ctx.db.cards[c.defId]?.unplayable);
+      if (junk.length) {
+        s.hand = s.hand.filter((c) => !junk.includes(c));
+        s.exhaust.push(...junk);
       }
       return;
     }
