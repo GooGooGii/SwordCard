@@ -275,3 +275,5 @@ FEEL-002 的拖曳啟用／hover 覆寫／取消／合法性防護已由本批�
 ## REPO-001 新版整合回 SwordCard（2026-10-06）
 
 Codex 遷移／改名／本地驗證完成 100%：用現有 Three.js 網頁版取代旧 Godot 工作樹，沿用 GooGooGii/SwordCard 的 main、歷史與遠端；不建立新遠端。統一顯示／npm 名稱、協作入口與 CI。舊版 Git bundle 與新版來源 manifest 已備份到工作樹外；被拒 Q 版候選不納入。npm ci／fonts／build 通過，119 測試通過（1 跳過）；本輪 commit + push 至 origin/main。詳細備份／範圍见 docs/REPOSITORY_MIGRATION.md。
+
+> **2026-10-09：Xiaoyao 已併入本儲存庫（`3e8aaa5`），之後一律在 SwordCard 開發。** Xiaoyao 裡尚未提交的工作（public/fonts 重裁、卡圖重新合成、STYLE D 草稿）待各負責人提交後併入。
