@@ -47,3 +47,7 @@ _relic_popup_preview.png
 /source_art/li_xiaoyao_3d/
 
 /tools/bin/
+
+# 電影感 CG 原圖（可依 tools/art 的提示詞重出；Codex 原圖另存備份）
+source_art/cine/
+source_art/cine_sample/

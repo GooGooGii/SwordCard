@@ -277,3 +277,30 @@ FEEL-002 的拖曳啟用／hover 覆寫／取消／合法性防護已由本批�
 Codex 遷移／改名／本地驗證完成 100%：用現有 Three.js 網頁版取代旧 Godot 工作樹，沿用 GooGooGii/SwordCard 的 main、歷史與遠端；不建立新遠端。統一顯示／npm 名稱、協作入口與 CI。舊版 Git bundle 與新版來源 manifest 已備份到工作樹外；被拒 Q 版候選不納入。npm ci／fonts／build 通過，119 測試通過（1 跳過）；本輪 commit + push 至 origin/main。詳細備份／範圍见 docs/REPOSITORY_MIGRATION.md。
 
 > **2026-10-09：Xiaoyao 已併入本儲存庫（`3e8aaa5`），之後一律在 SwordCard 開發。** Xiaoyao 裡尚未提交的工作（public/fonts 重裁、卡圖重新合成、STYLE D 草稿）待各負責人提交後併入。
+> 2026-10-06 CHARACTER-004–006（Codex，本輪四人製作／本地接入 4/4，100%）：依最新授權先生成 2D，再與 DOS 原作比對身份特徵，主觀評估靈兒 94%、月如 94%、阿奴 95%、巫后 93%，不是量測相似度。月如首版高髻已撤回，改低束髮／肩側髮束後重建 v4；其他三人 v3。四人真正動畫 GLB、六方向與 60 動畫影格、四張 production 桌機／手機滿 UI 驗證通過，119 tests passed／1 skipped、build 通過。主角 STYLE D 已 5/5；未發布線上，使用者美術與實體手機待驗收，guard/cast 仍另案。詳見 [四角色重製](docs/FOUR_CHARACTERS_STYLE_D.md)。
+## 美術方向重定（2026-10-06，使用者指示，Claude Code 主導）
+使用者看完 STYLE D 四主角後表示「太老、沒有現代感」「服裝特徵也不對」，指定學習 YouTube 飛阳月影〈實況通關 3A 版同人《仙劍奇俠傳一》〉（AI 製作的電影寫實畫面）。參考截圖：`docs/art-references/aaa-fan-video/`、阿奴參考 `docs/art-references/characters/anu-apex-figure-closeup.jpg`。**介面文字一律繁體中文。**
+| ID | 任務 | 負責人／狀態 | 範圍／下一步 |
+| STYLE-001 | 主角改電影感 CG 造型（2D 立繪＋動態，戰鬥背景改電影感場景圖），使用者同意方向 | Claude Code／進行中 | 候選：`docs/previews/characters/cinematic-v2/`（逍遙、靈兒 v2 通過方向；月如 v4、阿奴 v5 依使用者回饋修正中）。**巫后先不做**。STYLE D 四人 GLB（CHARACTER-004–006）**暫停整合**，請 Codex 不要提交接入正式遊戲 |
+| MENU-003 | 開始畫面重製：電影感靜物（酒葫蘆、竹簡、劍、黃昏山崖），選項以墨字寫在竹簡上 | Claude Code／待使用者驗收 | `src/menu/TitleCinematic.tsx`（新）、`src/menu/TitleMenu.tsx` 改用它（原 3D 靜物 TitleStillLife 保留檔案、不再載入）、`src/styles.css` 只在檔尾追加 `.title-cine*` 區塊、`public/assets/title/title_bg.jpg`、`tools/stage/capture-title.mjs` 改等背景圖。四尺寸截圖 0 錯誤（`capture_out/title-cine/`），build、119 tests 通過 |
+| PORTRAIT-005 | 劇情對話頭像全面重製（電影感 CG，取代 canon-v1 與舊 48 張） | Claude Code／完成，待使用者視覺驗收（`6fc1fb0`） | 主角四人底圖＋五表情（同一底圖圖生圖，臉一致）、配角 18 人；`public/assets/portraits/cine-v1/`、`src/content/storyPortraits.ts`。造型來源 `tools/art/cine_cast.py`。九章劇情截圖 26 張 0 錯誤（`capture_out/story-portraits3/`）。巫后頭像依使用者指示暫不重做。PORTRAIT-002～004 由本項取代 |
+| STYLE-002 | 全遊戲美術統一為電影感 CG（使用者目標：劇情、戰鬥、姿態、卡牌、地圖風格一致、完整可玩） | Claude Code／進行中 | 出圖管線改為 CG 風格：`tools/art/make_assets.py`（敵人 91、劇情背景 40、地圖 9、戰場 23，原圖 `source_art/cine/`）、`tools/art/build_jobs.py`（卡圖 111，角色造型取自 `cine_cast.py`）、`tools/art/standees_cine.py`（主角戰鬥立繪＋攻擊／施法／護身／受擊姿勢）。發布路徑不變。戰鬥改用電影感地面圖（`BattleScreen` 明確傳 `backdropUrl`，取代低多邊形 3D 場景）與 2D 立繪（設定 `artVersion` 2 預設 2D；`Billboard` 支援姿勢圖 `poses`）。**Codex 的 3D 場景與 STYLE D 模型暫不使用**，檔案保留 |
+| STYLE-002（結果） | 全遊戲美術統一為電影感 CG | Claude Code／完成，待使用者視覺驗收（`283459b`、`d4e3b04`） | 劇情背景 40、地圖 9、戰場 23、卡圖 111、敵人 91、主角戰鬥立繪 4＋姿勢 16、劇情頭像 42、開始畫面。驗證：119 tests、build、8 種子 bot 通關、真瀏覽器多章與 400 步長流程 0 錯誤、姿勢圖實際切換。Android debug APK 重建 59.4 MB。巫后（造型、立繪、頭像）依使用者指示未重做 |
+| FEEL-003（部分） | 唯一合法目標快出 | Claude Code／完成 | 同卡點兩下或往上拖未落在目標時，若只有一個合法目標就直接出牌；`src/ui/battle/targets.ts`＋單元測試、`tools/qa/quick-play.mjs` 實機驗證。吸附、短上滑等其餘 FEEL-003 項目未做 |
+| CARD-001 | 卡牌與卡圖（使用者 2026-10-08 分工：另一個 agent 做圖、一個做戰鬥邏輯、Claude Code 做卡片卡圖） | Claude Code／進行中 | **主角卡改用合成**：主角姿勢去背圖（`public/assets/characters/<id>_pose_*.webp`，Codex 新圖發布後自動換成寫實臉）＋ Z-Image 無人場景＋屬性光效 → `public/assets/cards/<id>.jpg`；道具／物件卡維持文生圖。範圍：`tools/art/cards_*.py`、`tools/art/prompts/cards.json`、`public/assets/cards/`、`src/ui/common/CardFace.tsx` 與卡牌相關 CSS。**不改** `src/core/`、卡牌數值（戰鬥邏輯 agent）與角色／劇情圖（出圖 agent） |
+| ART-REDO | 人臉美術重做（Codex 依影片樣本出圖，取代 Pixar 卡通臉） | Claude Code 主導／Codex 出圖，進行中 | **進度清單：[docs/ART_REDO_CHECKLIST.md](docs/ART_REDO_CHECKLIST.md)**（`python tools/art/redo_status.py` 依檔案自動打勾）。第一批主角 44 張：`python tools/art/codex_batch1.py`（只補缺的）→ `python tools/art/publish_codex.py <id>`。第二～四批（配角頭像 18、有人物卡圖 86、人形敵人 33）等 Codex 額度重置後接續 |
+| CARD-001（進度 2026-10-08） | 卡圖合成、牌面 | Claude Code／進行中 | 牌面深色漆木框＋稀有度＋升級「＋」與外框光（`07e36a0`，部分隨 `cb80c51`）。李逍遙 25、趙靈兒 26 張已用 Codex 寫實臉（`b1b9700` 等）。待 Codex 完成林月如、阿奴後重跑 `python tools/art/cards_compose.py compose`；`li_steal`、`li_swordqi`、`ling_mercy`、`anu_medicine` 場景重出中。`tools/qa/card-gallery.mjs` 可看全部牌面。戰鬥邏輯 agent 新增的牌：跑 `node tools/art/cards_meta.mjs` 後在 `tools/art/prompts/cards.json` 補場景描述即可合成 |
+## ART-REQ-001：林月如流派卡圖（Claude Code → 美術 agent，2026-10-08）
+月如卡牌依原作招式重做（docs/ARCHETYPES.md）。提示詞已更新在 `tools/art/prompts/cards.json`（`python tools/art/build_jobs.py` 已重建 jobs）。
+請重出以下 10 張（刪掉 `source_art/cine/cards/<id>.png` 後 `python tools/art/run_jobs.py tools/art/jobs/cards.json` 會只重出這些）：
+- 改名、舊圖不符：yue_return（氣劍指）、yue_parry（一陽指）、yue_breath（凝神歸元）、yue_arena（銅錢鏢）、yue_thrust（七訣劍氣）、yue_vow（元靈歸心術）
+- 新卡、尚無圖：yue_jianzhi（劍指雙絕）、yue_spender（揮金如土）、yue_zhanlong（斬龍訣）、yue_qiankun（乾坤一擲）
+| ART-REDO（第一批完成） | 主角四人寫實 CG（Codex） | Claude Code／完成 | 44/44 已發布（`a2678dc` 與本提交）。**給 CARD-001：林月如、阿奴的姿勢圖已發布，可以重跑 `python tools/art/cards_compose.py compose`。** 下一批：配角頭像 18、人形敵人 33，見 docs/ART_REDO_CHECKLIST.md |
+## ART-REQ-002：逍遙、靈兒、阿奴流派卡圖（Claude Code → 美術 agent，2026-10-09）
+三人卡牌依原作招式重做（docs/ARCHETYPES.md），提示詞已更新、jobs 已重建。請重出以下 36 張（做法同 ART-REQ-001）：
+- 李逍遙：li_gourd 靈葫咒、li_escape 金蟬脫殼（新）；li_tiangang 天罡戰氣、li_moonstep 醉仙望月步（改成心法）；li_heavensword 天劍（改成打全體）、li_swordgod 劍神、li_winegod 酒神、li_tianshi 天師符法
+- 趙靈兒：ling_dream 回夢、ling_quake 地裂天崩、ling_wuling 女媧五靈訣、ling_vajra 金剛咒、ling_madthunder 狂雷（新）；ling_burn 三昧真火、ling_earthfire 煉獄真火（改名）；ling_fivethunder、ling_darkice、ling_rock、ling_mountain、ling_snowdemon（改成打全體）；ling_prayer 五氣朝元、ling_dreamsnake 夢蛇
+- 阿奴：anu_ants 萬蟻蝕象、anu_bomb 爆炸蠱、anu_gumother 萬蠱歸宗、anu_souldrain 奪魂、anu_soulhook 勾魂攝魄（新）；anu_medicine 靈血咒、anu_poisonblade 三屍蠱、anu_swarm 御蜂術、anu_exorcise 炎殺咒、anu_xuanming 鬼牙刀、anu_ghostward 鬼降、anu_soulcall 贖魂、anu_myriadgu 萬蠱蝕天（改名或改內容）
+- 巫后：wuhou_combo 女媧之怒（改名）
+- 追加（2026-10-09）：無主牌 cl_qiliao 氣療術、cl_jingyi 淨衣咒、cl_scroll 蜀山劍譜、cl_zhenyuan 真元護體、cl_stun 定身符、cl_drunk_tip 酒劍仙的指點、cl_yuanling 元靈歸心術、cl_purple_gourd 紫金葫蘆；狀態牌 st_silk 纏絲、st_corpse 屍毒（共 10 張，皆為新卡）
+> **2026-10-09 已搬家：本專案改在 `C:\Users\USER\source\repos\SwordCard` 開發（提交 `3e8aaa5`）。** 這裡未提交的工作沒有搬過去，請負責人提交後併入 SwordCard。詳見 MOVED_TO_SWORDCARD.md。
